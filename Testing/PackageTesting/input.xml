@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?><WAD>
+   <version>
+   </version>
+   <analysemodule_cfg>./Testing/TestPlugin/config.xml</analysemodule_cfg>
+   <analysemodule_output>./Testing/TestPlugin/result.xml</analysemodule_output>
+   <analyselevel>series</analyselevel>
+   <patient>
+      <id>112233445</id>
+      <name>TestNaam</name>
+      <study>
+         <uid>1.2.840.113681.2211298350.753.3561610042.107</uid>
+         <description>WEEKLY QC</description>
+         <series>
+            <number>2</number>
+            <description>FLAT FIELD</description>
+            <instance>
+               <number>25</number>
+               <filename>./Testing/TestPlugin/dicom.dcm</filename>
+            </instance>
+         </series>
+      </study>
+   </patient>
+</WAD>

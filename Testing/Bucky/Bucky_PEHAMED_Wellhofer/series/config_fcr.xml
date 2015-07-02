@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Config for QCXRay plugin for Siemens CR with Wellhofer
+date: 20150203
+author: Arnold Schilham, UMCU
+original name: wkz1_cr_umcu_series.xml
+-->
+<config>
+    <action>
+        <plugin>Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_wadwrapper</plugin>
+        <function>xrayheader_series</function>
+        <default_level>2</default_level>
+        
+       <limits>
+	  <result description="SoftwareVersions_Wall">
+	    <criterium>A19</criterium>
+	  </result>
+	  <result description="Acquisition Device Processing Code_Wall">
+	    <criterium>0904</criterium>
+	  </result>
+
+	  <result description="SoftwareVersions_Table">
+	    <criterium>A19</criterium>
+	  </result>
+	  <result description="Acquisition Device Processing Code_Table">
+	    <criterium>0904</criterium>
+	  </result>
+        </limits>
+    </action>
+    
+    <action>
+        <plugin>Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_wadwrapper</plugin>
+        <function>xrayqc_series</function>
+        <default_level>1</default_level>
+
+	<limits>
+	  <result description="PhantomOrientation_Table">
+	    <acc_low>-1.</acc_low>
+	    <acc_high>1.</acc_high>
+	    <crit_low>-1.</crit_low>
+	    <crit_high>1.</crit_high>
+	  </result>
+	  <result description="AlignConfidence_Table">
+	    <acc_low>90.</acc_low>
+	    <acc_high>100.</acc_high>
+	    <crit_low>80.</crit_low>
+	    <crit_high>100.</crit_high>
+	  </result>
+	  <result description="xray[N]cm_Table">
+	    <acc_low>11.9</acc_low>
+	    <acc_high>13.1</acc_high>
+	    <crit_low>11.3</crit_low>
+	    <crit_high>13.7</crit_high>
+	  </result>
+	  <result description="xray[E]cm_Table">
+	    <acc_low>11.9</acc_low>
+	    <acc_high>13.1</acc_high>
+	    <crit_low>11.3</crit_low>
+	    <crit_high>13.7</crit_high>
+	  </result>
+	  <result description="xray[S]cm_Table">
+	    <acc_low>11.9</acc_low>
+	    <acc_high>13.1</acc_high>
+	    <crit_low>11.3</crit_low>
+	    <crit_high>13.7</crit_high>
+	  </result>
+	  <result description="xray[W]cm_Table">
+	    <acc_low>11.9</acc_low>
+	    <acc_high>13.1</acc_high>
+	    <crit_low>11.3</crit_low>
+	    <crit_high>13.7</crit_high>
+	  </result>
+	  <result description="xrayDev_Table">
+	    <acc_low>-.575</acc_low>
+	    <acc_high>.575</acc_high>
+	    <crit_low>-1.15</crit_low>
+	    <crit_high>1.15</crit_high>
+	  </result>
+	  <result description="ROIUniformity_Table">
+	    <acc_low>-5.</acc_low>
+	    <acc_high>5.</acc_high>
+	    <crit_low>-10.</crit_low>
+	    <crit_high>10.</crit_high>
+	  </result>
+	  <result description="CuSNR_0.0_Table">
+	    <acc_low>42.75</acc_low>
+	    <acc_high>49.5</acc_high>
+	    <crit_low>40.5</crit_low>
+	    <crit_high>49.5</crit_high>
+	  </result>
+	  <result description="CuCNRmin_Table">
+	    <acc_low>3.135</acc_low>
+	    <acc_high>3.63</acc_high>
+	    <crit_low>2.97</crit_low>
+	    <crit_high>3.63</crit_high>
+	  </result>
+	  <result description="CuDR0.6_0.0_Table">
+	    <acc_low>1.995</acc_low>
+	    <acc_high>2.31</acc_high>
+	    <crit_low>1.89</crit_low>
+	    <crit_high>2.31</crit_high>
+	  </result>
+	  <result description="lowCNR_0_Table">
+	    <acc_low>1.9</acc_low>
+	    <acc_high>2.2</acc_high>
+	    <crit_low>1.8</crit_low>
+	    <crit_high>2.2</crit_high>
+	  </result>
+	  <result description="MTFPosConfidence_Table">
+	    <acc_low>97.5</acc_low>
+	    <acc_high>100.</acc_high>
+	    <crit_low>95.</crit_low>
+	    <crit_high>100.</crit_high>
+	  </result>
+	  <result description="MTFFreqConfidence_Table">
+	    <acc_low>92.5</acc_low>
+	    <acc_high>100.</acc_high>
+	    <crit_low>90.</crit_low>
+	    <crit_high>100.</crit_high>
+	  </result>
+	  <result description="AreaContrast5_Table">
+	    <acc_low>0.0425</acc_low>
+	    <acc_high>0.05</acc_high>
+	    <crit_low>0.04</crit_low>
+	    <crit_high>0.05</crit_high>
+	  </result>
+	  <result description="AreaMTF5_Table">
+	    <acc_low>0.325</acc_low>
+	    <acc_high>0.5</acc_high>
+	    <crit_low>0.30</crit_low>
+	    <crit_high>0.5</crit_high>
+	  </result>
+	  <result description="MTF10_Table">
+	    <acc_low>3.5</acc_low>
+	    <acc_high>5.</acc_high>
+	    <crit_low>3.</crit_low>
+	    <crit_high>5.</crit_high>
+	  </result>
+
+	  <result description="PhantomOrientation_Wall">
+	    <acc_low>-1.</acc_low>
+	    <acc_high>1.</acc_high>
+	    <crit_low>-1.</crit_low>
+	    <crit_high>1.</crit_high>
+	  </result>
+	  <result description="AlignConfidence_Wall">
+	    <acc_low>90.</acc_low>
+	    <acc_high>100.</acc_high>
+	    <crit_low>80.</crit_low>
+	    <crit_high>100.</crit_high>
+	  </result>
+	  <result description="xray[N]cm_Wall">
+	    <acc_low>11.5</acc_low>
+	    <acc_high>13.5</acc_high>
+	    <crit_low>10.5</crit_low>
+	    <crit_high>14.5</crit_high>
+	  </result>
+	  <result description="xray[E]cm_Wall">
+	    <acc_low>11.5</acc_low>
+	    <acc_high>13.5</acc_high>
+	    <crit_low>10.5</crit_low>
+	    <crit_high>14.5</crit_high>
+	  </result>
+	  <result description="xray[S]cm_Wall">
+	    <acc_low>11.5</acc_low>
+	    <acc_high>13.5</acc_high>
+	    <crit_low>10.5</crit_low>
+	    <crit_high>14.5</crit_high>
+	  </result>
+	  <result description="xray[W]cm_Wall">
+	    <acc_low>11.5</acc_low>
+	    <acc_high>13.5</acc_high>
+	    <crit_low>10.5</crit_low>
+	    <crit_high>14.5</crit_high>
+	  </result>
+	  <result description="xrayDev_Wall">
+	    <acc_low>-1.</acc_low>
+	    <acc_high>1.</acc_high>
+	    <crit_low>-2.</crit_low>
+	    <crit_high>2.</crit_high>
+	  </result>
+	  <result description="LRUniformity_Wall">
+	    <acc_low>-5.</acc_low>
+	    <acc_high>5.</acc_high>
+	    <crit_low>-10.</crit_low>
+	    <crit_high>10.</crit_high>
+	  </result>
+	  <result description="CuSNR_0.0_Wall">
+	    <acc_low>33.25</acc_low>
+	    <acc_high>40.</acc_high>
+	    <crit_low>31.5</crit_low>
+	    <crit_high>40.</crit_high>
+	  </result>
+	  <result description="CuCNRmin_Wall">
+	    <acc_low>1.235</acc_low>
+	    <acc_high>2.</acc_high>
+	    <crit_low>1.17</crit_low>
+	    <crit_high>2.</crit_high>
+	  </result>
+	  <result description="CuDR0.6_0.0_Wall">
+	    <acc_low>1.425</acc_low>
+	    <acc_high>2.</acc_high>
+	    <crit_low>1.35</crit_low>
+	    <crit_high>2.</crit_high>
+	  </result>
+	  <result description="lowCNR_0_Wall">
+	    <acc_low>1.05</acc_low>
+	    <acc_high>2.</acc_high>
+	    <crit_low>1.</crit_low>
+	    <crit_high>2.</crit_high>
+	  </result>
+	  <result description="MTFPosConfidence_Wall">
+	    <acc_low>96.5</acc_low>
+	    <acc_high>100.</acc_high>
+	    <crit_low>94.</crit_low>
+	    <crit_high>100.</crit_high>
+	  </result>
+	  <result description="MTFFreqConfidence_Wall">
+	    <acc_low>92.5</acc_low>
+	    <acc_high>100.</acc_high>
+	    <crit_low>88.</crit_low>
+	    <crit_high>100.</crit_high>
+	  </result>
+	  <result description="AreaContrast5_Wall">
+	    <acc_low>0.0325</acc_low>
+	    <acc_high>0.04</acc_high>
+	    <crit_low>0.03</crit_low>
+	    <crit_high>0.04</crit_high>
+	  </result>
+	  <result description="AreaMTF5_Wall">
+	    <acc_low>0.325</acc_low>
+	    <acc_high>0.5</acc_high>
+	    <crit_low>0.30</crit_low>
+	    <crit_high>0.5</crit_high>
+	  </result>
+	  <result description="MTF10_Wall">
+	    <acc_low>3.25</acc_low>
+	    <acc_high>5.</acc_high>
+	    <crit_low>3.</crit_low>
+	    <crit_high>5.</crit_high>
+	  </result>
+        </limits>
+    </action>
+</config>

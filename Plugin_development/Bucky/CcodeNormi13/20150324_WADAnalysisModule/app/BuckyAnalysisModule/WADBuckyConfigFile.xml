@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<WAD_config>
+
+    <name>WADBuckyConfigFile</name>
+    <description>WAD configuration file for bucky</description>
+    <version>20140128</version>
+
+	<parameters>
+		<PhantomThickness>90</PhantomThickness>
+	</parameters>
+	
+	<!-- DICOM tags: type, level and tag string -->
+	<!-- NOTE: use lower case letters in tagkeys -->
+	<dicomtags>
+		<!-- 0008,0023  Image Date -->
+		<tag type="char" level="1" tag="0008|0023" />
+		<!-- 0008,0033  Image Time -->
+		<tag type="char" level="1" tag="0008|0033" />
+		<!-- 0008,1010  Station Name -->
+		<tag type="char" level="1" tag="0008|1010" />
+		<!-- 0008,103e  Series Description -->
+		<tag type="char" level="1" tag="0008|103e" />
+		<!-- 0010,0020  Patient ID -->
+		<tag type="char" level="1" tag="0010|0020" />
+		<!-- 0018,0060  kVp -->
+		<tag type="float" level="1" tag="0018|0060" />
+		<!-- 0018,1110  Distance Source to Detector -->
+		<tag type="float" level="1" tag="0018|1110" />
+		<!-- 0018,1150  Exposure Time -->
+		<tag type="float" level="1" tag="0018|1150" />
+		<!-- 0018,1152  Exposure -->
+		<tag type="float" level="1" tag="0018|1152" />
+		<!-- 0018,1153  Exposure in uAs -->
+		<tag type="float" level="1" tag="0018|1153" />
+		<!-- 0018,115e  Image Area Dose Product -->
+		<tag type="float" level="1" tag="0018|115e" />
+		<!-- 0018,1166  Grid -->
+		<tag type="char" level="1" tag="0018|1166" />
+		<!-- 0018,1405  Relative X-ray Exposure -->
+		<tag type="float" level="1" tag="0018|1405" />
+		<!-- 0028,1050  Window Center -->
+		<tag type="float" level="2" tag="0028|1050" />
+		<!-- 0028,1051  Window Width -->
+		<tag type="float" level="2" tag="0028|1051" />
+
+	</dicomtags>
+
+    <!-- Action limits corresponding to DICOM tags above -->
+    <!-- NOTE: The analysis module identifies the corresponding DICOM tag using the "description" string -->
+    <!--       These strings are read from the DICOM header in ResultFile::AppendDicomTagsResults -->
+    <limit>
+        <quantity>voltage</quantity>
+        <unit>kV</unit>
+        <description>KVP</description>
+        <acceptable_low>125</acceptable_low>
+        <acceptable_high>125</acceptable_high>
+        <critical_low>125</critical_low>
+        <critical_high>125</critical_high>
+    </limit>
+    
+    <limit>
+        <quantity>length</quantity>
+        <unit>cm</unit>
+        <description>Distance Source to Detector</description>
+        <acceptable_low>1950</acceptable_low>
+        <acceptable_high>2050</acceptable_high>
+        <critical_low>1900</critical_low>
+        <critical_high>2100</critical_high>
+    </limit>
+    
+    <limit>
+        <quantity>time</quantity>
+        <unit>msec</unit>
+        <description>Exposure Time</description>
+        <acceptable_low>12</acceptable_low>
+        <acceptable_high>18</acceptable_high>
+        <critical_low>10</critical_low>
+        <critical_high>20</critical_high>
+    </limit>
+    
+    <limit>
+        <quantity></quantity>
+        <unit></unit>
+        <description>Exposure</description>
+        <acceptable_low>4</acceptable_low>
+        <acceptable_high>4</acceptable_high>
+        <critical_low>3</critical_low>
+        <critical_high>5</critical_high>
+    </limit>
+    
+    <limit>
+        <quantity>Exposure</quantity>
+        <unit>µAs</unit>
+        <description>Exposure in µAs</description>
+        <acceptable_low>3700</acceptable_low>
+        <acceptable_high>3900</acceptable_high>
+        <critical_low>3500</critical_low>
+        <critical_high>4100</critical_high>
+    </limit>
+    
+    <limit>
+        <quantity>DAP</quantity>
+        <unit>Gy cm2</unit>
+        <description>Image and Fluoroscopy Area Dose Product</description>
+        <acceptable_low>0.9</acceptable_low>
+        <acceptable_high>1.1</acceptable_high>
+        <critical_low>0.8</critical_low>
+        <critical_high>1.2</critical_high>
+    </limit>
+    
+    <limit>
+        <quantity></quantity>
+        <unit></unit>
+        <description>Relative X-Ray Exposure</description>
+        <acceptable_low>200</acceptable_low>
+        <acceptable_high>300</acceptable_high>
+        <critical_low>100</critical_low>
+        <critical_high>400</critical_high>
+    </limit>
+    
+    <limit>
+        <quantity></quantity>
+        <unit>grey value</unit>
+        <description>Window Center</description>
+        <acceptable_low>2047</acceptable_low>
+        <acceptable_high>2047</acceptable_high>
+        <critical_low>2047</critical_low>
+        <critical_high>2047</critical_high>
+    </limit>
+    
+    <limit>
+        <quantity></quantity>
+        <unit>grey value</unit>
+        <description>Window Width</description>
+        <acceptable_low>4095</acceptable_low>
+        <acceptable_high>4095</acceptable_high>
+        <critical_low>4095</critical_low>
+        <critical_high>4095</critical_high>
+    </limit>
+    
+    
+    <!-- Action limits corresponding to analysis results -->
+    <!-- NOTE: The analysis module identifies the corresponding result using the "quantity", "unit" and "description" strings -->
+    <!--       These strings are hardcoded in BuckyConfigFile::SetResultsProperties and in BuckyPhantom::DoGetResult -->
+    <limit>
+        <quantity>length</quantity>
+        <unit>mm</unit>
+        <description>diaphragm center x</description>
+        <acceptable_low>-5</acceptable_low>
+        <acceptable_high>+5</acceptable_high>
+        <critical_low>-10</critical_low>
+        <critical_high>+10</critical_high>
+    </limit>
+    
+    <limit>
+        <quantity>length</quantity>
+        <unit>mm</unit>
+        <description>diaphragm center y</description>
+        <acceptable_low>-5</acceptable_low>
+        <acceptable_high>+5</acceptable_high>
+        <critical_low>-10</critical_low>
+        <critical_high>+10</critical_high>
+    </limit>
+
+    <limit>
+        <quantity>length</quantity>
+        <unit>mm</unit>
+        <description>diaphragm size x</description>
+        <acceptable_low>255</acceptable_low>
+        <acceptable_high>265</acceptable_high>
+        <critical_low>250</critical_low>
+        <critical_high>270</critical_high>
+    </limit>
+
+    <limit>
+        <quantity>length</quantity>
+        <unit>mm</unit>
+        <description>diaphragm size y</description>
+        <acceptable_low>255</acceptable_low>
+        <acceptable_high>265</acceptable_high>
+        <critical_low>250</critical_low>
+        <critical_high>270</critical_high>
+    </limit>
+
+    <limit>
+        <quantity></quantity>
+        <unit>%</unit>
+        <description>inhomogeneity top left</description>
+        <acceptable_low>-5</acceptable_low>
+        <acceptable_high>+5</acceptable_high>
+        <critical_low>-10</critical_low>
+        <critical_high>+10</critical_high>
+    </limit>
+
+    <limit>
+        <quantity></quantity>
+        <unit>%</unit>
+        <description>inhomogeneity top right</description>
+        <acceptable_low>-5</acceptable_low>
+        <acceptable_high>+5</acceptable_high>
+        <critical_low>-10</critical_low>
+        <critical_high>+10</critical_high>
+    </limit>
+    <limit>
+        <quantity></quantity>
+        <unit>%</unit>
+        <description>inhomogeneity center</description>
+        <acceptable_low>-5</acceptable_low>
+        <acceptable_high>+5</acceptable_high>
+        <critical_low>-10</critical_low>
+        <critical_high>+10</critical_high>
+    </limit>
+    
+    <limit>
+        <quantity></quantity>
+        <unit>%</unit>
+        <description>inhomogeneity bottom left</description>
+        <acceptable_low>-5</acceptable_low>
+        <acceptable_high>+5</acceptable_high>
+        <critical_low>-10</critical_low>
+        <critical_high>+10</critical_high>
+    </limit>
+    
+    <limit>
+        <quantity></quantity>
+        <unit>%</unit>
+        <description>inhomogeneity bottom right</description>
+        <acceptable_low>-5</acceptable_low>
+        <acceptable_high>+5</acceptable_high>
+        <critical_low>-10</critical_low>
+        <critical_high>+10</critical_high>
+    </limit>
+    
+   
+</WAD_config>

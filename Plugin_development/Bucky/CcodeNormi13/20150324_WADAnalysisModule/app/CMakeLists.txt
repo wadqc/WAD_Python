@@ -1,0 +1,5 @@
+SUBDIRS(
+ExampleAnalysisModule
+RadiologyAnalysisModule
+BuckyAnalysisModule
+)

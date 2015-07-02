@@ -1,0 +1,10 @@
+"""
+String constants for usage in QCCT
+"""
+stUnknown = "Unknown"
+stHead = "HEAD"
+stBody = "BODY"
+stAir       = "AIR"
+stWater     = "WATER"
+stTungsten  = "TUNGSTEN"
+stTeflon    = "TEFLON"

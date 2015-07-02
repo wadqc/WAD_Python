@@ -1,0 +1,568 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="../../../../index.html" />
+    <link rel="up" title="Module code" href="../../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Changelog:</span>
+<span class="sd">    20150121: Code cleanup + modification to make module compatible with Philips camera&#39;s (TdW)</span>
+<span class="sd">    [history here]</span>
+<span class="sd">    ...</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">scipy</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">ndimage</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">optimize</span>
+<span class="kn">from</span> <span class="nn">skimage.measure</span> <span class="kn">import</span> <span class="n">block_reduce</span>
+<span class="kn">import</span> <span class="nn">dicom</span>
+<span class="kn">import</span> <span class="nn">pylab</span> <span class="kn">as</span> <span class="nn">pl</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span> 
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">ma</span>
+
+<span class="kn">import</span> <span class="nn">sys</span><span class="o">,</span> <span class="nn">getopt</span><span class="o">,</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">tempfile</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&#39;MPLCONFIGDIR&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkdtemp</span><span class="p">()</span>
+
+<span class="kn">from</span> <span class="nn">pyWAD.plugindata</span> <span class="kn">import</span> <span class="n">PluginData</span>
+<span class="kn">from</span> <span class="nn">pyWAD.pluginresults</span> <span class="kn">import</span> <span class="n">PluginResults</span>
+
+<span class="kn">import</span> <span class="nn">itertools</span>
+<span class="kn">import</span> <span class="nn">xml.etree.ElementTree</span> <span class="kn">as</span> <span class="nn">ET</span>
+
+<span class="kn">import</span> <span class="nn">operator</span>
+<span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
+
+<span class="sd">&quot;&quot;&quot;NEMA Definitions:</span>
+
+<span class="sd">UFOV: the area of the detector that is used for imaging gamma rays and x-rays.</span>
+<span class="sd">It is defined by a dimensioned figure supplied by the manufacturer.</span>
+
+<span class="sd">CVOF: The area defined by scaling all linear dimensions of the UFOV by a factor</span>
+<span class="sd">of 75%</span>
+
+<span class="sd">Differential uniformity: The amount of count density change per defined unit distance when the detector&#39;s incident gamma radiation is a homogeneous flux over the field of measurement</span>
+
+<span class="sd">DU_x,y = = 100% * (MAX - MIN)/(MAX + MIN), where the largest difference between any two pixels within a set of 5 contiguous pixels in a row or column shall be </span>
+<span class="sd">calculated. The calculation shall be done for X and Y directions independently and expressed as:</span>
+
+<span class="sd">Integral uniformity: A measure of the maximum count density variation over a defined large area of the scintillation detector for a uniform input gamma flux to the UFOV of the camera</span>
+
+<span class="sd">IU = 100% * (MAX - MIN)/(MAX + MIN)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="flux"><a class="viewcode-back" href="../../../../Plugins.NM.NM_NEMA_Uniformity.html#Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.flux">[docs]</a><span class="k">def</span> <span class="nf">flux</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">R_0</span><span class="p">,</span> <span class="n">center_x</span><span class="p">,</span> <span class="n">center_y</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Function template for fitting 2D dome.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">A</span>        <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">A</span><span class="p">)</span>
+    <span class="n">R_0</span>      <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">R_0</span><span class="p">)</span>
+    <span class="n">center_x</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">center_x</span><span class="p">)</span>
+    <span class="n">center_y</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">center_y</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">:</span> <span class="n">A</span><span class="o">*</span><span class="n">R_0</span> <span class="o">/</span><span class="p">(</span> <span class="n">R_0</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">center_x</span><span class="o">-</span><span class="n">x</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">center_y</span><span class="o">-</span><span class="n">y</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="mi">3</span><span class="o">/</span><span class="mf">2.</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="fitflux"><a class="viewcode-back" href="../../../../Plugins.NM.NM_NEMA_Uniformity.html#Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.fitflux">[docs]</a><span class="k">def</span> <span class="nf">fitflux</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Function for fitting a theoretical dome-function to the measured (uncorrected) data.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># parameter initialization</span>
+    <span class="n">params</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">])</span>
+    <span class="c"># (data&gt;0) : prevents fitting of the 0-values outside the crystal</span>
+    <span class="c">#errorfunction = lambda p: ravel( (flux(*p)(*indices(data.shape)) - data)*(data&gt;0) )</span>
+    <span class="c"># strip outer 10 pixels for optimal fit (prevent issues with hot crystal corners)</span>
+    <span class="n">errorfunction</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ravel</span><span class="p">(</span> <span class="p">(</span><span class="n">flux</span><span class="p">(</span><span class="o">*</span><span class="n">p</span><span class="p">)(</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">indices</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span> <span class="o">-</span> <span class="n">data</span><span class="p">)</span><span class="o">*</span><span class="n">ndimage</span><span class="o">.</span><span class="n">binary_erosion</span><span class="p">(</span><span class="n">data</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">,</span><span class="n">iterations</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span> <span class="p">)</span>
+    <span class="n">p</span><span class="p">,</span> <span class="n">success</span> <span class="o">=</span> <span class="n">optimize</span><span class="o">.</span><span class="n">leastsq</span><span class="p">(</span><span class="n">errorfunction</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">p</span>
+ 
+</div>
+<div class="viewcode-block" id="dome_correction"><a class="viewcode-back" href="../../../../Plugins.NM.NM_NEMA_Uniformity.html#Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.dome_correction">[docs]</a><span class="k">def</span> <span class="nf">dome_correction</span><span class="p">(</span><span class="n">imagearray</span><span class="p">):</span>
+   <span class="sd">&quot;&quot;&quot; Function for performing dome-correction.</span>
+<span class="sd">         Input  = uncorrected flood data</span>
+<span class="sd">         Output = dome-corrected flood data</span>
+<span class="sd">   &quot;&quot;&quot;</span>
+   <span class="n">data</span> <span class="o">=</span> <span class="n">imagearray</span>
+   
+   <span class="c"># fit function: flux() to the measured data</span>
+   <span class="n">params</span> <span class="o">=</span> <span class="n">fitflux</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+   <span class="k">print</span> <span class="s">&#39;A, R_0, center_x, center_y : &#39;</span><span class="p">,</span> <span class="n">params</span>
+   <span class="n">fitdata</span> <span class="o">=</span> <span class="n">flux</span><span class="p">(</span><span class="o">*</span><span class="n">params</span><span class="p">)(</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">indices</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+
+   <span class="c"># difference between data and fit (inspection of systematic errors)</span>
+   <span class="c">#diff=(data-fitdata)*(data&gt;0)</span>
+   <span class="c">#diff.tofile(&#39;diff_%d.raw&#39; % i)</span>
+
+   <span class="c"># divide out the geometry</span>
+   <span class="n">fitdata</span> <span class="o">=</span> <span class="n">data</span><span class="o">/</span><span class="n">fitdata</span>
+   
+   <span class="c"># preserve the number of counts</span>
+   <span class="n">fitdata</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">*</span><span class="n">fitdata</span><span class="o">/</span><span class="n">fitdata</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+   
+   <span class="c"># write back the corrected data to the dicom object and convert float64-&gt;uint16</span>
+   <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">rint</span><span class="p">(</span><span class="n">fitdata</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint16</span><span class="p">)</span> 
+
+   <span class="k">return</span> <span class="n">data</span>
+
+</div>
+<div class="viewcode-block" id="set_threshold"><a class="viewcode-back" href="../../../../Plugins.NM.NM_NEMA_Uniformity.html#Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.set_threshold">[docs]</a><span class="k">def</span> <span class="nf">set_threshold</span><span class="p">(</span><span class="n">imagearray</span><span class="p">):</span>
+     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">imagearray</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="testmask"><a class="viewcode-back" href="../../../../Plugins.NM.NM_NEMA_Uniformity.html#Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.testmask">[docs]</a><span class="k">def</span> <span class="nf">testmask</span><span class="p">():</span>
+     <span class="n">tmp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">100</span><span class="p">,</span><span class="mi">100</span><span class="p">))</span>
+     <span class="n">tmp</span><span class="p">[</span><span class="mi">20</span><span class="p">:</span><span class="mi">40</span><span class="p">,</span><span class="mi">30</span><span class="p">:</span><span class="mi">50</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+     <span class="k">return</span> <span class="n">ma</span><span class="o">.</span><span class="n">make_mask</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="unifcalc"><a class="viewcode-back" href="../../../../Plugins.NM.NM_NEMA_Uniformity.html#Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.unifcalc">[docs]</a><span class="k">def</span> <span class="nf">unifcalc</span><span class="p">(</span><span class="n">vector</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Function calculates the contrast between minimum and maximum pixelvalue in &quot;vector&quot;.</span>
+<span class="sd">        Returns fraction not percentage!</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_min</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">vector</span><span class="p">))</span>
+    <span class="n">_max</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">vector</span><span class="p">))</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">_max</span> <span class="o">-</span> <span class="n">_min</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">_max</span> <span class="o">+</span> <span class="n">_min</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="nema_smooth"><a class="viewcode-back" href="../../../../Plugins.NM.NM_NEMA_Uniformity.html#Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.nema_smooth">[docs]</a><span class="k">def</span> <span class="nf">nema_smooth</span><span class="p">(</span><span class="n">inarray</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Function smoothes inarray with a nine-point NEMA kernel.</span>
+<span class="sd">        The total number of counts in &quot;inarray&quot; is preserved.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">]])</span>
+
+    <span class="n">outarray</span> <span class="o">=</span> <span class="n">ndimage</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">inarray</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span><span class="o">/</span><span class="n">k</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+    
+    <span class="k">return</span> <span class="n">outarray</span>
+
+</div>
+<div class="viewcode-block" id="diff_data"><a class="viewcode-back" href="../../../../Plugins.NM.NM_NEMA_Uniformity.html#Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.diff_data">[docs]</a><span class="k">def</span> <span class="nf">diff_data</span><span class="p">(</span><span class="n">inarray</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Function calculates the Differential Uniformity in a</span>
+<span class="sd">        horizontal and vertical range of five pixels with maximum contrast.</span>
+
+<span class="sd">        Returns contrast percentages and upper-left pixel of the locations</span>
+<span class="sd">        with highest contrast.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">outputx</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">outputy</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c"># convenient method to create pairs of 5 pixels in vert and horiz direction</span>
+    <span class="c"># by shifting the array 5 times in vert/horiz direction, and concatenating</span>
+    <span class="c"># the flattened shifted arrays. In order to correctly identify the first</span>
+    <span class="c"># pixel of the group of five pixels with the highest nonuniformity, the range</span>
+    <span class="c"># is running from -4..0</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="mi">4</span><span class="p">,</span><span class="mi">1</span><span class="p">):</span>
+        <span class="n">tmpx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">inarray</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">tmpy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">inarray</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+    
+        <span class="n">outputx</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tmpx</span><span class="o">.</span><span class="n">ravel</span><span class="p">())</span>
+        <span class="n">outputy</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tmpy</span><span class="o">.</span><span class="n">ravel</span><span class="p">())</span>
+
+
+    <span class="n">difflistx</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">difflisty</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c"># calculate the uniformity inside all possible pairs of five concurrent pixels</span>
+    <span class="c"># in vertical direction:</span>
+    <span class="k">for</span> <span class="n">vector</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">outputx</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="p">:</span>
+        <span class="c"># ignore groups of five pixels (partly) outside the mask</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">count_masked</span><span class="p">(</span><span class="n">vector</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">difflistx</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">100</span><span class="o">*</span><span class="n">unifcalc</span><span class="p">(</span><span class="n">vector</span><span class="p">))</span>
+            <span class="c">#difflistx.append(100*(ma.max(vector) - ma.min(vector))/(ma.max(vector) + ma.min(vector)))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">difflistx</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span>
+
+    <span class="n">img</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">difflistx</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">inarray</span><span class="p">))</span>
+    <span class="n">vertmax</span><span class="o">=</span><span class="n">ndimage</span><span class="o">.</span><span class="n">maximum_position</span><span class="p">(</span><span class="n">img</span><span class="p">)</span>
+
+    <span class="c"># calculate the uniformity inside all possible pairs of five concurrent pixels</span>
+    <span class="c"># in horizontal direction:</span>
+    <span class="k">for</span> <span class="n">vector</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">outputy</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="p">:</span>
+        <span class="c"># ignore groups of five pixels (partly) outside the mask</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">count_masked</span><span class="p">(</span><span class="n">vector</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">difflisty</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">100</span><span class="o">*</span><span class="n">unifcalc</span><span class="p">(</span><span class="n">vector</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">difflisty</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span>
+
+    <span class="n">img</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">difflisty</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">inarray</span><span class="p">))</span>
+    <span class="n">hormax</span><span class="o">=</span><span class="n">ndimage</span><span class="o">.</span><span class="n">maximum_position</span><span class="p">(</span><span class="n">img</span><span class="p">)</span>
+
+    <span class="n">highx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">difflistx</span><span class="p">)</span>
+    <span class="c"># lowest DU in vert direction, larger than zero</span>
+    <span class="n">lowx</span> <span class="o">=</span>  <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">difflistx</span><span class="p">)[</span><span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">difflistx</span><span class="p">)])</span>
+
+    <span class="n">highy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">difflisty</span><span class="p">)</span>
+    <span class="c"># lowest DU in horiz direction, larger than zero</span>
+    <span class="n">lowy</span> <span class="o">=</span>  <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">difflisty</span><span class="p">)[</span><span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">difflisty</span><span class="p">)])</span>
+
+    <span class="c">#return highx, highy, difflistx,difflisty</span>
+    <span class="k">return</span> <span class="n">highx</span><span class="p">,</span> <span class="n">highy</span><span class="p">,</span> <span class="n">vertmax</span><span class="p">,</span> <span class="n">hormax</span>
+
+</div>
+<div class="viewcode-block" id="save_imgmap"><a class="viewcode-back" href="../../../../Plugins.NM.NM_NEMA_Uniformity.html#Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.save_imgmap">[docs]</a><span class="k">def</span> <span class="nf">save_imgmap</span><span class="p">(</span><span class="n">inarray</span><span class="p">,</span><span class="n">vertmax</span><span class="p">,</span><span class="n">hormax</span><span class="p">,</span><span class="n">filename</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Converts input-array to image, with superposed the 5-pixel row/column with</span>
+<span class="sd">       highest DU, the minimal and maximum pixel coordinates.</span>
+
+<span class="sd">        input: inarray  = ufov or cfov</span>
+<span class="sd">        vertmax  = first coordinate of 5-pixel column (vertical)</span>
+<span class="sd">        hormax   = first coordinate of 5-pixel row (horizontal)</span>
+<span class="sd">        filename = png-filename of output</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">wi</span><span class="p">,</span><span class="n">he</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">inarray</span><span class="p">)</span>
+    <span class="n">rgb</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">wi</span><span class="p">,</span> <span class="n">he</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+    <span class="n">_max</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">inarray</span><span class="p">)</span>
+    <span class="n">_min</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">inarray</span><span class="p">)</span><span class="o">*</span><span class="mf">0.95</span>
+    <span class="n">grayvalue</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">255</span><span class="o">/</span><span class="p">(</span><span class="n">_max</span><span class="o">-</span><span class="n">_min</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">ma</span><span class="o">.</span><span class="n">filled</span><span class="p">(</span><span class="n">inarray</span><span class="p">,</span><span class="n">fill_value</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">-</span><span class="n">_min</span><span class="p">))</span>
+    <span class="n">grayvalue</span><span class="p">[</span><span class="n">grayvalue</span><span class="o">&lt;</span><span class="mi">0</span><span class="p">]</span><span class="o">=</span><span class="mi">0</span>
+    <span class="n">rgb</span><span class="p">[:,:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">grayvalue</span>
+    <span class="n">rgb</span><span class="p">[:,:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">grayvalue</span>
+    <span class="n">rgb</span><span class="p">[:,:,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">grayvalue</span>
+    
+    <span class="n">rgb</span><span class="p">[</span><span class="n">vertmax</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">vertmax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mi">5</span><span class="p">,</span><span class="n">vertmax</span><span class="p">[</span><span class="mi">1</span><span class="p">],:]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span><span class="mi">150</span><span class="p">,</span><span class="mi">50</span><span class="p">)</span>   <span class="c"># orange</span>
+    <span class="n">rgb</span><span class="p">[</span><span class="n">hormax</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">hormax</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span><span class="n">hormax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">5</span><span class="p">,:]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">200</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>         <span class="c"># green</span>
+    <span class="n">minpos</span><span class="o">=</span><span class="n">ndimage</span><span class="o">.</span><span class="n">minimum_position</span><span class="p">(</span><span class="n">inarray</span><span class="p">)</span>
+    <span class="n">maxpos</span><span class="o">=</span><span class="n">ndimage</span><span class="o">.</span><span class="n">maximum_position</span><span class="p">(</span><span class="n">inarray</span><span class="p">)</span> 
+    <span class="n">rgb</span><span class="p">[</span><span class="n">minpos</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">minpos</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="p">:]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">255</span><span class="p">)</span>                   <span class="c"># blue</span>
+    <span class="n">rgb</span><span class="p">[</span><span class="n">maxpos</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">maxpos</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="p">:]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>                   <span class="c"># red    </span>
+
+    <span class="n">rgb</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">wi</span><span class="p">,</span> <span class="n">he</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+    <span class="n">_max</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">inarray</span><span class="p">)</span>
+    <span class="n">_min</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">inarray</span><span class="p">)</span><span class="o">*</span><span class="mf">0.95</span>
+    <span class="n">grayvalue</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">255</span><span class="o">/</span><span class="p">(</span><span class="n">_max</span><span class="o">-</span><span class="n">_min</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">ma</span><span class="o">.</span><span class="n">filled</span><span class="p">(</span><span class="n">inarray</span><span class="p">,</span><span class="n">fill_value</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">-</span><span class="n">_min</span><span class="p">))</span>
+    <span class="n">grayvalue</span><span class="p">[</span><span class="n">grayvalue</span><span class="o">&lt;</span><span class="mi">0</span><span class="p">]</span><span class="o">=</span><span class="mi">0</span>
+    <span class="n">rgb</span><span class="p">[:,:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">grayvalue</span>
+    <span class="n">rgb</span><span class="p">[:,:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">grayvalue</span>
+    <span class="n">rgb</span><span class="p">[:,:,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">grayvalue</span>
+    <span class="n">rgb</span> <span class="o">=</span> <span class="n">rgb</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    
+    <span class="c"># d=line thickness of roi</span>
+    <span class="n">d</span><span class="o">=</span><span class="mi">4</span>    
+    
+    <span class="c"># 5 pixels in vertical direction, starting from 16*(vertmax[0],vertmax[1]) </span>
+    <span class="c"># left edge</span>
+    <span class="n">rgb</span><span class="p">[</span><span class="mi">16</span><span class="o">*</span><span class="n">vertmax</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="mi">16</span><span class="o">*</span><span class="p">(</span><span class="n">vertmax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mi">5</span><span class="p">),</span><span class="mi">16</span><span class="o">*</span><span class="n">vertmax</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span><span class="mi">16</span><span class="o">*</span><span class="n">vertmax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">d</span><span class="p">,:]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span><span class="mi">150</span><span class="p">,</span><span class="mi">50</span><span class="p">)</span>           <span class="c"># orange</span>
+    <span class="c"># right edge</span>
+    <span class="n">rgb</span><span class="p">[</span><span class="mi">16</span><span class="o">*</span><span class="n">vertmax</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="mi">16</span><span class="o">*</span><span class="p">(</span><span class="n">vertmax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mi">5</span><span class="p">),</span><span class="mi">16</span><span class="o">*</span><span class="p">(</span><span class="n">vertmax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">-</span><span class="n">d</span><span class="p">:</span><span class="mi">16</span><span class="o">*</span><span class="p">(</span><span class="n">vertmax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">),:]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span><span class="mi">150</span><span class="p">,</span><span class="mi">50</span><span class="p">)</span>   <span class="c"># orange</span>
+    <span class="c"># top edge</span>
+    <span class="n">rgb</span><span class="p">[</span><span class="mi">16</span><span class="o">*</span><span class="n">vertmax</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="mi">16</span><span class="o">*</span><span class="n">vertmax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">d</span><span class="p">,</span><span class="mi">16</span><span class="o">*</span><span class="n">vertmax</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span><span class="mi">16</span><span class="o">*</span><span class="p">(</span><span class="n">vertmax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">,:]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span><span class="mi">150</span><span class="p">,</span><span class="mi">50</span><span class="p">)</span>         <span class="c"># orange</span>
+    <span class="c"># bottom edge</span>
+    <span class="n">rgb</span><span class="p">[</span><span class="mi">16</span><span class="o">*</span><span class="p">(</span><span class="n">vertmax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mi">5</span><span class="p">)</span><span class="o">-</span><span class="n">d</span><span class="p">:</span><span class="mi">16</span><span class="o">*</span><span class="p">(</span><span class="n">vertmax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mi">5</span><span class="p">),</span><span class="mi">16</span><span class="o">*</span><span class="n">vertmax</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span><span class="mi">16</span><span class="o">*</span><span class="p">(</span><span class="n">vertmax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">,:]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span><span class="mi">150</span><span class="p">,</span><span class="mi">50</span><span class="p">)</span> <span class="c"># orange</span>
+ 
+    <span class="c"># 5 pixels in horizontal direction, starting from 16*(vertmax[0],vertmax[1])</span>
+    <span class="c"># left edge</span>
+    <span class="n">rgb</span><span class="p">[</span><span class="mi">16</span><span class="o">*</span><span class="n">hormax</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="mi">16</span><span class="o">*</span><span class="p">(</span><span class="n">hormax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span><span class="mi">16</span><span class="o">*</span><span class="n">hormax</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span><span class="mi">16</span><span class="o">*</span><span class="n">hormax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">d</span><span class="p">,:]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">200</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>                  <span class="c"># green</span>
+    <span class="c"># right edge</span>
+    <span class="n">rgb</span><span class="p">[</span><span class="mi">16</span><span class="o">*</span><span class="n">hormax</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="mi">16</span><span class="o">*</span><span class="p">(</span><span class="n">hormax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span><span class="mi">16</span><span class="o">*</span><span class="p">(</span><span class="n">hormax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">5</span><span class="p">)</span><span class="o">-</span><span class="n">d</span><span class="p">:</span><span class="mi">16</span><span class="o">*</span><span class="p">(</span><span class="n">hormax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">5</span><span class="p">),:]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">200</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>          <span class="c"># green</span>
+    <span class="c"># top edge</span>
+    <span class="n">rgb</span><span class="p">[</span><span class="mi">16</span><span class="o">*</span><span class="n">hormax</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="mi">16</span><span class="o">*</span><span class="n">hormax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">d</span><span class="p">,</span><span class="mi">16</span><span class="o">*</span><span class="n">hormax</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span><span class="mi">16</span><span class="o">*</span><span class="p">(</span><span class="n">hormax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">5</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">,:]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">200</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>                <span class="c"># green</span>
+    <span class="c"># bottom edge</span>
+    <span class="n">rgb</span><span class="p">[</span><span class="mi">16</span><span class="o">*</span><span class="p">(</span><span class="n">hormax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">-</span><span class="n">d</span><span class="p">:</span><span class="mi">16</span><span class="o">*</span><span class="p">(</span><span class="n">hormax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span><span class="mi">16</span><span class="o">*</span><span class="n">hormax</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span><span class="mi">16</span><span class="o">*</span><span class="p">(</span><span class="n">hormax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">5</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">,:]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">200</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>        <span class="c"># green    </span>
+ 
+    <span class="n">minpos</span><span class="o">=</span><span class="n">ndimage</span><span class="o">.</span><span class="n">minimum_position</span><span class="p">(</span><span class="n">inarray</span><span class="p">)</span>
+    <span class="n">maxpos</span><span class="o">=</span><span class="n">ndimage</span><span class="o">.</span><span class="n">maximum_position</span><span class="p">(</span><span class="n">inarray</span><span class="p">)</span>
+    
+    <span class="c"># position of lowest pixel value</span>
+     <span class="c"># left edge</span>
+    <span class="n">rgb</span><span class="p">[</span><span class="mi">16</span><span class="o">*</span><span class="n">minpos</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="mi">16</span><span class="o">*</span><span class="p">(</span><span class="n">minpos</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span><span class="mi">16</span><span class="o">*</span><span class="n">minpos</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span><span class="mi">16</span><span class="o">*</span><span class="n">minpos</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">d</span><span class="p">,:]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">255</span><span class="p">)</span>                  <span class="c"># blue</span>
+    <span class="c"># right edge</span>
+    <span class="n">rgb</span><span class="p">[</span><span class="mi">16</span><span class="o">*</span><span class="n">minpos</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="mi">16</span><span class="o">*</span><span class="p">(</span><span class="n">minpos</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span><span class="mi">16</span><span class="o">*</span><span class="p">(</span><span class="n">minpos</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">-</span><span class="n">d</span><span class="p">:</span><span class="mi">16</span><span class="o">*</span><span class="p">(</span><span class="n">minpos</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">),:]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">255</span><span class="p">)</span>          <span class="c"># blue</span>
+    <span class="c"># top edge</span>
+    <span class="n">rgb</span><span class="p">[</span><span class="mi">16</span><span class="o">*</span><span class="n">minpos</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="mi">16</span><span class="o">*</span><span class="n">minpos</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">d</span><span class="p">,</span><span class="mi">16</span><span class="o">*</span><span class="n">minpos</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span><span class="mi">16</span><span class="o">*</span><span class="p">(</span><span class="n">minpos</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">,:]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">255</span><span class="p">)</span>                <span class="c"># blue</span>
+    <span class="c"># bottom edge</span>
+    <span class="n">rgb</span><span class="p">[</span><span class="mi">16</span><span class="o">*</span><span class="p">(</span><span class="n">minpos</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">-</span><span class="n">d</span><span class="p">:</span><span class="mi">16</span><span class="o">*</span><span class="p">(</span><span class="n">minpos</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span><span class="mi">16</span><span class="o">*</span><span class="n">minpos</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span><span class="mi">16</span><span class="o">*</span><span class="p">(</span><span class="n">minpos</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">,:]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">255</span><span class="p">)</span>        <span class="c"># blue</span>
+    
+    <span class="c"># position of highest pixel value    </span>
+    <span class="c"># left edge</span>
+    <span class="n">rgb</span><span class="p">[</span><span class="mi">16</span><span class="o">*</span><span class="n">maxpos</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="mi">16</span><span class="o">*</span><span class="p">(</span><span class="n">maxpos</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span><span class="mi">16</span><span class="o">*</span><span class="n">maxpos</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span><span class="mi">16</span><span class="o">*</span><span class="n">maxpos</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">d</span><span class="p">,:]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>                  <span class="c"># red</span>
+    <span class="c"># right edge</span>
+    <span class="n">rgb</span><span class="p">[</span><span class="mi">16</span><span class="o">*</span><span class="n">maxpos</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="mi">16</span><span class="o">*</span><span class="p">(</span><span class="n">maxpos</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span><span class="mi">16</span><span class="o">*</span><span class="p">(</span><span class="n">maxpos</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">-</span><span class="n">d</span><span class="p">:</span><span class="mi">16</span><span class="o">*</span><span class="p">(</span><span class="n">maxpos</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">),:]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>          <span class="c"># red </span>
+    <span class="c"># top edge</span>
+    <span class="n">rgb</span><span class="p">[</span><span class="mi">16</span><span class="o">*</span><span class="n">maxpos</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="mi">16</span><span class="o">*</span><span class="n">maxpos</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">d</span><span class="p">,</span><span class="mi">16</span><span class="o">*</span><span class="n">maxpos</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span><span class="mi">16</span><span class="o">*</span><span class="p">(</span><span class="n">maxpos</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">,:]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>                <span class="c"># red</span>
+    <span class="c"># bottom edge</span>
+    <span class="n">rgb</span><span class="p">[</span><span class="mi">16</span><span class="o">*</span><span class="p">(</span><span class="n">maxpos</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">-</span><span class="n">d</span><span class="p">:</span><span class="mi">16</span><span class="o">*</span><span class="p">(</span><span class="n">maxpos</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span><span class="mi">16</span><span class="o">*</span><span class="n">maxpos</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span><span class="mi">16</span><span class="o">*</span><span class="p">(</span><span class="n">maxpos</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">,:]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>        <span class="c"># red</span>
+    
+    <span class="c">#rgb[16*minpos[0]:16*(minpos[0]+1), 16*minpos[1]:16*(minpos[1]+1), :] = (0,0,255)     # blue</span>
+    <span class="c">#rgb[16*maxpos[0]:16*(maxpos[0]+1), 16*maxpos[1]:16*(maxpos[1]+1), :] = (255,0,0)     # red </span>
+    
+    <span class="sd">&#39;&#39;&#39;   </span>
+<span class="sd">    rgb[vertmax[0]:vertmax[0]+5,vertmax[1],:] = (255,150,50)   # orange</span>
+<span class="sd">    rgb[hormax[0],hormax[1]:hormax[1]+5,:] = (0,200,0)         # green</span>
+<span class="sd">    minpos=ndimage.minimum_position(inarray)</span>
+<span class="sd">    maxpos=ndimage.maximum_position(inarray) </span>
+<span class="sd">    rgb[minpos[0], minpos[1], :] = (0,0,255)                   # blue</span>
+<span class="sd">    rgb[maxpos[0], maxpos[1], :] = (255,0,0)                   # red    </span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    
+    <span class="c">#imshow(rgb,interpolation=&#39;None&#39;)</span>
+    
+    <span class="c"># truncate image</span>
+    <span class="c"># UL, LR = bounding_box(rgb[:,:,0])</span>
+    <span class="c"># rgb = rgb[UL[0]:LR[0],UL[1]:LR[1]]</span>
+
+    <span class="n">pl</span><span class="o">.</span><span class="n">imsave</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="n">ma</span><span class="o">.</span><span class="n">filled</span><span class="p">(</span><span class="n">rgb</span><span class="p">,</span><span class="n">fill_value</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+
+
+</div>
+<div class="viewcode-block" id="get_dims"><a class="viewcode-back" href="../../../../Plugins.NM.NM_NEMA_Uniformity.html#Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.get_dims">[docs]</a><span class="k">def</span> <span class="nf">get_dims</span><span class="p">(</span><span class="n">squaremask</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; return number of unmasked pixels along horizontal and vertical profiles</span>
+<span class="sd">        through the center of the image (=size of mask)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">dimx</span><span class="p">,</span><span class="n">dimy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">squaremask</span><span class="p">)</span>
+    <span class="n">halfpointval</span> <span class="o">=</span> <span class="n">squaremask</span><span class="p">[</span><span class="n">dimx</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="n">dimy</span><span class="o">/</span><span class="mi">2</span><span class="p">]</span>
+    
+    <span class="n">horvec</span> <span class="o">=</span> <span class="n">squaremask</span><span class="p">[</span><span class="n">dimx</span><span class="o">/</span><span class="mi">2</span><span class="p">,:]</span>
+    <span class="n">vervec</span> <span class="o">=</span> <span class="n">squaremask</span><span class="p">[:,</span><span class="n">dimy</span><span class="o">/</span><span class="mi">2</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">ma</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">horvec</span><span class="p">),</span> <span class="n">ma</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">vervec</span><span class="p">)</span>
+        
+
+<span class="c"># alternative for block_reduce (currently not used)</span></div>
+<div class="viewcode-block" id="downsample"><a class="viewcode-back" href="../../../../Plugins.NM.NM_NEMA_Uniformity.html#Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.downsample">[docs]</a><span class="k">def</span> <span class="nf">downsample</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">factor</span><span class="p">):</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">factor</span><span class="p">,</span> <span class="nb">int</span><span class="p">),</span> <span class="nb">type</span><span class="p">(</span><span class="n">factor</span><span class="p">)</span>
+    <span class="n">sx</span><span class="p">,</span> <span class="n">sy</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">X</span><span class="p">,</span> <span class="n">Y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ogrid</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">sx</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="n">sy</span><span class="p">]</span>
+    <span class="n">regions</span> <span class="o">=</span> <span class="n">sy</span><span class="o">/</span><span class="n">factor</span> <span class="o">*</span> <span class="p">(</span><span class="n">X</span><span class="o">/</span><span class="n">factor</span><span class="p">)</span> <span class="o">+</span> <span class="n">Y</span><span class="o">/</span><span class="n">factor</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">ndimage</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="n">regions</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">regions</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="n">result</span><span class="o">.</span><span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">sx</span><span class="o">/</span><span class="n">factor</span><span class="p">,</span> <span class="n">sy</span><span class="o">/</span><span class="n">factor</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">result</span> 
+
+</div>
+<div class="viewcode-block" id="bounding_box"><a class="viewcode-back" href="../../../../Plugins.NM.NM_NEMA_Uniformity.html#Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.bounding_box">[docs]</a><span class="k">def</span> <span class="nf">bounding_box</span><span class="p">(</span><span class="n">inarray</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Function returns the upper-left and lower-right coordinates of the bounding</span>
+<span class="sd">        box enclosing the imagedata in &quot;inarray&quot;. the UL and LR coordinates are</span>
+<span class="sd">        inside the FOV.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">temp</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">argwhere</span><span class="p">(</span><span class="n">inarray</span><span class="p">)</span>
+    <span class="n">UL_x</span><span class="p">,</span> <span class="n">UL_y</span> <span class="o">=</span> <span class="n">temp</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">LR_x</span><span class="p">,</span> <span class="n">LR_y</span> <span class="o">=</span> <span class="n">temp</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(([</span><span class="n">UL_x</span><span class="p">,</span><span class="n">UL_y</span><span class="p">],</span> <span class="p">[</span><span class="n">LR_x</span><span class="p">,</span><span class="n">LR_y</span><span class="p">]))</span>
+
+</div>
+<div class="viewcode-block" id="create_cfov"><a class="viewcode-back" href="../../../../Plugins.NM.NM_NEMA_Uniformity.html#Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.create_cfov">[docs]</a><span class="k">def</span> <span class="nf">create_cfov</span><span class="p">(</span><span class="n">ufov</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Function calculates the CFOV from a given UFOV mask.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c"># determine UL and LR of bounding box</span>
+    <span class="n">UL</span><span class="p">,</span> <span class="n">LR</span> <span class="o">=</span> <span class="n">bounding_box</span><span class="p">(</span><span class="n">ufov</span><span class="p">)</span>
+
+    <span class="c"># convert discrete pixel coordinates (i,j) to continuous coordinate grid (fi,fj)</span>
+    <span class="c"># (i,j)=(0,0) corresponds to center of UL pixel</span>
+    <span class="c"># (fi,fj)=(0,0) corresponds to UL corner of UL pixel</span>
+    <span class="c">#   fi=i+0.5</span>
+    <span class="c">#   fj=j+0.5</span>
+    <span class="c"># convert UL and LR of FOV to continuous coordinate grid (along pixel boundaries)</span>
+    <span class="n">fUL</span> <span class="o">=</span> <span class="n">UL</span> <span class="o">-</span> <span class="mf">0.5</span>
+    <span class="n">fLR</span> <span class="o">=</span> <span class="n">LR</span> <span class="o">+</span> <span class="mf">0.5</span>
+    <span class="n">fCenter</span> <span class="o">=</span> <span class="p">(</span><span class="n">fUL</span><span class="o">+</span><span class="n">fLR</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span>
+    <span class="n">fUL_CFOV</span> <span class="o">=</span> <span class="mf">0.25</span><span class="o">*</span><span class="n">fCenter</span> <span class="o">+</span> <span class="mf">0.75</span><span class="o">*</span><span class="n">fUL</span>
+    <span class="n">fLR_CFOV</span> <span class="o">=</span> <span class="mf">0.25</span><span class="o">*</span><span class="n">fCenter</span> <span class="o">+</span> <span class="mf">0.75</span><span class="o">*</span><span class="n">fLR</span>
+    
+    <span class="sd">&#39;&#39;&#39; NEMA: &quot;Any pixel that has at least 50% of its area inside the CFOV shall</span>
+<span class="sd">               be included within the CFOV analysis.&quot;</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">UL_CFOV</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">fUL_CFOV</span><span class="o">-</span><span class="mf">0.5</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s">&#39;int&#39;</span><span class="p">)</span>
+    <span class="n">LR_CFOV</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">fLR_CFOV</span><span class="o">-</span><span class="mf">0.5</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s">&#39;int&#39;</span><span class="p">)</span>
+    
+    <span class="n">cfov</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">ufov</span><span class="p">)</span>
+    
+    <span class="c"># initialize mask with Trues (=masked)</span>
+    <span class="n">cfov</span><span class="o">.</span><span class="n">mask</span> <span class="o">=</span> <span class="bp">True</span>
+    
+    <span class="c"># use UL and LR of calculated CFOV to adjust the CFOV-mask</span>
+    <span class="n">cfov</span><span class="o">.</span><span class="n">mask</span><span class="p">[</span><span class="n">UL_CFOV</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">LR_CFOV</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">UL_CFOV</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span><span class="n">LR_CFOV</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="bp">False</span>
+    
+    <span class="k">return</span> <span class="n">cfov</span>
+
+
+
+</div>
+<div class="viewcode-block" id="nema_data_preprocess"><a class="viewcode-back" href="../../../../Plugins.NM.NM_NEMA_Uniformity.html#Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.nema_data_preprocess">[docs]</a><span class="k">def</span> <span class="nf">nema_data_preprocess</span><span class="p">(</span><span class="n">imagearray</span><span class="p">,</span><span class="n">resamplesize</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Function performs preprocessing on the input image:</span>
+<span class="sd">          - resample to 64x64</span>
+<span class="sd">          - smoothing with nine-point NEMA kernel</span>
+<span class="sd">          - calculation of UFOV and CFOV regions</span>
+<span class="sd">        Returns: masked UFOV and CFOV arrays</span>
+<span class="sd">    &quot;&quot;&quot;</span>    
+
+    <span class="k">print</span> <span class="s">&quot;data preprocessing: &quot;</span>
+    <span class="k">print</span> <span class="s">&quot;array size:&quot;</span><span class="p">,</span>  <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">imagearray</span><span class="p">),</span> <span class="s">&quot;resamplesize: &quot;</span><span class="p">,</span> <span class="n">resamplesize</span>
+    <span class="c"># causes Fourier artifacts</span>
+    <span class="c">#imagearray = resample(resample(imagearray,resamplesize[0],axis=0),resamplesize[1],axis=1)</span>
+    <span class="k">if</span> <span class="n">resamplesize</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">&gt;</span><span class="mi">0</span> <span class="ow">and</span> <span class="n">resamplesize</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+      <span class="n">imagearray</span> <span class="o">=</span> <span class="n">block_reduce</span><span class="p">(</span><span class="n">imagearray</span><span class="p">,</span> <span class="n">block_size</span><span class="o">=</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">imagearray</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="n">resamplesize</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">imagearray</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="n">resamplesize</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span><span class="n">func</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">)</span>
+    <span class="n">imagearray</span> <span class="o">=</span> <span class="n">imagearray</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s">&#39;float64&#39;</span><span class="p">)</span>
+
+    <span class="n">imagearray</span> <span class="o">=</span> <span class="n">nema_smooth</span><span class="p">(</span><span class="n">imagearray</span><span class="p">)</span> 
+
+
+    <span class="sd">&quot;&quot;&quot; NEMA step 1: &quot;First, any pixels at the edge of UFOV containing less</span>
+<span class="sd">                      than 75% of the mean counts per pixel in the CFOV shall</span>
+<span class="sd">                      be set to zero.&quot;</span>
+<span class="sd">    &quot;&quot;&quot;</span>                      
+    <span class="c"># first estimate of UFOV (use segmentation-threshold = mean value of entire image)</span>
+    <span class="n">threshold</span> <span class="o">=</span> <span class="n">set_threshold</span><span class="p">(</span><span class="n">imagearray</span><span class="p">)</span>
+    <span class="n">ufov</span> <span class="o">=</span> <span class="n">ma</span><span class="o">.</span><span class="n">masked_less</span><span class="p">(</span><span class="n">imagearray</span><span class="p">,</span><span class="n">threshold</span><span class="p">,</span><span class="n">copy</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+    
+    <span class="c"># use NEMA guidelines to determine UFOV</span>
+    <span class="n">cfov</span> <span class="o">=</span> <span class="n">create_cfov</span><span class="p">(</span><span class="n">ufov</span><span class="p">)</span>
+    
+    <span class="c"># average of CFOV</span>
+    <span class="n">cfov_average</span> <span class="o">=</span> <span class="n">set_threshold</span><span class="p">(</span><span class="n">cfov</span><span class="p">)</span>
+    <span class="n">ufov</span> <span class="o">=</span> <span class="n">ma</span><span class="o">.</span><span class="n">masked_less</span><span class="p">(</span><span class="n">imagearray</span><span class="p">,</span><span class="mf">0.75</span><span class="o">*</span><span class="n">cfov_average</span><span class="p">,</span><span class="n">copy</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+    
+    
+    <span class="sd">&quot;&quot;&quot; NEMA step 2: &quot;Second, those pixels which now have at least one of their</span>
+<span class="sd">        four directly abutted neighbors containing zero counts, will be also</span>
+<span class="sd">        set to zero. The remaining non-zero pixels are the pixels to be included</span>
+<span class="sd">        in the analysis for the UFOV.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ufov</span><span class="o">.</span><span class="n">mask</span><span class="o">=</span><span class="n">scipy</span><span class="o">.</span><span class="n">ndimage</span><span class="o">.</span><span class="n">binary_dilation</span><span class="p">(</span><span class="n">ufov</span><span class="o">.</span><span class="n">mask</span><span class="p">,</span><span class="n">iterations</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="c"># based on final UFOV, create a new CFOV</span>
+    <span class="n">cfov</span> <span class="o">=</span> <span class="n">create_cfov</span><span class="p">(</span><span class="n">ufov</span><span class="p">)</span>
+
+    <span class="c"># FIXME: inconsistent use of xy (in python y is the horizontal dimension)</span>
+    <span class="c">#ux, uy = get_dims(ufov)</span>
+
+    <span class="n">ufov</span><span class="o">.</span><span class="n">fill_value</span><span class="o">=</span><span class="mi">0</span>
+    <span class="n">cfov</span><span class="o">.</span><span class="n">fill_value</span><span class="o">=</span><span class="mi">0</span>
+
+    <span class="k">return</span> <span class="n">ufov</span><span class="p">,</span> <span class="n">cfov</span>
+
+
+</div>
+<div class="viewcode-block" id="calculate_nema_uniformity"><a class="viewcode-back" href="../../../../Plugins.NM.NM_NEMA_Uniformity.html#Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.calculate_nema_uniformity">[docs]</a><span class="k">def</span> <span class="nf">calculate_nema_uniformity</span> <span class="p">(</span><span class="n">imagearray</span><span class="p">,</span> <span class="n">resamplesize</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="n">domecorrection</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Wrapper function for flood calculation according to NEMA recommendations.</span>
+<span class="sd">        Input:</span>
+<span class="sd">          imagearray     : NxN numpy input array</span>
+<span class="sd">          resamplesize   : downsample size (MxM), typically (64,64)</span>
+<span class="sd">          results        : instance of PluginData-class (container for generated results)</span>
+<span class="sd">          domecorrection : Perform dome correction? [True, False]</span>
+
+<span class="sd">        Dome correction can be used for intrinsic uniformity measurements (e.g. with</span>
+<span class="sd">        Siemens camera&#39;s) where the distance between point-source and detector is</span>
+<span class="sd">        smaller than 5 times the maximum FOV dimension.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">domecorrection</span> <span class="o">==</span> <span class="bp">True</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">&#39;Performing dome-correction...&#39;</span>
+        <span class="n">imagearray</span> <span class="o">=</span> <span class="n">dome_correction</span><span class="p">(</span><span class="n">imagearray</span><span class="p">)</span>
+
+    <span class="n">IUufov</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">IUcfov</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">DUxufov</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">DUyufov</span> <span class="o">=</span> <span class="mi">0</span> 
+    <span class="n">DUxcfov</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">DUycfov</span> <span class="o">=</span> <span class="mi">0</span>
+    
+    <span class="n">imshape</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">imagearray</span><span class="p">)</span>
+    
+    <span class="k">try</span><span class="p">:</span>
+         <span class="n">ufov</span><span class="p">,</span> <span class="n">cfov</span> <span class="o">=</span> <span class="n">nema_data_preprocess</span><span class="p">(</span><span class="n">imagearray</span><span class="p">,</span><span class="n">resamplesize</span><span class="p">)</span>
+    <span class="k">except</span><span class="p">:</span>
+         <span class="k">print</span> <span class="s">&quot;warning: could not preprocess ufov, cfov&quot;</span>
+         <span class="n">ufov</span><span class="p">,</span> <span class="n">cfov</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">resamplesize</span><span class="p">))</span>
+
+    <span class="n">ufov</span><span class="o">.</span><span class="n">fill_value</span><span class="o">=</span><span class="mi">0</span>
+    <span class="n">cfov</span><span class="o">.</span><span class="n">fill_value</span><span class="o">=</span><span class="mi">0</span>
+
+    <span class="c">#unifcalc = lambda arr: 100*(ma.max(arr) - ma.min(arr))/(ma.max(arr) + ma.min(arr))</span>
+    <span class="n">unifxy_min</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">arr</span><span class="p">:</span> <span class="n">ndimage</span><span class="o">.</span><span class="n">minimum_position</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span> 
+    <span class="n">unifxy_max</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">arr</span><span class="p">:</span> <span class="n">ndimage</span><span class="o">.</span><span class="n">maximum_position</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span> 
+
+    <span class="n">IUufov</span> <span class="o">=</span> <span class="mi">100</span><span class="o">*</span><span class="n">unifcalc</span><span class="p">(</span><span class="n">ufov</span><span class="p">)</span>
+    <span class="n">IUufov_min</span> <span class="o">=</span> <span class="n">unifxy_min</span><span class="p">(</span><span class="n">ufov</span><span class="p">)</span>
+    <span class="n">IUufov_max</span> <span class="o">=</span> <span class="n">unifxy_max</span><span class="p">(</span><span class="n">ufov</span><span class="p">)</span>
+    <span class="n">IUcfov</span> <span class="o">=</span> <span class="mi">100</span><span class="o">*</span><span class="n">unifcalc</span><span class="p">(</span><span class="n">cfov</span><span class="p">)</span>
+    <span class="n">IUcfov_min</span> <span class="o">=</span> <span class="n">unifxy_min</span><span class="p">(</span><span class="n">cfov</span><span class="p">)</span>
+    <span class="n">IUcfov_max</span> <span class="o">=</span> <span class="n">unifxy_max</span><span class="p">(</span><span class="n">cfov</span><span class="p">)</span> 
+
+
+    <span class="n">DUxufov_val</span><span class="p">,</span><span class="n">DUyufov_val</span><span class="p">,</span> <span class="n">DUxufov_coord</span><span class="p">,</span> <span class="n">DUyufov_coord</span> <span class="o">=</span> <span class="n">diff_data</span><span class="p">(</span><span class="n">ufov</span><span class="p">)</span>
+    <span class="n">DUxcfov_val</span><span class="p">,</span><span class="n">DUycfov_val</span><span class="p">,</span> <span class="n">DUxcfov_coord</span><span class="p">,</span> <span class="n">DUycfov_coord</span> <span class="o">=</span> <span class="n">diff_data</span><span class="p">(</span><span class="n">cfov</span><span class="p">)</span>
+
+    <span class="n">output</span> <span class="o">=</span> <span class="n">DUxufov_val</span><span class="p">,</span> <span class="n">DUyufov_val</span><span class="p">,</span> <span class="n">DUxufov_coord</span><span class="p">,</span> <span class="n">DUyufov_coord</span><span class="p">,</span> <span class="n">DUxcfov_val</span><span class="p">,</span> <span class="n">DUycfov_val</span><span class="p">,</span> <span class="n">DUxcfov_coord</span><span class="p">,</span> <span class="n">DUycfov_coord</span><span class="p">,</span> <span class="n">IUufov</span><span class="p">,</span> <span class="n">IUcfov</span><span class="p">,</span> <span class="n">ufov</span><span class="p">,</span> <span class="n">cfov</span>
+
+    <span class="k">return</span> <span class="n">output</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

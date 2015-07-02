@@ -1,0 +1,703 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Plugin_development.Fluoro.Pehamed package &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">..  documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="plugin-development-fluoro-pehamed-package">
+<h1>Plugin_development.Fluoro.Pehamed package<a class="headerlink" href="#plugin-development-fluoro-pehamed-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-Plugin_development.Fluoro.Pehamed.QCDDL_constants">
+<span id="plugin-development-fluoro-pehamed-qcddl-constants-module"></span><h2>Plugin_development.Fluoro.Pehamed.QCDDL_constants module<a class="headerlink" href="#module-Plugin_development.Fluoro.Pehamed.QCDDL_constants" title="Permalink to this headline">¶</a></h2>
+<p>String constants for usage in QCDDL</p>
+</div>
+<div class="section" id="module-Plugin_development.Fluoro.Pehamed.QCDDL_lib">
+<span id="plugin-development-fluoro-pehamed-qcddl-lib-module"></span><h2>Plugin_development.Fluoro.Pehamed.QCDDL_lib module<a class="headerlink" href="#module-Plugin_development.Fluoro.Pehamed.QCDDL_lib" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC">
+<em class="property">class </em><tt class="descclassname">Plugin_development.Fluoro.Pehamed.QCDDL_lib.</tt><tt class="descname">DDLQC</tt><a class="reference internal" href="_modules/Plugin_development/Fluoro/Pehamed/QCDDL_lib.html#DDLQC"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.AlignROI">
+<tt class="descname">AlignROI</tt><big>(</big><em>cs</em>, <em>roipts</em>, <em>what</em>, <em>blast_attempt=True</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/Fluoro/Pehamed/QCDDL_lib.html#DDLQC.AlignROI"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.AlignROI" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.AnalyseWedge">
+<tt class="descname">AnalyseWedge</tt><big>(</big><em>cs</em>, <em>roipts_orig=None</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/Fluoro/Pehamed/QCDDL_lib.html#DDLQC.AnalyseWedge"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.AnalyseWedge" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Concept:</dt>
+<dd><ol class="first arabic simple">
+<li>Cut out rectangular roi</li>
+</ol>
+<p class="last">2. For each cu step, measure mean and sd
+4. Calculate SNR and CNR
+5. Calculate kV</p>
+</dd>
+</dl>
+<p>NB excel data fit shows perfectly linear pehamed Cu intensity with {0.55, 0.50, 0.40, 0.30, 0.20, 0.10, 0.00} (F10 after recalib 20090720)
+to make the 0.00 Cu lie on the line, all thicknesses other than 0.00 should be increased by 0.125mm
+the wellhofer wkz table1 data perfectly agrees with {0.57, 0.50, 0.40, 0.30, 0.20, 0.10, 0.00} including zero point</p>
+<p>Assuming that we have a linear read out (as it should be for Qc) meaning pixel value ~ -mu x
+By fitting a linear line through the mean pixelvalues of each step, we obtain I = a x + b
+If we compare the found coefficient a with the reference value which was obtained for a calibrated kV, we can
+calculate the current kV by linear interpolation from the NIST X-RAY Data for Cu; find the kV for which the ratio a/a_ref is the
+same as mu/mu_ref perfect predict if use 0.6 instead of 0.55</p>
+<p>Contrast from Cu Mean/SD?</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.ConsistencyAlign">
+<tt class="descname">ConsistencyAlign</tt><big>(</big><em>cs</em>, <em>roiptsold</em>, <em>roiptsnew</em>, <em>what</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/Fluoro/Pehamed/QCDDL_lib.html#DDLQC.ConsistencyAlign"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.ConsistencyAlign" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>4 types of motion:</dt>
+<dd><ol class="first last arabic simple">
+<li>Shift (all points move in same direction)</li>
+<li>Scale (all distance to center change by same amount)</li>
+<li>Rotation (all points rotate along same angle around center)</li>
+<li>Shear (some points rotate more than others. Do not allow)</li>
+</ol>
+</dd>
+</dl>
+<p>Some heuristics to correct for one corner point being very obviously wrong</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.CuWedge">
+<tt class="descname">CuWedge</tt><big>(</big><em>cs</em>, <em>roipts_orig=None</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/Fluoro/Pehamed/QCDDL_lib.html#DDLQC.CuWedge"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.CuWedge" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.DICOMInfo">
+<tt class="descname">DICOMInfo</tt><big>(</big><em>cs</em>, <em>info='dicom'</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/Fluoro/Pehamed/QCDDL_lib.html#DDLQC.DICOMInfo"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.DICOMInfo" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.FieldRotationFFT">
+<tt class="descname">FieldRotationFFT</tt><big>(</big><em>cs</em>, <em>roipts_orig</em>, <em>initangle=None</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/Fluoro/Pehamed/QCDDL_lib.html#DDLQC.FieldRotationFFT"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.FieldRotationFFT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cut out a part of the phantom that should contain only grid
+Make a FFT, select one quadrant and find the locations of the first N maximums
+Fit a line through the maximums</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.HorizontalOrVertical">
+<tt class="descname">HorizontalOrVertical</tt><big>(</big><em>cs</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/Fluoro/Pehamed/QCDDL_lib.html#DDLQC.HorizontalOrVertical"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.HorizontalOrVertical" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.HorizontalUniformity">
+<tt class="descname">HorizontalUniformity</tt><big>(</big><em>cs</em>, <em>roipts_orig=None</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/Fluoro/Pehamed/QCDDL_lib.html#DDLQC.HorizontalUniformity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.HorizontalUniformity" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.LowContrast">
+<tt class="descname">LowContrast</tt><big>(</big><em>cs</em>, <em>roipts_orig=None</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/Fluoro/Pehamed/QCDDL_lib.html#DDLQC.LowContrast"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.LowContrast" title="Permalink to this definition">¶</a></dt>
+<dd><p>for each disc, calc av in box in center and in box 1 cm above it (without Cu grid)
+Calculate CNR: (av(Cu)-av(bk))/sqrt((sd(Cu)^2+sd(bk)^2)/2)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.QC">
+<tt class="descname">QC</tt><big>(</big><em>cs</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/Fluoro/Pehamed/QCDDL_lib.html#DDLQC.QC"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.QC" title="Permalink to this definition">¶</a></dt>
+<dd><p>all in one package!</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.ROIConfidence">
+<tt class="descname">ROIConfidence</tt><big>(</big><em>cs</em>, <em>roipts</em>, <em>what</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/Fluoro/Pehamed/QCDDL_lib.html#DDLQC.ROIConfidence"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.ROIConfidence" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.ReportEntries">
+<tt class="descname">ReportEntries</tt><big>(</big><em>cs</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/Fluoro/Pehamed/QCDDL_lib.html#DDLQC.ReportEntries"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.ReportEntries" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convenience function to list all calculated items with names, only if cs completely filled</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.RotateBoundingBox">
+<tt class="descname">RotateBoundingBox</tt><big>(</big><em>roipts_orig</em>, <em>rotangledeg</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/Fluoro/Pehamed/QCDDL_lib.html#DDLQC.RotateBoundingBox"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.RotateBoundingBox" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.Uniformity">
+<tt class="descname">Uniformity</tt><big>(</big><em>cs</em>, <em>roipts=None</em>, <em>what=''</em>, <em>bshowplot=False</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/Fluoro/Pehamed/QCDDL_lib.html#DDLQC.Uniformity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.Uniformity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Concept:
+1. Cut out rectangular roi
+2. mask out the copper grid
+3. calculate line profile
+4. Check for difference between left and right</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.boxradmm">
+<tt class="descname">boxradmm</tt><em class="property"> = 110</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.boxradmm" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.checkPhantomRotation">
+<tt class="descname">checkPhantomRotation</tt><big>(</big><em>cs</em>, <em>ebbox=None</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/Fluoro/Pehamed/QCDDL_lib.html#DDLQC.checkPhantomRotation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.checkPhantomRotation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Concept: Try to find out if phantom is rotated over 90, 180 or 270 degrees (WKZ mostly)
+Workflow:
+1. Find center and orientation
+2. Find most likely location of CuWedge and LinePairs</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.diamondNESW">
+<tt class="descname">diamondNESW</tt><big>(</big><em>roipts_orig</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/Fluoro/Pehamed/QCDDL_lib.html#DDLQC.diamondNESW"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.diamondNESW" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.findPhantomOrientation">
+<tt class="descname">findPhantomOrientation</tt><big>(</big><em>cs</em>, <em>ebbox=None</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/Fluoro/Pehamed/QCDDL_lib.html#DDLQC.findPhantomOrientation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.findPhantomOrientation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.invertmaxval">
+<tt class="descname">invertmaxval</tt><big>(</big><em>cs</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/Fluoro/Pehamed/QCDDL_lib.html#DDLQC.invertmaxval"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.invertmaxval" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.phantommm2pix">
+<tt class="descname">phantommm2pix</tt><big>(</big><em>cs</em>, <em>mm</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/Fluoro/Pehamed/QCDDL_lib.html#DDLQC.phantommm2pix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.phantommm2pix" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.phantomposmm2pix">
+<tt class="descname">phantomposmm2pix</tt><big>(</big><em>roipts_orig</em>, <em>xmm</em>, <em>ymm</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/Fluoro/Pehamed/QCDDL_lib.html#DDLQC.phantomposmm2pix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.phantomposmm2pix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert position as indicated on phantom to image pixels</p>
+<p>input: x and y coordinates in phantom grid mm
+output: x and y in pix</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.pix2phantomm">
+<tt class="descname">pix2phantomm</tt><big>(</big><em>cs</em>, <em>pix</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/Fluoro/Pehamed/QCDDL_lib.html#DDLQC.pix2phantomm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.pix2phantomm" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.pixToGridScaleCm">
+<tt class="descname">pixToGridScaleCm</tt><big>(</big><em>cs</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/Fluoro/Pehamed/QCDDL_lib.html#DDLQC.pixToGridScaleCm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.pixToGridScaleCm" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.qcversion">
+<tt class="descname">qcversion</tt><em class="property"> = 20150616</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.qcversion" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.readDICOMtag">
+<tt class="descname">readDICOMtag</tt><big>(</big><em>cs</em>, <em>key</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/Fluoro/Pehamed/QCDDL_lib.html#DDLQC.readDICOMtag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.readDICOMtag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.saveAnnotatedImage">
+<tt class="descname">saveAnnotatedImage</tt><big>(</big><em>cs</em>, <em>fname</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/Fluoro/Pehamed/QCDDL_lib.html#DDLQC.saveAnnotatedImage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLQC.saveAnnotatedImage" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct">
+<em class="property">class </em><tt class="descclassname">Plugin_development.Fluoro.Pehamed.QCDDL_lib.</tt><tt class="descname">DDLStruct</tt><big>(</big><em>dcmInfile</em>, <em>pixeldataIn</em>, <em>dicomMode</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/Fluoro/Pehamed/QCDDL_lib.html#DDLStruct"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="class">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.CuStruct">
+<em class="property">class </em><tt class="descname">CuStruct</tt><a class="reference internal" href="_modules/Plugin_development/Fluoro/Pehamed/QCDDL_lib.html#DDLStruct.CuStruct"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.CuStruct" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.CuStruct.dynamicRange">
+<tt class="descname">dynamicRange</tt><em class="property"> = -1</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.CuStruct.dynamicRange" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.CuStruct.guesskVp">
+<tt class="descname">guesskVp</tt><em class="property"> = -1</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.CuStruct.guesskVp" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.CuStruct.roi">
+<tt class="descname">roi</tt><em class="property"> = []</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.CuStruct.roi" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.CuStruct.roi_cnr">
+<tt class="descname">roi_cnr</tt><em class="property"> = []</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.CuStruct.roi_cnr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.CuStruct.roi_mean">
+<tt class="descname">roi_mean</tt><em class="property"> = []</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.CuStruct.roi_mean" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.CuStruct.roi_mmcu">
+<tt class="descname">roi_mmcu</tt><em class="property"> = []</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.CuStruct.roi_mmcu" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.CuStruct.roi_sdev">
+<tt class="descname">roi_sdev</tt><em class="property"> = []</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.CuStruct.roi_sdev" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.CuStruct.roi_snr">
+<tt class="descname">roi_snr</tt><em class="property"> = []</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.CuStruct.roi_snr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.CuStruct.slope">
+<tt class="descname">slope</tt><em class="property"> = 0.0</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.CuStruct.slope" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.CuStruct.step_rois">
+<tt class="descname">step_rois</tt><em class="property"> = []</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.CuStruct.step_rois" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.CuStruct.wedge_confidence">
+<tt class="descname">wedge_confidence</tt><em class="property"> = -1.0</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.CuStruct.wedge_confidence" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.LoCoStruct">
+<em class="property">class </em><tt class="descclassname">DDLStruct.</tt><tt class="descname">LoCoStruct</tt><a class="reference internal" href="_modules/Plugin_development/Fluoro/Pehamed/QCDDL_lib.html#DDLStruct.LoCoStruct"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.LoCoStruct" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.LoCoStruct.lo_rois">
+<tt class="descname">lo_rois</tt><em class="property"> = []</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.LoCoStruct.lo_rois" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.LoCoStruct.low_cnr">
+<tt class="descname">low_cnr</tt><em class="property"> = []</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.LoCoStruct.low_cnr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.LoCoStruct.mean_bk">
+<tt class="descname">mean_bk</tt><em class="property"> = []</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.LoCoStruct.mean_bk" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.LoCoStruct.mean_sg">
+<tt class="descname">mean_sg</tt><em class="property"> = []</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.LoCoStruct.mean_sg" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.LoCoStruct.sdev_bk">
+<tt class="descname">sdev_bk</tt><em class="property"> = []</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.LoCoStruct.sdev_bk" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.LoCoStruct.sdev_sg">
+<tt class="descname">sdev_sg</tt><em class="property"> = []</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.LoCoStruct.sdev_sg" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.Room">
+<em class="property">class </em><tt class="descclassname">DDLStruct.</tt><tt class="descname">Room</tt><big>(</big><em>_name</em>, <em>outvalue=-1</em>, <em>sHmm=-1</em>, <em>sVmm=-1</em>, <em>pH2mm=-1</em>, <em>pV2mm=-1</em>, <em>protocolH=''</em>, <em>protocolV=''</em>, <em>phantom='pehamed'</em>, <em>sdthresh=-1</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/Fluoro/Pehamed/QCDDL_lib.html#DDLStruct.Room"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.Room" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.Room.name">
+<tt class="descname">name</tt><em class="property"> = ''</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.Room.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.Room.outvalue">
+<tt class="descname">outvalue</tt><em class="property"> = -1</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.Room.outvalue" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.Room.p2mm512Horizontal">
+<tt class="descname">p2mm512Horizontal</tt><em class="property"> = 1.0</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.Room.p2mm512Horizontal" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.Room.p2mm512Vertical">
+<tt class="descname">p2mm512Vertical</tt><em class="property"> = 1.0</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.Room.p2mm512Vertical" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.Room.phantom">
+<tt class="descname">phantom</tt><em class="property"> = 'pehamed'</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.Room.phantom" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.Room.protocolHorizontal">
+<tt class="descname">protocolHorizontal</tt><em class="property"> = ''</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.Room.protocolHorizontal" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.Room.protocolVertical">
+<tt class="descname">protocolVertical</tt><em class="property"> = ''</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.Room.protocolVertical" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.Room.sdthresh">
+<tt class="descname">sdthresh</tt><em class="property"> = -1</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.Room.sdthresh" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.Room.sidHorizontal_mm">
+<tt class="descname">sidHorizontal_mm</tt><em class="property"> = -1</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.Room.sidHorizontal_mm" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.Room.sidVertical_mm">
+<tt class="descname">sidVertical_mm</tt><em class="property"> = -1</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.Room.sidVertical_mm" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.Room.skipFFT">
+<tt class="descname">skipFFT</tt><em class="property"> = False</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.Room.skipFFT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.UnifStruct">
+<em class="property">class </em><tt class="descclassname">DDLStruct.</tt><tt class="descname">UnifStruct</tt><a class="reference internal" href="_modules/Plugin_development/Fluoro/Pehamed/QCDDL_lib.html#DDLStruct.UnifStruct"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.UnifStruct" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.UnifStruct.BKmean">
+<tt class="descname">BKmean</tt><em class="property"> = -1</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.UnifStruct.BKmean" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.UnifStruct.BKsdev">
+<tt class="descname">BKsdev</tt><em class="property"> = -1</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.UnifStruct.BKsdev" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.UnifStruct.LRuniformity">
+<tt class="descname">LRuniformity</tt><em class="property"> = -1</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.UnifStruct.LRuniformity" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.UnifStruct.LineUniformity">
+<tt class="descname">LineUniformity</tt><em class="property"> = -1</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.UnifStruct.LineUniformity" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.UnifStruct.ROIuniformity">
+<tt class="descname">ROIuniformity</tt><em class="property"> = -1</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.UnifStruct.ROIuniformity" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.UnifStruct.intens">
+<tt class="descname">intens</tt><em class="property"> = []</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.UnifStruct.intens" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.UnifStruct.peakValue">
+<tt class="descname">peakValue</tt><em class="property"> = -1</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.UnifStruct.peakValue" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.UnifStruct.posval">
+<tt class="descname">posval</tt><em class="property"> = []</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.UnifStruct.posval" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.UnifStruct.roi">
+<tt class="descname">roi</tt><em class="property"> = []</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.UnifStruct.roi" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.UnifStruct.trend">
+<tt class="descname">trend</tt><em class="property"> = []</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.UnifStruct.trend" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.UnifStruct.trendMax">
+<tt class="descname">trendMax</tt><em class="property"> = -1</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.UnifStruct.trendMax" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.UnifStruct.trendMin">
+<tt class="descname">trendMin</tt><em class="property"> = -1</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.UnifStruct.trendMin" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.UnifStruct.verticalROI">
+<tt class="descname">verticalROI</tt><em class="property"> = False</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.UnifStruct.verticalROI" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.bbox_confidence">
+<tt class="descclassname">DDLStruct.</tt><tt class="descname">bbox_confidence</tt><em class="property"> = 0.0</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.bbox_confidence" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.cuwedge">
+<tt class="descclassname">DDLStruct.</tt><tt class="descname">cuwedge</tt><em class="property"> = None</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.cuwedge" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.dcmInfile">
+<tt class="descclassname">DDLStruct.</tt><tt class="descname">dcmInfile</tt><em class="property"> = None</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.dcmInfile" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.determineDeviceID">
+<tt class="descclassname">DDLStruct.</tt><tt class="descname">determineDeviceID</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Plugin_development/Fluoro/Pehamed/QCDDL_lib.html#DDLStruct.determineDeviceID"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.determineDeviceID" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.dicomMode">
+<tt class="descclassname">DDLStruct.</tt><tt class="descname">dicomMode</tt><em class="property"> = '2D'</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.dicomMode" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.expertOverridepixToGridScaleCm">
+<tt class="descclassname">DDLStruct.</tt><tt class="descname">expertOverridepixToGridScaleCm</tt><em class="property"> = None</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.expertOverridepixToGridScaleCm" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.guessroom">
+<tt class="descclassname">DDLStruct.</tt><tt class="descname">guessroom</tt><em class="property"> = &lt;Plugin_development.Fluoro.Pehamed.QCDDL_lib.Room instance at 0x2b9d960d67e8&gt;</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.guessroom" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.hasmadeplots">
+<tt class="descclassname">DDLStruct.</tt><tt class="descname">hasmadeplots</tt><em class="property"> = False</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.hasmadeplots" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.knownHorizontalOrVertical">
+<tt class="descclassname">DDLStruct.</tt><tt class="descname">knownHorizontalOrVertical</tt><em class="property"> = None</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.knownHorizontalOrVertical" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.lastimage">
+<tt class="descclassname">DDLStruct.</tt><tt class="descname">lastimage</tt><em class="property"> = None</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.lastimage" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.loco">
+<tt class="descclassname">DDLStruct.</tt><tt class="descname">loco</tt><em class="property"> = None</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.loco" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.maybeInvert">
+<tt class="descclassname">DDLStruct.</tt><tt class="descname">maybeInvert</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Plugin_development/Fluoro/Pehamed/QCDDL_lib.html#DDLStruct.maybeInvert"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.maybeInvert" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.mustbeinverted">
+<tt class="descclassname">DDLStruct.</tt><tt class="descname">mustbeinverted</tt><em class="property"> = False</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.mustbeinverted" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.pixeldataIn">
+<tt class="descclassname">DDLStruct.</tt><tt class="descname">pixeldataIn</tt><em class="property"> = None</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.pixeldataIn" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.po_angledeg">
+<tt class="descclassname">DDLStruct.</tt><tt class="descname">po_angledeg</tt><em class="property"> = 0</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.po_angledeg" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.po_center_roi">
+<tt class="descclassname">DDLStruct.</tt><tt class="descname">po_center_roi</tt><em class="property"> = []</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.po_center_roi" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.po_fftroi">
+<tt class="descclassname">DDLStruct.</tt><tt class="descname">po_fftroi</tt><em class="property"> = []</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.po_fftroi" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.po_roi">
+<tt class="descclassname">DDLStruct.</tt><tt class="descname">po_roi</tt><em class="property"> = []</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.po_roi" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.po_rot">
+<tt class="descclassname">DDLStruct.</tt><tt class="descname">po_rot</tt><em class="property"> = 0</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.po_rot" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.readDICOMtag">
+<tt class="descclassname">DDLStruct.</tt><tt class="descname">readDICOMtag</tt><big>(</big><em>key</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/Fluoro/Pehamed/QCDDL_lib.html#DDLStruct.readDICOMtag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.readDICOMtag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.roomF7">
+<tt class="descclassname">DDLStruct.</tt><tt class="descname">roomF7</tt><em class="property"> = &lt;Plugin_development.Fluoro.Pehamed.QCDDL_lib.Room instance at 0x2b9d960d6830&gt;</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.roomF7" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.roomUnknown">
+<tt class="descclassname">DDLStruct.</tt><tt class="descname">roomUnknown</tt><em class="property"> = &lt;Plugin_development.Fluoro.Pehamed.QCDDL_lib.Room instance at 0x2b9d960d67e8&gt;</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.roomUnknown" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.test_rois">
+<tt class="descclassname">DDLStruct.</tt><tt class="descname">test_rois</tt><em class="property"> = []</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.test_rois" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.unif">
+<tt class="descclassname">DDLStruct.</tt><tt class="descname">unif</tt><em class="property"> = None</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.unif" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.verbose">
+<tt class="descclassname">DDLStruct.</tt><tt class="descname">verbose</tt><em class="property"> = False</em><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_lib.DDLStruct.verbose" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-Plugin_development.Fluoro.Pehamed.QCDDL_wadwrapper">
+<span id="plugin-development-fluoro-pehamed-qcddl-wadwrapper-module"></span><h2>Plugin_development.Fluoro.Pehamed.QCDDL_wadwrapper module<a class="headerlink" href="#module-Plugin_development.Fluoro.Pehamed.QCDDL_wadwrapper" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_wadwrapper.header_series">
+<tt class="descclassname">Plugin_development.Fluoro.Pehamed.QCDDL_wadwrapper.</tt><tt class="descname">header_series</tt><big>(</big><em>data</em>, <em>results</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/Fluoro/Pehamed/QCDDL_wadwrapper.html#header_series"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_wadwrapper.header_series" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read selected dicomfields and write to IQC database</p>
+<dl class="docutils">
+<dt>Workflow:</dt>
+<dd><ol class="first last arabic simple">
+<li>Read only headers</li>
+<li>Run tests</li>
+<li>Build xml output</li>
+</ol>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_wadwrapper.logTag">
+<tt class="descclassname">Plugin_development.Fluoro.Pehamed.QCDDL_wadwrapper.</tt><tt class="descname">logTag</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Plugin_development/Fluoro/Pehamed/QCDDL_wadwrapper.html#logTag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_wadwrapper.logTag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="Plugin_development.Fluoro.Pehamed.QCDDL_wadwrapper.qc_series">
+<tt class="descclassname">Plugin_development.Fluoro.Pehamed.QCDDL_wadwrapper.</tt><tt class="descname">qc_series</tt><big>(</big><em>data</em>, <em>results</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/Fluoro/Pehamed/QCDDL_wadwrapper.html#qc_series"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.Fluoro.Pehamed.QCDDL_wadwrapper.qc_series" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>QCDDL_UMCU checks:</dt>
+<dd>Horizontal uniformity
+LowContrast
+DynamicRange</dd>
+<dt>Workflow:</dt>
+<dd><ol class="first last arabic simple" start="2">
+<li>Check data format</li>
+<li>Build and populate qcstructure</li>
+<li>Run tests</li>
+<li>Build xml output</li>
+<li>Build artefact picture thumbnail</li>
+</ol>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-contents">
+<h2>Module contents<a class="headerlink" href="#module-contents" title="Permalink to this headline">¶</a></h2>
+<span class="target" id="module-Plugin_development.Fluoro.Pehamed"></span></div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Plugin_development.Fluoro.Pehamed package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-Plugin_development.Fluoro.Pehamed.QCDDL_constants">Plugin_development.Fluoro.Pehamed.QCDDL_constants module</a></li>
+<li><a class="reference internal" href="#module-Plugin_development.Fluoro.Pehamed.QCDDL_lib">Plugin_development.Fluoro.Pehamed.QCDDL_lib module</a></li>
+<li><a class="reference internal" href="#module-Plugin_development.Fluoro.Pehamed.QCDDL_wadwrapper">Plugin_development.Fluoro.Pehamed.QCDDL_wadwrapper module</a></li>
+<li><a class="reference internal" href="#module-contents">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/Plugin_development.Fluoro.Pehamed.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">..  documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

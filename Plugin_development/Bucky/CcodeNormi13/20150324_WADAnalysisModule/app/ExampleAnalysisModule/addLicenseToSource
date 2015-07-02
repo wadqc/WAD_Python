@@ -1,0 +1,10 @@
+#!/bin/bash
+
+for i in *.h *.cxx
+do
+  if ! grep -q Copyright $i
+  then
+    echo 'Processing '$i
+    cat 'GPL_header.txt' $i > $i.new && mv $i.new $i
+  fi
+done

@@ -1,0 +1,625 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Plugin_development.CT.CT_Catphan_500.Analyzer &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="../../../../index.html" />
+    <link rel="up" title="Module code" href="../../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for Plugin_development.CT.CT_Catphan_500.Analyzer</h1><div class="highlight"><pre>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">This code borrows extensively from pylinac software:</span>
+
+<span class="sd">https://pypi.python.org/pypi/pylinac</span>
+
+<span class="sd">PyTG142 (pytg) provides TG-142 quality assurance (QA) tools to Python programmers in the field of therapy medical</span>
+<span class="sd">physics. This package&#39;s intention is to create a free and open-source alternative to TG-142 QA commercial solutions.</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">os.path</span> <span class="kn">as</span> <span class="nn">osp</span>
+<span class="kn">from</span> <span class="nn">dicom</span> <span class="kn">import</span> <span class="n">tag</span>
+
+<span class="k">if</span> <span class="ow">not</span> <span class="s">&#39;MPLCONFIGDIR&#39;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&#39;MPLCONFIGDIR&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&quot;/tmp/.matplotlib&quot;</span> <span class="c"># if this folder already exists it must be accessible by the owner of WAD_Processor </span>
+<span class="kn">import</span> <span class="nn">matplotlib</span>
+<span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s">&#39;Agg&#39;</span><span class="p">)</span> <span class="c"># Force matplotlib to not use any Xwindows backend.</span>
+
+
+<span class="kn">import</span> <span class="nn">scipy.ndimage.measurements</span> <span class="kn">as</span> <span class="nn">meas</span>
+<span class="kn">import</span> <span class="nn">dicom</span>
+<span class="kn">from</span> <span class="nn">matplotlib.patches</span> <span class="kn">import</span> <span class="n">Rectangle</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+
+
+
+<span class="kn">import</span> <span class="nn">common_functions</span> <span class="kn">as</span> <span class="nn">ptg</span>
+
+<span class="n">__version__</span><span class="o">=</span><span class="s">&#39;03062015&#39;</span>
+
+
+<span class="sd">&quot;&quot;&quot;Default constants&quot;&quot;&quot;</span>
+<span class="n">nominal_HU</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">1000</span><span class="p">,</span> <span class="o">-</span><span class="mi">200</span><span class="p">,</span> <span class="o">-</span><span class="mi">100</span><span class="p">,</span> <span class="o">-</span><span class="mi">35</span><span class="p">,</span> <span class="mi">120</span><span class="p">,</span> <span class="mi">340</span><span class="p">,</span> <span class="mi">990</span><span class="p">]</span>
+<span class="n">nominal_GEO</span> <span class="o">=</span> <span class="p">(</span><span class="mf">50.0</span><span class="p">)</span>
+<span class="n">tolerances</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;HU&#39;</span><span class="p">:</span><span class="mi">38</span><span class="p">,</span> <span class="s">&#39;UN&#39;</span><span class="p">:</span><span class="mi">40</span><span class="p">,</span> <span class="s">&#39;SR&#39;</span><span class="p">:</span><span class="bp">None</span><span class="p">,</span> <span class="s">&#39;GEO&#39;</span><span class="p">:</span><span class="mi">1</span><span class="p">}</span>
+
+
+<span class="n">field_of_view</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;small&#39;</span><span class="p">,</span> <span class="s">&#39;large&#39;</span><span class="p">]</span>
+<span class="n">FOV_thresh</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c"># 300 the field of view size threshold between small and large</span>
+<span class="n">small_FOV_settings</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;size_thresh&#39;</span><span class="p">:</span><span class="mi">100000</span><span class="p">,</span> <span class="s">&#39;pix_thresh&#39;</span><span class="p">:</span><span class="mi">500</span><span class="p">,</span>
+                      <span class="s">&#39;GEO_box_bounds&#39;</span><span class="p">:[</span><span class="mi">220</span><span class="p">,</span> <span class="mi">220</span><span class="p">,</span> <span class="mi">180</span><span class="o">+</span><span class="mi">110</span><span class="p">,</span> <span class="mi">180</span><span class="o">+</span><span class="mi">110</span><span class="p">],</span> <span class="s">&#39;GEO_min_size&#39;</span><span class="p">:</span><span class="mi">25</span><span class="p">,</span>
+                      <span class="s">&#39;HU_radius&#39;</span><span class="p">:</span><span class="mi">50</span><span class="p">,</span> <span class="s">&#39;HU_angles&#39;</span><span class="p">:[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mf">2.62</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.575</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.525</span><span class="p">,</span> <span class="mf">0.53</span><span class="p">,</span> <span class="mf">1.56</span><span class="p">,</span> <span class="o">-</span><span class="mf">3.67</span><span class="p">],</span> <span class="s">&#39;HU_boxsize&#39;</span><span class="p">:</span><span class="mi">8</span><span class="p">,</span>
+                      <span class="s">&#39;CON_angles&#39;</span><span class="p">:[</span><span class="mf">0.4</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="mf">2.03</span><span class="p">],</span> <span class="s">&#39;CON_radius&#39;</span><span class="p">:</span><span class="mi">100</span><span class="p">,</span> <span class="s">&#39;CON_ROIsize&#39;</span><span class="p">:</span><span class="mi">20</span><span class="p">,</span>
+<span class="c">#                      &#39;SR_radius&#39;:[34.1, 45.5], &#39;SR_theta&#39;:[(-3.77, -3.47), (-4.16, -3.91), (-4.57, -4.35), (-4.89, -4.69), (-5.2, -5.02), (-5.5, -5.35), (-5.78, -5.67), (-6.08, -5.97)],</span>
+                      <span class="s">&#39;UN_boxsize&#39;</span><span class="p">:</span><span class="mi">30</span><span class="p">,</span> <span class="s">&#39;UN_angles&#39;</span><span class="p">:[</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="mi">3</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="s">&#39;UN_radius&#39;</span><span class="p">:</span><span class="mi">60</span><span class="p">,</span>
+                      <span class="s">&#39;SR_radius&#39;</span><span class="p">:[</span><span class="mf">94.1</span><span class="p">,</span> <span class="mf">100.5</span><span class="p">],</span> <span class="s">&#39;SR_theta&#39;</span><span class="p">:[(</span><span class="o">-</span><span class="mf">3.77</span><span class="p">,</span> <span class="o">-</span><span class="mf">3.47</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mf">4.16</span><span class="p">,</span> <span class="o">-</span><span class="mf">3.91</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mf">4.57</span><span class="p">,</span> <span class="o">-</span><span class="mf">4.35</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mf">4.89</span><span class="p">,</span> <span class="o">-</span><span class="mf">4.69</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mf">5.2</span><span class="p">,</span> <span class="o">-</span><span class="mf">5.02</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mf">5.5</span><span class="p">,</span> <span class="o">-</span><span class="mf">5.35</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mf">5.78</span><span class="p">,</span> <span class="o">-</span><span class="mf">5.67</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mf">6.08</span><span class="p">,</span> <span class="o">-</span><span class="mf">5.97</span><span class="p">)]}</span><span class="c">#,</span>
+
+
+<div class="viewcode-block" id="CATPHAN"><a class="viewcode-back" href="../../../../Plugin_development.CT.CT_Catphan_500.html#Plugin_development.CT.CT_Catphan_500.Analyzer.CATPHAN">[docs]</a><span class="k">class</span> <span class="nc">CATPHAN</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A class for loading and analyzing Cone-Beam CT DICOM files of a CatPhan 500. Analyzes: Uniformity,</span>
+<span class="sd">    Spatial Resolution, Contrast, &amp; HU Linearity.</span>
+<span class="sd">    #TODO: Low Contrast</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">using_pyqa</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">slices_of_interest</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;HU&#39;</span><span class="p">:</span><span class="mi">14</span><span class="p">,</span> <span class="s">&#39;UN&#39;</span><span class="p">:</span><span class="mi">35</span><span class="p">,</span> <span class="s">&#39;SR&#39;</span><span class="p">:</span><span class="mi">20</span> <span class="p">}</span> <span class="c">#, &#39;LOCON&#39;:23} The Catphan 503 does not have  a low contrast module</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">images</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slice_centers</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">SOI_cleaned</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">FOV</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">UN_roi_bounds</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">HU_roi_bounds</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">MTF</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;LP/mm&#39;</span><span class="p">:[</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mf">1.2</span><span class="p">,</span> <span class="mf">1.41</span><span class="p">,</span> <span class="mf">1.59</span><span class="p">],</span> <span class="c"># the line pair/mm values for the CatPhan SR slice</span>
+                    <span class="s">&#39;LP points&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">8</span><span class="p">),</span> <span class="c"># the point values for the MTF function</span>
+                    <span class="s">&#39;interp_x&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">139</span><span class="p">),</span> <span class="c"># an interpolated (0.01) array of the line pair values; used for finding MTF_50, etc.</span>
+                    <span class="s">&#39;interp_y&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">139</span><span class="p">),</span>  <span class="c"># an interpolated (0.01) array of the actual MTF</span>
+                    <span class="s">&#39;ROI points&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="c"># point values for where the SR ROIs were taken; used for plotting</span>
+                    <span class="s">&#39;MTF_50&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>  <span class="c"># the MTF 50% point in lp/mm</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">GEO_dist</span> <span class="o">=</span> <span class="p">{}</span> <span class="c"># dictionary of distances of geometric nodes; will be 4 values</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">GEO_diff</span> <span class="o">=</span> <span class="p">{}</span> <span class="c"># dictionary of differences of geometric distances from nominal</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="p">{}</span> <span class="c"># dictionary of ROI value results</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">results_diffs</span> <span class="o">=</span> <span class="p">{}</span> <span class="c"># dictionary of differences between nominal values and results</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">UN_val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">UN_diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_roll_found</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">using_pyqa</span> <span class="o">=</span> <span class="n">using_pyqa</span>
+
+
+    <span class="k">def</span> <span class="nf">_load_files</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_list</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Load CT DICOM files given a list of images</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># intialize some lists</span>
+        <span class="n">images</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">im_order</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c"># check that enough slices were loaded</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">file_list</span><span class="p">)</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">slices_of_interest</span><span class="p">[</span><span class="s">&#39;SR&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">using_pyqa</span><span class="p">:</span>
+                <span class="k">return</span> <span class="c">#TODO: post message box</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="s">&quot;Not enough slices were selected. Select all the files or change the SR slice value.&quot;</span>
+        <span class="c"># load dicom files from list names</span>
+        <span class="n">maxlist</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">file_list</span><span class="p">:</span>
+            <span class="n">dcm</span> <span class="o">=</span> <span class="n">item</span>
+            <span class="n">_tmparray</span> <span class="o">=</span> <span class="n">dcm</span><span class="o">.</span><span class="n">_get_pixel_array</span><span class="p">()</span>
+            <span class="n">rescaleintercept</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">dcm</span><span class="p">[</span><span class="n">tag</span><span class="o">.</span><span class="n">Tag</span><span class="p">(</span><span class="s">&quot;0028&quot;</span><span class="p">,</span><span class="s">&quot;1052&quot;</span><span class="p">)]</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+            <span class="n">rescaleslope</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">dcm</span><span class="p">[</span><span class="n">tag</span><span class="o">.</span><span class="n">Tag</span><span class="p">(</span><span class="s">&quot;0028&quot;</span><span class="p">,</span><span class="s">&quot;1053&quot;</span><span class="p">)]</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+
+            <span class="n">tmparray</span> <span class="o">=</span>  <span class="n">_tmparray</span><span class="o">*</span><span class="n">rescaleslope</span> <span class="o">+</span> <span class="n">rescaleintercept</span>
+
+            <span class="n">images</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tmparray</span><span class="p">)</span>
+            
+            <span class="n">tmporder</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">dcm</span><span class="o">.</span><span class="n">ImagePositionPatient</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="n">dcm</span><span class="o">.</span><span class="n">SliceThickness</span><span class="p">)</span>
+            <span class="n">im_order</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tmporder</span><span class="p">)</span>
+
+            <span class="n">maxlist</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">tmparray</span><span class="p">),</span><span class="n">tmporder</span><span class="p">])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">improps</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;FOV&#39;</span><span class="p">:</span> <span class="n">dcm</span><span class="o">.</span><span class="n">DataCollectionDiameter</span><span class="p">,</span>
+                        <span class="s">&#39;width&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">images</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="mi">0</span><span class="p">),</span>
+                        <span class="s">&#39;height&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">images</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="mi">1</span><span class="p">),</span>
+                        <span class="s">&#39;FOV size&#39;</span><span class="p">:</span><span class="n">field_of_view</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">dcm</span><span class="o">.</span><span class="n">DataCollectionDiameter</span> <span class="o">&lt;</span> <span class="n">FOV_thresh</span> <span class="k">else</span> <span class="n">field_of_view</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                        <span class="s">&#39;Rescale Slope&#39;</span><span class="p">:</span><span class="n">dcm</span><span class="o">.</span><span class="n">RescaleSlope</span><span class="p">,</span>
+                        <span class="s">&#39;Rescale Intercept&#39;</span><span class="p">:</span><span class="n">dcm</span><span class="o">.</span><span class="n">RescaleIntercept</span><span class="p">,</span>
+                        <span class="s">&#39;mm/Pixel&#39;</span><span class="p">:</span><span class="n">dcm</span><span class="o">.</span><span class="n">PixelSpacing</span><span class="p">[</span><span class="mi">0</span><span class="p">]}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sort_images</span><span class="p">(</span><span class="n">images</span><span class="p">,</span> <span class="n">im_order</span><span class="p">)</span>
+        
+
+
+    <span class="k">def</span> <span class="nf">_sort_images</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image_list</span><span class="p">,</span> <span class="n">order_list</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sort the CBCT files into the correct order based on DICOM tags</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># preallocate</span>
+        <span class="c">#self.images = np.zeros((self.improps[&#39;width&#39;], self.improps[&#39;height&#39;], len(image_list)))</span>
+
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;len imglst&#39;</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">image_list</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">images</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">image_list</span><span class="p">),</span><span class="bp">self</span><span class="o">.</span><span class="n">improps</span><span class="p">[</span><span class="s">&#39;width&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">improps</span><span class="p">[</span><span class="s">&#39;height&#39;</span><span class="p">]))</span>
+
+        <span class="c"># shift order list from -xxx:+xxx to 0:2xxx</span>
+        <span class="n">order_list</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">order_list</span><span class="p">)))</span>
+
+        <span class="k">print</span> <span class="p">(</span><span class="s">&#39;ordl&#39;</span><span class="p">,</span><span class="nb">sorted</span><span class="p">(</span><span class="n">order_list</span><span class="p">))</span>
+        
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">order_list</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)):</span>  <span class="c">#TODO: possible list comp</span>
+
+            <span class="k">print</span><span class="p">(</span><span class="s">&quot;index&quot;</span><span class="p">,</span><span class="n">idx</span><span class="p">,</span><span class="n">item</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">item</span><span class="p">,:,:]</span> <span class="o">=</span> <span class="n">image_list</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+           
+        
+
+<div class="viewcode-block" id="CATPHAN.find_phan_centers"><a class="viewcode-back" href="../../../../Plugin_development.CT.CT_Catphan_500.html#Plugin_development.CT.CT_Catphan_500.Analyzer.CATPHAN.find_phan_centers">[docs]</a>    <span class="k">def</span> <span class="nf">find_phan_centers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Find the center of the phantom for the slices of analysis</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">slices_of_interest</span> <span class="o">=</span>  <span class="n">ptg</span><span class="o">.</span><span class="n">find_slices_of_interest</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">,</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;haleluja!&#39;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">slices_of_interest</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">slices_of_interest</span><span class="p">:</span>
+        
+            <span class="k">print</span> <span class="p">(</span><span class="s">&quot;curr SOI&quot;</span><span class="p">,</span><span class="n">key</span><span class="p">)</span>
+            <span class="c">#plt.imshow(self.images[self.slices_of_interest[key],:,:])</span>
+            <span class="c">#plt.title(&quot;%s&quot;%key)</span>
+            <span class="c">#plt.show()</span>
+
+            <span class="n">SOI</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">slices_of_interest</span><span class="p">[</span><span class="n">key</span><span class="p">],:,:]</span>
+            <span class="n">SOI</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">SOI</span> <span class="o">&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">SOI</span><span class="p">,</span><span class="mi">48</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>  <span class="c">#  convert slice to binary based on threshold</span>
+            <span class="c">#SOI = morph.binary_fill_holes(SOI)  # fill in air pockets to make one solid ROI</span>
+            <span class="n">SOI_labeled</span><span class="p">,</span> <span class="n">no_roi</span> <span class="o">=</span> <span class="n">meas</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="n">SOI</span><span class="p">)</span>  <span class="c"># identify the ROIs</span>
+            <span class="k">if</span> <span class="n">no_roi</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">no_roi</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="s">&quot;Unable to locate the CatPhan&quot;</span>
+            <span class="n">hist</span><span class="p">,</span><span class="n">bins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span><span class="n">SOI_labeled</span><span class="p">,</span><span class="n">bins</span><span class="o">=</span><span class="n">no_roi</span><span class="p">)</span> <span class="c"># hist will give the size of each label</span>
+            <span class="n">SOI</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">SOI_labeled</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">hist</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>  <span class="c"># remove all ROIs except the largest one (the CatPhan)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">slice_centers</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">meas</span><span class="o">.</span><span class="n">center_of_mass</span><span class="p">(</span><span class="n">SOI</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">SOI_cleaned</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">SOI</span>
+</div>
+<div class="viewcode-block" id="CATPHAN.find_roll"><a class="viewcode-back" href="../../../../Plugin_development.CT.CT_Catphan_500.html#Plugin_development.CT.CT_Catphan_500.Analyzer.CATPHAN.find_roll">[docs]</a>    <span class="k">def</span> <span class="nf">find_roll</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determine the roll of the phantom based on the phantom air bubbles on the HU slice.</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">SOI</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">SOI_cleaned</span><span class="p">[</span><span class="s">&#39;HU&#39;</span><span class="p">]</span>
+        <span class="n">invSOI</span> <span class="o">=</span> <span class="n">ptg</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">SOI</span><span class="p">)</span>
+        <span class="n">labels</span><span class="p">,</span> <span class="n">no_roi</span> <span class="o">=</span> <span class="n">meas</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="n">invSOI</span><span class="p">)</span>
+        <span class="n">roi_sizes</span> <span class="o">=</span> <span class="p">[</span><span class="n">meas</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">invSOI</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">item</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">no_roi</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span>
+        <span class="n">air_bubbles</span> <span class="o">=</span> <span class="p">[</span><span class="n">idx</span><span class="o">+</span><span class="mi">1</span> <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">roi_sizes</span><span class="p">)</span> <span class="k">if</span> <span class="n">item</span> <span class="o">&lt;</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">roi_sizes</span><span class="p">)</span><span class="o">*</span><span class="mf">1.5</span> <span class="ow">and</span> <span class="n">item</span> <span class="o">&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">roi_sizes</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="mf">1.5</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">air_bubbles</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">phan_roll</span> <span class="o">=</span> <span class="mi">0</span>
+
+            <span class="c">#raise RuntimeWarning, &quot;Roll unable to be determined; assuming 0&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">air_bubble_CofM</span> <span class="o">=</span> <span class="n">meas</span><span class="o">.</span><span class="n">center_of_mass</span><span class="p">(</span><span class="n">invSOI</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">air_bubbles</span><span class="p">)</span>
+            <span class="n">y_dist</span> <span class="o">=</span> <span class="n">air_bubble_CofM</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">air_bubble_CofM</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">x_dist</span> <span class="o">=</span> <span class="n">air_bubble_CofM</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">air_bubble_CofM</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">angle</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">y_dist</span><span class="p">,</span> <span class="n">x_dist</span><span class="p">)</span> <span class="o">*</span> <span class="mi">180</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+            <span class="k">if</span> <span class="n">angle</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">roll</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">angle</span><span class="p">)</span> <span class="o">-</span> <span class="mi">90</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">roll</span> <span class="o">=</span> <span class="n">angle</span> <span class="o">-</span> <span class="mi">90</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">phan_roll</span> <span class="o">=</span> <span class="n">roll</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_roll_found</span> <span class="o">=</span> <span class="bp">True</span>
+</div>
+<div class="viewcode-block" id="CATPHAN.find_HU"><a class="viewcode-back" href="../../../../Plugin_development.CT.CT_Catphan_500.html#Plugin_development.CT.CT_Catphan_500.Analyzer.CATPHAN.find_HU">[docs]</a>    <span class="k">def</span> <span class="nf">find_HU</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determine HU values from HU slice. Averages 3 slices.</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># preallocation</span>
+        <span class="n">HU_val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">nominal_HU</span><span class="p">)))</span>
+        <span class="n">HU_diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">nominal_HU</span><span class="p">)))</span>
+
+        <span class="c"># average 3 slices around the nominal slice</span>
+        <span class="n">HU_slice</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">slices_of_interest</span><span class="p">[</span><span class="s">&#39;HU&#39;</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">slices_of_interest</span><span class="p">[</span><span class="s">&#39;HU&#39;</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">,:,:],</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="c"># For each HU ROI...</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">HU</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">nominal_HU</span><span class="p">):</span>
+            <span class="c"># calculate the box bounds of the ROI</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">HU_roi_bounds</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">slice_centers</span><span class="p">[</span><span class="s">&#39;HU&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;HU_radius&#39;</span><span class="p">]</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phan_roll</span><span class="p">)</span><span class="o">+</span><span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;HU_angles&#39;</span><span class="p">][</span><span class="n">idx</span><span class="p">]),</span>
+                          <span class="bp">self</span><span class="o">.</span><span class="n">slice_centers</span><span class="p">[</span><span class="s">&#39;HU&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;HU_radius&#39;</span><span class="p">]</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phan_roll</span><span class="p">)</span> <span class="o">+</span> <span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;HU_angles&#39;</span><span class="p">][</span><span class="n">idx</span><span class="p">])])</span>
+            <span class="c"># sample the ROI</span>
+            <span class="n">HU_roi</span> <span class="o">=</span> <span class="n">HU_slice</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">HU_roi_bounds</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;HU_boxsize&#39;</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">HU_roi_bounds</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;HU_boxsize&#39;</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span>
+                     <span class="bp">self</span><span class="o">.</span><span class="n">HU_roi_bounds</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;HU_boxsize&#39;</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">HU_roi_bounds</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;HU_boxsize&#39;</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">]</span>
+            <span class="c"># Calculate the mean HU value and the difference from nominal</span>
+            <span class="n">HU_val</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">HU_roi</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">improps</span><span class="p">[</span><span class="s">&#39;Rescale Slope&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">improps</span><span class="p">[</span><span class="s">&#39;Rescale Intercept&#39;</span><span class="p">])</span>
+            <span class="n">HU_diff</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">HU_val</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">-</span> <span class="n">HU</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="s">&#39;HU&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">HU_val</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">results_diffs</span><span class="p">[</span><span class="s">&#39;HU&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">HU_diff</span>
+
+
+        <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">results_diffs</span><span class="p">[</span><span class="s">&#39;HU&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">tolerances</span><span class="p">[</span><span class="s">&#39;HU&#39;</span><span class="p">]):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">HU_pass</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">HU_pass</span> <span class="o">=</span> <span class="bp">False</span>
+
+
+</div>
+<div class="viewcode-block" id="CATPHAN.find_SR"><a class="viewcode-back" href="../../../../Plugin_development.CT.CT_Catphan_500.html#Plugin_development.CT.CT_Catphan_500.Analyzer.CATPHAN.find_SR">[docs]</a>    <span class="k">def</span> <span class="nf">find_SR</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plot_ROIs</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determine the Spatial Resolution from the Line-Pair slice. Averages 3 slices.</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># take max from 3 slices around the nominal slice</span>
+        <span class="n">SR_slice</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">slices_of_interest</span><span class="p">[</span><span class="s">&#39;SR&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">slices_of_interest</span><span class="p">[</span><span class="s">&#39;SR&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,:,:],</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="c"># pilSRslice = Image.fromarray(SR_slice)</span>
+        <span class="k">if</span> <span class="n">plot_ROIs</span><span class="p">:</span>
+            <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">8</span><span class="p">)</span>
+
+        <span class="c"># create y,x coordinates</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">SRboxes</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="p">(</span><span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;SR_theta&#39;</span><span class="p">]):</span>
+            <span class="c"># for in_out in small_FOV_settings[&#39;SR_radius&#39;]:</span>
+            <span class="c">#TODO: could probably be optimized</span>
+            <span class="n">SRboxes</span><span class="o">.</span><span class="n">append</span><span class="p">([[</span><span class="bp">self</span><span class="o">.</span><span class="n">slice_centers</span><span class="p">[</span><span class="s">&#39;SR&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;SR_radius&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phan_roll</span><span class="p">)</span> <span class="o">+</span> <span class="n">left</span><span class="p">),</span> <span class="c"># inner left y-coordinate</span>
+                             <span class="bp">self</span><span class="o">.</span><span class="n">slice_centers</span><span class="p">[</span><span class="s">&#39;SR&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;SR_radius&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phan_roll</span><span class="p">)</span> <span class="o">+</span> <span class="n">left</span><span class="p">),</span>  <span class="c"># outer left y-coordinate</span>
+                             <span class="bp">self</span><span class="o">.</span><span class="n">slice_centers</span><span class="p">[</span><span class="s">&#39;SR&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;SR_radius&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phan_roll</span><span class="p">)</span> <span class="o">+</span> <span class="n">right</span><span class="p">),</span>  <span class="c"># outer right y-coordinate</span>
+                             <span class="bp">self</span><span class="o">.</span><span class="n">slice_centers</span><span class="p">[</span><span class="s">&#39;SR&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;SR_radius&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phan_roll</span><span class="p">)</span> <span class="o">+</span> <span class="n">right</span><span class="p">),</span>  <span class="c"># inner right y-coordinate</span>
+                            <span class="c">#repeat first point so that box completes when plotted</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">slice_centers</span><span class="p">[</span><span class="s">&#39;SR&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;SR_radius&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span>  <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phan_roll</span><span class="p">)</span> <span class="o">+</span> <span class="n">left</span><span class="p">)],</span>  <span class="c"># inner left y-coordinate</span>
+
+                            <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">slice_centers</span><span class="p">[</span><span class="s">&#39;SR&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;SR_radius&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phan_roll</span><span class="p">)</span> <span class="o">+</span> <span class="n">left</span><span class="p">),</span>  <span class="c"># inner left x-coordinate</span>
+                             <span class="bp">self</span><span class="o">.</span><span class="n">slice_centers</span><span class="p">[</span><span class="s">&#39;SR&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;SR_radius&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phan_roll</span><span class="p">)</span> <span class="o">+</span> <span class="n">left</span><span class="p">),</span>  <span class="c"># outer left x-coordinate</span>
+                             <span class="bp">self</span><span class="o">.</span><span class="n">slice_centers</span><span class="p">[</span><span class="s">&#39;SR&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;SR_radius&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phan_roll</span><span class="p">)</span> <span class="o">+</span> <span class="n">right</span><span class="p">),</span>  <span class="c"># outer right x-coordinate</span>
+                             <span class="bp">self</span><span class="o">.</span><span class="n">slice_centers</span><span class="p">[</span><span class="s">&#39;SR&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;SR_radius&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phan_roll</span><span class="p">)</span> <span class="o">+</span> <span class="n">right</span><span class="p">),</span> <span class="c"># inner right x-coordinate</span>
+
+                             <span class="bp">self</span><span class="o">.</span><span class="n">slice_centers</span><span class="p">[</span><span class="s">&#39;SR&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;SR_radius&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phan_roll</span><span class="p">)</span> <span class="o">+</span> <span class="n">left</span><span class="p">)]])</span>  <span class="c"># inner left x-coordinate</span>
+
+
+            <span class="c">#TODO: this could use some serious optimization</span>
+            <span class="n">big_mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sector_mask</span><span class="p">(</span><span class="n">SR_slice</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">slice_centers</span><span class="p">[</span><span class="s">&#39;SR&#39;</span><span class="p">]),</span> <span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;SR_radius&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="p">(</span><span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">))</span>
+            <span class="n">little_mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sector_mask</span><span class="p">(</span><span class="n">SR_slice</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">slice_centers</span><span class="p">[</span><span class="s">&#39;SR&#39;</span><span class="p">]),</span> <span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;SR_radius&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="p">(</span><span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">))</span>
+            <span class="n">masked_img</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">big_mask</span> <span class="o">==</span> <span class="bp">True</span><span class="p">,</span> <span class="n">SR_slice</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="n">masked_img2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">little_mask</span> <span class="o">==</span> <span class="bp">True</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">masked_img</span><span class="p">)</span>
+            <span class="n">final_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">masked_img2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">NaN</span><span class="p">,</span> <span class="n">masked_img2</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">plot_ROIs</span><span class="p">:</span>
+                <span class="n">ax</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">final_mask</span><span class="p">)</span>
+            <span class="n">values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">final_mask</span><span class="p">[</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">final_mask</span><span class="p">)],[</span><span class="mi">5</span><span class="p">,</span><span class="mi">95</span><span class="p">]))</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">MTF</span><span class="p">[</span><span class="s">&#39;LP points&#39;</span><span class="p">][</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">values</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">values</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="p">(</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+            <span class="c"># ttt = np.where(big_mask == True, little_mask == False, SR_slice, 0)</span>
+            <span class="c"># ax[idx].imshow(masked_img2)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">MTF</span><span class="p">[</span><span class="s">&#39;ROI points&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">SRboxes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">MTF</span><span class="p">[</span><span class="s">&#39;interp_x&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">MTF</span><span class="p">[</span><span class="s">&#39;LP/mm&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">MTF</span><span class="p">[</span><span class="s">&#39;LP/mm&#39;</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="mf">0.01</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">MTF</span><span class="p">[</span><span class="s">&#39;interp_y&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">MTF</span><span class="p">[</span><span class="s">&#39;interp_x&#39;</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">MTF</span><span class="p">[</span><span class="s">&#39;LP/mm&#39;</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">MTF</span><span class="p">[</span><span class="s">&#39;LP points&#39;</span><span class="p">])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">MTF</span><span class="p">[</span><span class="s">&#39;MTF_50&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">MTF</span><span class="p">[</span><span class="s">&#39;interp_x&#39;</span><span class="p">][</span><span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">MTF</span><span class="p">[</span><span class="s">&#39;interp_y&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">))]</span>
+
+        <span class="k">pass</span>
+</div>
+<div class="viewcode-block" id="CATPHAN.sector_mask"><a class="viewcode-back" href="../../../../Plugin_development.CT.CT_Catphan_500.html#Plugin_development.CT.CT_Catphan_500.Analyzer.CATPHAN.sector_mask">[docs]</a>    <span class="k">def</span> <span class="nf">sector_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">centre</span><span class="p">,</span> <span class="n">radius</span><span class="p">,</span> <span class="n">angle_range</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a boolean mask for a circular sector. The start/stop angles in</span>
+<span class="sd">        `angle_range` should be given in clockwise order.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ogrid</span><span class="p">[:</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">:</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+        <span class="n">cx</span><span class="p">,</span> <span class="n">cy</span> <span class="o">=</span> <span class="n">centre</span>
+        <span class="c"># tmin, tmax = np.deg2rad(angle_range)</span>
+        <span class="n">tmin</span><span class="p">,</span> <span class="n">tmax</span> <span class="o">=</span> <span class="n">angle_range</span>
+
+        <span class="c"># ensure stop angle &gt; start angle</span>
+        <span class="k">if</span> <span class="n">tmax</span> <span class="o">&lt;</span> <span class="n">tmin</span><span class="p">:</span>
+            <span class="n">tmax</span> <span class="o">+=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+
+        <span class="c"># convert cartesian --&gt; polar coordinates</span>
+        <span class="n">r2</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">cx</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">cx</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="n">cy</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="n">cy</span><span class="p">)</span>
+        <span class="n">theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">cx</span><span class="p">,</span> <span class="n">y</span> <span class="o">-</span> <span class="n">cy</span><span class="p">)</span> <span class="o">-</span> <span class="n">tmin</span>
+
+        <span class="c"># wrap angles between 0 and 2*pi</span>
+        <span class="n">theta</span> <span class="o">%=</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+
+        <span class="c"># circular mask</span>
+        <span class="n">circmask</span> <span class="o">=</span> <span class="n">r2</span> <span class="o">&lt;=</span> <span class="n">radius</span> <span class="o">*</span> <span class="n">radius</span>
+
+        <span class="c"># angular mask</span>
+        <span class="n">anglemask</span> <span class="o">=</span> <span class="n">theta</span> <span class="o">&lt;=</span> <span class="p">(</span><span class="n">tmax</span> <span class="o">-</span> <span class="n">tmin</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">circmask</span> <span class="o">*</span> <span class="n">anglemask</span>
+</div>
+<div class="viewcode-block" id="CATPHAN.find_GEO"><a class="viewcode-back" href="../../../../Plugin_development.CT.CT_Catphan_500.html#Plugin_development.CT.CT_Catphan_500.Analyzer.CATPHAN.find_GEO">[docs]</a>    <span class="k">def</span> <span class="nf">find_GEO</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determine the geometric distortion. Averages 3 slices around HU slice.</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c"># average 3 slices around the nominal slice</span>
+
+        <span class="n">GEO_slice</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span>
+<span class="bp">self</span><span class="o">.</span><span class="n">slices_of_interest</span><span class="p">[</span><span class="s">&#39;HU&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">slices_of_interest</span><span class="p">[</span><span class="s">&#39;HU&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
+<span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;GEO_box_bounds&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]:</span><span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;GEO_box_bounds&#39;</span><span class="p">][</span><span class="mi">2</span><span class="p">],</span>
+<span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;GEO_box_bounds&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">]:</span><span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;GEO_box_bounds&#39;</span><span class="p">][</span><span class="mi">3</span><span class="p">]],</span> <span class="mi">0</span><span class="p">)</span>
+
+        
+        <span class="c">#plt.imshow(GEO_slice)</span>
+
+        <span class="c"># construct black &amp; white image</span>
+        <span class="n">GEO_bw1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">GEO_slice</span> <span class="o">&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">GEO_slice</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1.3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">GEO_bw2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">GEO_slice</span> <span class="o">&lt;</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">GEO_slice</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.7</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">GEO_bw</span> <span class="o">=</span> <span class="n">GEO_bw1</span> <span class="o">+</span> <span class="n">GEO_bw2</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">GEO_bw</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">&quot;GEO_slice&quot;</span><span class="p">)</span>
+        <span class="c">#plt.show()</span>
+
+        <span class="c"># find centers of geometric points</span>
+        <span class="n">labels</span><span class="p">,</span> <span class="n">no_roi</span> <span class="o">=</span> <span class="n">meas</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="n">GEO_bw</span><span class="p">)</span>
+        <span class="k">print</span> <span class="p">(</span><span class="n">no_roi</span><span class="p">)</span>
+
+        <span class="c">#if no_roi != 4:</span>
+        <span class="c">#    raise ValueError, &quot;Unable to locate the geometric nodes. May need to adjust the geometric ROI slice. &quot;</span>
+
+
+        <span class="n">geo_CofM</span> <span class="o">=</span> <span class="n">meas</span><span class="o">.</span><span class="n">center_of_mass</span><span class="p">(</span><span class="n">GEO_bw</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">geo_CofM</span> <span class="o">=</span> <span class="n">geo_CofM</span>
+
+        <span class="c"># distance calculations (result is in mm; nominal distance is 50mm (5cm)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="s">&#39;v1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ptg</span><span class="o">.</span><span class="n">dist_2points</span><span class="p">(</span><span class="n">geo_CofM</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">geo_CofM</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">improps</span><span class="p">[</span><span class="s">&#39;mm/Pixel&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">results_diffs</span><span class="p">[</span><span class="s">&#39;v1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="s">&#39;v1&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">nominal_GEO</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="s">&#39;h1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ptg</span><span class="o">.</span><span class="n">dist_2points</span><span class="p">(</span><span class="n">geo_CofM</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">geo_CofM</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">improps</span><span class="p">[</span><span class="s">&#39;mm/Pixel&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">results_diffs</span><span class="p">[</span><span class="s">&#39;h1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="s">&#39;h1&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">nominal_GEO</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="s">&#39;v2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ptg</span><span class="o">.</span><span class="n">dist_2points</span><span class="p">(</span><span class="n">geo_CofM</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">geo_CofM</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">improps</span><span class="p">[</span><span class="s">&#39;mm/Pixel&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">results_diffs</span><span class="p">[</span><span class="s">&#39;v2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="s">&#39;v2&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">nominal_GEO</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="s">&#39;h2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ptg</span><span class="o">.</span><span class="n">dist_2points</span><span class="p">(</span><span class="n">geo_CofM</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">geo_CofM</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">improps</span><span class="p">[</span><span class="s">&#39;mm/Pixel&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">results_diffs</span><span class="p">[</span><span class="s">&#39;h2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="s">&#39;h2&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">nominal_GEO</span>
+
+        <span class="n">res_diffs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">results_diffs</span><span class="p">[</span><span class="s">&#39;v1&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">results_diffs</span><span class="p">[</span><span class="s">&#39;h1&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">results_diffs</span><span class="p">[</span><span class="s">&#39;v2&#39;</span><span class="p">],</span>
+                     <span class="bp">self</span><span class="o">.</span><span class="n">results_diffs</span><span class="p">[</span><span class="s">&#39;h2&#39;</span><span class="p">]))</span>
+
+        <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">res_diffs</span> <span class="o">&lt;</span> <span class="n">tolerances</span><span class="p">[</span><span class="s">&#39;GEO&#39;</span><span class="p">])</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="n">res_diffs</span> <span class="o">&gt;</span> <span class="o">-</span><span class="n">tolerances</span><span class="p">[</span><span class="s">&#39;GEO&#39;</span><span class="p">]):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">GEO_pass</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">GEO_pass</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="k">pass</span>
+
+</div>
+<div class="viewcode-block" id="CATPHAN.find_UNIF"><a class="viewcode-back" href="../../../../Plugin_development.CT.CT_Catphan_500.html#Plugin_development.CT.CT_Catphan_500.Analyzer.CATPHAN.find_UNIF">[docs]</a>    <span class="k">def</span> <span class="nf">find_UNIF</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determine Uniformity from Uniformity slice. Averages 3 slices</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+
+        <span class="c"># mean from 3 slices around nominal slice</span>
+        <span class="n">UN_slice</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">slices_of_interest</span><span class="p">[</span><span class="s">&#39;UN&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">slices_of_interest</span><span class="p">[</span><span class="s">&#39;UN&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,:,:],</span> <span class="mi">0</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">):</span>
+            <span class="c"># calculate ROI centers</span>
+            <span class="k">if</span> <span class="n">idx</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">UN_roi_bounds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">slice_centers</span><span class="p">[</span><span class="s">&#39;UN&#39;</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">UN_roi_bounds</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">slice_centers</span><span class="p">[</span><span class="s">&#39;HU&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;UN_radius&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phan_roll</span><span class="p">)</span> <span class="o">+</span> <span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;UN_angles&#39;</span><span class="p">][</span><span class="n">idx</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span>
+                             <span class="bp">self</span><span class="o">.</span><span class="n">slice_centers</span><span class="p">[</span><span class="s">&#39;HU&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;UN_radius&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phan_roll</span><span class="p">)</span> <span class="o">+</span> <span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;UN_angles&#39;</span><span class="p">][</span><span class="n">idx</span><span class="o">-</span><span class="mi">1</span><span class="p">])])</span>
+            <span class="c"># sample the ROI</span>
+            <span class="n">UN_roi</span> <span class="o">=</span> <span class="n">UN_slice</span><span class="p">[</span>
+                     <span class="bp">self</span><span class="o">.</span><span class="n">UN_roi_bounds</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;UN_boxsize&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="mi">2</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">UN_roi_bounds</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;UN_boxsize&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span>
+                     <span class="bp">self</span><span class="o">.</span><span class="n">UN_roi_bounds</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;UN_boxsize&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="mi">2</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">UN_roi_bounds</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;UN_boxsize&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="mi">2</span><span class="p">]</span>
+            <span class="c"># Calculate the mean HU value and the difference from nominal</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">UN_val</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">UN_roi</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">improps</span><span class="p">[</span><span class="s">&#39;Rescale Slope&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">improps</span><span class="p">[</span><span class="s">&#39;Rescale Intercept&#39;</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">UN_diff</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">UN_val</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">UN_diff</span> <span class="o">&lt;</span> <span class="n">tolerances</span><span class="p">[</span><span class="s">&#39;UN&#39;</span><span class="p">])</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">UN_diff</span> <span class="o">&gt;</span> <span class="o">-</span><span class="n">tolerances</span><span class="p">[</span><span class="s">&#39;UN&#39;</span><span class="p">]):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">UNIF_pass</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">UNIF_pass</span> <span class="o">=</span> <span class="bp">False</span>
+
+</div>
+<div class="viewcode-block" id="CATPHAN.draw_ROIs"><a class="viewcode-back" href="../../../../Plugin_development.CT.CT_Catphan_500.html#Plugin_development.CT.CT_Catphan_500.Analyzer.CATPHAN.draw_ROIs">[docs]</a>    <span class="k">def</span> <span class="nf">draw_ROIs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">results</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Draw the ROI boxes for a given analysis (e.g. The boxes where HU was calculated from).</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">fig</span><span class="p">,</span> <span class="p">((</span><span class="n">UN_ax</span><span class="p">,</span> <span class="n">HU_ax</span><span class="p">),</span> <span class="p">(</span><span class="n">SR_ax</span><span class="p">,</span> <span class="n">LOCON_ax</span><span class="p">))</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+        <span class="c"># Uniformity objects</span>
+        <span class="n">UN_ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">slices_of_interest</span><span class="p">[</span><span class="s">&#39;UN&#39;</span><span class="p">],:,:])</span>
+        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">UN_roi_bounds</span><span class="p">)):</span>
+            <span class="n">UN_ax</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span><span class="n">Rectangle</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">UN_roi_bounds</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;UN_boxsize&#39;</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span>
+                                       <span class="bp">self</span><span class="o">.</span><span class="n">UN_roi_bounds</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;UN_boxsize&#39;</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">),</span>
+                                      <span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;UN_boxsize&#39;</span><span class="p">],</span> <span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;UN_boxsize&#39;</span><span class="p">],</span>
+                                      <span class="n">fill</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">edgecolor</span><span class="o">=</span><span class="s">&#39;black&#39;</span><span class="p">))</span>
+        <span class="n">UN_ax</span><span class="o">.</span><span class="n">autoscale</span><span class="p">(</span><span class="n">tight</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="n">UN_ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s">&#39;Uniformity Slice&#39;</span><span class="p">)</span>
+
+
+        <span class="c"># HU objects</span>
+        <span class="n">HU_ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">slices_of_interest</span><span class="p">[</span><span class="s">&#39;HU&#39;</span><span class="p">],:,:])</span>
+        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">HU_roi_bounds</span><span class="p">)):</span>
+            <span class="n">HU_ax</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span><span class="n">Rectangle</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">HU_roi_bounds</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;HU_boxsize&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span>
+                                       <span class="bp">self</span><span class="o">.</span><span class="n">HU_roi_bounds</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;HU_boxsize&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span>
+                                      <span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;HU_boxsize&#39;</span><span class="p">],</span> <span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;HU_boxsize&#39;</span><span class="p">],</span>
+                                      <span class="n">fill</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">edgecolor</span><span class="o">=</span><span class="s">&#39;black&#39;</span><span class="p">))</span>
+        <span class="n">HU_ax</span><span class="o">.</span><span class="n">autoscale</span><span class="p">(</span><span class="n">tight</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="n">HU_ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s">&#39;HU &amp; Geometric Slice&#39;</span><span class="p">)</span>
+
+        <span class="c"># GEO objects</span>
+        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">3</span><span class="p">]:</span> <span class="c"># for 2 corner geo points...</span>
+            <span class="k">for</span> <span class="n">idx2</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">]:</span>  <span class="c"># connect to the other 2 geo points</span>
+                <span class="n">HU_ax</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">geo_CofM</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;GEO_box_bounds&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span>
+                           <span class="bp">self</span><span class="o">.</span><span class="n">geo_CofM</span><span class="p">[</span><span class="n">idx2</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;GEO_box_bounds&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]],</span>
+                           <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">geo_CofM</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;GEO_box_bounds&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span>
+                           <span class="bp">self</span><span class="o">.</span><span class="n">geo_CofM</span><span class="p">[</span><span class="n">idx2</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">small_FOV_settings</span><span class="p">[</span><span class="s">&#39;GEO_box_bounds&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]],</span><span class="s">&#39;black&#39;</span><span class="p">)</span>
+
+
+
+        <span class="c"># SR objects</span>
+        <span class="n">SR_ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">slices_of_interest</span><span class="p">[</span><span class="s">&#39;SR&#39;</span><span class="p">],:,:])</span>
+        <span class="k">for</span> <span class="n">pnt</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">MTF</span><span class="p">[</span><span class="s">&#39;ROI points&#39;</span><span class="p">]:</span>
+            <span class="n">SR_ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">pnt</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">pnt</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">SR_ax</span><span class="o">.</span><span class="n">autoscale</span><span class="p">(</span><span class="n">tight</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="n">SR_ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s">&#39;Spatial Resolution Slice&#39;</span><span class="p">)</span>
+
+        <span class="c">#TODO: Low contrast</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        LOCON_ax.imshow(self.images[:,:,self.slices_of_interest[&#39;LOCON&#39;]])</span>
+<span class="sd">        LOCON_ax.set_title(&#39;Low Contrast (In Development)&#39;)</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s">&#39;Overview&#39;</span><span class="p">)</span>
+        <span class="n">results</span><span class="o">.</span><span class="n">addObject</span><span class="p">(</span><span class="s">&#39;Overview&#39;</span><span class="p">,</span><span class="s">&#39;Overview.png&#39;</span><span class="p">)</span>
+
+    <span class="c">#if show:</span>
+    <span class="c">#    plt.show()</span>
+</div>
+<div class="viewcode-block" id="CATPHAN.return_results"><a class="viewcode-back" href="../../../../Plugin_development.CT.CT_Catphan_500.html#Plugin_development.CT.CT_Catphan_500.Analyzer.CATPHAN.return_results">[docs]</a>    <span class="k">def</span> <span class="nf">return_results</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="n">using_pyqa</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c">#TODO: make a bit prettier</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;HU Regions: &#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="s">&#39;HU&#39;</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">7</span><span class="p">):</span>
+            <span class="n">results</span><span class="o">.</span><span class="n">addFloat</span><span class="p">(</span><span class="s">&#39;HU Regions </span><span class="si">%s</span><span class="s">&#39;</span><span class="o">%</span><span class="n">i</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="s">&#39;HU&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">])</span>
+
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;HU Passed?: &#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">HU_pass</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">HU_pass</span> <span class="o">==</span> <span class="bp">True</span><span class="p">:</span>
+            <span class="n">results</span><span class="o">.</span><span class="n">addChar</span><span class="p">(</span><span class="s">&#39;HU Passed&#39;</span><span class="p">,</span> <span class="s">&#39;True&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">results</span><span class="o">.</span><span class="n">addChar</span><span class="p">(</span><span class="s">&#39;HU Passed&#39;</span><span class="p">,</span> <span class="s">&#39;False&#39;</span><span class="p">)</span>
+
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;Uniformity: &#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">UN_val</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">UN_val</span><span class="p">)):</span>
+            <span class="n">results</span><span class="o">.</span><span class="n">addFloat</span><span class="p">(</span><span class="s">&#39;Uniformity </span><span class="si">%s</span><span class="s">&#39;</span><span class="o">%</span><span class="n">i</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">UN_val</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;Uniformity Passed?: &#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">UNIF_pass</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">UNIF_pass</span> <span class="o">==</span> <span class="bp">True</span><span class="p">:</span>
+            <span class="n">results</span><span class="o">.</span><span class="n">addChar</span><span class="p">(</span><span class="s">&#39;Uniformity Passed&#39;</span><span class="p">,</span> <span class="s">&#39;True&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">results</span><span class="o">.</span><span class="n">addChar</span><span class="p">(</span><span class="s">&#39;Uniformity Passed&#39;</span><span class="p">,</span> <span class="s">&#39;False&#39;</span><span class="p">)</span>
+                
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;MTF 50% (lp/mm): &#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">MTF</span><span class="p">[</span><span class="s">&#39;MTF_50&#39;</span><span class="p">])</span>
+        <span class="n">results</span><span class="o">.</span><span class="n">addFloat</span><span class="p">(</span><span class="s">&#39;MTF 50% (lp/mm): &#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">MTF</span><span class="p">[</span><span class="s">&#39;MTF_50&#39;</span><span class="p">])</span>
+
+
+        <span class="n">results</span><span class="o">.</span><span class="n">addFloat</span><span class="p">(</span><span class="s">&#39;Geometric distances v1&#39;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="s">&#39;v1&#39;</span><span class="p">])</span>
+        <span class="n">results</span><span class="o">.</span><span class="n">addFloat</span><span class="p">(</span><span class="s">&#39;Geometric distances v2&#39;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="s">&#39;v2&#39;</span><span class="p">])</span>
+        <span class="n">results</span><span class="o">.</span><span class="n">addFloat</span><span class="p">(</span><span class="s">&#39;Geometric distances h1&#39;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="s">&#39;h1&#39;</span><span class="p">])</span>
+        <span class="n">results</span><span class="o">.</span><span class="n">addFloat</span><span class="p">(</span><span class="s">&#39;Geometric distances h2&#39;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="s">&#39;h2&#39;</span><span class="p">])</span>
+        
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;Geometry Passed?: &#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">GEO_pass</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">GEO_pass</span> <span class="o">==</span> <span class="bp">True</span><span class="p">:</span>
+            <span class="n">results</span><span class="o">.</span><span class="n">addChar</span><span class="p">(</span><span class="s">&#39;Geometry Passed&#39;</span><span class="p">,</span><span class="s">&#39;True&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">results</span><span class="o">.</span><span class="n">addChar</span><span class="p">(</span><span class="s">&#39;Geometry Passed&#39;</span><span class="p">,</span><span class="s">&#39;False&#39;</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="CATPHAN.analyze"><a class="viewcode-back" href="../../../../Plugin_development.CT.CT_Catphan_500.html#Plugin_development.CT.CT_Catphan_500.Analyzer.CATPHAN.analyze">[docs]</a>    <span class="k">def</span> <span class="nf">analyze</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        One-method analysis of catphan files.</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">find_phan_centers</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">find_roll</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">find_HU</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">find_GEO</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">find_SR</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">find_UNIF</span><span class="p">()</span>
+
+</div></div>
+<div class="viewcode-block" id="catphan500"><a class="viewcode-back" href="../../../../Plugin_development.CT.CT_Catphan_500.html#Plugin_development.CT.CT_Catphan_500.Analyzer.catphan500">[docs]</a><span class="k">def</span> <span class="nf">catphan500</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="n">results</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+
+     <span class="n">paramdict</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;params&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span> <span class="c">#read out all the parameter tags from the config_xml</span>
+
+
+
+     <span class="n">catphan</span> <span class="o">=</span> <span class="n">CATPHAN</span><span class="p">()</span>
+     <span class="n">filelist</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">getAllInstances</span><span class="p">()</span>
+
+     <span class="n">catphan</span><span class="o">.</span><span class="n">_load_files</span><span class="p">(</span><span class="n">filelist</span><span class="p">)</span>
+     <span class="n">catphan</span><span class="o">.</span><span class="n">analyze</span><span class="p">(</span><span class="n">paramdict</span><span class="p">)</span>
+     <span class="n">catphan</span><span class="o">.</span><span class="n">return_results</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+     <span class="n">catphan</span><span class="o">.</span><span class="n">draw_ROIs</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+    
+</pre></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

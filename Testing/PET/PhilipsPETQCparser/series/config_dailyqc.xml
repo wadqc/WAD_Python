@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    Configuratie voor WAD NM analyse module
+-->
+
+<WAD_PETQC_config>
+    <!-- naam van de configuratie -->
+    <name>PET GeminiTOF DailyQC</name>
+
+    <!-- beschrijving -->
+    <description>PET_GeminiTOF_DailyQC cfg</description>
+
+    <!-- versie / datum -->
+    <version>20150131</version>
+        
+    <!-- Logfile verbose options -->
+
+    <action>
+        <plugin>Plugins.PET.PhilipsPETQCparser.PET_GeminiTOF_DailyQC</plugin>
+	<function>parse_PET_dailyqc</function>
+	<default_level>1</default_level>
+
+        <params>
+        </params>
+
+        <limits>
+            <result description="Hardware Sensors">
+                <criterium>PASSED</criterium>
+            </result>
+            <result description="PMT Gain Calibration">
+                <criterium>PASSED</criterium>
+            </result>
+            <result description="Energy Test">
+                <criterium>PASSED</criterium>
+            </result>
+            <result description="Emission Test">
+                <criterium>PASSED</criterium>
+            </result>
+
+            <result description="Calibration Resolution">
+                <acc_low>600</acc_low>
+                <acc_high>650</acc_high>
+                <crit_low>600</crit_low>
+                <crit_high>750</crit_high>
+            </result>
+            <result description="Energy Avg">
+                <acc_low>12.5</acc_low>
+                <acc_high>14</acc_high>
+                <crit_low>10.5</crit_low>
+                <crit_high>16</crit_high>
+            </result>
+            <result description="Energy Avg-Centroid">
+                <acc_low>98</acc_low>
+                <acc_high>102</acc_high>
+                <crit_low>94</crit_low>
+                <crit_high>106</crit_high>
+            </result>
+            <result description="PMT Avg Error">
+                <acc_low>0.2</acc_low>
+                <acc_high>0.3</acc_high>
+                <crit_low>0.2</crit_low>
+                <crit_high>0.3</crit_high>
+            </result>
+            <result description="PMT Max Error">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-2</crit_low>
+                <crit_high>2</crit_high>
+            </result>
+            <result description="PMT Gain Iterations">
+                <acc_low>1</acc_low>
+                <acc_high>50</acc_high>
+                <crit_low>0</crit_low>
+                <crit_high>100</crit_high>
+            </result>
+            <result description="Tilt -3 linearity">
+                <acc_low>0</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>0</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="Tilt -2 linearity">
+                <acc_low>0</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>0</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="Tilt -1 linearity">
+                <acc_low>0</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>0</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="Tilt 0 linearity">
+                <acc_low>0</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>0</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="Tilt 1 linearity">
+                <acc_low>0</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>0</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="Tilt 2 linearity">
+                <acc_low>0</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>0</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="Tilt 3 linearity">
+                <acc_low>0</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>0</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="Timing Resolution">
+                <acc_low>600</acc_low>
+                <acc_high>650</acc_high>
+                <crit_low>600</crit_low>
+                <crit_high>750</crit_high>
+            </result>
+            <result description="Calibration Resolution">
+                <acc_low>600</acc_low>
+                <acc_high>650</acc_high>
+                <crit_low>600</crit_low>
+                <crit_high>750</crit_high>
+            </result>
+        </limits>
+
+    </action>
+
+</WAD_PETQC_config>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Config for QCUS plugin for US (Philips iU22, Philips EPiQ)
+date: 20150422
+author: Arnold Schilham, UMCU
+-->
+<config>
+    <action>
+        <plugin>Plugins.US.US_AirReverberations.QCUS_wadwrapper</plugin>
+        <function>header_series</function>
+        <default_level>2</default_level>
+        
+    </action>
+    
+    <action>
+        <plugin>Plugins.US.US_AirReverberations.QCUS_wadwrapper</plugin>
+        <function>qc_series</function>
+        <default_level>1</default_level>
+	
+    </action>
+</config>

@@ -1,0 +1,138 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Plugin_development.Bucky.Bucky_EdgeMTF package &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">..  documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="plugin-development-bucky-bucky-edgemtf-package">
+<h1>Plugin_development.Bucky.Bucky_EdgeMTF package<a class="headerlink" href="#plugin-development-bucky-bucky-edgemtf-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-Plugin_development.Bucky.Bucky_EdgeMTF.Bucky_EdgeMTF">
+<span id="plugin-development-bucky-bucky-edgemtf-bucky-edgemtf-module"></span><h2>Plugin_development.Bucky.Bucky_EdgeMTF.Bucky_EdgeMTF module<a class="headerlink" href="#module-Plugin_development.Bucky.Bucky_EdgeMTF.Bucky_EdgeMTF" title="Permalink to this headline">¶</a></h2>
+<p>A very crude and simple implementation to estimate the MTF of an Edge phantom.</p>
+<dl class="function">
+<dt id="Plugin_development.Bucky.Bucky_EdgeMTF.Bucky_EdgeMTF.MTF_main">
+<tt class="descclassname">Plugin_development.Bucky.Bucky_EdgeMTF.Bucky_EdgeMTF.</tt><tt class="descname">MTF_main</tt><big>(</big><em>data</em>, <em>results</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/Bucky/Bucky_EdgeMTF/Bucky_EdgeMTF.html#MTF_main"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.Bucky.Bucky_EdgeMTF.Bucky_EdgeMTF.MTF_main" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function estimates MTF from an exposure of an edge phantom.
+Workflow:
+1. From data object obtain first instance
+2. Remove an arbitrarily chosen offset, which is hardcoded (20 pixels). This needs improvement.
+3. Define what the minimal stepsize between adjacent pixels is
+4. For each row (hardcoded range!, needs improvement) determine where the step is located
+5. Sum the edge curves and finally take the Fourier transform to calculate the MTF</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Plugin_development.Bucky.Bucky_EdgeMTF.Bucky_EdgeMTF.diff_list">
+<tt class="descclassname">Plugin_development.Bucky.Bucky_EdgeMTF.Bucky_EdgeMTF.</tt><tt class="descname">diff_list</tt><big>(</big><em>rowlist</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/Bucky/Bucky_EdgeMTF/Bucky_EdgeMTF.html#diff_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.Bucky.Bucky_EdgeMTF.Bucky_EdgeMTF.diff_list" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="Plugin_development.Bucky.Bucky_EdgeMTF.Bucky_EdgeMTF.filter_min_diff">
+<tt class="descclassname">Plugin_development.Bucky.Bucky_EdgeMTF.Bucky_EdgeMTF.</tt><tt class="descname">filter_min_diff</tt><big>(</big><em>inlist</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/Bucky/Bucky_EdgeMTF/Bucky_EdgeMTF.html#filter_min_diff"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.Bucky.Bucky_EdgeMTF.Bucky_EdgeMTF.filter_min_diff" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-Plugin_development.Bucky.Bucky_EdgeMTF">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-Plugin_development.Bucky.Bucky_EdgeMTF" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Plugin_development.Bucky.Bucky_EdgeMTF package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-Plugin_development.Bucky.Bucky_EdgeMTF.Bucky_EdgeMTF">Plugin_development.Bucky.Bucky_EdgeMTF.Bucky_EdgeMTF module</a></li>
+<li><a class="reference internal" href="#module-Plugin_development.Bucky.Bucky_EdgeMTF">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/Plugin_development.Bucky.Bucky_EdgeMTF.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">..  documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

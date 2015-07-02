@@ -1,0 +1,20 @@
+   <action>
+        <plugin directory="./Testing">TestPlugin.myplugin</plugin>
+        <function>analyze_beam_wand</function>
+        <filters>
+           <tag name="SeriesDescription">Beam wand</tag>
+           <tag name="0x008,0x1030">Weekly QC</tag>
+       </filters>
+        <level>1</level>
+        <limits>
+           <result description="Study date" type="range">
+                 <acc_low>100</acc_low>
+                 <acc_high>500</acc_high>
+                 <crit_low>0</crit_low>
+                 <crit_high>1000</crit_high>
+            </result>
+            <result description="StudyDescription" type="criterium">
+                 <criterium>Weekly QC</criterium>
+             </result>
+        </limits>
+    </action>

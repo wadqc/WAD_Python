@@ -1,0 +1,372 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Plugins.MRI.MRI_PIQT.QCMR_math &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="../../../../index.html" />
+    <link rel="up" title="Module code" href="../../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for Plugins.MRI.MRI_PIQT.QCMR_math</h1><div class="highlight"><pre>
+<span class="c"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Created on Fri Oct 11 10:29:57 2013</span>
+
+<span class="sd">AffineTransformation Originally written by Jarno Elonen &lt;elonen@iki.fi&gt;, November 2007, released into the Public Domain</span>
+<span class="sd">http://elonen.iki.fi/code/misc-notes/affine-fit/</span>
+
+<span class="sd">Slightly rewritten by aschilha</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy.optimize</span> <span class="kn">import</span> <span class="n">curve_fit</span>
+<span class="kn">import</span> <span class="nn">scipy.ndimage</span> <span class="kn">as</span> <span class="nn">scind</span>
+<span class="kn">import</span> <span class="nn">scipy.stats</span>
+
+
+<div class="viewcode-block" id="AffineTransformation"><a class="viewcode-back" href="../../../../Plugins.MRI.MRI_PIQT.html#Plugins.MRI.MRI_PIQT.QCMR_math.AffineTransformation">[docs]</a><span class="k">class</span> <span class="nc">AffineTransformation</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Result object that represents the transformation</span>
+<span class="sd">       from affine fitter.&quot;&quot;&quot;</span>
+    <span class="n">M</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">dim</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">def</span> <span class="nf">__init__</span> <span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">matrix</span><span class="p">,</span><span class="n">pdim</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">M</span> <span class="o">=</span> <span class="n">matrix</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="n">pdim</span>
+
+<div class="viewcode-block" id="AffineTransformation.To_Str"><a class="viewcode-back" href="../../../../Plugins.MRI.MRI_PIQT.html#Plugins.MRI.MRI_PIQT.QCMR_math.AffineTransformation.To_Str">[docs]</a>    <span class="k">def</span> <span class="nf">To_Str</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">):</span>
+            <span class="nb">str</span> <span class="o">=</span> <span class="s">&quot;x</span><span class="si">%d</span><span class="s">&#39; = &quot;</span> <span class="o">%</span> <span class="n">j</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">):</span>
+                <span class="nb">str</span> <span class="o">+=</span><span class="s">&quot;x</span><span class="si">%d</span><span class="s"> * </span><span class="si">%f</span><span class="s"> + &quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+            <span class="nb">str</span> <span class="o">+=</span> <span class="s">&quot;</span><span class="si">%f</span><span class="s">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">][</span><span class="n">j</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">res</span> <span class="o">+=</span> <span class="nb">str</span> <span class="o">+</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span>
+        <span class="k">print</span> <span class="bp">self</span><span class="o">.</span><span class="n">SimpleMatrix</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">res</span>
+</div>
+<div class="viewcode-block" id="AffineTransformation.SimpleMatrix"><a class="viewcode-back" href="../../../../Plugins.MRI.MRI_PIQT.html#Plugins.MRI.MRI_PIQT.QCMR_math.AffineTransformation.SimpleMatrix">[docs]</a>    <span class="k">def</span> <span class="nf">SimpleMatrix</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">mat</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">):</span>
+            <span class="n">row</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">):</span>
+                <span class="n">row</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">row</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">][</span><span class="n">j</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">mat</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">mat</span>
+        </div>
+<div class="viewcode-block" id="AffineTransformation.Transform"><a class="viewcode-back" href="../../../../Plugins.MRI.MRI_PIQT.html#Plugins.MRI.MRI_PIQT.QCMR_math.AffineTransformation.Transform">[docs]</a>    <span class="k">def</span> <span class="nf">Transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pt</span><span class="p">):</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">)]</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">):</span>
+                <span class="n">res</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">+=</span> <span class="n">pt</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">res</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">][</span><span class="n">j</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">res</span>
+</div>
+<div class="viewcode-block" id="AffineTransformation.getShift"><a class="viewcode-back" href="../../../../Plugins.MRI.MRI_PIQT.html#Plugins.MRI.MRI_PIQT.QCMR_math.AffineTransformation.getShift">[docs]</a>    <span class="k">def</span> <span class="nf">getShift</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">shift</span> <span class="o">=</span> <span class="p">[</span> <span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">][</span><span class="n">j</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">)]</span>
+        <span class="k">return</span> <span class="n">shift</span>
+        </div>
+<div class="viewcode-block" id="AffineTransformation.getScaling"><a class="viewcode-back" href="../../../../Plugins.MRI.MRI_PIQT.html#Plugins.MRI.MRI_PIQT.QCMR_math.AffineTransformation.getScaling">[docs]</a>    <span class="k">def</span> <span class="nf">getScaling</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">mat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">SimpleMatrix</span><span class="p">()</span>
+        <span class="n">scaling</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">mat</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="n">mat</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">mat</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="n">mat</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">)]</span>
+        <span class="k">return</span> <span class="n">scaling</span>
+</div>
+<div class="viewcode-block" id="AffineTransformation.getRotation"><a class="viewcode-back" href="../../../../Plugins.MRI.MRI_PIQT.html#Plugins.MRI.MRI_PIQT.QCMR_math.AffineTransformation.getRotation">[docs]</a>    <span class="k">def</span> <span class="nf">getRotation</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">mat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">SimpleMatrix</span><span class="p">()</span>
+        <span class="n">rot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">mat</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span><span class="n">mat</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">rot</span>
+</div>
+<div class="viewcode-block" id="AffineTransformation.RigidTransform"><a class="viewcode-back" href="../../../../Plugins.MRI.MRI_PIQT.html#Plugins.MRI.MRI_PIQT.QCMR_math.AffineTransformation.RigidTransform">[docs]</a>    <span class="k">def</span> <span class="nf">RigidTransform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pt</span><span class="p">):</span>
+        <span class="n">mat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">SimpleMatrix</span><span class="p">()</span>
+        <span class="n">scaling</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getScaling</span><span class="p">()</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="n">mat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">nx</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="n">scaling</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">pt</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">row</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="n">scaling</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">pt</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">row</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="n">mat</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">ny</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="n">scaling</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">pt</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">row</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="n">scaling</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">pt</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">row</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        
+        <span class="k">return</span> <span class="p">[</span><span class="n">nx</span><span class="p">,</span><span class="n">ny</span><span class="p">]</span>
+</div></div>
+<div class="viewcode-block" id="Affine_Fit"><a class="viewcode-back" href="../../../../Plugins.MRI.MRI_PIQT.html#Plugins.MRI.MRI_PIQT.QCMR_math.Affine_Fit">[docs]</a><span class="k">def</span> <span class="nf">Affine_Fit</span><span class="p">(</span> <span class="n">from_pts</span><span class="p">,</span> <span class="n">to_pts</span> <span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Fit an affine transformation to given point sets.</span>
+<span class="sd">      More precisely: solve (least squares fit) matrix &#39;A&#39;and &#39;t&#39; from</span>
+<span class="sd">      &#39;p ~= A*q+t&#39;, given vectors &#39;p&#39; and &#39;q&#39;.</span>
+<span class="sd">      Works with arbitrary dimensional vectors (2d, 3d, 4d...).</span>
+
+<span class="sd">      Written by Jarno Elonen &lt;elonen@iki.fi&gt; in 2007.</span>
+<span class="sd">      Placed in Public Domain.</span>
+
+<span class="sd">      Based on paper &quot;Fitting affine and orthogonal transformations</span>
+<span class="sd">      between two sets of points, by Helmuth Spath (2003).&quot;&quot;&quot;</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Example:</span>
+<span class="sd">    from_pt = ((1,1),(1,2),(2,2),(2,1)) # a 1x1 rectangle</span>
+<span class="sd">    to_pt = ((4,4),(6,6),(8,4),(6,2))   # scaled x 2, rotated 45 degrees and translated</span>
+<span class="sd">    </span>
+<span class="sd">    trn = Affine_Fit(from_pt, to_pt)</span>
+<span class="sd">    </span>
+<span class="sd">    print &quot;Transformation is:&quot;</span>
+<span class="sd">    print trn.To_Str()</span>
+<span class="sd">    </span>
+<span class="sd">    err = 0.0</span>
+<span class="sd">    for i in range(len(from_pt)):</span>
+<span class="sd">        fp = from_pt[i]</span>
+<span class="sd">        tp = to_pt[i]</span>
+<span class="sd">        t = trn.Transform(fp)</span>
+<span class="sd">        print (&quot;%s =&gt; %s ~= %s&quot; % (fp, tuple(t), tp))</span>
+<span class="sd">        err += ((tp[0] - t[0])**2 + (tp[1] - t[1])**2)**0.5</span>
+<span class="sd">    </span>
+<span class="sd">    print &quot;Fitting error = %f&quot; % err</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">q</span> <span class="o">=</span> <span class="n">from_pts</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">to_pts</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">q</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">q</span><span class="p">)</span><span class="o">&lt;</span><span class="mi">1</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">&quot;from_pts and to_pts must be of same size.&quot;</span>
+        <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="n">dim</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">q</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="c"># num of dimensions</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">q</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">dim</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">&quot;Too few points =&gt; under-determined system.&quot;</span>
+        <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="c"># Make an empty (dim) x (dim+1) matrix and fill it</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="p">[[</span><span class="mf">0.0</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">dim</span><span class="p">)]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">dim</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span>
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">dim</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">dim</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">q</span><span class="p">)):</span>
+                <span class="n">qt</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">q</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">+</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">c</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">+=</span> <span class="n">qt</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">*</span> <span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span>
+
+    <span class="c"># Make an empty (dim+1) x (dim+1) matrix and fill it</span>
+    <span class="n">Q</span> <span class="o">=</span> <span class="p">[[</span><span class="mf">0.0</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">dim</span><span class="p">)]</span> <span class="o">+</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">dim</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span>
+    <span class="k">for</span> <span class="n">qi</span> <span class="ow">in</span> <span class="n">q</span><span class="p">:</span>
+        <span class="n">qt</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">qi</span><span class="p">)</span> <span class="o">+</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">dim</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">dim</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+                <span class="n">Q</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">+=</span> <span class="n">qt</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">qt</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+
+    <span class="c"># Ultra simple linear system solver. Replace this if you need speed.</span>
+    <span class="k">def</span> <span class="nf">gauss_jordan</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">eps</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">/</span><span class="p">(</span><span class="mi">10</span><span class="o">**</span><span class="mi">10</span><span class="p">)):</span>
+      <span class="sd">&quot;&quot;&quot;Puts given matrix (2D array) into the Reduced Row Echelon Form.</span>
+<span class="sd">         Returns True if successful, False if &#39;m&#39; is singular.</span>
+<span class="sd">         NOTE: make sure all the matrix items support fractions! Int matrix will NOT work!</span>
+<span class="sd">         Written by Jarno Elonen in April 2005, released into Public Domain&quot;&quot;&quot;</span>
+      <span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">w</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">m</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">m</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+      <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">h</span><span class="p">):</span>
+        <span class="n">maxrow</span> <span class="o">=</span> <span class="n">y</span>
+        <span class="k">for</span> <span class="n">y2</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">y</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">h</span><span class="p">):</span>    <span class="c"># Find max pivot</span>
+          <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">m</span><span class="p">[</span><span class="n">y2</span><span class="p">][</span><span class="n">y</span><span class="p">])</span> <span class="o">&gt;</span> <span class="nb">abs</span><span class="p">(</span><span class="n">m</span><span class="p">[</span><span class="n">maxrow</span><span class="p">][</span><span class="n">y</span><span class="p">]):</span>
+            <span class="n">maxrow</span> <span class="o">=</span> <span class="n">y2</span>
+        <span class="p">(</span><span class="n">m</span><span class="p">[</span><span class="n">y</span><span class="p">],</span> <span class="n">m</span><span class="p">[</span><span class="n">maxrow</span><span class="p">])</span> <span class="o">=</span> <span class="p">(</span><span class="n">m</span><span class="p">[</span><span class="n">maxrow</span><span class="p">],</span> <span class="n">m</span><span class="p">[</span><span class="n">y</span><span class="p">])</span>
+        <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">m</span><span class="p">[</span><span class="n">y</span><span class="p">][</span><span class="n">y</span><span class="p">])</span> <span class="o">&lt;=</span> <span class="n">eps</span><span class="p">:</span>     <span class="c"># Singular?</span>
+          <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">for</span> <span class="n">y2</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">y</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">h</span><span class="p">):</span>    <span class="c"># Eliminate column y</span>
+          <span class="n">c</span> <span class="o">=</span> <span class="n">m</span><span class="p">[</span><span class="n">y2</span><span class="p">][</span><span class="n">y</span><span class="p">]</span> <span class="o">/</span> <span class="n">m</span><span class="p">[</span><span class="n">y</span><span class="p">][</span><span class="n">y</span><span class="p">]</span>
+          <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">w</span><span class="p">):</span>
+            <span class="n">m</span><span class="p">[</span><span class="n">y2</span><span class="p">][</span><span class="n">x</span><span class="p">]</span> <span class="o">-=</span> <span class="n">m</span><span class="p">[</span><span class="n">y</span><span class="p">][</span><span class="n">x</span><span class="p">]</span> <span class="o">*</span> <span class="n">c</span>
+      <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">h</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span> <span class="c"># Backsubstitute</span>
+        <span class="n">c</span>  <span class="o">=</span> <span class="n">m</span><span class="p">[</span><span class="n">y</span><span class="p">][</span><span class="n">y</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">y2</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">y</span><span class="p">):</span>
+          <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">w</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">y</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+            <span class="n">m</span><span class="p">[</span><span class="n">y2</span><span class="p">][</span><span class="n">x</span><span class="p">]</span> <span class="o">-=</span>  <span class="n">m</span><span class="p">[</span><span class="n">y</span><span class="p">][</span><span class="n">x</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span><span class="p">[</span><span class="n">y2</span><span class="p">][</span><span class="n">y</span><span class="p">]</span> <span class="o">/</span> <span class="n">c</span>
+        <span class="n">m</span><span class="p">[</span><span class="n">y</span><span class="p">][</span><span class="n">y</span><span class="p">]</span> <span class="o">/=</span> <span class="n">c</span>
+        <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">w</span><span class="p">):</span>       <span class="c"># Normalize row y</span>
+          <span class="n">m</span><span class="p">[</span><span class="n">y</span><span class="p">][</span><span class="n">x</span><span class="p">]</span> <span class="o">/=</span> <span class="n">c</span>
+      <span class="k">return</span> <span class="bp">True</span>
+
+    <span class="c"># Augement Q with c and solve Q * a&#39; = c by Gauss-Jordan</span>
+    <span class="n">M</span> <span class="o">=</span> <span class="p">[</span> <span class="n">Q</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">c</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">dim</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">gauss_jordan</span><span class="p">(</span><span class="n">M</span><span class="p">):</span>
+        <span class="k">print</span> <span class="s">&quot;Error: singular matrix. Points are probably coplanar.&quot;</span>
+        <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="c"># Make a result object</span>
+    <span class="n">transformation</span> <span class="o">=</span> <span class="n">AffineTransformation</span><span class="p">(</span><span class="n">M</span><span class="p">,</span><span class="n">dim</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">transformation</span>
+    
+</div>
+<div class="viewcode-block" id="FindCenters2D"><a class="viewcode-back" href="../../../../Plugins.MRI.MRI_PIQT.html#Plugins.MRI.MRI_PIQT.QCMR_math.FindCenters2D">[docs]</a><span class="k">def</span> <span class="nf">FindCenters2D</span><span class="p">(</span><span class="n">pts</span><span class="p">,</span><span class="n">datain</span><span class="p">,</span><span class="n">distpx</span><span class="p">,</span><span class="n">discpx</span><span class="p">,</span><span class="n">minimod</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="n">error</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="n">searchrad</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">distpx</span><span class="o">+.</span><span class="mi">5</span><span class="p">)</span>
+    <span class="n">searchrad</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">searchrad</span><span class="p">)</span>
+
+    <span class="c"># scale by 4x4 by copies for 1/4 pix accuracy</span>
+    <span class="n">multip</span> <span class="o">=</span> <span class="mi">4</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">kron</span><span class="p">(</span><span class="n">datain</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">multip</span><span class="p">,</span><span class="n">multip</span><span class="p">)))</span>
+
+    <span class="c"># smoothing to get rid of noise and give max respons over avg disc</span>
+    <span class="n">sigma</span> <span class="o">=</span> <span class="n">multip</span><span class="o">*</span><span class="n">discpx</span><span class="o">/</span><span class="mf">2.</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">scind</span><span class="o">.</span><span class="n">gaussian_filter</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">),</span> <span class="n">sigma</span><span class="p">,</span><span class="n">mode</span><span class="o">=</span><span class="s">&#39;constant&#39;</span><span class="p">)</span>
+    <span class="n">searchrad</span> <span class="o">*=</span> <span class="n">multip</span>
+    <span class="sd">&quot;&quot;&quot;&quot;</span>
+<span class="sd">    # scale by 2x2 by copies</span>
+<span class="sd">    a = np.array([[1, 1],</span>
+<span class="sd">                  [0, 1]])</span>
+<span class="sd">    n = 2</span>
+<span class="sd">    np.kron(a, np.ones((n,n)))</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">widthpx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">data</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="c">## width/height in pixels</span>
+    <span class="n">heightpx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">data</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">pts</span><span class="p">)):</span>
+        <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">pts</span><span class="p">[</span><span class="n">y</span><span class="p">])):</span>
+            <span class="n">rp</span> <span class="o">=</span> <span class="n">pts</span><span class="p">[</span><span class="n">y</span><span class="p">][</span><span class="n">x</span><span class="p">]</span>
+            <span class="k">if</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">rp</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="n">x0</span> <span class="o">=</span> <span class="n">multip</span><span class="o">*</span><span class="n">rp</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">minx</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">x0</span><span class="o">-</span><span class="n">searchrad</span><span class="p">)</span>
+            <span class="n">maxx</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">widthpx</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span><span class="n">x0</span><span class="o">+</span><span class="n">searchrad</span><span class="p">)</span>
+            <span class="n">y0</span> <span class="o">=</span> <span class="n">multip</span><span class="o">*</span><span class="n">rp</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">miny</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">y0</span><span class="o">-</span><span class="n">searchrad</span><span class="p">)</span>
+            <span class="n">maxy</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">heightpx</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span><span class="n">y0</span><span class="o">+</span><span class="n">searchrad</span><span class="p">)</span>
+            <span class="n">cropped</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">minx</span><span class="p">:</span><span class="n">maxx</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">miny</span><span class="p">:</span><span class="n">maxy</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">if</span><span class="p">(</span><span class="n">minimod</span> <span class="o">==</span> <span class="bp">True</span><span class="p">):</span>
+                <span class="p">(</span><span class="n">x1</span><span class="p">,</span><span class="n">y1</span><span class="p">)</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unravel_index</span><span class="p">(</span><span class="n">cropped</span><span class="o">.</span><span class="n">argmin</span><span class="p">(),</span><span class="n">cropped</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="p">(</span><span class="n">x1</span><span class="p">,</span><span class="n">y1</span><span class="p">)</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unravel_index</span><span class="p">(</span><span class="n">cropped</span><span class="o">.</span><span class="n">argmax</span><span class="p">(),</span><span class="n">cropped</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+            <span class="n">x1</span> <span class="o">+=</span> <span class="n">minx</span>
+            <span class="n">y1</span> <span class="o">+=</span> <span class="n">miny</span>
+            <span class="n">rp</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">x1</span><span class="o">/</span><span class="n">multip</span>
+            <span class="n">rp</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">y1</span><span class="o">/</span><span class="n">multip</span>  
+
+    <span class="n">error</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="k">return</span> <span class="n">error</span><span class="p">,</span><span class="n">pts</span>
+
+
+<span class="c"># Define model function to be used to fit to the data </span></div>
+<div class="viewcode-block" id="gauss"><a class="viewcode-back" href="../../../../Plugins.MRI.MRI_PIQT.html#Plugins.MRI.MRI_PIQT.QCMR_math.gauss">[docs]</a><span class="k">def</span> <span class="nf">gauss</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">*</span><span class="n">p</span><span class="p">):</span>
+    <span class="n">A</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span><span class="n">c</span> <span class="o">=</span> <span class="n">p</span>
+    <span class="k">return</span> <span class="n">A</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">x</span><span class="o">-</span><span class="n">mu</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="p">(</span><span class="mf">2.</span><span class="o">*</span><span class="n">sigma</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span><span class="o">+</span><span class="n">c</span>
+</div>
+<div class="viewcode-block" id="GaussianFit"><a class="viewcode-back" href="../../../../Plugins.MRI.MRI_PIQT.html#Plugins.MRI.MRI_PIQT.QCMR_math.GaussianFit">[docs]</a><span class="k">def</span> <span class="nf">GaussianFit</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+    <span class="n">error</span> <span class="o">=</span> <span class="bp">True</span>
+    
+    <span class="c"># p0 is the initial guess for the fitting coefficients (A, mu and sigma above)</span>
+    <span class="n">p0</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="o">/</span><span class="mf">2.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+
+    <span class="n">pos</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+    <span class="n">coeff</span><span class="p">,</span> <span class="n">var_matrix</span> <span class="o">=</span> <span class="n">curve_fit</span><span class="p">(</span><span class="n">gauss</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">p0</span><span class="o">=</span><span class="n">p0</span><span class="p">)</span>
+    <span class="n">error</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="k">return</span> <span class="n">error</span><span class="p">,</span> <span class="n">coeff</span>
+</div>
+<div class="viewcode-block" id="LinearFit"><a class="viewcode-back" href="../../../../Plugins.MRI.MRI_PIQT.html#Plugins.MRI.MRI_PIQT.QCMR_math.LinearFit">[docs]</a><span class="k">def</span> <span class="nf">LinearFit</span><span class="p">(</span><span class="n">ydata</span><span class="p">):</span>
+    <span class="n">error</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="n">pos</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ydata</span><span class="p">))</span>
+    <span class="n">slope</span><span class="p">,</span> <span class="n">intercept</span><span class="p">,</span> <span class="n">r_value</span><span class="p">,</span> <span class="n">p_value</span><span class="p">,</span> <span class="n">std_err</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">linregress</span><span class="p">(</span><span class="n">pos</span><span class="p">,</span><span class="n">ydata</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">error</span><span class="p">,(</span><span class="n">slope</span><span class="p">,</span> <span class="n">intercept</span><span class="p">,</span> <span class="n">r_value</span><span class="p">,</span> <span class="n">p_value</span><span class="p">,</span> <span class="n">std_err</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="AreaUnderCurve"><a class="viewcode-back" href="../../../../Plugins.MRI.MRI_PIQT.html#Plugins.MRI.MRI_PIQT.QCMR_math.AreaUnderCurve">[docs]</a><span class="k">def</span> <span class="nf">AreaUnderCurve</span><span class="p">(</span><span class="n">freqs</span><span class="p">,</span><span class="n">merits</span><span class="p">,</span><span class="n">maxfreq</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span><span class="n">normalized</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+    <span class="n">area</span> <span class="o">=</span> <span class="mf">0.</span>
+    <span class="k">if</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">freqs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">merits</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">area</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">freqs</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">maxfreq</span> <span class="o">&gt;</span><span class="mf">0.</span> <span class="ow">and</span> <span class="n">freqs</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">&lt;=</span> <span class="n">maxfreq</span><span class="p">:</span>
+            <span class="n">y1</span> <span class="o">=</span> <span class="n">merits</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+            <span class="n">y2</span> <span class="o">=</span> <span class="n">merits</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">dx</span> <span class="o">=</span> <span class="n">freqs</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">freqs</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+            <span class="k">if</span><span class="p">(</span><span class="n">y2</span><span class="o">&lt;</span><span class="n">y1</span><span class="p">):</span>
+                <span class="n">y2</span> <span class="o">=</span> <span class="n">merits</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+                <span class="n">y1</span> <span class="o">=</span> <span class="n">merits</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">area</span> <span class="o">+=</span> <span class="n">dx</span><span class="o">*</span><span class="p">(</span><span class="n">y1</span><span class="o">+</span><span class="p">(</span><span class="n">y2</span><span class="o">-</span><span class="n">y1</span><span class="p">)</span><span class="o">/</span><span class="mf">2.</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">maxfreq</span> <span class="o">&gt;</span><span class="mf">0.</span> <span class="ow">and</span> <span class="n">freqs</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">&lt;</span> <span class="n">maxfreq</span> <span class="ow">and</span> <span class="n">freqs</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">&gt;</span><span class="n">maxfreq</span><span class="p">:</span>
+            <span class="n">dx</span> <span class="o">=</span> <span class="n">maxfreq</span><span class="o">-</span><span class="n">freqs</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+            <span class="n">y1</span> <span class="o">=</span> <span class="n">merits</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+            <span class="n">y2</span> <span class="o">=</span> <span class="n">y1</span><span class="o">+</span><span class="p">(</span><span class="n">maxfreq</span><span class="o">-</span><span class="n">freqs</span><span class="p">[</span><span class="n">k</span><span class="p">])</span><span class="o">/</span><span class="p">(</span><span class="n">freqs</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">freqs</span><span class="p">[</span><span class="n">k</span><span class="p">])</span><span class="o">*</span><span class="p">(</span><span class="n">merits</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">merits</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+
+            <span class="k">if</span><span class="p">(</span><span class="n">y2</span><span class="o">&lt;</span><span class="n">y1</span><span class="p">):</span>
+                <span class="n">yswap</span> <span class="o">=</span> <span class="n">y2</span>
+                <span class="n">y2</span> <span class="o">=</span> <span class="n">merits</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+                <span class="n">y1</span> <span class="o">=</span> <span class="n">yswap</span>
+            <span class="n">area</span> <span class="o">+=</span> <span class="n">dx</span><span class="o">*</span><span class="p">(</span><span class="n">y1</span><span class="o">+</span><span class="p">(</span><span class="n">y2</span><span class="o">-</span><span class="n">y1</span><span class="p">)</span><span class="o">/</span><span class="mf">2.</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">normalized</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">maxfreq</span> <span class="o">&lt;</span> <span class="mf">0.</span><span class="p">:</span>
+            <span class="n">area</span> <span class="o">/=</span> <span class="n">freqs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">area</span> <span class="o">/=</span> <span class="n">maxfreq</span>
+
+    <span class="k">return</span> <span class="n">area</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

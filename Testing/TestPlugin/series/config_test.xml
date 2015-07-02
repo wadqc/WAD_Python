@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    
+-->
+<config>
+    <action>
+        <plugin>Plugin_development.TestPlugin.myplugin</plugin>
+        <function>testFunction</function>
+        <default_level>1</default_level>
+        
+        <filters>
+            <tag name="SeriesDescription">Flat Field</tag> <!-- Typical format -->
+            <tag name="0x008,0x1030">Weekly QC</tag> <!-- Test DICOM hexadecimal tuple -->
+            <tag name="ExposureTime">650</tag> <!-- Test dicom.valuerep.IS -->
+            <tag name="HalfValueLayer">0.351</tag> <!-- Test dicom.valuerep.DSfloat -->
+            <tag name="Rows">4096</tag> <!-- Test integer value -->
+        </filters>
+       
+        <limits>
+            <result description="Study date">
+                <acc_low>100</acc_low>
+                <acc_high>500</acc_high>
+                <crit_low>0</crit_low>
+                <crit_high>1000</crit_high>
+            </result>
+            <result description="StudyDescription">
+                <criterium>Weekly QC</criterium>
+            </result>
+        </limits>
+    </action>
+    
+    <action>
+        <plugin>Plugin_development.TestPlugin.myplugin</plugin>
+        <function>anotherFunction</function>
+        
+        <limits>
+            <result description="Some bool">
+                 <criterium>1</criterium>
+             </result>
+        </limits>
+        
+        <params>
+            <some_parameter SomeAttribute="Some attribute text">This is some parameter!</some_parameter>
+            <parent NumberOfKids="2">
+                <child>This is child 1</child>
+                <child>This is child 2</child>
+            </parent>
+        </params>
+        
+    </action>
+</config>

@@ -1,0 +1,333 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Plugin_development.MRI.MRI_ACR.mr_acr_lib &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="../../../../index.html" />
+    <link rel="up" title="Module code" href="../../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for Plugin_development.MRI.MRI_ACR.mr_acr_lib</h1><div class="highlight"><pre>
+<span class="c"># PyWAD is an open-source set of plugins for the WAD-Software medical physics quality control software. </span>
+<span class="c"># The WAD Software can be found on https://github.com/wadqc</span>
+<span class="c"># </span>
+<span class="c"># This package includes plugins for the automated analysis of QC images for various imaging modalities. </span>
+<span class="c"># PyWAD has been originaly initiated by Dennis Dickerscheid (AZN) and Arnold Schilham (UMCU) </span>
+<span class="c">#</span>
+<span class="c">#</span>
+<span class="c"># Date: </span>
+<span class="c"># Version: 0.1</span>
+<span class="c"># Authors: </span>
+<span class="c"># Changelog:</span>
+<span class="c">#</span>
+<span class="c">#</span>
+<span class="c"># Description of this plugin:</span>
+<span class="c">#</span>
+<span class="c"># </span>
+<span class="c">#</span>
+<span class="kn">from</span> <span class="nn">pyWADLib</span> <span class="kn">import</span> <span class="n">pydicom_series</span> <span class="k">as</span> <span class="n">dicomseries</span>
+
+<span class="kn">import</span> <span class="nn">pylab</span> <span class="kn">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">scipy.optimize</span> <span class="kn">import</span> <span class="n">curve_fit</span>
+<span class="kn">from</span> <span class="nn">dicom</span> <span class="kn">import</span> <span class="n">tag</span>
+
+<div class="viewcode-block" id="sigmoid"><a class="viewcode-back" href="../../../../Plugin_development.MRI.MRI_ACR.html#Plugin_development.MRI.MRI_ACR.mr_acr_lib.sigmoid">[docs]</a><span class="k">def</span> <span class="nf">sigmoid</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">k</span><span class="p">):</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">k</span><span class="o">*</span><span class="p">(</span><span class="n">x</span><span class="o">-</span><span class="n">x0</span><span class="p">)))</span>
+    <span class="c">#print &quot;hallo&quot;</span>
+    <span class="k">return</span> <span class="n">y</span>
+
+</div>
+<span class="k">def</span> <span class="nf">_2d_ellipse</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span><span class="n">point</span><span class="p">,</span><span class="n">r1</span><span class="p">,</span><span class="n">r2</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">show</span><span class="o">=</span><span class="s">&#39;False&#39;</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">r2</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">r2</span> <span class="o">=</span> <span class="n">r1</span>
+    <span class="n">tmp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="n">dist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="nb">float</span><span class="p">(</span><span class="n">i</span> <span class="o">-</span> <span class="n">point</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">r1</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">j</span> <span class="o">-</span> <span class="n">point</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">r2</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">dist</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">tmp</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">if</span> <span class="n">show</span><span class="o">==</span><span class="s">&#39;True&#39;</span><span class="p">:</span>
+        <span class="n">matshow</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ma</span><span class="o">.</span><span class="n">make_mask</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ACR_analyzer"><a class="viewcode-back" href="../../../../Plugin_development.MRI.MRI_ACR.html#Plugin_development.MRI.MRI_ACR.mr_acr_lib.ACR_analyzer">[docs]</a><span class="k">class</span> <span class="nc">ACR_analyzer</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">path</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">dcmseries</span> <span class="o">=</span> <span class="n">dicomseries</span><span class="o">.</span><span class="n">read_files</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="bp">True</span><span class="p">,</span><span class="bp">True</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">tagdict</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;Protocol Name&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;0018&#39;</span><span class="p">,</span> <span class="s">&#39;1030&#39;</span><span class="p">],</span> <span class="s">&#39;Scan sequence&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;0018&#39;</span><span class="p">,</span> <span class="s">&#39;0020&#39;</span><span class="p">],</span> <span class="s">&#39;Acq Mat&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;0018&#39;</span><span class="p">,</span> <span class="s">&#39;1310&#39;</span><span class="p">],</span> <span class="s">&#39;Instance No&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;0020&#39;</span><span class="p">,</span> <span class="s">&#39;0013&#39;</span><span class="p">],</span> <span class="s">&#39;TR&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;0018&#39;</span><span class="p">,</span> <span class="s">&#39;0080&#39;</span><span class="p">],</span> <span class="s">&#39;TE&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;0018&#39;</span><span class="p">,</span> <span class="s">&#39;0081&#39;</span><span class="p">],</span> <span class="s">&#39;Image No&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;0051&#39;</span><span class="p">,</span> <span class="s">&#39;1008&#39;</span><span class="p">],</span> 
+                        <span class="s">&#39;Series No&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;0020&#39;</span><span class="p">,</span> <span class="s">&#39;0011&#39;</span><span class="p">],</span> <span class="s">&#39;PixelSize&#39;</span><span class="p">:[</span><span class="s">&#39;0028&#39;</span><span class="p">,</span><span class="s">&#39;0030&#39;</span><span class="p">]}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">datadict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fill_datadict</span><span class="p">()</span>
+
+        
+
+<div class="viewcode-block" id="ACR_analyzer.qc_protocol"><a class="viewcode-back" href="../../../../Plugin_development.MRI.MRI_ACR.html#Plugin_development.MRI.MRI_ACR.mr_acr_lib.ACR_analyzer.qc_protocol">[docs]</a>    <span class="k">def</span> <span class="nf">qc_protocol</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">qc_protocol</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">return</span>
+
+
+</div>
+<div class="viewcode-block" id="ACR_analyzer.print_datadict_keys"><a class="viewcode-back" href="../../../../Plugin_development.MRI.MRI_ACR.html#Plugin_development.MRI.MRI_ACR.mr_acr_lib.ACR_analyzer.print_datadict_keys">[docs]</a>    <span class="k">def</span> <span class="nf">print_datadict_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">datadict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">subkey</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">datadict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="k">for</span> <span class="n">subsubkey</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">datadict</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="n">subkey</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                    <span class="k">print</span> <span class="n">key</span><span class="p">,</span><span class="n">subkey</span><span class="p">,</span><span class="n">subsubkey</span>
+
+
+                
+</div>
+<div class="viewcode-block" id="ACR_analyzer.show_me_image"><a class="viewcode-back" href="../../../../Plugin_development.MRI.MRI_ACR.html#Plugin_development.MRI.MRI_ACR.mr_acr_lib.ACR_analyzer.show_me_image">[docs]</a>    <span class="k">def</span> <span class="nf">show_me_image</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">protocolname</span><span class="p">,</span><span class="n">seriesno</span><span class="p">,</span><span class="n">instanceno</span><span class="p">,</span><span class="n">show</span><span class="o">=</span><span class="s">&#39;False&#39;</span><span class="p">):</span>
+        <span class="n">array</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">datadict</span><span class="p">[</span><span class="n">protocolname</span><span class="p">][</span><span class="n">seriesno</span><span class="p">][</span><span class="n">instanceno</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">show</span> <span class="o">==</span> <span class="s">&#39;True&#39;</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">matshow</span><span class="p">(</span><span class="n">array</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">array</span>
+</div>
+<div class="viewcode-block" id="ACR_analyzer.fill_datadict"><a class="viewcode-back" href="../../../../Plugin_development.MRI.MRI_ACR.html#Plugin_development.MRI.MRI_ACR.mr_acr_lib.ACR_analyzer.fill_datadict">[docs]</a>    <span class="k">def</span> <span class="nf">fill_datadict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">study</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dcmseries</span><span class="p">:</span>
+            <span class="n">sequence</span>  <span class="o">=</span> <span class="n">study</span><span class="o">.</span><span class="n">__dict__</span><span class="p">[</span><span class="s">&#39;_datasets&#39;</span><span class="p">]</span> 
+            <span class="n">tmpshape</span> <span class="o">=</span> <span class="n">study</span><span class="o">.</span><span class="n">__dict__</span><span class="p">[</span><span class="s">&#39;_shape&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tmpshape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">nrofinstances</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">tmpshape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+                <span class="n">nrofinstances</span> <span class="o">=</span> <span class="n">tmpshape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">instancenr</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nrofinstances</span><span class="p">):</span>
+                <span class="k">print</span> <span class="s">&quot;Instance -----&quot;</span><span class="p">,</span> <span class="n">instancenr</span>
+                <span class="n">tmpinstance</span> <span class="o">=</span> <span class="n">sequence</span><span class="p">[</span><span class="n">instancenr</span><span class="p">]</span>
+                <span class="n">tmparray</span> <span class="o">=</span> <span class="n">tmpinstance</span><span class="o">.</span><span class="n">pixel_array</span>
+                
+                <span class="n">tmpprotocol</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">tmpinstance</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">tagdict</span><span class="p">[</span><span class="s">&#39;Protocol Name&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+                <span class="n">tmpseriesno</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">tmpinstance</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">tagdict</span><span class="p">[</span><span class="s">&#39;Series No&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+                <span class="n">tmpdcminstance</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">tmpinstance</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">tagdict</span><span class="p">[</span><span class="s">&#39;Instance No&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+                
+                <span class="n">tmpdata</span> <span class="o">=</span> <span class="p">[</span><span class="n">tmparray</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">(</span><span class="n">tmpinstance</span><span class="p">)]</span>
+
+                <span class="k">if</span> <span class="n">tmpprotocol</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">datadict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">datadict</span><span class="p">[</span><span class="n">tmpprotocol</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">tmpseriesno</span><span class="p">:{</span><span class="n">tmpdcminstance</span><span class="p">:</span><span class="n">tmpdata</span><span class="p">}}</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">tmpseriesno</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">datadict</span><span class="p">[</span><span class="n">tmpprotocol</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">datadict</span><span class="p">[</span><span class="n">tmpprotocol</span><span class="p">][</span><span class="n">tmpseriesno</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">tmpdcminstance</span><span class="p">:</span><span class="n">tmpdata</span><span class="p">}</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">tmpdcminstance</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">datadict</span><span class="p">[</span><span class="n">tmpprotocol</span><span class="p">][</span><span class="n">tmpseriesno</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">datadict</span><span class="p">[</span><span class="n">tmpprotocol</span><span class="p">][</span><span class="n">tmpseriesno</span><span class="p">][</span><span class="n">tmpdcminstance</span><span class="p">]</span> <span class="o">=</span> <span class="n">tmpdata</span>                        
+</div>
+<div class="viewcode-block" id="ACR_analyzer.metadata"><a class="viewcode-back" href="../../../../Plugin_development.MRI.MRI_ACR.html#Plugin_development.MRI.MRI_ACR.mr_acr_lib.ACR_analyzer.metadata">[docs]</a>    <span class="k">def</span> <span class="nf">metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">dcminstance</span><span class="p">):</span>
+        <span class="n">outdict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tagdict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">print</span> <span class="n">key</span>
+            <span class="n">outdict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">dcminstance</span><span class="p">[</span><span class="n">tag</span><span class="o">.</span><span class="n">Tag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tagdict</span><span class="p">[</span><span class="n">key</span><span class="p">])]</span>
+            
+    </div>
+<div class="viewcode-block" id="ACR_analyzer.slice_position_accuracy"><a class="viewcode-back" href="../../../../Plugin_development.MRI.MRI_ACR.html#Plugin_development.MRI.MRI_ACR.mr_acr_lib.ACR_analyzer.slice_position_accuracy">[docs]</a>    <span class="k">def</span> <span class="nf">slice_position_accuracy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">tmparray</span><span class="p">):</span>
+
+        <span class="n">threshold</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">tmparray</span><span class="p">[</span><span class="mi">200</span><span class="p">:</span><span class="mi">210</span><span class="p">,</span><span class="mi">100</span><span class="p">:</span><span class="mi">110</span><span class="p">])</span>
+        
+        <span class="n">y_offset</span> <span class="o">=</span> <span class="mi">100</span>
+        <span class="n">x_offset</span> <span class="o">=</span> <span class="mi">200</span>
+        <span class="n">cross_profile</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">tmparray</span><span class="p">[</span><span class="n">y_offset</span><span class="p">:</span><span class="n">y_offset</span><span class="o">+</span><span class="mi">10</span><span class="p">,</span><span class="n">x_offset</span><span class="p">:</span><span class="n">x_offset</span><span class="o">+</span><span class="mi">100</span><span class="p">],</span><span class="mi">0</span><span class="p">)</span>        
+
+        <span class="n">points</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c"># determine where the half threshold is being crossed</span>
+
+        <span class="n">sign</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">cross_profile</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">cross_profile</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">threshold</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">500</span><span class="p">:</span>
+                <span class="n">points</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+                
+        
+
+        <span class="k">print</span> <span class="n">points</span>
+        <span class="c"># define left and right profiles </span>
+        <span class="n">midpoint</span> <span class="o">=</span> <span class="n">x_offset</span> <span class="o">+</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">points</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">points</span><span class="p">))</span><span class="o">/</span><span class="mi">2</span>
+        <span class="k">print</span> <span class="n">midpoint</span>
+        <span class="n">width_profile</span> <span class="o">=</span> <span class="mi">5</span>
+        <span class="n">mid_off</span> <span class="o">=</span> <span class="mi">2</span>
+
+        <span class="n">left_profile</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">tmparray</span><span class="p">[</span><span class="mi">80</span><span class="p">:</span><span class="mi">150</span><span class="p">,</span><span class="n">midpoint</span><span class="o">-</span><span class="n">width_profile</span><span class="o">-</span><span class="n">mid_off</span><span class="p">:</span><span class="n">midpoint</span><span class="o">-</span><span class="n">mid_off</span><span class="p">],</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">right_profile</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">tmparray</span><span class="p">[</span><span class="mi">80</span><span class="p">:</span><span class="mi">150</span><span class="p">,</span><span class="n">midpoint</span><span class="o">+</span><span class="n">mid_off</span><span class="p">:</span><span class="n">mid_off</span><span class="o">+</span><span class="n">midpoint</span> <span class="o">+</span> <span class="n">width_profile</span><span class="p">],</span><span class="mi">1</span><span class="p">)</span> 
+
+        <span class="c"># Both profiles have identical shapes but are slightly shifted due to the diff. in lengths</span>
+        <span class="c"># to calculate the difference in lengths we fit each curve to a sigmoid curve and from</span>
+        <span class="c"># the difference we determine the difference in lengths</span>
+
+        
+        <span class="n">p0</span> <span class="o">=</span> <span class="p">[</span><span class="mi">45</span><span class="p">,</span><span class="mf">0.5</span><span class="p">]</span> <span class="c">#initial estimate</span>
+        
+        <span class="n">lnorm</span> <span class="o">=</span> <span class="n">left_profile</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">left_profile</span><span class="p">)</span>
+        <span class="n">rnorm</span> <span class="o">=</span> <span class="n">right_profile</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">right_profile</span><span class="p">)</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">lnorm</span><span class="p">))</span>
+
+        <span class="n">lopt</span><span class="p">,</span> <span class="n">lcov</span> <span class="o">=</span> <span class="n">curve_fit</span><span class="p">(</span><span class="n">sigmoid</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">lnorm</span><span class="p">,</span><span class="n">p0</span><span class="p">)</span>
+        <span class="n">ropt</span><span class="p">,</span> <span class="n">rcov</span> <span class="o">=</span> <span class="n">curve_fit</span><span class="p">(</span><span class="n">sigmoid</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">rnorm</span><span class="p">,</span><span class="n">p0</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">lopt</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">ropt</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+</div>
+<div class="viewcode-block" id="ACR_analyzer.geometric_accuracy"><a class="viewcode-back" href="../../../../Plugin_development.MRI.MRI_ACR.html#Plugin_development.MRI.MRI_ACR.mr_acr_lib.ACR_analyzer.geometric_accuracy">[docs]</a>    <span class="k">def</span> <span class="nf">geometric_accuracy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">tmparray</span><span class="p">):</span>
+        <span class="k">return</span>
+
+
+</div>
+<div class="viewcode-block" id="ACR_analyzer.slice_thickness_accuracy"><a class="viewcode-back" href="../../../../Plugin_development.MRI.MRI_ACR.html#Plugin_development.MRI.MRI_ACR.mr_acr_lib.ACR_analyzer.slice_thickness_accuracy">[docs]</a>    <span class="k">def</span> <span class="nf">slice_thickness_accuracy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">tmparray</span><span class="p">):</span>
+
+        <span class="n">threshold</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">tmparray</span><span class="p">[</span><span class="mi">200</span><span class="p">:</span><span class="mi">210</span><span class="p">,</span><span class="mi">100</span><span class="p">:</span><span class="mi">110</span><span class="p">])</span>
+        
+        <span class="n">y_offset</span> <span class="o">=</span> <span class="mi">100</span>
+        <span class="n">x_offset</span> <span class="o">=</span> <span class="mi">200</span>
+        <span class="n">cross_profile</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">tmparray</span><span class="p">[</span><span class="n">y_offset</span><span class="p">:</span><span class="n">y_offset</span><span class="o">+</span><span class="mi">10</span><span class="p">,</span><span class="n">x_offset</span><span class="p">:</span><span class="n">x_offset</span><span class="o">+</span><span class="mi">100</span><span class="p">],</span><span class="mi">0</span><span class="p">)</span>        
+
+        <span class="n">points</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c"># determine where the half threshold is being crossed</span>
+
+        <span class="n">sign</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">cross_profile</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">cross_profile</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">threshold</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">500</span><span class="p">:</span>
+                <span class="n">points</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+                
+        
+
+        <span class="k">print</span> <span class="n">points</span>
+        <span class="c"># define left and right profiles </span>
+        <span class="n">midpoint</span> <span class="o">=</span> <span class="n">x_offset</span> <span class="o">+</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">points</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">points</span><span class="p">))</span><span class="o">/</span><span class="mi">2</span>
+        <span class="k">print</span> <span class="n">midpoint</span>
+        <span class="n">width_profile</span> <span class="o">=</span> <span class="mi">5</span>
+        <span class="n">mid_off</span> <span class="o">=</span> <span class="mi">2</span>
+
+        <span class="n">top_profile</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">tmparray</span><span class="p">[</span><span class="mi">80</span><span class="p">:</span><span class="mi">150</span><span class="p">,</span><span class="n">midpoint</span><span class="o">-</span><span class="n">width_profile</span><span class="o">-</span><span class="n">mid_off</span><span class="p">:</span><span class="n">midpoint</span><span class="o">-</span><span class="n">mid_off</span><span class="p">],</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">bottom_profile</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">tmparray</span><span class="p">[</span><span class="mi">80</span><span class="p">:</span><span class="mi">150</span><span class="p">,</span><span class="n">midpoint</span><span class="o">+</span><span class="n">mid_off</span><span class="p">:</span><span class="n">mid_off</span><span class="o">+</span><span class="n">midpoint</span> <span class="o">+</span> <span class="n">width_profile</span><span class="p">],</span><span class="mi">1</span><span class="p">)</span> 
+
+        <span class="c"># Both profiles have identical shapes but are slightly shifted due to the diff. in lengths</span>
+        <span class="c"># to calculate the difference in lengths we fit each curve to a sigmoid curve and from</span>
+        <span class="c"># the difference we determine the difference in lengths</span>
+
+        
+        <span class="n">p0</span> <span class="o">=</span> <span class="p">[</span><span class="mi">45</span><span class="p">,</span><span class="mf">0.5</span><span class="p">]</span> <span class="c">#initial estimate</span>
+        
+        <span class="n">lnorm</span> <span class="o">=</span> <span class="n">left_profile</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">left_profile</span><span class="p">)</span>
+        <span class="n">rnorm</span> <span class="o">=</span> <span class="n">right_profile</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">right_profile</span><span class="p">)</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">lnorm</span><span class="p">))</span>
+
+        <span class="n">lopt</span><span class="p">,</span> <span class="n">lcov</span> <span class="o">=</span> <span class="n">curve_fit</span><span class="p">(</span><span class="n">sigmoid</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">lnorm</span><span class="p">,</span><span class="n">p0</span><span class="p">)</span>
+        <span class="n">ropt</span><span class="p">,</span> <span class="n">rcov</span> <span class="o">=</span> <span class="n">curve_fit</span><span class="p">(</span><span class="n">sigmoid</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">rnorm</span><span class="p">,</span><span class="n">p0</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">lopt</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">ropt</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+</div>
+<div class="viewcode-block" id="ACR_analyzer.ghosting"><a class="viewcode-back" href="../../../../Plugin_development.MRI.MRI_ACR.html#Plugin_development.MRI.MRI_ACR.mr_acr_lib.ACR_analyzer.ghosting">[docs]</a>    <span class="k">def</span> <span class="nf">ghosting</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">data</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">showv</span><span class="o">=</span><span class="s">&#39;False&#39;</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="n">data</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">show_me_image</span><span class="p">(</span><span class="s">&#39;t1_se_tra&#39;</span><span class="p">,</span><span class="s">&#39;3&#39;</span><span class="p">,</span><span class="s">&#39;7&#39;</span><span class="p">,</span><span class="n">show</span><span class="o">=</span><span class="s">&#39;False&#39;</span><span class="p">)</span>
+
+
+        <span class="n">mymaskdict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">mymaskdict</span><span class="p">[</span><span class="s">&#39;center&#39;</span><span class="p">]</span><span class="o">=</span> <span class="n">_2d_ellipse</span><span class="p">(</span><span class="n">shape</span><span class="p">(</span><span class="n">data</span><span class="p">),[</span><span class="mi">256</span><span class="p">,</span><span class="mi">256</span><span class="p">],</span><span class="mf">164.</span><span class="p">,</span><span class="mf">164.</span><span class="p">,</span><span class="n">show</span><span class="o">=</span><span class="n">showv</span><span class="p">)</span>
+        <span class="n">mymaskdict</span><span class="p">[</span><span class="s">&#39;top&#39;</span><span class="p">]</span><span class="o">=</span> <span class="n">_2d_ellipse</span><span class="p">(</span><span class="n">shape</span><span class="p">(</span><span class="n">data</span><span class="p">),[</span><span class="mi">35</span><span class="p">,</span><span class="mi">250</span><span class="p">],</span><span class="mf">20.</span><span class="p">,</span><span class="mf">100.</span><span class="p">,</span><span class="n">show</span><span class="o">=</span><span class="n">showv</span><span class="p">)</span>
+        <span class="n">mymaskdict</span><span class="p">[</span><span class="s">&#39;right&#39;</span><span class="p">]</span><span class="o">=</span> <span class="n">_2d_ellipse</span><span class="p">(</span><span class="n">shape</span><span class="p">(</span><span class="n">data</span><span class="p">),[</span><span class="mi">250</span><span class="p">,</span><span class="mi">480</span><span class="p">],</span><span class="mf">100.</span><span class="p">,</span><span class="mf">20.</span><span class="p">,</span><span class="n">show</span><span class="o">=</span><span class="n">showv</span><span class="p">)</span>
+        <span class="n">mymaskdict</span><span class="p">[</span><span class="s">&#39;bottom&#39;</span><span class="p">]</span><span class="o">=</span> <span class="n">_2d_ellipse</span><span class="p">(</span><span class="n">shape</span><span class="p">(</span><span class="n">data</span><span class="p">),[</span><span class="mi">475</span><span class="p">,</span><span class="mi">250</span><span class="p">],</span><span class="mf">20.</span><span class="p">,</span><span class="mf">100.</span><span class="p">,</span><span class="n">show</span><span class="o">=</span><span class="n">showv</span><span class="p">)</span>
+        <span class="n">mymaskdict</span><span class="p">[</span><span class="s">&#39;left&#39;</span><span class="p">]</span><span class="o">=</span> <span class="n">_2d_ellipse</span><span class="p">(</span><span class="n">shape</span><span class="p">(</span><span class="n">data</span><span class="p">),[</span><span class="mi">250</span><span class="p">,</span><span class="mi">30</span><span class="p">],</span><span class="mf">100.</span><span class="p">,</span><span class="mf">20.</span><span class="p">,</span><span class="n">show</span><span class="o">=</span><span class="n">showv</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculate_ghosting</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="n">mymaskdict</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="ACR_analyzer.calculate_ghosting"><a class="viewcode-back" href="../../../../Plugin_development.MRI.MRI_ACR.html#Plugin_development.MRI.MRI_ACR.mr_acr_lib.ACR_analyzer.calculate_ghosting">[docs]</a>    <span class="k">def</span> <span class="nf">calculate_ghosting</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">data</span><span class="p">,</span><span class="n">roimaskdict</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="s">&#39;False&#39;</span><span class="p">):</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">roimaskdict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">marr</span> <span class="o">=</span> <span class="n">ma</span><span class="o">.</span><span class="n">masked_array</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="n">mask</span><span class="o">=</span><span class="mi">1</span><span class="o">-</span><span class="n">roimaskdict</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+            <span class="n">tmpsize</span> <span class="o">=</span> <span class="n">ma</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">marr</span><span class="p">)</span>
+            <span class="n">tmpmean</span> <span class="o">=</span> <span class="n">ma</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">marr</span><span class="p">)</span>
+            <span class="n">tmpstd</span> <span class="o">=</span> <span class="n">ma</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">marr</span><span class="p">)</span>
+            <span class="n">results</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">tmpmean</span><span class="p">,</span><span class="n">tmpstd</span><span class="p">,</span><span class="n">tmpsize</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">show</span><span class="o">==</span><span class="s">&#39;True&#39;</span><span class="p">:</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">matshow</span><span class="p">(</span><span class="n">marr</span><span class="p">)</span>
+            
+            
+        <span class="n">ghosting</span> <span class="o">=</span> <span class="p">((</span><span class="n">results</span><span class="p">[</span><span class="s">&#39;top&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">results</span><span class="p">[</span><span class="s">&#39;bottom&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span><span class="o">-</span> <span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="s">&#39;left&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">results</span><span class="p">[</span><span class="s">&#39;right&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]))</span><span class="o">/</span><span class="n">results</span><span class="p">[</span><span class="s">&#39;center&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">results</span><span class="p">[</span><span class="s">&#39;ghosting&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ghosting</span>
+
+        <span class="k">return</span> <span class="n">results</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

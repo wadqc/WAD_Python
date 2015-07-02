@@ -1,0 +1,769 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Plugin_development.MRI.MRI_ACR.pydicom_series &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="../../../../index.html" />
+    <link rel="up" title="Module code" href="../../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for Plugin_development.MRI.MRI_ACR.pydicom_series</h1><div class="highlight"><pre>
+<span class="c"># dicom_series.py</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">By calling the function read_files with a directory name or list</span>
+<span class="sd">of files as an argument, a list of DicomSeries instances can be</span>
+<span class="sd">obtained. A DicomSeries object has some attributes that give</span>
+<span class="sd">information about the serie (such as shape, sampling, suid) and</span>
+<span class="sd">has an info attribute, which is a dicom.DataSet instance containing</span>
+<span class="sd">information about the first dicom file in the serie. The data can</span>
+<span class="sd">be obtained using the get_pixel_array() method, which produces a</span>
+<span class="sd">3D numpy array if there a multiple files in the serie.</span>
+
+<span class="sd">This module can deal with gated data, in which case a DicomSeries</span>
+<span class="sd">instance is created for each 3D volume.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="c">#</span>
+<span class="c"># Copyright (c) 2010 Almar Klein</span>
+<span class="c"># This file is released under the pydicom license.</span>
+<span class="c">#    See the file license.txt included with the pydicom distribution, also</span>
+<span class="c">#    available at http://pydicom.googlecode.com</span>
+<span class="c">#</span>
+
+
+<span class="c"># I (Almar) performed some test to loading a series of data</span>
+<span class="c"># in two different ways: loading all data, and deferring loading</span>
+<span class="c"># the data. Both ways seem equally fast on my system. I have to</span>
+<span class="c"># note that results can differ quite a lot depending on the system,</span>
+<span class="c"># but still I think this suggests that deferred reading is in</span>
+<span class="c"># general not slower. I think deferred loading of the pixel data</span>
+<span class="c"># can be advantageous because maybe not all data of all series</span>
+<span class="c"># is needed. Also it simply saves memory, because the data is</span>
+<span class="c"># removed from the Dataset instances.</span>
+<span class="c"># In the few result below, cold means reading for the first time,</span>
+<span class="c"># warm means reading 2nd/3d/etc time.</span>
+<span class="c"># - Full loading of data, cold: 9 sec</span>
+<span class="c"># - Full loading of data, warm: 3 sec</span>
+<span class="c"># - Deferred loading of data, cold: 9 sec</span>
+<span class="c"># - Deferred loading of data, warm: 3 sec</span>
+
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">gc</span>
+<span class="kn">import</span> <span class="nn">dicom</span>
+<span class="kn">from</span> <span class="nn">dicom.sequence</span> <span class="kn">import</span> <span class="n">Sequence</span>
+
+<span class="c"># Try importing numpy</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+    <span class="n">have_numpy</span> <span class="o">=</span> <span class="bp">True</span>
+<span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+    <span class="n">np</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">have_numpy</span> <span class="o">=</span> <span class="bp">False</span>
+
+<span class="c">## Helper functions and classes</span>
+<div class="viewcode-block" id="ProgressBar"><a class="viewcode-back" href="../../../../Plugin_development.MRI.MRI_ACR.html#Plugin_development.MRI.MRI_ACR.pydicom_series.ProgressBar">[docs]</a><span class="k">class</span> <span class="nc">ProgressBar</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot; To print progress to the screen.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">char</span><span class="o">=</span><span class="s">&#39;-&#39;</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mi">20</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">char</span> <span class="o">=</span> <span class="n">char</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">length</span> <span class="o">=</span> <span class="n">length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nbits</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">what</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+
+<div class="viewcode-block" id="ProgressBar.Start"><a class="viewcode-back" href="../../../../Plugin_development.MRI.MRI_ACR.html#Plugin_development.MRI.MRI_ACR.pydicom_series.ProgressBar.Start">[docs]</a>    <span class="k">def</span> <span class="nf">Start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">what</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Start(what=&#39;&#39;)</span>
+<span class="sd">        Start the progress bar, displaying the given text first.</span>
+<span class="sd">        Make sure not to print anything untill after calling</span>
+<span class="sd">        Finish(). Messages can be printed while displaying</span>
+<span class="sd">        progess by using printMessage().</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">what</span> <span class="o">=</span> <span class="n">what</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nbits</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">what</span> <span class="o">+</span> <span class="s">&quot; [&quot;</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="ProgressBar.Stop"><a class="viewcode-back" href="../../../../Plugin_development.MRI.MRI_ACR.html#Plugin_development.MRI.MRI_ACR.pydicom_series.ProgressBar.Stop">[docs]</a>    <span class="k">def</span> <span class="nf">Stop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Stop the progress bar where it is now.</span>
+<span class="sd">        Optionally print a message behind it.&quot;&quot;&quot;</span>
+        <span class="n">delta</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">length</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">nbits</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot; &quot;</span> <span class="o">*</span> <span class="n">delta</span> <span class="o">+</span> <span class="s">&quot;] &quot;</span> <span class="o">+</span> <span class="n">message</span> <span class="o">+</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="ProgressBar.Finish"><a class="viewcode-back" href="../../../../Plugin_development.MRI.MRI_ACR.html#Plugin_development.MRI.MRI_ACR.pydicom_series.ProgressBar.Finish">[docs]</a>    <span class="k">def</span> <span class="nf">Finish</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Finish the progress bar, setting it to 100% if it</span>
+<span class="sd">        was not already. Optionally print a message behind the bar.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">delta</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">length</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">nbits</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">char</span> <span class="o">*</span> <span class="n">delta</span> <span class="o">+</span> <span class="s">&quot;] &quot;</span> <span class="o">+</span> <span class="n">message</span> <span class="o">+</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="ProgressBar.Update"><a class="viewcode-back" href="../../../../Plugin_development.MRI.MRI_ACR.html#Plugin_development.MRI.MRI_ACR.pydicom_series.ProgressBar.Update">[docs]</a>    <span class="k">def</span> <span class="nf">Update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">newProgress</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Update progress. Progress is given as a number</span>
+<span class="sd">        between 0 and 1.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress</span> <span class="o">=</span> <span class="n">newProgress</span>
+        <span class="n">required</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">length</span> <span class="o">*</span> <span class="p">(</span><span class="n">newProgress</span><span class="p">)</span>
+        <span class="n">delta</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">required</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">nbits</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">delta</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">char</span> <span class="o">*</span> <span class="n">delta</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">nbits</span> <span class="o">+=</span> <span class="n">delta</span>
+</div>
+<div class="viewcode-block" id="ProgressBar.PrintMessage"><a class="viewcode-back" href="../../../../Plugin_development.MRI.MRI_ACR.html#Plugin_development.MRI.MRI_ACR.pydicom_series.ProgressBar.PrintMessage">[docs]</a>    <span class="k">def</span> <span class="nf">PrintMessage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Print a message (for example a warning).</span>
+<span class="sd">        The message is printed behind the progress bar,</span>
+<span class="sd">        and a new bar is started.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Stop</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Start</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">what</span><span class="p">)</span>
+
+</div></div>
+<span class="k">def</span> <span class="nf">_dummyProgressCallback</span><span class="p">(</span><span class="n">progress</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; A callback to indicate progress that does nothing. &quot;&quot;&quot;</span>
+    <span class="k">pass</span>
+
+<span class="n">_progressBar</span> <span class="o">=</span> <span class="n">ProgressBar</span><span class="p">()</span>
+
+
+<span class="k">def</span> <span class="nf">_progressCallback</span><span class="p">(</span><span class="n">progress</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; The default callback for displaying progress. &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">progress</span><span class="p">,</span> <span class="nb">basestring</span><span class="p">):</span>
+        <span class="n">_progressBar</span><span class="o">.</span><span class="n">Start</span><span class="p">(</span><span class="n">progress</span><span class="p">)</span>
+        <span class="n">_progressBar</span><span class="o">.</span><span class="n">_t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="n">progress</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">_progressBar</span><span class="o">.</span><span class="n">_t0</span>
+        <span class="n">_progressBar</span><span class="o">.</span><span class="n">Finish</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%2.2f</span><span class="s"> seconds&#39;</span> <span class="o">%</span> <span class="n">dt</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">_progressBar</span><span class="o">.</span><span class="n">Update</span><span class="p">(</span><span class="n">progress</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_listFiles</span><span class="p">(</span><span class="n">files</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;List all files in the directory, recursively. &quot;&quot;&quot;</span>
+
+    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+        <span class="n">item</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">item</span><span class="p">):</span>
+            <span class="n">_listFiles</span><span class="p">(</span><span class="n">files</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_splitSerieIfRequired</span><span class="p">(</span><span class="n">serie</span><span class="p">,</span> <span class="n">series</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; _splitSerieIfRequired(serie, series)</span>
+<span class="sd">    Split the serie in multiple series if this is required.</span>
+<span class="sd">    The choice is based on examing the image position relative to</span>
+<span class="sd">    the previous image. If it differs too much, it is assumed</span>
+<span class="sd">    that there is a new dataset. This can happen for example in</span>
+<span class="sd">    unspitted gated CT data.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c"># Sort the original list and get local name</span>
+    <span class="n">serie</span><span class="o">.</span><span class="n">_sort</span><span class="p">()</span>
+    <span class="n">L</span> <span class="o">=</span> <span class="n">serie</span><span class="o">.</span><span class="n">_datasets</span>
+
+    <span class="c"># Init previous slice</span>
+    <span class="n">ds1</span> <span class="o">=</span> <span class="n">L</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="c"># Check whether we can do this</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="s">&quot;ImagePositionPatient&quot;</span> <span class="ow">in</span> <span class="n">ds1</span><span class="p">:</span>
+        <span class="k">return</span>
+
+    <span class="c"># Initialize a list of new lists</span>
+    <span class="n">L2</span> <span class="o">=</span> <span class="p">[[</span><span class="n">ds1</span><span class="p">]]</span>
+
+    <span class="c"># Init slice distance estimate</span>
+    <span class="n">distance</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">L</span><span class="p">)):</span>
+
+        <span class="c"># Get current slice</span>
+        <span class="n">ds2</span> <span class="o">=</span> <span class="n">L</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+
+        <span class="c"># Get positions</span>
+        <span class="n">pos1</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">ds1</span><span class="o">.</span><span class="n">ImagePositionPatient</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">pos2</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">ds2</span><span class="o">.</span><span class="n">ImagePositionPatient</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+
+        <span class="c"># Get distances</span>
+        <span class="n">newDist</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">pos1</span> <span class="o">-</span> <span class="n">pos2</span><span class="p">)</span>
+        <span class="c">#deltaDist = abs(firstPos-pos2)</span>
+
+        <span class="c"># If the distance deviates more than 2x from what we&#39;ve seen,</span>
+        <span class="c"># we can agree it&#39;s a new dataset.</span>
+        <span class="k">if</span> <span class="n">distance</span> <span class="ow">and</span> <span class="n">newDist</span> <span class="o">&gt;</span> <span class="mf">2.1</span> <span class="o">*</span> <span class="n">distance</span><span class="p">:</span>
+            <span class="n">L2</span><span class="o">.</span><span class="n">append</span><span class="p">([])</span>
+            <span class="n">distance</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># Test missing file</span>
+            <span class="k">if</span> <span class="n">distance</span> <span class="ow">and</span> <span class="n">newDist</span> <span class="o">&gt;</span> <span class="mf">1.5</span> <span class="o">*</span> <span class="n">distance</span><span class="p">:</span>
+                <span class="k">print</span> <span class="s">&#39;Warning: missing file after &quot;</span><span class="si">%s</span><span class="s">&quot;&#39;</span> <span class="o">%</span> <span class="n">ds1</span><span class="o">.</span><span class="n">filename</span>
+            <span class="n">distance</span> <span class="o">=</span> <span class="n">newDist</span>
+
+        <span class="c"># Add to last list</span>
+        <span class="n">L2</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ds2</span><span class="p">)</span>
+
+        <span class="c"># Store previous</span>
+        <span class="n">ds1</span> <span class="o">=</span> <span class="n">ds2</span>
+
+    <span class="c"># Split if we should</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">L2</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+
+        <span class="c"># At what position are we now?</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">serie</span><span class="p">)</span>
+
+        <span class="c"># Create new series</span>
+        <span class="n">series2insert</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">L</span> <span class="ow">in</span> <span class="n">L2</span><span class="p">:</span>
+            <span class="n">newSerie</span> <span class="o">=</span> <span class="n">DicomSeries</span><span class="p">(</span><span class="n">serie</span><span class="o">.</span><span class="n">suid</span><span class="p">,</span> <span class="n">serie</span><span class="o">.</span><span class="n">_showProgress</span><span class="p">)</span>
+            <span class="n">newSerie</span><span class="o">.</span><span class="n">_datasets</span> <span class="o">=</span> <span class="n">Sequence</span><span class="p">(</span><span class="n">L</span><span class="p">)</span>
+            <span class="n">series2insert</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">newSerie</span><span class="p">)</span>
+
+        <span class="c"># Insert series and remove self</span>
+        <span class="k">for</span> <span class="n">newSerie</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">series2insert</span><span class="p">):</span>
+            <span class="n">series</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">newSerie</span><span class="p">)</span>
+        <span class="n">series</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">serie</span><span class="p">)</span>
+
+
+<span class="n">pixelDataTag</span> <span class="o">=</span> <span class="n">dicom</span><span class="o">.</span><span class="n">tag</span><span class="o">.</span><span class="n">Tag</span><span class="p">(</span><span class="mh">0x7fe0</span><span class="p">,</span> <span class="mh">0x0010</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">_getPixelDataFromDataset</span><span class="p">(</span><span class="n">ds</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Get the pixel data from the given dataset. If the data</span>
+<span class="sd">    was deferred, make it deferred again, so that memory is</span>
+<span class="sd">    preserved. Also applies RescaleSlope and RescaleIntercept</span>
+<span class="sd">    if available. &quot;&quot;&quot;</span>
+
+    <span class="c"># Get original element</span>
+    <span class="n">el</span> <span class="o">=</span> <span class="nb">dict</span><span class="o">.</span><span class="n">__getitem__</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">pixelDataTag</span><span class="p">)</span>
+
+    <span class="c"># Get data</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">pixel_array</span>
+
+    <span class="c"># Remove data (mark as deferred)</span>
+    <span class="nb">dict</span><span class="o">.</span><span class="n">__setitem__</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">pixelDataTag</span><span class="p">,</span> <span class="n">el</span><span class="p">)</span>
+    <span class="k">del</span> <span class="n">ds</span><span class="o">.</span><span class="n">_pixel_array</span>
+
+    <span class="c"># Obtain slope and offset</span>
+    <span class="n">slope</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">needFloats</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="n">needApplySlopeOffset</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="k">if</span> <span class="s">&#39;RescaleSlope&#39;</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
+        <span class="n">needApplySlopeOffset</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="n">slope</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">RescaleSlope</span>
+    <span class="k">if</span> <span class="s">&#39;RescaleIntercept&#39;</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
+        <span class="n">needApplySlopeOffset</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="n">offset</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">RescaleIntercept</span>
+    <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">slope</span><span class="p">)</span> <span class="o">!=</span> <span class="n">slope</span> <span class="ow">or</span> <span class="nb">int</span><span class="p">(</span><span class="n">offset</span><span class="p">)</span> <span class="o">!=</span> <span class="n">offset</span><span class="p">:</span>
+        <span class="n">needFloats</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">needFloats</span><span class="p">:</span>
+        <span class="n">slope</span><span class="p">,</span> <span class="n">offset</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">slope</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">offset</span><span class="p">)</span>
+
+    <span class="c"># Apply slope and offset</span>
+    <span class="k">if</span> <span class="n">needApplySlopeOffset</span><span class="p">:</span>
+
+        <span class="c"># Maybe we need to change the datatype?</span>
+        <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">dtype</span> <span class="ow">in</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]:</span>
+            <span class="k">pass</span>
+        <span class="k">elif</span> <span class="n">needFloats</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># Determine required range</span>
+            <span class="n">minReq</span><span class="p">,</span> <span class="n">maxReq</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">data</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+            <span class="n">minReq</span> <span class="o">=</span> <span class="nb">min</span><span class="p">([</span><span class="n">minReq</span><span class="p">,</span> <span class="n">minReq</span> <span class="o">*</span> <span class="n">slope</span> <span class="o">+</span> <span class="n">offset</span><span class="p">,</span> <span class="n">maxReq</span> <span class="o">*</span> <span class="n">slope</span> <span class="o">+</span> <span class="n">offset</span><span class="p">])</span>
+            <span class="n">maxReq</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="n">maxReq</span><span class="p">,</span> <span class="n">minReq</span> <span class="o">*</span> <span class="n">slope</span> <span class="o">+</span> <span class="n">offset</span><span class="p">,</span> <span class="n">maxReq</span> <span class="o">*</span> <span class="n">slope</span> <span class="o">+</span> <span class="n">offset</span><span class="p">])</span>
+
+            <span class="c"># Determine required datatype from that</span>
+            <span class="n">dtype</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="k">if</span> <span class="n">minReq</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="c"># Signed integer type</span>
+                <span class="n">maxReq</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="o">-</span><span class="n">minReq</span><span class="p">,</span> <span class="n">maxReq</span><span class="p">])</span>
+                <span class="k">if</span> <span class="n">maxReq</span> <span class="o">&lt;</span> <span class="mi">2</span> <span class="o">**</span> <span class="mi">7</span><span class="p">:</span>
+                    <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int8</span>
+                <span class="k">elif</span> <span class="n">maxReq</span> <span class="o">&lt;</span> <span class="mi">2</span> <span class="o">**</span> <span class="mi">15</span><span class="p">:</span>
+                    <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int16</span>
+                <span class="k">elif</span> <span class="n">maxReq</span> <span class="o">&lt;</span> <span class="mi">2</span> <span class="o">**</span> <span class="mi">31</span><span class="p">:</span>
+                    <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c"># Unsigned integer type</span>
+                <span class="k">if</span> <span class="n">maxReq</span> <span class="o">&lt;</span> <span class="mi">2</span> <span class="o">**</span> <span class="mi">8</span><span class="p">:</span>
+                    <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int8</span>
+                <span class="k">elif</span> <span class="n">maxReq</span> <span class="o">&lt;</span> <span class="mi">2</span> <span class="o">**</span> <span class="mi">16</span><span class="p">:</span>
+                    <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int16</span>
+                <span class="k">elif</span> <span class="n">maxReq</span> <span class="o">&lt;</span> <span class="mi">2</span> <span class="o">**</span> <span class="mi">32</span><span class="p">:</span>
+                    <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span>
+
+            <span class="c"># Change datatype</span>
+            <span class="k">if</span> <span class="n">dtype</span> <span class="o">!=</span> <span class="n">data</span><span class="o">.</span><span class="n">dtype</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span>
+
+        <span class="c"># Apply slope and offset</span>
+        <span class="n">data</span> <span class="o">*=</span> <span class="n">slope</span>
+        <span class="n">data</span> <span class="o">+=</span> <span class="n">offset</span>
+
+    <span class="c"># Done</span>
+    <span class="k">return</span> <span class="n">data</span>
+
+
+<span class="c">## The public functions and classes</span>
+
+<div class="viewcode-block" id="read_files"><a class="viewcode-back" href="../../../../Plugin_development.MRI.MRI_ACR.html#Plugin_development.MRI.MRI_ACR.pydicom_series.read_files">[docs]</a><span class="k">def</span> <span class="nf">read_files</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">showProgress</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">readPixelData</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; read_files(path, showProgress=False, readPixelData=False)</span>
+
+<span class="sd">    Reads dicom files and returns a list of DicomSeries objects, which</span>
+<span class="sd">    contain information about the data, and can be used to load the</span>
+<span class="sd">    image or volume data.</span>
+
+<span class="sd">    The parameter &quot;path&quot; can also be a list of files or directories.</span>
+
+<span class="sd">    If the callable &quot;showProgress&quot; is given, it is called with a single</span>
+<span class="sd">    argument to indicate the progress. The argument is a string when a</span>
+<span class="sd">    progress is started (indicating what is processed). A float indicates</span>
+<span class="sd">    progress updates. The paremeter is None when the progress is finished.</span>
+<span class="sd">    When &quot;showProgress&quot; is True, a default callback is used that writes</span>
+<span class="sd">    to stdout. By default, no progress is shown.</span>
+
+<span class="sd">    if readPixelData is True, the pixel data of all series is read. By</span>
+<span class="sd">    default the loading of pixeldata is deferred until it is requested</span>
+<span class="sd">    using the DicomSeries.get_pixel_array() method. In general, both</span>
+<span class="sd">    methods should be equally fast.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># Init list of files</span>
+    <span class="n">files</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c"># Obtain data from the given path</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="nb">basestring</span><span class="p">):</span>
+        <span class="c"># Make dir nice</span>
+        <span class="n">basedir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="c"># Check whether it exists</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">basedir</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;The given path is not a valid directory.&#39;</span><span class="p">)</span>
+        <span class="c"># Find files recursively</span>
+        <span class="n">_listFiles</span><span class="p">(</span><span class="n">files</span><span class="p">,</span> <span class="n">basedir</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="nb">list</span><span class="p">)):</span>
+        <span class="c"># Iterate over all elements, which can be files or directories</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">path</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">p</span><span class="p">):</span>
+                <span class="n">_listFiles</span><span class="p">(</span><span class="n">files</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">p</span><span class="p">))</span>
+            <span class="k">elif</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">p</span><span class="p">):</span>
+                <span class="n">files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">print</span> <span class="s">&quot;Warning, the path &#39;</span><span class="si">%s</span><span class="s">&#39; is not valid.&quot;</span> <span class="o">%</span> <span class="n">p</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;The path argument must be a string or list.&#39;</span><span class="p">)</span>
+
+    <span class="c"># Set default progress callback?</span>
+    <span class="k">if</span> <span class="n">showProgress</span> <span class="ow">is</span> <span class="bp">True</span><span class="p">:</span>
+        <span class="n">showProgress</span> <span class="o">=</span> <span class="n">_progressCallback</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">showProgress</span><span class="p">,</span> <span class="s">&#39;__call__&#39;</span><span class="p">):</span>
+        <span class="n">showProgress</span> <span class="o">=</span> <span class="n">_dummyProgressCallback</span>
+
+    <span class="c"># Set defer size</span>
+    <span class="n">deferSize</span> <span class="o">=</span> <span class="mi">16383</span>  <span class="c"># 128**2-1</span>
+    <span class="k">if</span> <span class="n">readPixelData</span><span class="p">:</span>
+        <span class="n">deferSize</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="c"># Gather file data and put in DicomSeries</span>
+    <span class="n">series</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">showProgress</span><span class="p">(</span><span class="s">&#39;Loading series information:&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
+         <span class="c"># Skip DICOMDIR files</span>
+        <span class="k">if</span> <span class="n">filename</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s">&quot;DICOMDIR&quot;</span><span class="p">):</span>
+            <span class="k">continue</span>
+
+        <span class="c"># Try loading dicom ...</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">dcm</span> <span class="o">=</span> <span class="n">dicom</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">deferSize</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">dicom</span><span class="o">.</span><span class="n">filereader</span><span class="o">.</span><span class="n">InvalidDicomError</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">dcm</span> <span class="o">=</span> <span class="n">dicom</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">deferSize</span><span class="p">,</span><span class="n">force</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span> <span class="c">#AS: some files still valid</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">continue</span>  <span class="c"># skip non-dicom file</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">why</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">showProgress</span> <span class="ow">is</span> <span class="n">_progressCallback</span><span class="p">:</span>
+                <span class="n">_progressBar</span><span class="o">.</span><span class="n">PrintMessage</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">why</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">print</span> <span class="s">&#39;Warning:&#39;</span><span class="p">,</span> <span class="n">why</span>
+            <span class="k">continue</span>
+
+        <span class="c"># Get SUID and register the file with an existing or new series object</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">suid</span> <span class="o">=</span> <span class="n">dcm</span><span class="o">.</span><span class="n">SeriesInstanceUID</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="k">continue</span>  <span class="c"># some other kind of dicom file</span>
+        <span class="k">if</span> <span class="n">suid</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">series</span><span class="p">:</span>
+            <span class="n">series</span><span class="p">[</span><span class="n">suid</span><span class="p">]</span> <span class="o">=</span> <span class="n">DicomSeries</span><span class="p">(</span><span class="n">suid</span><span class="p">,</span> <span class="n">showProgress</span><span class="p">)</span>
+        <span class="n">series</span><span class="p">[</span><span class="n">suid</span><span class="p">]</span><span class="o">.</span><span class="n">_append</span><span class="p">(</span><span class="n">dcm</span><span class="p">)</span>
+
+        <span class="c"># Show progress (note that we always start with a 0.0)</span>
+        <span class="n">showProgress</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">count</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">files</span><span class="p">))</span>
+        <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="c"># Finish progress</span>
+    <span class="n">showProgress</span><span class="p">(</span><span class="bp">None</span><span class="p">)</span>
+
+    <span class="c"># Make a list and sort, so that the order is deterministic</span>
+    <span class="n">series</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+    <span class="n">series</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">suid</span><span class="p">)</span>
+    <span class="c"># Split series if necessary</span>
+    <span class="k">for</span> <span class="n">serie</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">([</span><span class="n">serie</span> <span class="k">for</span> <span class="n">serie</span> <span class="ow">in</span> <span class="n">series</span><span class="p">]):</span>
+        <span class="n">_splitSerieIfRequired</span><span class="p">(</span><span class="n">serie</span><span class="p">,</span> <span class="n">series</span><span class="p">)</span>
+
+    <span class="c"># Finish all series</span>
+    <span class="n">showProgress</span><span class="p">(</span><span class="s">&#39;Analysing series&#39;</span><span class="p">)</span>
+    <span class="n">series_</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">series</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">_finish</span><span class="p">()</span>
+            <span class="n">series_</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">series</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">pass</span>  <span class="c"># Skip serie (probably report-like file without pixels)</span>
+        <span class="n">showProgress</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">))</span>
+    <span class="n">showProgress</span><span class="p">(</span><span class="bp">None</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">series_</span>
+
+</div>
+<div class="viewcode-block" id="DicomSeries"><a class="viewcode-back" href="../../../../Plugin_development.MRI.MRI_ACR.html#Plugin_development.MRI.MRI_ACR.pydicom_series.DicomSeries">[docs]</a><span class="k">class</span> <span class="nc">DicomSeries</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; DicomSeries</span>
+<span class="sd">    This class represents a serie of dicom files that belong together.</span>
+<span class="sd">    If these are multiple files, they represent the slices of a volume</span>
+<span class="sd">    (like for CT or MRI). The actual volume can be obtained using loadData().</span>
+<span class="sd">    Information about the data can be obtained using the info attribute.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c"># To create a DicomSeries object, start by making an instance and</span>
+    <span class="c"># append files using the &quot;_append&quot; method. When all files are</span>
+    <span class="c"># added, call &quot;_sort&quot; to sort the files, and then &quot;_finish&quot; to evaluate</span>
+    <span class="c"># the data, perform some checks, and set the shape and sampling</span>
+    <span class="c"># attributes of the instance.</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">suid</span><span class="p">,</span> <span class="n">showProgress</span><span class="p">):</span>
+        <span class="c"># Init dataset list and the callback</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_datasets</span> <span class="o">=</span> <span class="n">Sequence</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_showProgress</span> <span class="o">=</span> <span class="n">showProgress</span>
+
+        <span class="c"># Init props</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_suid</span> <span class="o">=</span> <span class="n">suid</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_info</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_shape</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sampling</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="DicomSeries.suid"><a class="viewcode-back" href="../../../../Plugin_development.MRI.MRI_ACR.html#Plugin_development.MRI.MRI_ACR.pydicom_series.DicomSeries.suid">[docs]</a>    <span class="k">def</span> <span class="nf">suid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The Series Instance UID. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_suid</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="DicomSeries.shape"><a class="viewcode-back" href="../../../../Plugin_development.MRI.MRI_ACR.html#Plugin_development.MRI.MRI_ACR.pydicom_series.DicomSeries.shape">[docs]</a>    <span class="k">def</span> <span class="nf">shape</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The shape of the data (nz, ny, nx).</span>
+<span class="sd">        If None, the serie contains a single dicom file. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shape</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="DicomSeries.sampling"><a class="viewcode-back" href="../../../../Plugin_development.MRI.MRI_ACR.html#Plugin_development.MRI.MRI_ACR.pydicom_series.DicomSeries.sampling">[docs]</a>    <span class="k">def</span> <span class="nf">sampling</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; The sampling (voxel distances) of the data (dz, dy, dx).</span>
+<span class="sd">        If None, the serie contains a single dicom file. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sampling</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="DicomSeries.info"><a class="viewcode-back" href="../../../../Plugin_development.MRI.MRI_ACR.html#Plugin_development.MRI.MRI_ACR.pydicom_series.DicomSeries.info">[docs]</a>    <span class="k">def</span> <span class="nf">info</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; A DataSet instance containing the information as present in the</span>
+<span class="sd">        first dicomfile of this serie. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_info</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="DicomSeries.description"><a class="viewcode-back" href="../../../../Plugin_development.MRI.MRI_ACR.html#Plugin_development.MRI.MRI_ACR.pydicom_series.DicomSeries.description">[docs]</a>    <span class="k">def</span> <span class="nf">description</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; A description of the dicom series. Used fields are</span>
+<span class="sd">        PatientName, shape of the data, SeriesDescription,</span>
+<span class="sd">        and ImageComments.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">info</span>
+
+        <span class="c"># If no info available, return simple description</span>
+        <span class="k">if</span> <span class="n">info</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s">&quot;DicomSeries containing </span><span class="si">%i</span><span class="s"> images&quot;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_datasets</span><span class="p">)</span>
+
+        <span class="n">fields</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c"># Give patient name</span>
+        <span class="k">if</span> <span class="s">&#39;PatientName&#39;</span> <span class="ow">in</span> <span class="n">info</span><span class="p">:</span>
+            <span class="n">fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;&quot;</span> <span class="o">+</span> <span class="n">info</span><span class="o">.</span><span class="n">PatientName</span><span class="p">)</span>
+
+        <span class="c"># Also add dimensions</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+            <span class="n">tmp</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">d</span><span class="p">)</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">]</span>
+            <span class="n">fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;x&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tmp</span><span class="p">))</span>
+
+        <span class="c"># Try adding more fields</span>
+        <span class="k">if</span> <span class="s">&#39;SeriesDescription&#39;</span> <span class="ow">in</span> <span class="n">info</span><span class="p">:</span>
+            <span class="n">fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;&#39;&quot;</span> <span class="o">+</span> <span class="n">info</span><span class="o">.</span><span class="n">SeriesDescription</span> <span class="o">+</span> <span class="s">&quot;&#39;&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s">&#39;ImageComments&#39;</span> <span class="ow">in</span> <span class="n">info</span><span class="p">:</span>
+            <span class="n">fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;&#39;&quot;</span> <span class="o">+</span> <span class="n">info</span><span class="o">.</span><span class="n">ImageComments</span> <span class="o">+</span> <span class="s">&quot;&#39;&quot;</span><span class="p">)</span>
+
+        <span class="c"># Combine</span>
+        <span class="k">return</span> <span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">fields</span><span class="p">)</span>
+</div>
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">adr</span> <span class="o">=</span> <span class="nb">hex</span><span class="p">(</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+        <span class="k">return</span> <span class="s">&quot;&lt;DicomSeries with </span><span class="si">%i</span><span class="s"> images at </span><span class="si">%s</span><span class="s">&gt;&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_datasets</span><span class="p">),</span> <span class="n">adr</span><span class="p">)</span>
+
+<div class="viewcode-block" id="DicomSeries.get_pixel_array"><a class="viewcode-back" href="../../../../Plugin_development.MRI.MRI_ACR.html#Plugin_development.MRI.MRI_ACR.pydicom_series.DicomSeries.get_pixel_array">[docs]</a>    <span class="k">def</span> <span class="nf">get_pixel_array</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; get_pixel_array()</span>
+
+<span class="sd">        Get (load) the data that this DicomSeries represents, and return</span>
+<span class="sd">        it as a numpy array. If this serie contains multiple images, the</span>
+<span class="sd">        resulting array is 3D, otherwise it&#39;s 2D.</span>
+
+<span class="sd">        If RescaleSlope and RescaleIntercept are present in the dicom info,</span>
+<span class="sd">        the data is rescaled using these parameters. The data type is chosen</span>
+<span class="sd">        depending on the range of the (rescaled) data.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c"># Can we do this?</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">have_numpy</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;The Numpy package is required to use get_pixel_array.</span><span class="se">\n</span><span class="s">&quot;</span>
+            <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="c"># It&#39;s easy if no file or if just a single file</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_datasets</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Serie does not contain any files.&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_datasets</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">ds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_datasets</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="nb">slice</span> <span class="o">=</span> <span class="n">_getPixelDataFromDataset</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span>
+            <span class="k">return</span> <span class="nb">slice</span>
+
+        <span class="c"># Check info</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">info</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s">&quot;Cannot return volume if series not finished.&quot;</span><span class="p">)</span>
+
+        <span class="c"># Set callback to update progress</span>
+        <span class="n">showProgress</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_showProgress</span>
+
+        <span class="c"># Init data (using what the dicom packaged produces as a reference)</span>
+        <span class="n">ds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_datasets</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="nb">slice</span> <span class="o">=</span> <span class="n">_getPixelDataFromDataset</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span>
+        <span class="c">#vol = Aarray(self.shape, self.sampling, fill=0, dtype=slice.dtype)</span>
+        <span class="n">vol</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">slice</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="n">vol</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="nb">slice</span>
+
+        <span class="c"># Fill volume</span>
+        <span class="n">showProgress</span><span class="p">(</span><span class="s">&#39;Loading data:&#39;</span><span class="p">)</span>
+        <span class="n">ll</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">z</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">ll</span><span class="p">):</span>
+            <span class="n">ds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_datasets</span><span class="p">[</span><span class="n">z</span><span class="p">]</span>
+            <span class="n">vol</span><span class="p">[</span><span class="n">z</span><span class="p">]</span> <span class="o">=</span> <span class="n">_getPixelDataFromDataset</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span>
+            <span class="n">showProgress</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">z</span><span class="p">)</span> <span class="o">/</span> <span class="n">ll</span><span class="p">)</span>
+
+        <span class="c"># Finish</span>
+        <span class="n">showProgress</span><span class="p">(</span><span class="bp">None</span><span class="p">)</span>
+
+        <span class="c"># Done</span>
+        <span class="n">gc</span><span class="o">.</span><span class="n">collect</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">vol</span>
+</div>
+    <span class="k">def</span> <span class="nf">_append</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dcm</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; _append(dcm)</span>
+<span class="sd">        Append a dicomfile (as a dicom.dataset.FileDataset) to the series.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_datasets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dcm</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_sort</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; sort()</span>
+<span class="sd">        Sort the datasets by instance number.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_datasets</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">k</span><span class="p">:</span> <span class="n">k</span><span class="o">.</span><span class="n">InstanceNumber</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_finish</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; _finish()</span>
+
+<span class="sd">        Evaluate the series of dicom files. Together they should make up</span>
+<span class="sd">        a volumetric dataset. This means the files should meet certain</span>
+<span class="sd">        conditions. Also some additional information has to be calculated,</span>
+<span class="sd">        such as the distance between the slices. This method sets the</span>
+<span class="sd">        attributes for &quot;shape&quot;, &quot;sampling&quot; and &quot;info&quot;.</span>
+
+<span class="sd">        This method checks:</span>
+<span class="sd">          * that there are no missing files</span>
+<span class="sd">          * that the dimensions of all images match</span>
+<span class="sd">          * that the pixel spacing of all images match</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c"># The datasets list should be sorted by instance number</span>
+        <span class="n">L</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_datasets</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">L</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">L</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="c"># Set attributes</span>
+            <span class="n">ds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_datasets</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_datasets</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_shape</span> <span class="o">=</span> <span class="p">[</span><span class="n">ds</span><span class="o">.</span><span class="n">Rows</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">Columns</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sampling</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">PixelSpacing</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">float</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">PixelSpacing</span><span class="p">[</span><span class="mi">1</span><span class="p">])]</span>
+            <span class="k">return</span>
+
+        <span class="c"># Get previous</span>
+        <span class="n">ds1</span> <span class="o">=</span> <span class="n">L</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c"># Init measures to calculate average of</span>
+        <span class="n">distance_sum</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+        <span class="c"># Init measures to check (these are in 2D)</span>
+        <span class="n">dimensions</span> <span class="o">=</span> <span class="n">ds1</span><span class="o">.</span><span class="n">Rows</span><span class="p">,</span> <span class="n">ds1</span><span class="o">.</span><span class="n">Columns</span>
+        <span class="n">sampling</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">ds1</span><span class="o">.</span><span class="n">PixelSpacing</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">float</span><span class="p">(</span><span class="n">ds1</span><span class="o">.</span><span class="n">PixelSpacing</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>  <span class="c"># row, column</span>
+
+        <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">L</span><span class="p">)):</span>
+            <span class="c"># The first round ds1 and ds2 will be the same, for the</span>
+            <span class="c"># distance calculation this does not matter</span>
+
+            <span class="c"># Get current</span>
+            <span class="n">ds2</span> <span class="o">=</span> <span class="n">L</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+
+            <span class="c"># Get positions</span>
+            <span class="n">pos1</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">ds1</span><span class="o">.</span><span class="n">ImagePositionPatient</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+            <span class="n">pos2</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">ds2</span><span class="o">.</span><span class="n">ImagePositionPatient</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+
+            <span class="c"># Update distance_sum to calculate distance later</span>
+            <span class="n">distance_sum</span> <span class="o">+=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">pos1</span> <span class="o">-</span> <span class="n">pos2</span><span class="p">)</span>
+
+            <span class="c"># Test measures</span>
+            <span class="n">dimensions2</span> <span class="o">=</span> <span class="n">ds2</span><span class="o">.</span><span class="n">Rows</span><span class="p">,</span> <span class="n">ds2</span><span class="o">.</span><span class="n">Columns</span>
+            <span class="n">sampling2</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">ds2</span><span class="o">.</span><span class="n">PixelSpacing</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">float</span><span class="p">(</span><span class="n">ds2</span><span class="o">.</span><span class="n">PixelSpacing</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">dimensions</span> <span class="o">!=</span> <span class="n">dimensions2</span><span class="p">:</span>
+                <span class="c"># We cannot produce a volume if the dimensions match</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Dimensions of slices does not match.&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">sampling</span> <span class="o">!=</span> <span class="n">sampling2</span><span class="p">:</span>
+                <span class="c"># We can still produce a volume, but we should notify the user</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39;Warning: sampling does not match.&#39;</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_showProgress</span> <span class="ow">is</span> <span class="n">_progressCallback</span><span class="p">:</span>
+                    <span class="n">_progressBar</span><span class="o">.</span><span class="n">PrintMessage</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">print</span> <span class="n">msg</span>
+            <span class="c"># Store previous</span>
+            <span class="n">ds1</span> <span class="o">=</span> <span class="n">ds2</span>
+
+        <span class="c"># Create new dataset by making a deep copy of the first</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="n">dicom</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">Dataset</span><span class="p">()</span>
+        <span class="n">firstDs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_datasets</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">firstDs</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="p">(</span><span class="mh">0x01f1</span><span class="p">,</span> <span class="mh">0x1033</span><span class="p">):</span>
+                <span class="k">print</span> <span class="s">&quot;AS: ingnoring key&quot;</span><span class="p">,</span><span class="n">key</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="o">!=</span> <span class="p">(</span><span class="mh">0x7fe0</span><span class="p">,</span> <span class="mh">0x0010</span><span class="p">):</span>
+                <span class="n">el</span> <span class="o">=</span> <span class="n">firstDs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+                <span class="n">info</span><span class="o">.</span><span class="n">add_new</span><span class="p">(</span><span class="n">el</span><span class="o">.</span><span class="n">tag</span><span class="p">,</span> <span class="n">el</span><span class="o">.</span><span class="n">VR</span><span class="p">,</span> <span class="n">el</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+
+        <span class="c"># Finish calculating average distance</span>
+        <span class="c"># (Note that there are len(L)-1 distances)</span>
+        <span class="n">distance_mean</span> <span class="o">=</span> <span class="n">distance_sum</span> <span class="o">/</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">L</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="c"># Store information that is specific for the serie</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_shape</span> <span class="o">=</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">L</span><span class="p">),</span> <span class="n">ds2</span><span class="o">.</span><span class="n">Rows</span><span class="p">,</span> <span class="n">ds2</span><span class="o">.</span><span class="n">Columns</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sampling</span> <span class="o">=</span> <span class="p">[</span><span class="n">distance_mean</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">ds2</span><span class="o">.</span><span class="n">PixelSpacing</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+                               <span class="nb">float</span><span class="p">(</span><span class="n">ds2</span><span class="o">.</span><span class="n">PixelSpacing</span><span class="p">[</span><span class="mi">1</span><span class="p">])]</span>
+
+        <span class="c"># Store</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_info</span> <span class="o">=</span> <span class="n">info</span>
+
+</div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">sys</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">&quot;Expected a single argument: a directory with dicom files in it&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">adir</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="n">all_series</span> <span class="o">=</span> <span class="n">read_files</span><span class="p">(</span><span class="n">adir</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+        <span class="k">print</span> <span class="s">&quot;Summary of each series:&quot;</span>
+        <span class="k">for</span> <span class="n">series</span> <span class="ow">in</span> <span class="n">all_series</span><span class="p">:</span>
+            <span class="k">print</span> <span class="n">series</span><span class="o">.</span><span class="n">description</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

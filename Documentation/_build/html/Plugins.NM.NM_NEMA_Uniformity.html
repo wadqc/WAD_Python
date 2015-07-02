@@ -1,0 +1,271 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Plugins.NM.NM_NEMA_Uniformity package &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">..  documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="plugins-nm-nm-nema-uniformity-package">
+<h1>Plugins.NM.NM_NEMA_Uniformity package<a class="headerlink" href="#plugins-nm-nm-nema-uniformity-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib">
+<span id="plugins-nm-nm-nema-uniformity-nema-unif-lib-module"></span><h2>Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib module<a class="headerlink" href="#module-Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib" title="Permalink to this headline">¶</a></h2>
+<dl class="docutils">
+<dt>Changelog:</dt>
+<dd>20150121: Code cleanup + modification to make module compatible with Philips camera&#8217;s (TdW)
+[history here]
+...</dd>
+</dl>
+<dl class="function">
+<dt id="Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.bounding_box">
+<tt class="descclassname">Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.</tt><tt class="descname">bounding_box</tt><big>(</big><em>inarray</em><big>)</big><a class="reference internal" href="_modules/Plugins/NM/NM_NEMA_Uniformity/NEMA_unif_lib.html#bounding_box"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.bounding_box" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function returns the upper-left and lower-right coordinates of the bounding
+box enclosing the imagedata in &#8220;inarray&#8221;. the UL and LR coordinates are
+inside the FOV.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.calculate_nema_uniformity">
+<tt class="descclassname">Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.</tt><tt class="descname">calculate_nema_uniformity</tt><big>(</big><em>imagearray</em>, <em>resamplesize</em>, <em>results</em>, <em>domecorrection=False</em><big>)</big><a class="reference internal" href="_modules/Plugins/NM/NM_NEMA_Uniformity/NEMA_unif_lib.html#calculate_nema_uniformity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.calculate_nema_uniformity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper function for flood calculation according to NEMA recommendations.
+Input:</p>
+<blockquote>
+<div>imagearray     : NxN numpy input array
+resamplesize   : downsample size (MxM), typically (64,64)
+results        : instance of PluginData-class (container for generated results)
+domecorrection : Perform dome correction? [True, False]</div></blockquote>
+<p>Dome correction can be used for intrinsic uniformity measurements (e.g. with
+Siemens camera&#8217;s) where the distance between point-source and detector is
+smaller than 5 times the maximum FOV dimension.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.create_cfov">
+<tt class="descclassname">Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.</tt><tt class="descname">create_cfov</tt><big>(</big><em>ufov</em><big>)</big><a class="reference internal" href="_modules/Plugins/NM/NM_NEMA_Uniformity/NEMA_unif_lib.html#create_cfov"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.create_cfov" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function calculates the CFOV from a given UFOV mask.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.diff_data">
+<tt class="descclassname">Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.</tt><tt class="descname">diff_data</tt><big>(</big><em>inarray</em><big>)</big><a class="reference internal" href="_modules/Plugins/NM/NM_NEMA_Uniformity/NEMA_unif_lib.html#diff_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.diff_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function calculates the Differential Uniformity in a
+horizontal and vertical range of five pixels with maximum contrast.</p>
+<p>Returns contrast percentages and upper-left pixel of the locations
+with highest contrast.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.dome_correction">
+<tt class="descclassname">Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.</tt><tt class="descname">dome_correction</tt><big>(</big><em>imagearray</em><big>)</big><a class="reference internal" href="_modules/Plugins/NM/NM_NEMA_Uniformity/NEMA_unif_lib.html#dome_correction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.dome_correction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function for performing dome-correction.
+Input  = uncorrected flood data
+Output = dome-corrected flood data</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.downsample">
+<tt class="descclassname">Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.</tt><tt class="descname">downsample</tt><big>(</big><em>arr</em>, <em>factor</em><big>)</big><a class="reference internal" href="_modules/Plugins/NM/NM_NEMA_Uniformity/NEMA_unif_lib.html#downsample"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.downsample" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.fitflux">
+<tt class="descclassname">Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.</tt><tt class="descname">fitflux</tt><big>(</big><em>data</em><big>)</big><a class="reference internal" href="_modules/Plugins/NM/NM_NEMA_Uniformity/NEMA_unif_lib.html#fitflux"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.fitflux" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function for fitting a theoretical dome-function to the measured (uncorrected) data.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.flux">
+<tt class="descclassname">Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.</tt><tt class="descname">flux</tt><big>(</big><em>A</em>, <em>R_0</em>, <em>center_x</em>, <em>center_y</em><big>)</big><a class="reference internal" href="_modules/Plugins/NM/NM_NEMA_Uniformity/NEMA_unif_lib.html#flux"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.flux" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function template for fitting 2D dome.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.get_dims">
+<tt class="descclassname">Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.</tt><tt class="descname">get_dims</tt><big>(</big><em>squaremask</em><big>)</big><a class="reference internal" href="_modules/Plugins/NM/NM_NEMA_Uniformity/NEMA_unif_lib.html#get_dims"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.get_dims" title="Permalink to this definition">¶</a></dt>
+<dd><p>return number of unmasked pixels along horizontal and vertical profiles
+through the center of the image (=size of mask)</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.nema_data_preprocess">
+<tt class="descclassname">Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.</tt><tt class="descname">nema_data_preprocess</tt><big>(</big><em>imagearray</em>, <em>resamplesize</em><big>)</big><a class="reference internal" href="_modules/Plugins/NM/NM_NEMA_Uniformity/NEMA_unif_lib.html#nema_data_preprocess"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.nema_data_preprocess" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Function performs preprocessing on the input image:</dt>
+<dd><ul class="first last simple">
+<li>resample to 64x64</li>
+<li>smoothing with nine-point NEMA kernel</li>
+<li>calculation of UFOV and CFOV regions</li>
+</ul>
+</dd>
+</dl>
+<p>Returns: masked UFOV and CFOV arrays</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.nema_smooth">
+<tt class="descclassname">Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.</tt><tt class="descname">nema_smooth</tt><big>(</big><em>inarray</em><big>)</big><a class="reference internal" href="_modules/Plugins/NM/NM_NEMA_Uniformity/NEMA_unif_lib.html#nema_smooth"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.nema_smooth" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function smoothes inarray with a nine-point NEMA kernel.
+The total number of counts in &#8220;inarray&#8221; is preserved.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.save_imgmap">
+<tt class="descclassname">Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.</tt><tt class="descname">save_imgmap</tt><big>(</big><em>inarray</em>, <em>vertmax</em>, <em>hormax</em>, <em>filename</em><big>)</big><a class="reference internal" href="_modules/Plugins/NM/NM_NEMA_Uniformity/NEMA_unif_lib.html#save_imgmap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.save_imgmap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts input-array to image, with superposed the 5-pixel row/column with
+highest DU, the minimal and maximum pixel coordinates.</p>
+<blockquote>
+<div>input: inarray  = ufov or cfov
+vertmax  = first coordinate of 5-pixel column (vertical)
+hormax   = first coordinate of 5-pixel row (horizontal)
+filename = png-filename of output</div></blockquote>
+</dd></dl>
+
+<dl class="function">
+<dt id="Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.set_threshold">
+<tt class="descclassname">Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.</tt><tt class="descname">set_threshold</tt><big>(</big><em>imagearray</em><big>)</big><a class="reference internal" href="_modules/Plugins/NM/NM_NEMA_Uniformity/NEMA_unif_lib.html#set_threshold"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.set_threshold" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.testmask">
+<tt class="descclassname">Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.</tt><tt class="descname">testmask</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Plugins/NM/NM_NEMA_Uniformity/NEMA_unif_lib.html#testmask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.testmask" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.unifcalc">
+<tt class="descclassname">Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.</tt><tt class="descname">unifcalc</tt><big>(</big><em>vector</em><big>)</big><a class="reference internal" href="_modules/Plugins/NM/NM_NEMA_Uniformity/NEMA_unif_lib.html#unifcalc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib.unifcalc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function calculates the contrast between minimum and maximum pixelvalue in &#8220;vector&#8221;.
+Returns fraction not percentage!</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-Plugins.NM.NM_NEMA_Uniformity.QCUnif_wadwrapper">
+<span id="plugins-nm-nm-nema-uniformity-qcunif-wadwrapper-module"></span><h2>Plugins.NM.NM_NEMA_Uniformity.QCUnif_wadwrapper module<a class="headerlink" href="#module-Plugins.NM.NM_NEMA_Uniformity.QCUnif_wadwrapper" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="Plugins.NM.NM_NEMA_Uniformity.QCUnif_wadwrapper.nm_uniformity">
+<tt class="descclassname">Plugins.NM.NM_NEMA_Uniformity.QCUnif_wadwrapper.</tt><tt class="descname">nm_uniformity</tt><big>(</big><em>data</em>, <em>results</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/Plugins/NM/NM_NEMA_Uniformity/QCUnif_wadwrapper.html#nm_uniformity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.NM.NM_NEMA_Uniformity.QCUnif_wadwrapper.nm_uniformity" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="Plugins.NM.NM_NEMA_Uniformity.QCUnif_wadwrapper.uniformity_nm">
+<em class="property">class </em><tt class="descclassname">Plugins.NM.NM_NEMA_Uniformity.QCUnif_wadwrapper.</tt><tt class="descname">uniformity_nm</tt><big>(</big><em>data</em>, <em>results</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/Plugins/NM/NM_NEMA_Uniformity/QCUnif_wadwrapper.html#uniformity_nm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.NM.NM_NEMA_Uniformity.QCUnif_wadwrapper.uniformity_nm" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="Plugins.NM.NM_NEMA_Uniformity.QCUnif_wadwrapper.uniformity_nm.Uniformity_main">
+<tt class="descname">Uniformity_main</tt><big>(</big><em>pixelmap</em>, <em>results</em>, <em>label</em>, <em>dome_corr</em><big>)</big><a class="reference internal" href="_modules/Plugins/NM/NM_NEMA_Uniformity/QCUnif_wadwrapper.html#uniformity_nm.Uniformity_main"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.NM.NM_NEMA_Uniformity.QCUnif_wadwrapper.uniformity_nm.Uniformity_main" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.NM.NM_NEMA_Uniformity.QCUnif_wadwrapper.uniformity_nm.check_dicomdict_studies">
+<tt class="descname">check_dicomdict_studies</tt><big>(</big><em>dicomdict</em><big>)</big><a class="reference internal" href="_modules/Plugins/NM/NM_NEMA_Uniformity/QCUnif_wadwrapper.html#uniformity_nm.check_dicomdict_studies"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.NM.NM_NEMA_Uniformity.QCUnif_wadwrapper.uniformity_nm.check_dicomdict_studies" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.NM.NM_NEMA_Uniformity.QCUnif_wadwrapper.uniformity_nm.savewadfig">
+<tt class="descname">savewadfig</tt><big>(</big><em>impath</em>, <em>pixelmap</em><big>)</big><a class="reference internal" href="_modules/Plugins/NM/NM_NEMA_Uniformity/QCUnif_wadwrapper.html#uniformity_nm.savewadfig"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.NM.NM_NEMA_Uniformity.QCUnif_wadwrapper.uniformity_nm.savewadfig" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-Plugins.NM.NM_NEMA_Uniformity">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-Plugins.NM.NM_NEMA_Uniformity" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Plugins.NM.NM_NEMA_Uniformity package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib">Plugins.NM.NM_NEMA_Uniformity.NEMA_unif_lib module</a></li>
+<li><a class="reference internal" href="#module-Plugins.NM.NM_NEMA_Uniformity.QCUnif_wadwrapper">Plugins.NM.NM_NEMA_Uniformity.QCUnif_wadwrapper module</a></li>
+<li><a class="reference internal" href="#module-Plugins.NM.NM_NEMA_Uniformity">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/Plugins.NM.NM_NEMA_Uniformity.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">..  documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Configuratie voor WAD Generic analyse module
+-->
+<WAD_Generic_config>
+    <!-- naam van de configuratie -->
+    <name>Generic</name>
+    <!-- beschrijving -->
+    <description>WAD Generic cfg</description>
+    <!-- versie / datum -->
+    <version>20150123</version>
+    <!-- Logfile verbose options -->
+
+    <action>
+        <plugin>Plugin_development.Generic.generic</plugin>
+        <function>main</function>
+        <default_level>1</default_level>
+
+        <params>
+            <tag_type>dict</tag_type>
+            <!-- maybe in future also "xml" -->
+            <private_group>0x0071</private_group>
+            <private_element>0x9999</private_element>
+        </params>
+
+        <limits>
+            <result description="sensitivity">
+                <acc_low>1.23</acc_low>
+                <acc_high>2.5</acc_high>
+                <crit_low>1.00</crit_low>
+                <crit_high>3.00</crit_high>
+            </result>
+        </limits>
+
+    </action>
+
+</WAD_Generic_config>

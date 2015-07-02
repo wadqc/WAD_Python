@@ -1,0 +1,987 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Plugins.US.US_AirReverberations.QCUS_lib &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="../../../../index.html" />
+    <link rel="up" title="Module code" href="../../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for Plugins.US.US_AirReverberations.QCUS_lib</h1><div class="highlight"><pre>
+<span class="c"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Analysis of reverberations in Air pattern.</span>
+<span class="sd">Workflow:</span>
+<span class="sd">input: dicomobject,pixeldata  (the pixeldata is already cleaned; color is removed, leaving plain grayscale)</span>
+<span class="sd">1. Isolate the reverberations pattern from the other information:</span>
+<span class="sd">  a. Connected components analysis of pixelvalues &gt;0</span>
+<span class="sd">  b. Merge all not-to small components found along the y-axis in the middle of the imagedata, </span>
+<span class="sd">     excluding components fixed to the top of the image</span>
+<span class="sd">  c. Use as a mask to isolate reverberations pattern</span>
+<span class="sd">2. Straighten curve probe data:</span>
+<span class="sd">  a. Detect points left and right from the middle, along the top of the reveberation pattern; if too few points</span>
+<span class="sd">     are detected, the probe is not curved, so just crop the reveberation pattern -&gt; rect_image</span>
+<span class="sd">  b. Fit a circle through these points</span>
+<span class="sd">  c. Interpolate data to straightend grid -&gt; rect_image</span>
+<span class="sd">3. Sensitivity analyis of rect_image to determine vertical extend of reverberation pattern:</span>
+<span class="sd">  a. Make a profile along the vertical: average of cetral part of rect_image</span>
+<span class="sd">  b. Extend: Determine noise_level, and calculate intersection of profile with noise_level</span>
+<span class="sd">  c. Extend_fft: Do a fourier analysis to find the ringing pattern; remove it an find the minimum of the </span>
+<span class="sd">     background trend</span>
+<span class="sd">4. Uniformity analysis of rect_image to find dips that suggest problems with the probe:</span>
+<span class="sd">  a. Make a profile along the horizontal of the rect_image upto sensitivity_extend;</span>
+<span class="sd">     FASTMODE: (experimental) use onle rect_image of first ring; should have all the info there already</span>
+<span class="sd">  b. Detect dips that are deep enough, find the minimum in of the dips, and overal and the overal non-uniformity</span>
+<span class="sd">  </span>
+
+<span class="sd">Warning: THIS MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!</span>
+
+<span class="sd">TODO:</span>
+<span class="sd">    o Maybe put hard threshold on peak value for uniformity (is normalized, so why not?!)</span>
+<span class="sd">Changelog:</span>
+<span class="sd">    20150626: remove division by zero for snr</span>
+<span class="sd">    20150610: moved peakfit to wadwrapper_lib</span>
+<span class="sd">    20150520: cleanup label</span>
+<span class="sd">    20150429: Fixes reading of files wihtout NumberOfFrames tag</span>
+<span class="sd">    20150422: Clean up; added documentation</span>
+<span class="sd">    20150421: Added fft analysis; clean-up; added FAST_MODE: scipy.map_coordinates, x-prof only first ring; localnormalization</span>
+<span class="sd">    20150420: Overal non-uniformity added; allow min/max at start/end</span>
+<span class="sd">    20150417: Removed valleyfit; fixed radius range</span>
+<span class="sd">    20150416: Sensitivity analysis and uniformity analysis</span>
+<span class="sd">    20150410: Initial version</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">pyWADLib</span> <span class="kn">import</span> <span class="n">wadwrapper_lib</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">wadwrapper_lib</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">operator</span>
+<span class="kn">import</span> <span class="nn">scipy</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">QCUS_math</span> <span class="kn">as</span> <span class="nn">mymath</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">numpy.fft.rfftfreq</span> <span class="kn">as</span> <span class="nn">rfftfreq</span>
+<span class="k">except</span><span class="p">:</span> <span class="c"># old numpy</span>
+<div class="viewcode-block" id="rfftfreq"><a class="viewcode-back" href="../../../../Plugins.US.US_AirReverberations.html#Plugins.US.US_AirReverberations.QCUS_lib.rfftfreq">[docs]</a>    <span class="k">def</span> <span class="nf">rfftfreq</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">d</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the Discrete Fourier Transform sample frequencies</span>
+<span class="sd">        (for usage with rfft, irfft).</span>
+<span class="sd">        The returned float array `f` contains the frequency bin centers in cycles</span>
+<span class="sd">        per unit of the sample spacing (with zero at the start).  For instance, if</span>
+<span class="sd">        the sample spacing is in seconds, then the frequency unit is cycles/second.</span>
+<span class="sd">        Given a window length `n` and a sample spacing `d`::</span>
+<span class="sd">          f = [0, 1, ...,     n/2-1,     n/2] / (d*n)   if n is even</span>
+<span class="sd">          f = [0, 1, ..., (n-1)/2-1, (n-1)/2] / (d*n)   if n is odd</span>
+<span class="sd">        Unlike `fftfreq` (but like `scipy.fftpack.rfftfreq`)</span>
+<span class="sd">        the Nyquist frequency component is considered to be positive.</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        n : int</span>
+<span class="sd">            Window length.</span>
+<span class="sd">        d : scalar, optional</span>
+<span class="sd">            Sample spacing (inverse of the sampling rate). Defaults to 1.</span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        f : ndarray</span>
+<span class="sd">            Array of length ``n//2 + 1`` containing the sample frequencies.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">val</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">/</span><span class="p">(</span><span class="n">n</span><span class="o">*</span><span class="n">d</span><span class="p">)</span>
+        <span class="n">N</span> <span class="o">=</span> <span class="n">n</span><span class="o">//</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">results</span> <span class="o">*</span> <span class="n">val</span>    
+</div>
+<div class="viewcode-block" id="cropImage"><a class="viewcode-back" href="../../../../Plugins.US.US_AirReverberations.html#Plugins.US.US_AirReverberations.QCUS_lib.cropImage">[docs]</a><span class="k">def</span> <span class="nf">cropImage</span><span class="p">(</span><span class="n">image</span><span class="p">,</span><span class="n">offX</span><span class="p">,</span><span class="n">offY</span><span class="p">):</span>
+    <span class="c"># helper function for symmetric cropping of image</span>
+    <span class="n">wid</span><span class="p">,</span><span class="n">hei</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">offX</span><span class="p">)</span><span class="o">==</span><span class="mi">1</span><span class="p">:</span>
+        <span class="n">xran</span> <span class="o">=</span> <span class="p">[</span><span class="n">offX</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="o">-</span><span class="n">offX</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">xran</span> <span class="o">=</span> <span class="n">offX</span>
+    <span class="k">if</span> <span class="n">xran</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">xran</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">wid</span><span class="o">-</span><span class="mi">1</span>
+        
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">offY</span><span class="p">)</span><span class="o">==</span><span class="mi">1</span><span class="p">:</span>
+        <span class="n">yran</span> <span class="o">=</span> <span class="p">[</span><span class="n">offY</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="o">-</span><span class="n">offY</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">yran</span> <span class="o">=</span> <span class="n">offY</span>
+    <span class="k">if</span> <span class="n">yran</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">yran</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">hei</span><span class="o">-</span><span class="mi">1</span>
+    <span class="k">return</span> <span class="n">image</span><span class="p">[</span><span class="n">xran</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">xran</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">yran</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">yran</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+</div>
+<div class="viewcode-block" id="USStruct"><a class="viewcode-back" href="../../../../Plugins.US.US_AirReverberations.html#Plugins.US.US_AirReverberations.QCUS_lib.USStruct">[docs]</a><span class="k">class</span> <span class="nc">USStruct</span><span class="p">:</span>
+    <span class="n">verbose</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="n">testing</span> <span class="o">=</span> <span class="bp">False</span>
+
+    <span class="c"># input image</span>
+    <span class="n">dcmInfile</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">pixeldataIn</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">dicomMode</span> <span class="o">=</span> <span class="n">wadwrapper_lib</span><span class="o">.</span><span class="n">stMode2D</span>
+
+    
+    <span class="c"># for matlib plotting</span>
+    <span class="n">hasmadeplots</span> <span class="o">=</span> <span class="bp">False</span>
+
+    <span class="c"># reverbrations</span>
+    <span class="n">reverb_image</span>  <span class="o">=</span> <span class="bp">None</span> <span class="c"># isolated reverbrations (by largest connected component)</span>
+    <span class="n">rect_image</span>    <span class="o">=</span> <span class="bp">None</span> <span class="c"># straightend image for curvilinear probes</span>
+    <span class="n">curve_xyr</span>     <span class="o">=</span> <span class="bp">None</span> <span class="c"># center and radius [x,y,r] of curvilinear probe</span>
+    <span class="n">curve_residu</span>  <span class="o">=</span> <span class="bp">None</span> <span class="c"># residu of fitting of curvilinear probe</span>
+    <span class="n">curve_opendeg</span> <span class="o">=</span> <span class="bp">None</span> <span class="c"># opening angle in degrees</span>
+    <span class="n">unif_bots</span>     <span class="o">=</span> <span class="bp">None</span> <span class="c"># list of (pos,val) of kept valleys in normalized reverb profile</span>
+    <span class="n">unif_lowest</span>   <span class="o">=</span> <span class="mi">0</span> <span class="c"># lowest value of valleys</span>
+    <span class="n">unif_low</span>      <span class="o">=</span> <span class="mi">0</span> <span class="c"># lowest value </span>
+    <span class="n">unif_line</span>     <span class="o">=</span> <span class="mi">0</span> <span class="c"># Overal non-uniformity over whole, unnormalized pofile</span>
+    
+    <span class="n">rev_miny</span> <span class="o">=</span> <span class="bp">None</span> <span class="c"># (x,y) of position of minimum y of reverb image</span>
+    <span class="n">rev_maxy</span> <span class="o">=</span> <span class="bp">None</span> <span class="c"># (x,y) of position of maximum y of reverb image</span>
+    <span class="n">rev_maxx</span> <span class="o">=</span> <span class="bp">None</span> <span class="c"># (x,y) of position of maximum x of reverb image</span>
+    <span class="n">rev_minx</span> <span class="o">=</span> <span class="bp">None</span> <span class="c"># (x,y) of position of minimum x of reverb image</span>
+    <span class="n">rev_midx</span> <span class="o">=</span> <span class="bp">None</span> <span class="c"># estimated x of middle of reverb image</span>
+    <span class="n">rev_mask</span> <span class="o">=</span> <span class="bp">None</span> <span class="c"># mask of reverb image</span>
+    
+    <span class="n">curve_radii</span>  <span class="o">=</span> <span class="bp">None</span> <span class="c"># [min, max] radius</span>
+    <span class="n">curve_angles</span> <span class="o">=</span> <span class="bp">None</span> <span class="c"># [min, max] angle</span>
+
+    <span class="c"># sensitivity</span>
+    <span class="n">sens_ylim</span>   <span class="o">=</span> <span class="bp">None</span>    <span class="c"># limit on y determined from peaks in y-dir </span>
+    <span class="n">sens_ylim2</span>  <span class="o">=</span> <span class="bp">None</span>   <span class="c"># limit on y determined from fft analysis of peaks in y-dir </span>
+    <span class="n">sens_noiseM</span> <span class="o">=</span> <span class="bp">None</span> <span class="c"># noise determined from (vertical) sensitivity profile</span>
+    <span class="n">sens_numtops</span> <span class="o">=</span> <span class="bp">None</span> <span class="c"># number of peaks found upto ylim</span>
+    <span class="n">sens_numbots</span> <span class="o">=</span> <span class="bp">None</span> <span class="c"># number of valleys found upto ylim</span>
+    <span class="n">sens_noiserange</span> <span class="o">=</span> <span class="bp">None</span> <span class="c"># number of lines used for calculation of noiselevel</span>
+    <span class="n">sens_basewavelength</span> <span class="o">=</span> <span class="bp">None</span> <span class="c"># basic wavelength i.e. distance between rings in mm</span>
+    
+    <span class="c"># images</span>
+    <span class="n">image_fnames</span> <span class="o">=</span> <span class="p">[]</span> <span class="c"># filenames of generated images</span>
+    
+    <span class="c"># for gui</span>
+    <span class="n">cca_image</span> <span class="o">=</span> <span class="bp">None</span> <span class="c"># connected component analysis</span>
+    <span class="n">report</span> <span class="o">=</span> <span class="bp">None</span> <span class="c"># list (&#39;description&#39;,value) of timing information</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span> <span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">dcmInfile</span><span class="p">,</span><span class="n">pixeldataIn</span><span class="p">,</span><span class="n">dicomMode</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dcmInfile</span> <span class="o">=</span> <span class="n">dcmInfile</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pixeldataIn</span> <span class="o">=</span> <span class="n">pixeldataIn</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dicomMode</span> <span class="o">=</span> <span class="n">dicomMode</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hasmadeplots</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">report</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">cca_image</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reverb_image</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rect_image</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">curve_xyr</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">curve_residu</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">curve_opendeg</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unif_bots</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unif_lowest</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unif_low</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unif_line</span> <span class="o">=</span> <span class="mi">1</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">sens_ylim</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sens_ylim2</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sens_noiseM</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sens_numtops</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sens_numbots</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sens_noiserange</span> <span class="o">=</span> <span class="mi">2</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">sens_basewavelength</span> <span class="o">=</span> <span class="mf">0.</span>
+        
+        <span class="c"># helper stuff</span>
+        <span class="n">rev_miny</span> <span class="o">=</span> <span class="bp">None</span> 
+        <span class="n">rev_maxy</span> <span class="o">=</span> <span class="bp">None</span> 
+        <span class="n">rev_maxx</span> <span class="o">=</span> <span class="bp">None</span> 
+        <span class="n">rev_minx</span> <span class="o">=</span> <span class="bp">None</span> 
+        <span class="n">rev_midx</span> <span class="o">=</span> <span class="bp">None</span> 
+        <span class="n">curve_angles</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">curve_radii</span>  <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">rev_mask</span> <span class="o">=</span> <span class="bp">None</span>
+        </div>
+<div class="viewcode-block" id="US_QC"><a class="viewcode-back" href="../../../../Plugins.US.US_AirReverberations.html#Plugins.US.US_AirReverberations.QCUS_lib.US_QC">[docs]</a><span class="k">class</span> <span class="nc">US_QC</span><span class="p">:</span>
+    <span class="n">qcversion</span> <span class="o">=</span> <span class="mi">20150626</span>
+    <span class="n">fastmode</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="n">modeLocalNorm</span> <span class="o">=</span> <span class="bp">False</span>
+
+    <span class="c"># parameters:</span>
+    <span class="n">smooth_uniformity</span> <span class="o">=</span> <span class="mi">1</span>  <span class="c"># running average of this width before peak detection</span>
+    <span class="n">delta_uniformity</span> <span class="o">=</span> <span class="o">.</span><span class="mi">15</span> <span class="c"># A dip in normalized reverb pattern must be at least &lt;delta&gt;</span>
+    <span class="n">smooth_sensitivity</span> <span class="o">=</span> <span class="mi">3</span> <span class="c"># running average of this width for sensitivity data</span>
+    <span class="n">fdelta_sensitivity</span> <span class="o">=</span> <span class="o">.</span><span class="mi">10</span> <span class="c"># A peak in sensitivity profile must be at least &lt;fdelta&gt;*(max-noise)</span>
+    <span class="n">offsetVER</span> <span class="o">=</span> <span class="mi">0</span> <span class="c"># default lines to exclude from top and bottom when making profiles (10)</span>
+    <span class="n">offsetHOR</span> <span class="o">=</span> <span class="mi">0</span> <span class="c"># default rows to exclude from top and bottom when making profiles (10)</span>
+    <span class="n">fft_skip</span> <span class="o">=</span> <span class="mi">5</span> <span class="c"># in fft analysis, ignore peak if it is located within skip freqs from 0</span>
+                 <span class="c"># to ignore for peak finding (offset, trend)</span>
+    <span class="n">check_asym</span> <span class="o">=</span> <span class="bp">False</span> <span class="c"># do or do not check of strongly asym peaks</span>
+    <span class="n">sens_hicut</span> <span class="o">=</span> <span class="bp">True</span> <span class="c"># restrict peaks to max &gt; noise (True) or min &lt; noise</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">guimode</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span><span class="n">fastmode</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span><span class="n">modelocalnorm</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">guimode</span> <span class="o">=</span> <span class="n">guimode</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fastmode</span> <span class="o">=</span> <span class="n">fastmode</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">modeLocalNorm</span> <span class="o">=</span> <span class="n">modelocalnorm</span> <span class="c"># EXPERIMENTAL</span>
+        
+<div class="viewcode-block" id="US_QC.readDICOMtag"><a class="viewcode-back" href="../../../../Plugins.US.US_AirReverberations.html#Plugins.US.US_AirReverberations.QCUS_lib.US_QC.readDICOMtag">[docs]</a>    <span class="k">def</span> <span class="nf">readDICOMtag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">,</span><span class="n">key</span><span class="p">,</span><span class="n">imslice</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span> <span class="c"># slice=2 is image 3</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">wadwrapper_lib</span><span class="o">.</span><span class="n">readDICOMtag</span><span class="p">(</span><span class="n">key</span><span class="p">,</span><span class="n">cs</span><span class="o">.</span><span class="n">dcmInfile</span><span class="p">,</span><span class="n">imslice</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">value</span>
+</div>
+<div class="viewcode-block" id="US_QC.DICOMInfo"><a class="viewcode-back" href="../../../../Plugins.US.US_AirReverberations.html#Plugins.US.US_AirReverberations.QCUS_lib.US_QC.DICOMInfo">[docs]</a>    <span class="k">def</span> <span class="nf">DICOMInfo</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">,</span><span class="n">info</span><span class="o">=</span><span class="s">&#39;dicom&#39;</span><span class="p">):</span>
+        <span class="c"># Different from ImageJ version; tags &quot;0008&quot;,&quot;0104&quot; and &quot;0054&quot;,&quot;0220&quot;</span>
+        <span class="c">#  appear to be part of sequences. This gives problems (cannot be found</span>
+        <span class="c">#  or returning whole sequence blocks)</span>
+        <span class="c"># Possibly this can be solved by using if(type(value) == type(dicom.sequence.Sequence()))</span>
+        <span class="c">#  but I don&#39;t see the relevance of these tags anymore, so set them to NO</span>
+
+        <span class="k">if</span> <span class="n">info</span> <span class="o">==</span> <span class="s">&quot;dicom&quot;</span><span class="p">:</span>
+            <span class="n">dicomfields</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="p">[</span><span class="s">&quot;0008,0012&quot;</span><span class="p">,</span> <span class="s">&quot;Instance Date&quot;</span><span class="p">],</span>
+                <span class="p">[</span><span class="s">&quot;0008,0013&quot;</span><span class="p">,</span> <span class="s">&quot;Instance Time&quot;</span><span class="p">],</span>
+                <span class="p">[</span><span class="s">&quot;0008,0060&quot;</span><span class="p">,</span> <span class="s">&quot;Modality&quot;</span><span class="p">],</span>
+                <span class="p">[</span><span class="s">&quot;0008,0070&quot;</span><span class="p">,</span> <span class="s">&quot;Manufacturer&quot;</span><span class="p">],</span>
+                <span class="p">[</span><span class="s">&quot;0008,1090&quot;</span><span class="p">,</span> <span class="s">&quot;Manufacturer Model Name&quot;</span><span class="p">],</span>
+                <span class="p">[</span><span class="s">&quot;0008,1010&quot;</span><span class="p">,</span> <span class="s">&quot;Station Name&quot;</span><span class="p">],</span>
+                <span class="p">[</span><span class="s">&quot;0008,1030&quot;</span><span class="p">,</span> <span class="s">&quot;Study Description&quot;</span><span class="p">],</span>
+                <span class="p">[</span><span class="s">&quot;0008,0068&quot;</span><span class="p">,</span> <span class="s">&quot;Presentation Intent Type&quot;</span><span class="p">],</span> 
+                <span class="p">[</span><span class="s">&quot;0018,1000&quot;</span><span class="p">,</span> <span class="s">&quot;Device Serial Number&quot;</span><span class="p">],</span>
+                <span class="p">[</span><span class="s">&quot;0018,1020&quot;</span><span class="p">,</span> <span class="s">&quot;Software Version(s)&quot;</span><span class="p">],</span>
+                <span class="p">[</span><span class="s">&quot;0018,1030&quot;</span><span class="p">,</span> <span class="s">&quot;Protocol Name&quot;</span><span class="p">],</span>
+                <span class="p">[</span><span class="s">&quot;0018,5010&quot;</span><span class="p">,</span> <span class="s">&quot;Transducer Data&quot;</span><span class="p">],</span>
+                <span class="p">[</span><span class="s">&quot;0018,5020&quot;</span><span class="p">,</span> <span class="s">&quot;Processing Function&quot;</span><span class="p">],</span>
+                <span class="p">[</span><span class="s">&quot;0028,0002&quot;</span><span class="p">,</span> <span class="s">&quot;Samples per Pixel&quot;</span><span class="p">],</span>
+                <span class="p">[</span><span class="s">&quot;0028,0101&quot;</span><span class="p">,</span> <span class="s">&quot;Bits Stored&quot;</span><span class="p">],</span>
+                <span class="p">[</span><span class="s">&quot;0028,2110&quot;</span><span class="p">,</span> <span class="s">&quot;Lossy Image Compression&quot;</span><span class="p">],</span>
+                <span class="p">[</span><span class="s">&quot;2050,0020&quot;</span><span class="p">,</span> <span class="s">&quot;Presentation LUT Shape&quot;</span><span class="p">],</span>
+                <span class="p">[</span><span class="s">&quot;0018,6011, 0018,6024&quot;</span><span class="p">,</span> <span class="s">&quot;Physical Units X Direction&quot;</span><span class="p">],</span>
+                <span class="p">[</span><span class="s">&quot;0018,6011, 0018,602c&quot;</span><span class="p">,</span> <span class="s">&quot;Physical Delta X&quot;</span><span class="p">],</span>
+            <span class="p">]</span> <span class="c"># Philips</span>
+
+        <span class="k">elif</span> <span class="n">info</span> <span class="o">==</span> <span class="s">&quot;id&quot;</span><span class="p">:</span>
+            <span class="n">dicomfields</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="p">[</span><span class="s">&quot;0008,1010&quot;</span><span class="p">,</span> <span class="s">&quot;Station Name&quot;</span><span class="p">],</span>
+                <span class="p">[</span><span class="s">&quot;0018,5010&quot;</span><span class="p">,</span> <span class="s">&quot;Transducer&quot;</span><span class="p">],</span>
+                <span class="p">[</span><span class="s">&quot;0008,0012&quot;</span><span class="p">,</span> <span class="s">&quot;InstanceDate&quot;</span><span class="p">],</span>
+                <span class="p">[</span><span class="s">&quot;0008,0013&quot;</span><span class="p">,</span> <span class="s">&quot;InstanceTime&quot;</span><span class="p">]</span>
+            <span class="p">]</span>
+        <span class="k">elif</span> <span class="n">info</span> <span class="o">==</span> <span class="s">&quot;probe&quot;</span><span class="p">:</span>
+            <span class="n">dicomfields</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="p">[</span><span class="s">&quot;0018,5010&quot;</span><span class="p">,</span> <span class="s">&quot;Transducer&quot;</span><span class="p">],</span>
+            <span class="p">]</span>
+
+        <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">df</span> <span class="ow">in</span> <span class="n">dicomfields</span><span class="p">:</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">readDICOMtag</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="n">key</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+            <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">value</span><span class="p">)</span> <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">results</span>
+
+    <span class="c">#----------------------------------------------------------------------</span></div>
+<div class="viewcode-block" id="US_QC.isolateReverbrations"><a class="viewcode-back" href="../../../../Plugins.US.US_AirReverberations.html#Plugins.US.US_AirReverberations.QCUS_lib.US_QC.isolateReverbrations">[docs]</a>    <span class="k">def</span> <span class="nf">isolateReverbrations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Find reverbrations part of image.</span>
+<span class="sd">        Workflow:</span>
+<span class="sd">        1. Find reverberations as largest connected component != 0</span>
+<span class="sd">        2. Return</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">error</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="c"># cluster connected components with pixelvalues&gt;0</span>
+        <span class="n">time0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="n">thresh</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c">#work = (cs.pixeldataIn&gt;0) * (cs.pixeldataIn&lt;255) # must give a signal, but 255 often reserved for overlay</span>
+        <span class="n">work</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="o">&gt;</span><span class="n">thresh</span>
+        <span class="n">cca</span> <span class="o">=</span> <span class="n">wadwrapper_lib</span><span class="o">.</span><span class="n">connectedComponents</span><span class="p">()</span>
+        <span class="n">cs</span><span class="o">.</span><span class="n">cca_image</span><span class="p">,</span><span class="n">nb_labels</span> <span class="o">=</span> <span class="n">cca</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">work</span><span class="p">)</span>
+        <span class="n">mode</span> <span class="o">=</span> <span class="s">&#39;all_middle&#39;</span> <span class="c">#&#39;largest_only&#39;#&#39;all_middle&#39;</span>
+        <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s">&#39;largest_only&#39;</span><span class="p">:</span> <span class="c"># model of Pepijn</span>
+            <span class="c"># select only largest cluster</span>
+            <span class="n">cluster_sizes</span> <span class="o">=</span> <span class="n">cca</span><span class="o">.</span><span class="n">clusterSizes</span><span class="p">()</span>
+            <span class="n">clus_val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">cluster_sizes</span><span class="p">)</span>
+            <span class="n">cs</span><span class="o">.</span><span class="n">rev_mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">cca_image</span> <span class="o">==</span> <span class="n">clus_val</span><span class="p">)</span>
+            <span class="n">cs</span><span class="o">.</span><span class="n">report</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s">&#39;cca&#39;</span><span class="p">,</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="o">-</span><span class="n">time0</span><span class="p">))</span>
+            <span class="n">clus</span> <span class="o">=</span> <span class="n">cca</span><span class="o">.</span><span class="n">indicesOfCluster</span><span class="p">(</span><span class="n">clus_val</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span> 
+            <span class="c"># select all clusters present in vertical middle area of image, excluding top and 0</span>
+            <span class="n">wid</span><span class="p">,</span><span class="n">hei</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">cca_image</span><span class="p">)</span>
+            <span class="c"># first remove very small clusters (can be located around top edge!)</span>
+            <span class="n">cca</span><span class="o">.</span><span class="n">removeSmallClusters</span><span class="p">(</span><span class="n">wid</span><span class="o">/</span><span class="mi">10</span><span class="o">*</span><span class="n">hei</span><span class="o">/</span><span class="mi">10</span><span class="p">)</span>
+            <span class="n">search</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">cca_image</span><span class="p">[</span><span class="mf">0.4</span><span class="o">*</span><span class="n">wid</span><span class="p">:</span><span class="mf">0.6</span><span class="o">*</span><span class="n">wid</span><span class="p">,:]</span>
+            <span class="n">labs</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">ss</span> <span class="ow">in</span> <span class="n">search</span><span class="o">.</span><span class="n">ravel</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">ss</span><span class="o">&gt;</span><span class="mi">0</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">ss</span> <span class="ow">in</span> <span class="n">labs</span><span class="p">:</span>
+                    <span class="n">labs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ss</span><span class="p">)</span>
+            <span class="c"># exclude labels in top rows (never part of imagedata, but full of annotations)</span>
+            <span class="n">search</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">cca_image</span><span class="p">[:,</span><span class="mi">0</span><span class="p">:</span><span class="mi">5</span><span class="p">]</span>
+            <span class="n">notlabs</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">ss</span> <span class="ow">in</span> <span class="n">search</span><span class="o">.</span><span class="n">ravel</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">ss</span><span class="o">&gt;</span><span class="mi">0</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">ss</span> <span class="ow">in</span> <span class="n">notlabs</span><span class="p">:</span>
+                    <span class="n">notlabs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ss</span><span class="p">)</span>
+            <span class="n">labs</span> <span class="o">=</span> <span class="p">[</span><span class="n">la</span> <span class="k">for</span> <span class="n">la</span> <span class="ow">in</span> <span class="n">labs</span> <span class="k">if</span> <span class="n">la</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">notlabs</span><span class="p">]</span>
+
+            <span class="n">cs</span><span class="o">.</span><span class="n">rev_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">in1d</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">cca_image</span><span class="p">,</span><span class="n">labs</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">cca_image</span><span class="p">))</span>
+            <span class="n">clus</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">rev_mask</span><span class="p">)</span>
+            <span class="n">clus</span> <span class="o">=</span> <span class="p">[</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span><span class="p">,</span><span class="n">y</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">clus</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">clus</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="p">]</span>
+            
+        <span class="c"># make an image of only largest cluster applied to original pixeldata</span>
+        <span class="n">cs</span><span class="o">.</span><span class="n">reverb_image</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="o">*</span><span class="n">cs</span><span class="o">.</span><span class="n">rev_mask</span>
+        <span class="n">cs</span><span class="o">.</span><span class="n">report</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s">&#39;mask&#39;</span><span class="p">,</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="o">-</span><span class="n">time0</span><span class="p">))</span>
+
+        <span class="c"># bounds of reverb image</span>
+        <span class="n">time0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="n">cs</span><span class="o">.</span><span class="n">rev_miny</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">clus</span><span class="p">,</span><span class="n">key</span><span class="o">=</span><span class="n">operator</span><span class="o">.</span><span class="n">itemgetter</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+        <span class="n">cs</span><span class="o">.</span><span class="n">rev_maxy</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">clus</span><span class="p">,</span><span class="n">key</span><span class="o">=</span><span class="n">operator</span><span class="o">.</span><span class="n">itemgetter</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+        <span class="n">cs</span><span class="o">.</span><span class="n">rev_maxx</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">clus</span><span class="p">,</span><span class="n">key</span><span class="o">=</span><span class="n">operator</span><span class="o">.</span><span class="n">itemgetter</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+        <span class="n">cs</span><span class="o">.</span><span class="n">rev_minx</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">clus</span><span class="p">,</span><span class="n">key</span><span class="o">=</span><span class="n">operator</span><span class="o">.</span><span class="n">itemgetter</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+        <span class="n">cs</span><span class="o">.</span><span class="n">rev_midx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">rev_mask</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span>
+        
+        <span class="n">error</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">return</span> <span class="n">error</span>
+</div>
+<div class="viewcode-block" id="US_QC.straightenCurve"><a class="viewcode-back" href="../../../../Plugins.US.US_AirReverberations.html#Plugins.US.US_AirReverberations.QCUS_lib.US_QC.straightenCurve">[docs]</a>    <span class="k">def</span> <span class="nf">straightenCurve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Straighten curved reverb image if applicable</span>
+<span class="sd">        Workflow:</span>
+<span class="sd">        1. Fit circle through top of reverb data</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">error</span> <span class="o">=</span> <span class="bp">True</span>
+        
+        <span class="c">## 2. Transform reverb data to rectangle if needed</span>
+        <span class="n">time0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="c">## Fit a circle to top of reverb pattern</span>
+        <span class="c"># From top of reverb image down, look for pixels != 0 from mid to left and from mid to right;</span>
+        <span class="c"># if both found, add it to the list</span>
+        <span class="n">circL_xy</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">circR_xy</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">rev_miny</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">cs</span><span class="o">.</span><span class="n">rev_maxy</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">rev_minx</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">cs</span><span class="o">.</span><span class="n">rev_midx</span><span class="p">)):</span> <span class="c">#find left point</span>
+                <span class="n">xl</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+                <span class="n">xr</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+                <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">rev_mask</span><span class="p">[</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">]:</span>
+                    <span class="n">xl</span> <span class="o">=</span> <span class="n">x</span>
+                    <span class="k">break</span>
+            <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">rev_midx</span><span class="p">,</span><span class="n">cs</span><span class="o">.</span><span class="n">rev_maxx</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span> <span class="c">#find right point</span>
+                <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">rev_mask</span><span class="p">[</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">]:</span>
+                    <span class="n">xr</span> <span class="o">=</span> <span class="n">x</span>
+                    <span class="k">break</span>
+            <span class="k">if</span> <span class="n">xl</span><span class="o">&gt;-</span><span class="mi">1</span> <span class="ow">and</span> <span class="n">xr</span><span class="o">&gt;-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="n">circL_xy</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">xl</span><span class="p">,</span><span class="n">y</span><span class="p">))</span>
+                <span class="n">circR_xy</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">xr</span><span class="p">,</span><span class="n">y</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">xr</span><span class="o">-</span><span class="n">xl</span><span class="o">&lt;</span><span class="mi">10</span><span class="p">:</span> <span class="c"># stop looking</span>
+                    <span class="k">break</span>
+        <span class="n">circ_xy</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">circ_xy</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">circL_xy</span><span class="p">)</span>
+        <span class="n">circ_xy</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">circR_xy</span><span class="p">)</span>
+        <span class="n">circ_xy</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">operator</span><span class="o">.</span><span class="n">itemgetter</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">circ_xy</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">10</span><span class="p">:</span> <span class="c"># at least 10 point, else probably not a curved probe</span>
+            <span class="c"># use only central part for fitting, as deformations towards edges occur</span>
+            <span class="n">cf</span> <span class="o">=</span> <span class="n">mymath</span><span class="o">.</span><span class="n">CircleFit</span><span class="p">(</span><span class="n">circ_xy</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="mf">2.</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">circ_xy</span><span class="p">)</span><span class="o">/</span><span class="mf">3.</span><span class="p">):])</span> 
+            <span class="n">fit</span> <span class="o">=</span> <span class="n">cf</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
+            <span class="p">(</span><span class="n">xc</span><span class="p">,</span><span class="n">yc</span><span class="p">)</span> <span class="o">=</span> <span class="n">fit</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">Rc</span> <span class="o">=</span> <span class="n">fit</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            
+            <span class="c"># calculate limiting angles and radii</span>
+            <span class="n">cs</span><span class="o">.</span><span class="n">curve_angles</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">circL_xy</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">xc</span><span class="p">,</span><span class="n">circL_xy</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">yc</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">circR_xy</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">xc</span><span class="p">,</span><span class="n">circR_xy</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">yc</span><span class="p">)]</span>
+            <span class="n">maxrad</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span> <span class="p">[</span>
+                <span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">rev_minx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">xc</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">curve_angles</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+                <span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">rev_maxx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">xc</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">curve_angles</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span>
+                <span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">rev_maxy</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">yc</span><span class="p">)</span>
+            <span class="p">])</span>
+            <span class="n">cs</span><span class="o">.</span><span class="n">curve_radii</span> <span class="o">=</span> <span class="p">[</span><span class="n">Rc</span><span class="p">,</span><span class="n">maxrad</span> <span class="p">]</span>
+            <span class="n">cs</span><span class="o">.</span><span class="n">curve_xyr</span> <span class="o">=</span> <span class="p">[</span><span class="n">xc</span><span class="p">,</span><span class="n">yc</span><span class="p">,</span><span class="n">Rc</span><span class="p">]</span>
+            <span class="n">cs</span><span class="o">.</span><span class="n">curve_residu</span> <span class="o">=</span> <span class="n">cf</span><span class="o">.</span><span class="n">residu</span>
+            <span class="n">cs</span><span class="o">.</span><span class="n">curve_opendeg</span> <span class="o">=</span> <span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">curve_angles</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">cs</span><span class="o">.</span><span class="n">curve_angles</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="mf">180.</span>
+    
+            <span class="n">cs</span><span class="o">.</span><span class="n">report</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s">&#39;fit&#39;</span><span class="p">,</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="o">-</span><span class="n">time0</span><span class="p">))</span>
+            
+            <span class="c"># transform reverb pattern to rectangle: interpolate at coords</span>
+            <span class="n">time0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+            <span class="n">ang</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">curve_angles</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">cs</span><span class="o">.</span><span class="n">curve_angles</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">cs</span><span class="o">.</span><span class="n">rev_maxx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">cs</span><span class="o">.</span><span class="n">rev_minx</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">rad</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">curve_radii</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">cs</span><span class="o">.</span><span class="n">curve_radii</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">cs</span><span class="o">.</span><span class="n">rev_maxy</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">cs</span><span class="o">.</span><span class="n">rev_miny</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">an</span><span class="p">,</span><span class="n">ra</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">ang</span><span class="p">,</span><span class="n">rad</span><span class="p">)</span>
+            <span class="n">xi</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">curve_xyr</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">ra</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">an</span><span class="p">)</span>
+            <span class="n">yi</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">curve_xyr</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">ra</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">an</span><span class="p">)</span>
+            <span class="n">coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span> <span class="p">[</span><span class="n">xi</span><span class="p">,</span><span class="n">yi</span><span class="p">]</span> <span class="p">)</span>
+            <span class="n">cs</span><span class="o">.</span><span class="n">rect_image</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">ndimage</span><span class="o">.</span><span class="n">map_coordinates</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">reverb_image</span><span class="p">,</span> <span class="n">coords</span><span class="p">)</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span>
+            <span class="n">cs</span><span class="o">.</span><span class="n">report</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s">&#39;straighten&#39;</span><span class="p">,</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="o">-</span><span class="n">time0</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span> <span class="c"># not a curved probe</span>
+            <span class="n">cs</span><span class="o">.</span><span class="n">rect_image</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">reverb_image</span><span class="p">[</span><span class="n">cs</span><span class="o">.</span><span class="n">rev_minx</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">cs</span><span class="o">.</span><span class="n">rev_maxx</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">cs</span><span class="o">.</span><span class="n">rev_miny</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span><span class="n">cs</span><span class="o">.</span><span class="n">rev_maxy</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+            
+        <span class="n">error</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">return</span> <span class="n">error</span>
+</div>
+    <span class="k">def</span> <span class="nf">_uniformityAnalysis</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">,</span><span class="n">normuniformity</span><span class="p">):</span>
+        <span class="c"># Helper function for analysis of normalized uniformity profile:</span>
+        <span class="n">error</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="n">nx</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">normuniformity</span><span class="p">)</span>
+        <span class="n">time0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fftAnalysis</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="n">normuniformity</span><span class="p">,</span><span class="n">mode</span><span class="o">=</span><span class="s">&#39;uniformity&#39;</span><span class="p">)</span>
+        <span class="n">cs</span><span class="o">.</span><span class="n">report</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s">&#39;unif_fft&#39;</span><span class="p">,</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="o">-</span><span class="n">time0</span><span class="p">))</span>
+
+        <span class="c"># peak detection with ugly hack to also allow peaks at index 0 and last</span>
+        <span class="c">#xy_max,xy_min = wadwrapper_lib.peakdet(normuniformity, delta=self.delta_uniformity,x=range(nx))</span>
+        <span class="n">p0</span> <span class="o">=</span> <span class="n">normuniformity</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">p2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">p0</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="n">normuniformity</span><span class="p">),</span><span class="n">p0</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span> 
+        <span class="n">x2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">nx</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span><span class="mi">2</span><span class="o">*</span><span class="n">nx</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+        <span class="n">xy_max</span><span class="p">,</span><span class="n">xy_min</span> <span class="o">=</span> <span class="n">wadwrapper_lib</span><span class="o">.</span><span class="n">peakdet</span><span class="p">(</span><span class="n">p2</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">delta_uniformity</span><span class="p">,</span><span class="n">x</span><span class="o">=</span><span class="n">x2</span><span class="p">)</span>
+        <span class="n">xy_max</span> <span class="o">=</span> <span class="p">[</span><span class="n">xy</span> <span class="k">for</span> <span class="n">xy</span> <span class="ow">in</span> <span class="n">xy_max</span> <span class="k">if</span> <span class="n">xy</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">&gt;-</span><span class="mi">1</span> <span class="ow">and</span> <span class="n">xy</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">&lt;</span><span class="n">nx</span><span class="p">]</span>
+        <span class="n">xy_min</span> <span class="o">=</span> <span class="p">[</span><span class="n">xy</span> <span class="k">for</span> <span class="n">xy</span> <span class="ow">in</span> <span class="n">xy_min</span> <span class="k">if</span> <span class="n">xy</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">&gt;-</span><span class="mi">1</span> <span class="ow">and</span> <span class="n">xy</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">&lt;</span><span class="n">nx</span><span class="p">]</span>
+
+        <span class="c">## peak analysis</span>
+        <span class="c"># sorted list of extrema positions:</span>
+        <span class="n">minmax_pos</span> <span class="o">=</span> <span class="p">[</span><span class="n">da</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">da</span> <span class="ow">in</span> <span class="n">xy_min</span><span class="p">]</span>
+        <span class="n">minmax_pos</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span> <span class="p">[</span><span class="n">da</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">da</span> <span class="ow">in</span> <span class="n">xy_max</span><span class="p">]</span> <span class="p">)</span>
+        <span class="n">minmax_pos</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">minmax_pos</span><span class="p">)</span>
+
+        <span class="c"># generate an image of non-uniformity</span>
+        <span class="n">x_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">xy</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">xy</span> <span class="ow">in</span> <span class="n">xy_max</span><span class="p">])</span>
+        <span class="n">y_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">xy</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">xy</span> <span class="ow">in</span> <span class="n">xy_max</span><span class="p">])</span>
+        <span class="n">x_min</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">xy</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">xy</span> <span class="ow">in</span> <span class="n">xy_min</span><span class="p">])</span>
+        <span class="n">y_min</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">xy</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">xy</span> <span class="ow">in</span> <span class="n">xy_min</span><span class="p">])</span>
+
+        <span class="n">yran</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fastmode</span><span class="p">:</span> <span class="c"># use only first ring</span>
+            <span class="k">print</span> <span class="s">&#39;Uniformity: FASTMODE&#39;</span><span class="p">,</span><span class="n">cs</span><span class="o">.</span><span class="n">sens_basewavelength</span>
+            <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">sens_basewavelength</span> <span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+                <span class="n">ylim</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">sens_basewavelength</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">pixels2mm</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="mf">1.</span><span class="p">)</span><span class="o">+.</span><span class="mi">5</span><span class="p">)</span>
+                <span class="n">yran</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">offsetVER</span><span class="p">,</span><span class="n">ylim</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">yran</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">yran</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">offsetVER</span><span class="p">,</span><span class="n">cs</span><span class="o">.</span><span class="n">sens_ylim</span><span class="p">]</span> <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">sens_ylim</span><span class="o">&gt;</span><span class="mi">0</span> <span class="k">else</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">offsetVER</span><span class="p">]</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+        <span class="n">crop</span> <span class="o">=</span> <span class="n">cropImage</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">rect_image</span><span class="p">,</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">offsetHOR</span><span class="p">],</span> <span class="n">yran</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">crop</span><span class="o">.</span><span class="n">transpose</span><span class="p">(),</span><span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">gray</span><span class="p">())</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">nx</span><span class="p">))</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="o">-</span><span class="mi">100</span><span class="o">*</span><span class="n">normuniformity</span><span class="p">,</span><span class="s">&#39;y-&#39;</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s">&#39;100*normalized&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_min</span><span class="p">,</span><span class="o">-</span><span class="mi">100</span><span class="o">*</span><span class="n">y_min</span><span class="p">,</span><span class="s">&#39;ro&#39;</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s">&#39;accepted dips&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_max</span><span class="p">,</span><span class="o">-</span><span class="mi">100</span><span class="o">*</span><span class="n">y_max</span><span class="p">,</span><span class="s">&#39;bo&#39;</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s">&#39;accepted peaks&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="n">nx</span><span class="p">])</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">guimode</span><span class="p">:</span>
+            <span class="n">fname</span> <span class="o">=</span> <span class="s">&#39;uniformity_&#39;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">imageID</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="n">probeonly</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;.jpg&#39;</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+            <span class="n">cs</span><span class="o">.</span><span class="n">image_fnames</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">cs</span><span class="o">.</span><span class="n">hasmadeplots</span> <span class="o">=</span> <span class="bp">True</span>
+
+        <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">normuniformity</span><span class="p">,</span><span class="s">&#39;k-&#39;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_min</span><span class="p">,</span><span class="n">y_min</span><span class="p">,</span><span class="s">&#39;ro&#39;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_max</span><span class="p">,</span><span class="n">y_max</span><span class="p">,</span><span class="s">&#39;bo&#39;</span><span class="p">)</span>
+            <span class="n">cs</span><span class="o">.</span><span class="n">hasmadeplots</span> <span class="o">=</span> <span class="bp">True</span>
+            
+        <span class="c"># possible clean-up of peaks detected</span>
+        <span class="n">cs</span><span class="o">.</span><span class="n">unif_bots</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">damin</span> <span class="ow">in</span> <span class="n">xy_min</span><span class="p">:</span>
+            <span class="c"># find range around each dip and remove strongly asymetric dips</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_asym</span><span class="p">:</span>
+                <span class="n">peak_pos</span> <span class="o">=</span> <span class="n">damin</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">peak_val</span> <span class="o">=</span> <span class="n">damin</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">asym</span> <span class="o">=</span> <span class="bp">True</span>
+                <span class="n">delta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">delta_uniformity</span>
+                <span class="k">while</span> <span class="n">asym</span><span class="p">:</span>
+                    <span class="n">pos_left</span> <span class="o">=</span> <span class="n">peak_pos</span>
+                    <span class="k">for</span> <span class="n">ix</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">peak_pos</span><span class="p">)):</span>
+                        <span class="k">if</span> <span class="n">normuniformity</span><span class="p">[</span><span class="n">ix</span><span class="p">]</span><span class="o">&gt;</span><span class="n">peak_val</span><span class="o">+</span><span class="n">delta</span><span class="p">:</span>
+                            <span class="n">pos_left</span><span class="o">=</span> <span class="n">ix</span>
+                            <span class="k">break</span>
+                    <span class="n">pos_right</span> <span class="o">=</span> <span class="n">peak_pos</span>
+                    <span class="k">for</span> <span class="n">ix</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">peak_pos</span><span class="p">,</span><span class="n">nx</span><span class="p">):</span>
+                        <span class="k">if</span> <span class="n">normuniformity</span><span class="p">[</span><span class="n">ix</span><span class="p">]</span><span class="o">&gt;</span><span class="n">peak_val</span><span class="o">+</span><span class="n">delta</span><span class="p">:</span>
+                            <span class="n">pos_right</span><span class="o">=</span> <span class="n">ix</span>
+                            <span class="k">break</span>
+                    <span class="k">if</span> <span class="n">pos_left</span> <span class="o">==</span> <span class="n">peak_pos</span><span class="p">:</span>
+                        <span class="k">print</span> <span class="s">&#39;ERROR! Could not find left point of peak&#39;</span><span class="p">,</span><span class="n">peak_ix</span><span class="p">,</span><span class="n">peak_pos</span><span class="p">,</span><span class="n">peak_val</span>
+                        <span class="k">return</span> <span class="n">error</span>
+                    <span class="k">if</span> <span class="n">pos_right</span> <span class="o">==</span> <span class="n">peak_pos</span><span class="p">:</span>
+                        <span class="k">print</span> <span class="s">&#39;ERROR! Could not find left point of peak&#39;</span><span class="p">,</span><span class="n">peak_ix</span><span class="p">,</span><span class="n">peak_pos</span><span class="p">,</span><span class="n">peak_val</span>
+                        <span class="k">return</span> <span class="n">error</span>
+                    <span class="c"># check if we are looking at a strongly symmetric peak</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="n">pos_right</span><span class="o">-</span><span class="n">pos_left</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">4</span><span class="o">*</span><span class="nb">min</span><span class="p">(</span><span class="n">peak_pos</span><span class="o">-</span><span class="n">pos_left</span><span class="p">,</span><span class="n">pos_right</span><span class="o">-</span><span class="n">peak_pos</span><span class="p">):</span>
+                        <span class="n">delta</span> <span class="o">-=</span> <span class="o">.</span><span class="mi">1</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">delta_uniformity</span>
+                        <span class="k">if</span> <span class="n">delta</span> <span class="o">&lt;</span> <span class="o">.</span><span class="mi">2</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">delta_uniformity</span><span class="p">:</span>
+                            <span class="k">break</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">asym</span> <span class="o">=</span> <span class="bp">False</span>
+                <span class="k">if</span> <span class="n">asym</span><span class="p">:</span>
+                    <span class="k">print</span> <span class="s">&#39;ERROR! Very asymmetric peak&#39;</span><span class="p">,</span><span class="n">peak_ix</span><span class="p">,</span><span class="n">peak_pos</span><span class="p">,</span><span class="n">peak_val</span><span class="p">,</span><span class="n">peak_pos</span><span class="o">-</span><span class="n">pos_left</span><span class="p">,</span><span class="n">pos_right</span><span class="o">-</span><span class="n">peak_pos</span>
+                    <span class="k">continue</span>
+
+            <span class="c"># acceptable</span>
+            <span class="n">cs</span><span class="o">.</span><span class="n">unif_bots</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">damin</span><span class="p">)</span>
+
+        <span class="c"># some figures of merit to store: non-unif in deepest dip and overal</span>
+        <span class="n">cs</span><span class="o">.</span><span class="n">unif_lowest</span> <span class="o">=</span> <span class="mf">1.</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">unif_bots</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span> <span class="k">else</span> <span class="nb">min</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">unif_bots</span><span class="p">,</span><span class="n">key</span><span class="o">=</span><span class="n">operator</span><span class="o">.</span><span class="n">itemgetter</span><span class="p">(</span><span class="mi">1</span><span class="p">))[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">cs</span><span class="o">.</span><span class="n">unif_low</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">normuniformity</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="c"># exclude bounds</span>
+        <span class="n">error</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">return</span> <span class="n">error</span>
+
+<div class="viewcode-block" id="US_QC.reverbUniformity"><a class="viewcode-back" href="../../../../Plugins.US.US_AirReverberations.html#Plugins.US.US_AirReverberations.QCUS_lib.US_QC.reverbUniformity">[docs]</a>    <span class="k">def</span> <span class="nf">reverbUniformity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Analysis uniformity of reverb pattern</span>
+<span class="sd">        Workflow:</span>
+<span class="sd">        1. Define ROI of reverb (dependend on vertical profile)</span>
+<span class="sd">        2. Average ROI horizontally and calculate COV</span>
+<span class="sd">        3. Normalize profile as deviation wrt mean</span>
+<span class="sd">        4. Find dips in profile</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">error</span> <span class="o">=</span> <span class="bp">True</span>
+        
+        <span class="c">## 1. Define ROI of reverb (dependend on vertical profile)</span>
+        <span class="n">yran</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fastmode</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&#39;Uniformity: FASTMODE&#39;</span><span class="p">,</span><span class="n">cs</span><span class="o">.</span><span class="n">sens_basewavelength</span>
+            <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">sens_basewavelength</span> <span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+                <span class="n">ylim</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">sens_basewavelength</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">pixels2mm</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="mf">1.</span><span class="p">)</span><span class="o">+.</span><span class="mi">5</span><span class="p">)</span>
+                <span class="n">yran</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">offsetVER</span><span class="p">,</span><span class="n">ylim</span><span class="p">]</span>
+            <span class="k">print</span> <span class="n">yran</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">yran</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">yran</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">offsetVER</span><span class="p">,</span><span class="n">cs</span><span class="o">.</span><span class="n">sens_ylim</span><span class="p">]</span> <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">sens_ylim</span><span class="o">&gt;</span><span class="mi">0</span> <span class="k">else</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">offsetVER</span><span class="p">]</span>
+
+        <span class="n">crop</span> <span class="o">=</span> <span class="n">cropImage</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">rect_image</span><span class="p">,</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">offsetHOR</span><span class="p">],</span> <span class="n">yran</span><span class="p">)</span>
+
+        <span class="n">uniformity</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">crop</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">uniformitysmoothed</span> <span class="o">=</span> <span class="n">mymath</span><span class="o">.</span><span class="n">movingaverage</span><span class="p">(</span><span class="n">uniformity</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">smooth_uniformity</span><span class="p">)</span>
+        
+        <span class="c">## line uniformity</span>
+        <span class="n">intemin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">uniformity</span><span class="p">)</span>
+        <span class="n">intemax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">uniformity</span><span class="p">)</span>
+        <span class="n">inteavg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">uniformity</span><span class="p">)</span>
+        <span class="n">cs</span><span class="o">.</span><span class="n">unif_line</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">([</span><span class="n">intemax</span><span class="o">-</span><span class="n">inteavg</span><span class="p">,</span><span class="n">inteavg</span><span class="o">-</span><span class="n">intemin</span><span class="p">])</span><span class="o">/</span><span class="n">inteavg</span>
+
+        <span class="c"># Output of COV </span>
+        <span class="n">meanvalue</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">uniformity</span><span class="p">)</span> 
+        <span class="n">stdvalue</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">uniformity</span><span class="p">)</span>
+
+        <span class="c"># normalized uniformity </span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">modeLocalNorm</span><span class="p">:</span>
+            <span class="n">frac</span> <span class="o">=</span> <span class="o">.</span><span class="mi">1</span>
+            <span class="k">print</span> <span class="s">&quot;Uniformity, using Local Normalization&quot;</span><span class="p">,</span><span class="n">frac</span>
+            <span class="n">normuniformity</span> <span class="o">=</span> <span class="n">mymath</span><span class="o">.</span><span class="n">localnormalization</span><span class="p">(</span><span class="n">uniformity</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">uniformity</span><span class="p">)</span><span class="o">*</span><span class="n">frac</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">normuniformity</span> <span class="o">=</span> <span class="p">((</span><span class="n">uniformitysmoothed</span><span class="o">-</span><span class="n">meanvalue</span><span class="p">)</span><span class="o">/</span><span class="n">meanvalue</span><span class="p">)</span>
+            
+        <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">testing</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="kn">import</span> <span class="nn">QCUS_testing</span> <span class="kn">as</span> <span class="nn">mytest</span>
+                <span class="n">mytest</span><span class="o">.</span><span class="n">_exportProfile</span><span class="p">(</span><span class="n">normuniformity</span><span class="p">,</span><span class="n">fname</span><span class="o">=</span><span class="s">&#39;xprofile.tsv&#39;</span><span class="p">)</span>
+                <span class="n">mytest</span><span class="o">.</span><span class="n">_exportNDArray</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">rect_image</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">pass</span>
+            
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_uniformityAnalysis</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span> <span class="n">normuniformity</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="US_QC.fftAnalysis"><a class="viewcode-back" href="../../../../Plugins.US.US_AirReverberations.html#Plugins.US.US_AirReverberations.QCUS_lib.US_QC.fftAnalysis">[docs]</a>    <span class="k">def</span> <span class="nf">fftAnalysis</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">,</span><span class="n">profile</span><span class="p">,</span><span class="n">mode</span><span class="o">=</span><span class="s">&#39;sensitivity&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Fourier analysis: find main frequencies and power therein</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="kn">import</span> <span class="nn">QCUS_testing</span> <span class="kn">as</span> <span class="nn">mytest</span>
+                <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s">&#39;sensitivity&#39;</span><span class="p">:</span>
+                    <span class="n">mytest</span><span class="o">.</span><span class="n">_exportProfile</span><span class="p">(</span> <span class="n">profile</span><span class="p">,</span><span class="n">fname</span><span class="o">=</span><span class="s">&#39;y2profile.tsv&#39;</span> <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">mytest</span><span class="o">.</span><span class="n">_exportProfile</span><span class="p">(</span> <span class="n">profile</span><span class="p">,</span><span class="n">fname</span><span class="o">=</span><span class="s">&#39;x2profile.tsv&#39;</span> <span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">pass</span>
+
+        <span class="n">fdelta</span> <span class="o">=</span> <span class="o">.</span><span class="mi">1</span> <span class="c"># peak should differ by more than this fraction of max ps</span>
+
+        <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s">&#39;sensitivity&#39;</span><span class="p">:</span>
+            <span class="n">cs</span><span class="o">.</span><span class="n">sens_basewavelength</span> <span class="o">=</span> <span class="mf">0.</span>
+            <span class="n">cs</span><span class="o">.</span><span class="n">sens_ylim2</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+
+        <span class="c"># remove average component</span>
+        <span class="n">ywork</span> <span class="o">=</span> <span class="n">profile</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">average</span><span class="p">(</span><span class="n">profile</span><span class="p">)</span>
+        <span class="n">nx</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ywork</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">nx</span><span class="p">))</span>
+        
+        <span class="n">ffty</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">rfft</span><span class="p">(</span><span class="n">ywork</span><span class="p">)</span>
+        <span class="n">ps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">ffty</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span>
+        <span class="n">integral</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">ps</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_skip</span><span class="p">:])</span> <span class="c"># calculate total content, but ignore zero component</span>
+        <span class="n">freqs</span> <span class="o">=</span> <span class="n">rfftfreq</span><span class="p">(</span><span class="n">nx</span><span class="p">)</span>
+            
+        <span class="c"># find peaks</span>
+        <span class="n">xy_max</span><span class="p">,</span><span class="n">xy_min</span> <span class="o">=</span> <span class="n">wadwrapper_lib</span><span class="o">.</span><span class="n">peakdet</span><span class="p">(</span><span class="n">ps</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="n">fdelta</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">ps</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_skip</span><span class="p">:]))</span> <span class="c"># returns indices for freqs</span>
+
+        <span class="c"># sort peaks from large to small</span>
+        <span class="n">xy_max</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">xy_max</span><span class="p">,</span><span class="n">key</span><span class="o">=</span><span class="n">operator</span><span class="o">.</span><span class="n">itemgetter</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+        <span class="n">xy_max</span> <span class="o">=</span> <span class="n">xy_max</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="c"># find max component which is not zero-component and represents larger than given fraction of power</span>
+        <span class="n">base_ix</span> <span class="o">=</span> <span class="mi">0</span>   <span class="c"># index of base-frequency</span>
+        <span class="n">start_ix</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c"># index of zero-peak</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,(</span><span class="n">xi</span><span class="p">,</span><span class="n">yi</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">xy_max</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">xi</span><span class="o">&lt;=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_skip</span><span class="p">:</span> <span class="c"># zero-peak must be located in skip</span>
+                <span class="n">start_ix</span> <span class="o">=</span> <span class="n">xi</span>
+            <span class="k">if</span> <span class="n">xi</span><span class="o">&gt;</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_skip</span> <span class="ow">and</span> <span class="n">base_ix</span><span class="o">&lt;</span><span class="mi">1</span><span class="p">:</span>
+                <span class="n">base_ix</span> <span class="o">=</span> <span class="n">xi</span> 
+                <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s">&#39;sensitivity&#39;</span><span class="p">:</span>
+                    <span class="n">cs</span><span class="o">.</span><span class="n">sens_basewavelength</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pixels2mm</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span> <span class="mf">1.</span><span class="o">/</span><span class="n">freqs</span><span class="p">[</span><span class="n">xi</span><span class="p">])</span>
+                <span class="k">break</span>
+
+        <span class="c"># filter-out all non-background trend components to find extend of signal</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ffty</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">i</span><span class="o">&gt;</span><span class="p">(</span><span class="n">base_ix</span><span class="o">+</span><span class="n">start_ix</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">:</span>
+                <span class="n">ffty</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.</span>
+
+        <span class="c"># locate minimum (after zero-peak) of trend</span>
+        <span class="n">fy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">irfft</span><span class="p">(</span><span class="n">ffty</span><span class="p">)</span>
+        <span class="n">ix_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">fy</span><span class="p">)</span>
+        <span class="n">ix_min</span> <span class="o">=</span> <span class="n">ix_max</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">fy</span><span class="p">[</span><span class="n">ix_max</span><span class="p">:])</span>
+        <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&#39;max @&#39;</span><span class="p">,</span><span class="n">ix_max</span>
+            <span class="k">print</span> <span class="s">&#39;min @&#39;</span><span class="p">,</span><span class="n">ix_min</span>
+
+        <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s">&#39;sensitivity&#39;</span><span class="p">:</span>
+            <span class="n">cs</span><span class="o">.</span><span class="n">sens_ylim2</span> <span class="o">=</span> <span class="n">ix_min</span>
+        
+        <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ywork</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">fy</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s">&#39;sensitivity&#39;</span><span class="p">:</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">&#39;sensitivity,filtered&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">&#39;uniformity,filtered&#39;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ps</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s">&#39;sensitivity&#39;</span><span class="p">:</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">&#39;sensitivity,powerspectrum&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">&#39;uniformity,powerspectrum&#39;</span><span class="p">)</span>
+            <span class="n">cs</span><span class="o">.</span><span class="n">hasmadeplots</span> <span class="o">=</span> <span class="bp">True</span>
+</div>
+<div class="viewcode-block" id="US_QC.sensitivityAnalysis"><a class="viewcode-back" href="../../../../Plugins.US.US_AirReverberations.html#Plugins.US.US_AirReverberations.QCUS_lib.US_QC.sensitivityAnalysis">[docs]</a>    <span class="k">def</span> <span class="nf">sensitivityAnalysis</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Workflow:</span>
+<span class="sd">        1. Calculate profile (vertically)</span>
+<span class="sd">        2. Determine noise level</span>
+<span class="sd">        3. Exponential fit to peaks in profile</span>
+<span class="sd">        4. total sensitivity = penetration depth (intercept fit and noise)</span>
+<span class="sd">        5. Repeat for subsets</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">error</span> <span class="o">=</span> <span class="bp">True</span>
+    
+        <span class="c">## 1. Calculate profile (vertically)</span>
+        <span class="n">wid</span><span class="p">,</span><span class="n">hei</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">rect_image</span><span class="p">)</span>
+        <span class="n">offsetHOR</span><span class="o">=</span> <span class="n">wid</span><span class="o">/</span><span class="mi">4</span> <span class="c">#10 ; adjusted to remove influence of annotations through reverb data (enhancement line)</span>
+
+        <span class="k">if</span> <span class="n">offsetHOR</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">offsetHOR</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">offsetHOR</span>
+        <span class="n">crop</span> <span class="o">=</span> <span class="n">cropImage</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">rect_image</span><span class="p">,</span> <span class="p">[</span><span class="n">offsetHOR</span><span class="p">],</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">offsetVER</span><span class="p">])</span>
+        <span class="n">wid</span><span class="p">,</span><span class="n">hei</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">crop</span><span class="p">)</span>
+        
+        <span class="n">sensitivity</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">crop</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">time0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fftAnalysis</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="n">sensitivity</span><span class="p">,</span><span class="n">mode</span><span class="o">=</span><span class="s">&#39;sensitivity&#39;</span><span class="p">)</span>
+        <span class="n">cs</span><span class="o">.</span><span class="n">report</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s">&#39;sens_fft&#39;</span><span class="p">,</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="o">-</span><span class="n">time0</span><span class="p">))</span>
+
+        <span class="n">nx</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">sensitivity</span><span class="p">)</span>
+        <span class="n">sensitivitysmoothed</span> <span class="o">=</span> <span class="n">mymath</span><span class="o">.</span><span class="n">movingaverage</span><span class="p">(</span><span class="n">sensitivity</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">smooth_sensitivity</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">testing</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="kn">import</span> <span class="nn">QCUS_testing</span> <span class="kn">as</span> <span class="nn">mytest</span>
+                <span class="n">mytest</span><span class="o">.</span><span class="n">_exportProfile</span><span class="p">(</span> <span class="p">[</span> <span class="p">(</span><span class="n">s</span><span class="p">,</span><span class="n">ss</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span><span class="p">,</span><span class="n">ss</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">sensitivity</span><span class="p">,</span><span class="n">sensitivitysmoothed</span><span class="p">)</span> <span class="p">],</span><span class="n">fname</span><span class="o">=</span><span class="s">&#39;yprofile.tsv&#39;</span> <span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">pass</span>
+        
+        <span class="c">##2. Determine noise level (mean of last n values of sensitivity)</span>
+        <span class="n">cs</span><span class="o">.</span><span class="n">sens_noiseM</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="n">noiseRange</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="n">noise_av</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">sensitivitysmoothed</span><span class="p">[</span><span class="o">-</span><span class="n">noiseRange</span><span class="p">:])</span>
+        <span class="n">noise_sd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">sensitivitysmoothed</span><span class="p">[</span><span class="o">-</span><span class="n">noiseRange</span><span class="p">:])</span>
+        <span class="n">noise_snr</span> <span class="o">=</span> <span class="n">noise_av</span><span class="o">/</span><span class="n">noise_sd</span> <span class="k">if</span> <span class="n">noise_sd</span> <span class="o">&gt;</span><span class="mf">0.</span> <span class="k">else</span> <span class="mf">0.</span>
+        <span class="n">noise_inc</span> <span class="o">=</span> <span class="bp">False</span> <span class="c"># sometimes snr starts with a local max</span>
+        <span class="k">for</span> <span class="n">nr</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">noiseRange</span><span class="o">+</span><span class="mi">2</span><span class="p">,</span><span class="n">nx</span><span class="o">/</span><span class="mi">3</span><span class="p">):</span>
+            <span class="n">av</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">sensitivitysmoothed</span><span class="p">[</span><span class="o">-</span><span class="n">nr</span><span class="p">:])</span>
+            <span class="n">sd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">sensitivitysmoothed</span><span class="p">[</span><span class="o">-</span><span class="n">nr</span><span class="p">:])</span>
+            <span class="n">snr</span> <span class="o">=</span> <span class="n">av</span><span class="o">/</span><span class="n">sd</span> <span class="k">if</span> <span class="n">sd</span> <span class="o">&gt;</span><span class="mf">0.</span> <span class="k">else</span> <span class="mf">0.</span>
+            <span class="k">if</span> <span class="n">snr</span><span class="o">&gt;</span><span class="n">noise_snr</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">noise_inc</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">snr</span><span class="o">&gt;</span><span class="n">noise_snr</span><span class="p">:</span>
+                    <span class="n">noise_inc</span> <span class="o">=</span> <span class="bp">True</span> 
+                <span class="n">noise_av</span> <span class="o">=</span> <span class="n">av</span>
+                <span class="n">noise_sd</span> <span class="o">=</span> <span class="n">sd</span>
+                <span class="n">noise_snr</span> <span class="o">=</span> <span class="n">snr</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">cs</span><span class="o">.</span><span class="n">sens_noiserange</span> <span class="o">=</span> <span class="n">nr</span>
+                <span class="k">break</span>
+        <span class="n">cs</span><span class="o">.</span><span class="n">sens_noiseM</span> <span class="o">=</span> <span class="n">noise_av</span>
+
+        <span class="n">top_val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">sensitivitysmoothed</span><span class="p">)</span>
+        <span class="n">cut_val</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">sens_noiseM</span><span class="o">+.</span><span class="mi">1</span><span class="o">*</span><span class="p">(</span><span class="n">top_val</span><span class="o">-</span><span class="n">cs</span><span class="o">.</span><span class="n">sens_noiseM</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">kk</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">nx</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">sensitivitysmoothed</span><span class="p">[</span><span class="n">kk</span><span class="p">]</span><span class="o">&gt;</span><span class="n">cut_val</span><span class="p">:</span>
+                <span class="n">cs</span><span class="o">.</span><span class="n">sens_ylim</span> <span class="o">=</span> <span class="n">kk</span>
+                <span class="k">break</span>
+            
+        <span class="c"># peak detection</span>
+        <span class="n">pmax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">sensitivitysmoothed</span><span class="p">)</span>
+        <span class="n">pmin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">sensitivitysmoothed</span><span class="p">)</span>
+        <span class="n">delta</span> <span class="o">=</span> <span class="p">(</span><span class="n">pmax</span><span class="o">-</span><span class="nb">max</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">sens_noiseM</span><span class="p">,</span><span class="n">pmin</span><span class="p">))</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">fdelta_sensitivity</span>
+        <span class="n">xy_max</span><span class="p">,</span><span class="n">xy_min</span> <span class="o">=</span> <span class="n">wadwrapper_lib</span><span class="o">.</span><span class="n">peakdet</span><span class="p">(</span><span class="n">sensitivitysmoothed</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="n">delta</span><span class="p">,</span><span class="n">x</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="n">nx</span><span class="p">))</span>
+        
+        <span class="c"># select only those peaks where max&gt;noise; alternatively, select those peaks with min&lt;noise</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sens_hicut</span><span class="p">:</span>
+            <span class="n">xy_swap</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">xy</span> <span class="ow">in</span> <span class="n">xy_max</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">xy</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">&gt;</span><span class="n">cs</span><span class="o">.</span><span class="n">sens_noiseM</span><span class="p">:</span>
+                    <span class="n">xy_swap</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">xy</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">break</span>
+            <span class="n">xy_max</span> <span class="o">=</span> <span class="n">xy_swap</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">xy_max</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+                <span class="n">cs</span><span class="o">.</span><span class="n">sens_ylim</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">sens_ylim</span><span class="p">,</span><span class="nb">max</span><span class="p">(</span><span class="n">xy_max</span><span class="p">,</span><span class="n">key</span><span class="o">=</span><span class="n">operator</span><span class="o">.</span><span class="n">itemgetter</span><span class="p">(</span><span class="mi">0</span><span class="p">))[</span><span class="mi">0</span><span class="p">])</span>
+
+            <span class="n">xy_swap</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">xy</span> <span class="ow">in</span> <span class="n">xy_min</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">xy</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">&lt;</span><span class="n">cs</span><span class="o">.</span><span class="n">sens_ylim</span><span class="p">:</span>
+                    <span class="n">xy_swap</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">xy</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">xy_swap</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">xy</span><span class="p">)</span> <span class="c"># last point</span>
+                    <span class="k">break</span>
+            <span class="n">xy_min</span> <span class="o">=</span> <span class="n">xy_swap</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">xy_swap</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">xy</span> <span class="ow">in</span> <span class="n">xy_min</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">xy</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">&lt;</span><span class="n">cs</span><span class="o">.</span><span class="n">sens_noiseM</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">xy_swap</span><span class="p">)</span><span class="o">&lt;</span><span class="mi">3</span><span class="p">:</span>
+                    <span class="n">xy_swap</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">xy</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">break</span>
+            <span class="n">xy_min</span> <span class="o">=</span> <span class="n">xy_swap</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">xy_min</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">1</span><span class="p">:</span>
+                <span class="n">cs</span><span class="o">.</span><span class="n">sens_ylim</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">xy_min</span><span class="p">,</span><span class="n">key</span><span class="o">=</span><span class="n">operator</span><span class="o">.</span><span class="n">itemgetter</span><span class="p">(</span><span class="mi">0</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+
+            <span class="n">xy_swap</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">xy</span> <span class="ow">in</span> <span class="n">xy_max</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">xy</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">&lt;</span><span class="n">cs</span><span class="o">.</span><span class="n">sens_ylim</span><span class="p">:</span>
+                    <span class="n">xy_swap</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">xy</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">xy_swap</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">xy</span><span class="p">)</span> <span class="c"># last point</span>
+                    <span class="k">break</span>
+            <span class="n">xy_max</span> <span class="o">=</span> <span class="n">xy_swap</span>
+        <span class="n">cs</span><span class="o">.</span><span class="n">sens_numtops</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">xy_max</span><span class="p">)</span>
+        <span class="n">cs</span><span class="o">.</span><span class="n">sens_numbots</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">xy_min</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">testing</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="kn">import</span> <span class="nn">QCUS_testing</span> <span class="kn">as</span> <span class="nn">mytest</span>
+                <span class="n">mytest</span><span class="o">.</span><span class="n">_exportProfile</span><span class="p">(</span> <span class="n">xy_max</span><span class="p">,</span> <span class="n">fname</span><span class="o">=</span><span class="s">&#39;xy_max.tsv&#39;</span> <span class="p">)</span>
+                <span class="n">mytest</span><span class="o">.</span><span class="n">_exportProfile</span><span class="p">(</span> <span class="n">xy_min</span><span class="p">,</span> <span class="n">fname</span><span class="o">=</span><span class="s">&#39;xy_min.tsv&#39;</span> <span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">pass</span>
+        
+        <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+            <span class="n">x_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">xy</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">xy</span> <span class="ow">in</span> <span class="n">xy_max</span><span class="p">])</span>
+            <span class="n">y_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">xy</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">xy</span> <span class="ow">in</span> <span class="n">xy_max</span><span class="p">])</span>
+            <span class="n">x_min</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">xy</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">xy</span> <span class="ow">in</span> <span class="n">xy_min</span><span class="p">])</span>
+            <span class="n">y_min</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">xy</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">xy</span> <span class="ow">in</span> <span class="n">xy_min</span><span class="p">])</span>
+
+            <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">nx</span><span class="p">))</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">sensitivitysmoothed</span><span class="p">,</span><span class="s">&#39;k-&#39;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_min</span><span class="p">,</span><span class="n">y_min</span><span class="p">,</span><span class="s">&#39;ro&#39;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_max</span><span class="p">,</span><span class="n">y_max</span><span class="p">,</span><span class="s">&#39;bo&#39;</span><span class="p">)</span>
+            <span class="n">cs</span><span class="o">.</span><span class="n">hasmadeplots</span> <span class="o">=</span> <span class="bp">True</span>
+
+
+        <span class="n">error</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">return</span> <span class="n">error</span>
+</div>
+<div class="viewcode-block" id="US_QC.Analyse"><a class="viewcode-back" href="../../../../Plugins.US.US_AirReverberations.html#Plugins.US.US_AirReverberations.QCUS_lib.US_QC.Analyse">[docs]</a>    <span class="k">def</span> <span class="nf">Analyse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Analysis of reverberations in air.</span>
+<span class="sd">        Workflow:</span>
+<span class="sd">        1. Find reverberations as largest connected component != 0</span>
+<span class="sd">        2. Straighten curved data if needed</span>
+<span class="sd">        3. Uniformity of reverb analysis</span>
+<span class="sd">        4. Sensitivity analysis</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c">#return self.interpTest(cs)</span>
+        <span class="n">error</span> <span class="o">=</span> <span class="bp">True</span>
+        
+        <span class="n">time00</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="n">cs</span><span class="o">.</span><span class="n">rect_image</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">testing</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="kn">import</span> <span class="nn">QCUS_testing</span> <span class="kn">as</span> <span class="nn">mytest</span>
+                <span class="n">cs</span><span class="o">.</span><span class="n">rect_image</span> <span class="o">=</span> <span class="n">mytest</span><span class="o">.</span><span class="n">_importNDArray</span><span class="p">(</span><span class="n">fname</span><span class="o">=</span><span class="s">&#39;ndarray.npy&#39;</span><span class="p">)</span>
+    
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">,</span><span class="n">e</span><span class="p">:</span>
+                <span class="k">print</span> <span class="n">e</span>
+
+        <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">rect_image</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="c">## 1. CCA </span>
+            <span class="c"># cluster connected components with pixelvalues&gt;0</span>
+            <span class="n">error</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">isolateReverbrations</span><span class="p">(</span><span class="n">cs</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">error</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">error</span>
+    
+            <span class="c">## 2. Transform reverb data to rectangle is needed</span>
+            <span class="n">error</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">straightenCurve</span><span class="p">(</span><span class="n">cs</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">error</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">error</span>
+         
+        <span class="n">time0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="n">error</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sensitivityAnalysis</span><span class="p">(</span><span class="n">cs</span><span class="p">)</span>
+        <span class="n">cs</span><span class="o">.</span><span class="n">report</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s">&#39;sensitivity&#39;</span><span class="p">,</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="o">-</span><span class="n">time0</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">error</span><span class="p">:</span>
+            <span class="n">time0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+            <span class="n">error</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reverbUniformity</span><span class="p">(</span><span class="n">cs</span><span class="p">)</span>
+            <span class="n">cs</span><span class="o">.</span><span class="n">report</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s">&#39;uniformity&#39;</span><span class="p">,</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="o">-</span><span class="n">time0</span><span class="p">))</span>
+
+        <span class="n">cs</span><span class="o">.</span><span class="n">report</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s">&#39;total&#39;</span><span class="p">,</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="o">-</span><span class="n">time00</span><span class="p">))</span>
+
+        <span class="k">print</span> <span class="s">&quot;#timing info#</span><span class="se">\n</span><span class="s">part seconds&quot;</span>
+        <span class="k">for</span> <span class="n">r</span><span class="p">,</span><span class="n">t</span> <span class="ow">in</span> <span class="n">cs</span><span class="o">.</span><span class="n">report</span><span class="p">:</span>
+            <span class="k">print</span> <span class="n">r</span><span class="p">,</span><span class="n">t</span>
+        <span class="k">return</span> <span class="n">error</span>
+           </div>
+<div class="viewcode-block" id="US_QC.pixels2mm"><a class="viewcode-back" href="../../../../Plugins.US.US_AirReverberations.html#Plugins.US.US_AirReverberations.QCUS_lib.US_QC.pixels2mm">[docs]</a>    <span class="k">def</span> <span class="nf">pixels2mm</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">,</span><span class="n">px</span><span class="p">):</span>
+        <span class="c"># translate pixels into mm</span>
+
+        <span class="n">dicomfields</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">[</span><span class="s">&quot;0018,6011, 0018,6024&quot;</span><span class="p">,</span> <span class="s">&quot;Physical Units X Direction&quot;</span><span class="p">],</span>
+            <span class="p">[</span><span class="s">&quot;0018,6011, 0018,602c&quot;</span><span class="p">,</span> <span class="s">&quot;Physical Delta X&quot;</span><span class="p">],</span>
+        <span class="p">]</span> <span class="c"># Philips</span>
+    
+        <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">units</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">readDICOMtag</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="n">dicomfields</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">units</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span> <span class="c"># 3 = cm</span>
+            <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
+
+        <span class="n">mm</span> <span class="o">=</span> <span class="mf">10.</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">readDICOMtag</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="n">dicomfields</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span> <span class="c"># convert to mm</span>
+        <span class="k">return</span> <span class="n">px</span><span class="o">*</span><span class="n">mm</span>
+</div>
+<div class="viewcode-block" id="US_QC.imageID"><a class="viewcode-back" href="../../../../Plugins.US.US_AirReverberations.html#Plugins.US.US_AirReverberations.QCUS_lib.US_QC.imageID">[docs]</a>    <span class="k">def</span> <span class="nf">imageID</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">,</span><span class="n">probeonly</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">probeonly</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">cs</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span><span class="c"># and not self.guimode:</span>
+            <span class="k">return</span> <span class="s">&#39;0000&#39;</span>
+        <span class="c"># make an identifier for this image</span>
+        <span class="k">if</span> <span class="n">probeonly</span><span class="p">:</span>
+            <span class="n">di</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">DICOMInfo</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="n">info</span><span class="o">=</span><span class="s">&#39;probe&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">di</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">DICOMInfo</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="n">info</span><span class="o">=</span><span class="s">&#39;id&#39;</span><span class="p">)</span>
+        <span class="n">label</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">di</span><span class="p">:</span>
+            <span class="n">label</span> <span class="o">+=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s">_&#39;</span><span class="o">%</span><span class="n">v</span>
+        <span class="n">label</span> <span class="o">=</span> <span class="n">label</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        
+        <span class="n">forbidden</span> <span class="o">=</span> <span class="s">&#39;[,]</span><span class="se">\&#39;</span><span class="s">&quot; &#39;</span>
+        <span class="n">label2</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">la</span> <span class="ow">in</span> <span class="n">label</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">la</span> <span class="ow">in</span> <span class="n">forbidden</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">label2</span> <span class="o">+=</span> <span class="n">la</span>
+        <span class="n">label2</span> <span class="o">=</span> <span class="n">label2</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;UNUSED&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span> <span class="c"># cleaning</span>
+        <span class="k">return</span> <span class="n">label2</span>
+</div>
+<div class="viewcode-block" id="US_QC.reportEntries"><a class="viewcode-back" href="../../../../Plugins.US.US_AirReverberations.html#Plugins.US.US_AirReverberations.QCUS_lib.US_QC.reportEntries">[docs]</a>    <span class="k">def</span> <span class="nf">reportEntries</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">):</span>
+        <span class="c"># Convenience function to get all entries to report</span>
+        <span class="n">cs_items</span> <span class="o">=</span><span class="p">[</span>
+            <span class="p">(</span><span class="s">&#39;Curve_X&#39;</span><span class="p">,</span><span class="n">cs</span><span class="o">.</span><span class="n">curve_xyr</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+            <span class="p">(</span><span class="s">&#39;Curve_Y&#39;</span><span class="p">,</span><span class="n">cs</span><span class="o">.</span><span class="n">curve_xyr</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span>
+            <span class="p">(</span><span class="s">&#39;Curve_R&#39;</span><span class="p">,</span><span class="n">cs</span><span class="o">.</span><span class="n">curve_xyr</span><span class="p">[</span><span class="mi">2</span><span class="p">]),</span>
+            <span class="p">(</span><span class="s">&#39;Curve_Residu&#39;</span><span class="p">,</span><span class="n">cs</span><span class="o">.</span><span class="n">curve_residu</span><span class="p">),</span>
+            <span class="p">(</span><span class="s">&#39;Curve_OpenDeg&#39;</span><span class="p">,</span><span class="n">cs</span><span class="o">.</span><span class="n">curve_opendeg</span><span class="p">),</span>
+            <span class="p">(</span><span class="s">&#39;Rect_width&#39;</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">rect_image</span><span class="p">)[</span><span class="mi">0</span><span class="p">]),</span>
+            <span class="p">(</span><span class="s">&#39;Sens_noiserange&#39;</span><span class="p">,</span><span class="n">cs</span><span class="o">.</span><span class="n">sens_noiserange</span><span class="p">),</span>
+            <span class="p">(</span><span class="s">&#39;Sens_depth&#39;</span><span class="p">,</span><span class="n">cs</span><span class="o">.</span><span class="n">sens_ylim</span><span class="p">),</span>
+            <span class="p">(</span><span class="s">&#39;Sens_fft_depth&#39;</span><span class="p">,</span><span class="n">cs</span><span class="o">.</span><span class="n">sens_ylim2</span><span class="p">),</span>
+            <span class="p">(</span><span class="s">&#39;Sens_noise&#39;</span><span class="p">,</span><span class="n">cs</span><span class="o">.</span><span class="n">sens_noiseM</span><span class="p">),</span>
+            <span class="p">(</span><span class="s">&#39;Sens_tops&#39;</span><span class="p">,</span><span class="n">cs</span><span class="o">.</span><span class="n">sens_numtops</span><span class="p">),</span>
+            <span class="p">(</span><span class="s">&#39;Sens_bots&#39;</span><span class="p">,</span><span class="n">cs</span><span class="o">.</span><span class="n">sens_numbots</span><span class="p">),</span>
+            <span class="p">(</span><span class="s">&#39;Sens_basewl_mm&#39;</span><span class="p">,</span><span class="n">cs</span><span class="o">.</span><span class="n">sens_basewavelength</span><span class="p">),</span>
+            <span class="p">(</span><span class="s">&#39;Unif_bots&#39;</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">unif_bots</span><span class="p">)),</span>
+            <span class="p">(</span><span class="s">&#39;Unif_lowest&#39;</span><span class="p">,</span><span class="n">cs</span><span class="o">.</span><span class="n">unif_lowest</span><span class="p">),</span>
+            <span class="p">(</span><span class="s">&#39;Unif_low&#39;</span><span class="p">,</span><span class="n">cs</span><span class="o">.</span><span class="n">unif_low</span><span class="p">),</span>
+            <span class="p">(</span><span class="s">&#39;Unif_line&#39;</span><span class="p">,</span><span class="n">cs</span><span class="o">.</span><span class="n">unif_line</span><span class="p">),</span>
+        <span class="p">]</span>
+        
+        <span class="k">return</span> <span class="n">cs_items</span>
+    </div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,809 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Plugins.CT.CT_Philips_QuickIQ.QCCT_lib &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="../../../../index.html" />
+    <link rel="up" title="Module code" href="../../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for Plugins.CT.CT_Philips_QuickIQ.QCCT_lib</h1><div class="highlight"><pre>
+<span class="c"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Created on Wed Oct  9 08:50:51 2014</span>
+
+<span class="sd">@author: aschilha</span>
+
+<span class="sd">Warning: THIS MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!</span>
+
+<span class="sd">Changelog:</span>
+<span class="sd">    20150409: Removed scanner definitions; should be passed to cs or in config</span>
+<span class="sd">    20141009: Update to use dicomMode instead of mode2D</span>
+<span class="sd">    20140528: Initialize all items of CTStruct in __init__ (bug for gui)</span>
+<span class="sd">    20140425: Bugfix FindCenterShift</span>
+<span class="sd">    20140414: Removed &#39;s in DICOM tag name to avoid sql problems</span>
+<span class="sd">    20140409: Initial split of gui/lib for pywad</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">QCCT_constants</span> <span class="kn">as</span> <span class="nn">lit</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">wadwrapper_lib</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">pyWADLib</span> <span class="kn">import</span> <span class="n">wadwrapper_lib</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">stats</span>
+<span class="kn">import</span> <span class="nn">scipy.ndimage</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+
+<div class="viewcode-block" id="Scanner"><a class="viewcode-back" href="../../../../Plugins.CT.CT_Philips_QuickIQ.html#Plugins.CT.CT_Philips_QuickIQ.QCCT_lib.Scanner">[docs]</a><span class="k">class</span> <span class="nc">Scanner</span><span class="p">:</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+    <span class="n">HeadGT</span> <span class="o">=</span> <span class="p">[]</span> <span class="c"># HU for Air, Water, Teflon</span>
+    <span class="n">BodyGT</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">innerskulldiammm</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">outerskulldiammm</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">def</span> <span class="nf">__init__</span> <span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_name</span><span class="p">,</span><span class="n">_HeadGT</span><span class="p">,</span><span class="n">_innerdiam</span><span class="p">,</span><span class="n">_outerdiam</span><span class="p">,</span> <span class="n">_BodyGT</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">HeadGT</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">_HeadGT</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">innerskulldiammm</span> <span class="o">=</span> <span class="n">_innerdiam</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">outerskulldiammm</span> <span class="o">=</span> <span class="n">_outerdiam</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">BodyGT</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">_BodyGT</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="CTStruct"><a class="viewcode-back" href="../../../../Plugins.CT.CT_Philips_QuickIQ.html#Plugins.CT.CT_Philips_QuickIQ.QCCT_lib.CTStruct">[docs]</a><span class="k">class</span> <span class="nc">CTStruct</span><span class="p">:</span>
+    <span class="n">verbose</span> <span class="o">=</span> <span class="bp">False</span>
+
+    <span class="c"># input image</span>
+    <span class="n">dcmInfile</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">pixeldataIn</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">dicomMode</span> <span class="o">=</span> <span class="n">wadwrapper_lib</span><span class="o">.</span><span class="n">stMode2D</span>
+
+    <span class="c"># for matlib plotting</span>
+    <span class="n">hasmadeplots</span> <span class="o">=</span> <span class="bp">False</span>
+
+    <span class="c"># identification</span>
+    <span class="n">guessScanner</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">forceScanner</span> <span class="o">=</span> <span class="bp">None</span> <span class="c"># guessScanner is old way, forceScanner passes scanner definition to struct for usage</span>
+    
+    <span class="n">anatomy</span> <span class="o">=</span> <span class="n">lit</span><span class="o">.</span><span class="n">stUnknown</span>
+
+    <span class="c"># measurements for head and body</span>
+    <span class="n">roiavg</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c"># Average HU in rois</span>
+    <span class="n">roisd</span>  <span class="o">=</span> <span class="o">-</span><span class="mf">1.</span> <span class="c"># SD in center</span>
+    <span class="n">snr_hol</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.</span> <span class="c"># (avg+1000)/sd</span>
+    <span class="n">unif</span>    <span class="o">=</span> <span class="o">-</span><span class="mf">1.</span>
+    <span class="n">linearity</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.</span><span class="p">;</span>
+    <span class="n">maxdev</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.</span>
+    <span class="n">shiftxypx</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">valid</span> <span class="o">=</span> <span class="bp">False</span>
+
+    <span class="c"># measurements for head only</span>
+    <span class="n">skull_avg</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.</span> <span class="c"># Avg HU in skull</span>
+
+    <span class="c"># for gui</span>
+    <span class="n">unif_slice</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">unif_rois</span> <span class="o">=</span> <span class="p">[]</span> <span class="c"># x0,y0,rad</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span> <span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">dcmInfile</span><span class="p">,</span><span class="n">pixeldataIn</span><span class="p">,</span><span class="n">dicomMode</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dcmInfile</span> <span class="o">=</span> <span class="n">dcmInfile</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pixeldataIn</span> <span class="o">=</span> <span class="n">pixeldataIn</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dicomMode</span> <span class="o">=</span> <span class="n">dicomMode</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">hasmadeplots</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">guessScanner</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">forceScanner</span> <span class="o">=</span> <span class="bp">None</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">anatomy</span> <span class="o">=</span> <span class="n">lit</span><span class="o">.</span><span class="n">stUnknown</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">roiavg</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">roisd</span>  <span class="o">=</span> <span class="o">-</span><span class="mf">1.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">snr_hol</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unif</span>    <span class="o">=</span> <span class="o">-</span><span class="mf">1.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">linearity</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">maxdev</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shiftxypx</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">valid</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">skull_avg</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unif_slice</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unif_rois</span> <span class="o">=</span> <span class="p">[]</span>
+
+</div>
+<div class="viewcode-block" id="CT_QC"><a class="viewcode-back" href="../../../../Plugins.CT.CT_Philips_QuickIQ.html#Plugins.CT.CT_Philips_QuickIQ.QCCT_lib.CT_QC">[docs]</a><span class="k">class</span> <span class="nc">CT_QC</span><span class="p">:</span>
+    <span class="n">qcversion</span> <span class="o">=</span> <span class="mi">20150409</span>
+    <span class="n">sigma_ext</span> <span class="o">=</span> <span class="mf">1.5</span> <span class="c"># gaussian blur factor for extreme finder</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+<div class="viewcode-block" id="CT_QC.readDICOMtag"><a class="viewcode-back" href="../../../../Plugins.CT.CT_Philips_QuickIQ.html#Plugins.CT.CT_Philips_QuickIQ.QCCT_lib.CT_QC.readDICOMtag">[docs]</a>    <span class="k">def</span> <span class="nf">readDICOMtag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">,</span><span class="n">key</span><span class="p">,</span><span class="n">imslice</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span> <span class="c"># slice=2 is image 3</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">wadwrapper_lib</span><span class="o">.</span><span class="n">readDICOMtag</span><span class="p">(</span><span class="n">key</span><span class="p">,</span><span class="n">cs</span><span class="o">.</span><span class="n">dcmInfile</span><span class="p">,</span><span class="n">imslice</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">value</span>
+</div>
+<div class="viewcode-block" id="CT_QC.readDICOMspacing"><a class="viewcode-back" href="../../../../Plugins.CT.CT_Philips_QuickIQ.html#Plugins.CT.CT_Philips_QuickIQ.QCCT_lib.CT_QC.readDICOMspacing">[docs]</a>    <span class="k">def</span> <span class="nf">readDICOMspacing</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Try to read it from proper DICOM field. If not available,</span>
+<span class="sd">        calculate from distance between two slices, if 3D</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="s">&quot;0018,0088&quot;</span> <span class="c"># &quot;Spacing Between Slices&quot;, // Philips</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">readDICOMtag</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">dicomMode</span> <span class="o">==</span> <span class="n">wadwrapper_lib</span><span class="o">.</span><span class="n">stMode2D</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">value</span>
+        <span class="k">if</span><span class="p">(</span><span class="n">value</span> <span class="o">!=</span> <span class="s">&quot;&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">value</span>
+
+        <span class="n">key</span> <span class="o">=</span> <span class="s">&quot;0020,1041&quot;</span> <span class="c">#&quot;Slice Location&quot;,</span>
+        <span class="n">val1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">readDICOMtag</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="n">key</span><span class="p">,</span><span class="n">imslice</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">val2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">readDICOMtag</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="n">key</span><span class="p">,</span><span class="n">imslice</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span><span class="p">(</span><span class="n">val1</span> <span class="o">!=</span> <span class="s">&quot;&quot;</span> <span class="ow">and</span> <span class="n">val2</span> <span class="o">!=</span> <span class="s">&quot;&quot;</span><span class="p">):</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">val2</span><span class="o">-</span><span class="n">val1</span>
+        <span class="k">return</span> <span class="n">value</span>
+
+
+<span class="c">#----------------------------------------------------------------------</span></div>
+<div class="viewcode-block" id="CT_QC.DetermineCTID"><a class="viewcode-back" href="../../../../Plugins.CT.CT_Philips_QuickIQ.html#Plugins.CT.CT_Philips_QuickIQ.QCCT_lib.CT_QC.DetermineCTID">[docs]</a>    <span class="k">def</span> <span class="nf">DetermineCTID</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">):</span>
+        <span class="n">error</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">cs</span><span class="o">.</span><span class="n">forceScanner</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">cs</span><span class="o">.</span><span class="n">guessScanner</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">forceScanner</span>
+            <span class="n">error</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="k">return</span> <span class="n">error</span>
+
+        <span class="n">cs</span><span class="o">.</span><span class="n">guessScanner</span> <span class="o">=</span> <span class="n">Scanner</span><span class="p">(</span><span class="n">lit</span><span class="o">.</span><span class="n">stUnknown</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">error</span>
+</div>
+<div class="viewcode-block" id="CT_QC.HeadOrBody"><a class="viewcode-back" href="../../../../Plugins.CT.CT_Philips_QuickIQ.html#Plugins.CT.CT_Philips_QuickIQ.QCCT_lib.CT_QC.HeadOrBody">[docs]</a>    <span class="k">def</span> <span class="nf">HeadOrBody</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">):</span>
+        <span class="n">error</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="n">cs</span><span class="o">.</span><span class="n">anatomy</span> <span class="o">=</span> <span class="n">lit</span><span class="o">.</span><span class="n">stUnknown</span>
+        <span class="n">dicomvalue</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">readDICOMtag</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="s">&quot;0018,1030&quot;</span><span class="p">)</span> <span class="c">#Protocol Name</span>
+        <span class="n">dicomvalue</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">dicomvalue</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="k">if</span><span class="p">(</span><span class="n">dicomvalue</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;head&quot;</span><span class="p">)</span><span class="o">&gt;-</span><span class="mi">1</span><span class="p">):</span>
+            <span class="n">cs</span><span class="o">.</span><span class="n">anatomy</span> <span class="o">=</span> <span class="n">lit</span><span class="o">.</span><span class="n">stHead</span>
+            <span class="n">error</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">if</span><span class="p">(</span><span class="n">dicomvalue</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;body&quot;</span><span class="p">)</span><span class="o">&gt;-</span><span class="mi">1</span><span class="p">):</span>
+            <span class="n">cs</span><span class="o">.</span><span class="n">anatomy</span> <span class="o">=</span> <span class="n">lit</span><span class="o">.</span><span class="n">stBody</span>
+            <span class="n">error</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">return</span> <span class="n">error</span>
+</div>
+<div class="viewcode-block" id="CT_QC.pix2phantommm"><a class="viewcode-back" href="../../../../Plugins.CT.CT_Philips_QuickIQ.html#Plugins.CT.CT_Philips_QuickIQ.QCCT_lib.CT_QC.pix2phantommm">[docs]</a>    <span class="k">def</span> <span class="nf">pix2phantommm</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cs</span><span class="p">,</span> <span class="n">pix</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">dicomMode</span> <span class="o">==</span> <span class="n">wadwrapper_lib</span><span class="o">.</span><span class="n">stMode2D</span><span class="p">:</span>
+            <span class="n">pix2mmm</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">dcmInfile</span><span class="o">.</span><span class="n">PixelSpacing</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">pix2mmm</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">dcmInfile</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">PixelSpacing</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">pix</span><span class="o">*</span><span class="n">pix2mmm</span>
+</div>
+<div class="viewcode-block" id="CT_QC.phantommm2pix"><a class="viewcode-back" href="../../../../Plugins.CT.CT_Philips_QuickIQ.html#Plugins.CT.CT_Philips_QuickIQ.QCCT_lib.CT_QC.phantommm2pix">[docs]</a>    <span class="k">def</span> <span class="nf">phantommm2pix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cs</span><span class="p">,</span> <span class="n">mm</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">dicomMode</span> <span class="o">==</span> <span class="n">wadwrapper_lib</span><span class="o">.</span><span class="n">stMode2D</span><span class="p">:</span>
+            <span class="n">pix2mmm</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">dcmInfile</span><span class="o">.</span><span class="n">PixelSpacing</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">pix2mmm</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">dcmInfile</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">PixelSpacing</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">mm</span><span class="o">/</span><span class="n">pix2mmm</span>
+
+<span class="c">#----------------------------------------------------------------------</span></div>
+<div class="viewcode-block" id="CT_QC.AnalyseCT"><a class="viewcode-back" href="../../../../Plugins.CT.CT_Philips_QuickIQ.html#Plugins.CT.CT_Philips_QuickIQ.QCCT_lib.CT_QC.AnalyseCT">[docs]</a>    <span class="k">def</span> <span class="nf">AnalyseCT</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cs</span><span class="p">):</span>
+        <span class="c"># id scanner (for base values)</span>
+        <span class="n">error</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">DetermineCTID</span><span class="p">(</span><span class="n">cs</span><span class="p">)</span>
+        <span class="k">if</span><span class="p">(</span><span class="n">error</span> <span class="o">==</span> <span class="bp">True</span><span class="p">):</span>
+            <span class="k">print</span> <span class="s">&quot;[AnalyzeCT] cannot determine CT ID&quot;</span>
+            <span class="k">return</span> <span class="n">error</span>
+
+        <span class="c"># id anatomy of phantom (for test and ROI locations)</span>
+        <span class="n">error</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">HeadOrBody</span><span class="p">(</span><span class="n">cs</span><span class="p">)</span>
+        <span class="k">if</span><span class="p">(</span><span class="n">error</span> <span class="o">==</span> <span class="bp">True</span><span class="p">):</span>
+            <span class="k">print</span> <span class="s">&quot;[AnalyzeCT] cannot determine Anatomy&quot;</span>
+            <span class="k">return</span> <span class="n">error</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">cs</span><span class="o">.</span><span class="n">dicomMode</span> <span class="o">==</span> <span class="n">wadwrapper_lib</span><span class="o">.</span><span class="n">stMode2D</span><span class="p">:</span>
+            <span class="n">dep</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">cs</span><span class="o">.</span><span class="n">unif_slice</span> <span class="o">=</span> <span class="p">(</span><span class="n">dep</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span> <span class="c"># take middle slice</span>
+
+        <span class="k">if</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">anatomy</span> <span class="o">==</span> <span class="n">lit</span><span class="o">.</span><span class="n">stHead</span><span class="p">):</span>
+            <span class="n">error</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">AnalyseCTHead</span><span class="p">(</span><span class="n">cs</span><span class="p">)</span>
+        <span class="k">elif</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">anatomy</span> <span class="o">==</span> <span class="n">lit</span><span class="o">.</span><span class="n">stBody</span><span class="p">):</span>
+            <span class="n">error</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">AnalyseCTBody</span><span class="p">(</span><span class="n">cs</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">error</span>
+</div>
+<div class="viewcode-block" id="CT_QC.AnalyseCTHead"><a class="viewcode-back" href="../../../../Plugins.CT.CT_Philips_QuickIQ.html#Plugins.CT.CT_Philips_QuickIQ.QCCT_lib.CT_QC.AnalyseCTHead">[docs]</a>    <span class="k">def</span> <span class="nf">AnalyseCTHead</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate uniformity, water#, noise, CT#, shift</span>
+<span class="sd">        1. Find fantom center shift</span>
+<span class="sd">        2. Find mean and SD in relevant ROIs</span>
+<span class="sd">        3. Find mean and SD in skull</span>
+<span class="sd">        4. Find</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">error</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="c"># 1. find center shift</span>
+        <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">dicomMode</span> <span class="o">==</span> <span class="n">wadwrapper_lib</span><span class="o">.</span><span class="n">stMode2D</span><span class="p">:</span>
+            <span class="n">error</span><span class="p">,</span><span class="n">cs</span><span class="o">.</span><span class="n">shiftxypx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">FindCenterShift2D</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="p">,</span><span class="n">matter</span><span class="o">=</span><span class="n">lit</span><span class="o">.</span><span class="n">stAir</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">error</span><span class="p">,</span><span class="n">cs</span><span class="o">.</span><span class="n">shiftxypx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">FindCenterShift2D</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="p">[</span><span class="n">cs</span><span class="o">.</span><span class="n">unif_slice</span><span class="p">],</span><span class="n">matter</span><span class="o">=</span><span class="n">lit</span><span class="o">.</span><span class="n">stAir</span><span class="p">)</span>
+
+        <span class="k">if</span><span class="p">(</span><span class="n">error</span><span class="p">):</span>
+            <span class="k">print</span> <span class="s">&quot;[AnalyseCTHead] cannot findcentershift&quot;</span>
+            <span class="k">return</span> <span class="n">error</span>
+
+        <span class="c"># 2. find mean and SD in relevant regions</span>
+        <span class="c">#   1    3</span>
+        <span class="c">#</span>
+        <span class="c">#   0  2</span>
+        <span class="c">#</span>
+        <span class="n">midx</span>     <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phantommm2pix</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="mf">125.</span><span class="p">)</span><span class="o">+.</span><span class="mi">5</span><span class="p">)</span>
+        <span class="n">stepx</span>    <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phantommm2pix</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="mf">65.</span><span class="p">)</span><span class="o">+.</span><span class="mi">5</span><span class="p">)</span>
+        <span class="n">roidim</span>   <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phantommm2pix</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="mf">18.</span><span class="p">)</span><span class="o">+.</span><span class="mi">5</span><span class="p">)</span> <span class="c"># 25 for body // IEC say at least 10% of diam (178mm)</span>
+        <span class="n">sddim</span>    <span class="o">=</span> <span class="mi">4</span><span class="o">*</span><span class="n">roidim</span> <span class="c">#IEC say at least 40% of diam (178mm) and may not overlap with other structures</span>
+        <span class="n">diagstep</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phantommm2pix</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="mf">79.75</span><span class="p">)</span><span class="o">+.</span><span class="mi">5</span><span class="p">);</span>
+        <span class="n">roirad</span>   <span class="o">=</span> <span class="n">roidim</span><span class="o">/</span><span class="mf">2.</span>
+
+        <span class="n">roix</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">roiy</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">roix</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">shiftxypx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">midx</span><span class="o">-</span><span class="nb">int</span><span class="p">(</span><span class="n">roidim</span><span class="o">/</span><span class="mi">2</span><span class="p">))</span> <span class="c"># center</span>
+        <span class="n">roix</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">roix</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>            <span class="c"># 12 o&#39;clock</span>
+        <span class="n">roix</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">roix</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">stepx</span><span class="p">)</span>      <span class="c">#  3 o&#39;clock</span>
+        <span class="n">roix</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">roix</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">diagstep</span><span class="p">)</span>  <span class="c">#</span>
+        <span class="n">roix</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">shiftxypx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">midx</span><span class="o">-</span><span class="nb">int</span><span class="p">(</span><span class="n">sddim</span><span class="o">/</span><span class="mi">2</span><span class="p">))</span> <span class="c"># center</span>
+
+        <span class="n">roiy</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">shiftxypx</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">midx</span><span class="o">-</span><span class="nb">int</span><span class="p">(</span><span class="n">roidim</span><span class="o">/</span><span class="mi">2</span><span class="p">))</span> <span class="c"># center</span>
+        <span class="n">roiy</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">roiy</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">stepx</span><span class="p">)</span>            <span class="c"># 12 o&#39;clock</span>
+        <span class="n">roiy</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">roiy</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>                  <span class="c">#  3 o&#39;clock</span>
+        <span class="n">roiy</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">roiy</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">diagstep</span><span class="p">)</span>  <span class="c">#</span>
+        <span class="n">roiy</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">shiftxypx</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">midx</span><span class="o">-</span><span class="nb">int</span><span class="p">(</span><span class="n">sddim</span><span class="o">/</span><span class="mi">2</span><span class="p">))</span> <span class="c"># center</span>
+
+        <span class="c"># first avg</span>
+        <span class="n">cs</span><span class="o">.</span><span class="n">roiavg</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">kk</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">roix</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+            <span class="n">sumv</span> <span class="o">=</span> <span class="mf">0.</span><span class="p">;</span>
+            <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">ky</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">roidim</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">kx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">roidim</span><span class="p">):</span>
+                    <span class="k">if</span><span class="p">(</span> <span class="p">(</span><span class="n">kx</span><span class="o">-</span><span class="n">roirad</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="p">(</span><span class="n">ky</span><span class="o">-</span><span class="n">roirad</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="o">&lt;</span><span class="n">roirad</span><span class="o">**</span><span class="mi">2</span> <span class="p">):</span>
+                        <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">dicomMode</span> <span class="o">==</span> <span class="n">wadwrapper_lib</span><span class="o">.</span><span class="n">stMode2D</span><span class="p">:</span>
+                            <span class="n">sumv</span> <span class="o">+=</span> <span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="p">[</span><span class="n">roix</span><span class="p">[</span><span class="n">kk</span><span class="p">]</span><span class="o">+</span><span class="n">kx</span><span class="p">,</span><span class="n">roiy</span><span class="p">[</span><span class="n">kk</span><span class="p">]</span><span class="o">+</span><span class="n">ky</span><span class="p">]</span>
+                        <span class="c">#    self.pixeldataIn[roix[kk]+kx,roiy[kk]+ky] = -1000</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">sumv</span> <span class="o">+=</span> <span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="p">[</span><span class="n">cs</span><span class="o">.</span><span class="n">unif_slice</span><span class="p">,</span><span class="n">roix</span><span class="p">[</span><span class="n">kk</span><span class="p">]</span><span class="o">+</span><span class="n">kx</span><span class="p">,</span><span class="n">roiy</span><span class="p">[</span><span class="n">kk</span><span class="p">]</span><span class="o">+</span><span class="n">ky</span><span class="p">]</span>
+                        <span class="c"># self.pixeldataIn[iz,roix[kk]+kx,roiy[kk]+ky] = -1000</span>
+                        <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">if</span><span class="p">(</span><span class="n">count</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">):</span>
+                <span class="n">cs</span><span class="o">.</span><span class="n">roiavg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sumv</span><span class="o">/</span><span class="n">count</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">cs</span><span class="o">.</span><span class="n">roiavg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="c"># for gui</span>
+            <span class="n">cs</span><span class="o">.</span><span class="n">unif_rois</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">roix</span><span class="p">[</span><span class="n">kk</span><span class="p">]</span><span class="o">+</span><span class="n">roidim</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="n">roiy</span><span class="p">[</span><span class="n">kk</span><span class="p">]</span><span class="o">+</span><span class="n">roidim</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">roidim</span><span class="o">/</span><span class="mi">2</span><span class="p">])</span>
+
+        <span class="c"># now SD</span>
+        <span class="n">cs</span><span class="o">.</span><span class="n">roisd</span> <span class="o">=</span> <span class="mf">0.</span><span class="p">;</span>
+        <span class="n">sdrad</span> <span class="o">=</span> <span class="n">sddim</span><span class="o">/</span><span class="mf">2.</span>
+        <span class="n">sumv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="mf">0.</span><span class="p">);</span>
+        <span class="n">sumv2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="mf">0.</span><span class="p">)</span>
+        <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">seterr</span><span class="p">(</span><span class="n">over</span><span class="o">=</span><span class="s">&#39;raise&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">ky</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">sddim</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">kx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">sddim</span><span class="p">):</span>
+                <span class="k">if</span><span class="p">(</span> <span class="p">(</span><span class="n">kx</span><span class="o">-</span><span class="n">sdrad</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="p">(</span><span class="n">ky</span><span class="o">-</span><span class="n">sdrad</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="o">&lt;</span><span class="n">sdrad</span><span class="o">**</span><span class="mi">2</span> <span class="p">):</span>
+                    <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">dicomMode</span> <span class="o">==</span> <span class="n">wadwrapper_lib</span><span class="o">.</span><span class="n">stMode2D</span><span class="p">:</span>
+                        <span class="n">val</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="p">[</span><span class="n">roix</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">kx</span><span class="p">,</span><span class="n">roiy</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">ky</span><span class="p">]</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">val</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="p">[</span><span class="n">cs</span><span class="o">.</span><span class="n">unif_slice</span><span class="p">,</span><span class="n">roix</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">kx</span><span class="p">,</span><span class="n">roiy</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">ky</span><span class="p">]</span>
+                    <span class="n">sumv</span> <span class="o">+=</span> <span class="n">val</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">sumv2</span> <span class="o">+=</span> <span class="n">val</span><span class="o">*</span><span class="n">val</span>
+                    <span class="k">except</span><span class="p">:</span>
+                        <span class="k">print</span> <span class="s">&quot;[AnalyseCTHead] ERROR!&quot;</span><span class="p">,</span><span class="nb">type</span><span class="p">(</span><span class="n">val</span><span class="p">),</span><span class="nb">type</span><span class="p">(</span><span class="n">sumv</span><span class="p">),</span><span class="nb">type</span><span class="p">(</span><span class="n">sumv2</span><span class="p">),</span><span class="n">val</span><span class="p">,</span><span class="n">sumv</span><span class="p">,</span><span class="n">sumv2</span>
+                    <span class="c">#  self.pixeldataIn[iz,roix[kk]+kx,roiy[kk]+ky] = -1000</span>
+                    <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span><span class="p">(</span><span class="n">count</span><span class="o">&gt;</span><span class="mi">1</span><span class="p">):</span>
+            <span class="n">cs</span><span class="o">.</span><span class="n">roisd</span> <span class="o">=</span> <span class="p">(</span><span class="n">count</span><span class="o">*</span><span class="n">sumv2</span><span class="o">-</span><span class="n">sumv</span><span class="o">*</span><span class="n">sumv</span><span class="p">)</span><span class="o">/</span><span class="n">count</span>
+            <span class="n">cs</span><span class="o">.</span><span class="n">roisd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">roisd</span><span class="o">/</span><span class="p">(</span><span class="n">count</span><span class="o">-</span><span class="mf">1.</span><span class="p">))</span>
+
+        <span class="c"># for gui</span>
+        <span class="n">cs</span><span class="o">.</span><span class="n">unif_rois</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">roix</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">sddim</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="n">roiy</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">sddim</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">sddim</span><span class="o">/</span><span class="mi">2</span><span class="p">])</span>
+
+        <span class="c"># now avg skull</span>
+        <span class="n">cs</span><span class="o">.</span><span class="n">skull_avg</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="n">innerroidim</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phantommm2pix</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="n">cs</span><span class="o">.</span><span class="n">guessScanner</span><span class="o">.</span><span class="n">innerskulldiammm</span><span class="p">)</span><span class="o">+.</span><span class="mi">5</span><span class="p">)</span>
+        <span class="n">outerroidim</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phantommm2pix</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="n">cs</span><span class="o">.</span><span class="n">guessScanner</span><span class="o">.</span><span class="n">outerskulldiammm</span><span class="p">)</span><span class="o">+.</span><span class="mi">5</span><span class="p">)</span>
+        <span class="n">roix</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">roiy</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">roix</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">shiftxypx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">midx</span><span class="o">-</span><span class="nb">int</span><span class="p">(</span><span class="n">outerroidim</span><span class="o">/</span><span class="mi">2</span><span class="p">))</span> <span class="c"># center</span>
+        <span class="n">roix</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">shiftxypx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">midx</span><span class="o">-</span><span class="nb">int</span><span class="p">(</span><span class="n">innerroidim</span><span class="o">/</span><span class="mi">2</span><span class="p">))</span> <span class="c"># center</span>
+        <span class="n">roiy</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">shiftxypx</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">midx</span><span class="o">-</span><span class="nb">int</span><span class="p">(</span><span class="n">outerroidim</span><span class="o">/</span><span class="mi">2</span><span class="p">))</span> <span class="c"># center</span>
+        <span class="n">roiy</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">shiftxypx</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">midx</span><span class="o">-</span><span class="nb">int</span><span class="p">(</span><span class="n">innerroidim</span><span class="o">/</span><span class="mi">2</span><span class="p">))</span> <span class="c"># center</span>
+        <span class="n">outerroirad</span> <span class="o">=</span> <span class="n">outerroidim</span><span class="o">/</span><span class="mf">2.</span>
+        <span class="n">innerroirad</span> <span class="o">=</span> <span class="n">innerroidim</span><span class="o">/</span><span class="mf">2.</span>
+        <span class="n">sumv</span> <span class="o">=</span> <span class="mf">0.</span><span class="p">;</span>
+        <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">ky</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">outerroidim</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">kx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">outerroidim</span><span class="p">):</span>
+                <span class="n">rrr2</span> <span class="o">=</span> <span class="p">(</span><span class="n">kx</span><span class="o">-</span><span class="n">outerroirad</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="p">(</span><span class="n">ky</span><span class="o">-</span><span class="n">outerroirad</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span>
+                <span class="k">if</span><span class="p">(</span> <span class="n">rrr2</span><span class="o">&gt;</span><span class="n">innerroirad</span><span class="o">**</span><span class="mi">2</span> <span class="ow">and</span> <span class="n">rrr2</span><span class="o">&lt;</span><span class="n">outerroirad</span><span class="o">**</span><span class="mi">2</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">dicomMode</span> <span class="o">==</span> <span class="n">wadwrapper_lib</span><span class="o">.</span><span class="n">stMode2D</span><span class="p">:</span>
+                        <span class="n">sumv</span> <span class="o">+=</span> <span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="p">[</span><span class="n">roix</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">kx</span><span class="p">,</span><span class="n">roiy</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">ky</span><span class="p">]</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">sumv</span> <span class="o">+=</span> <span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="p">[</span><span class="n">cs</span><span class="o">.</span><span class="n">unif_slice</span><span class="p">,</span><span class="n">roix</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">kx</span><span class="p">,</span><span class="n">roiy</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">ky</span><span class="p">]</span>
+                    <span class="c"># self.pixeldataIn[iz,roix[0]+kx,roiy[0]+ky] = -1000</span>
+                    <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span><span class="p">(</span><span class="n">count</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">):</span>
+            <span class="n">cs</span><span class="o">.</span><span class="n">skull_avg</span> <span class="o">=</span> <span class="n">sumv</span><span class="o">/</span><span class="n">count</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">cs</span><span class="o">.</span><span class="n">skull_avg</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="c"># for gui</span>
+        <span class="n">cs</span><span class="o">.</span><span class="n">unif_rois</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">roix</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">outerroidim</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="n">roiy</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">outerroidim</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">outerroidim</span><span class="o">/</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">cs</span><span class="o">.</span><span class="n">unif_rois</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">roix</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">innerroidim</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="n">roiy</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">innerroidim</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">innerroidim</span><span class="o">/</span><span class="mi">2</span><span class="p">])</span>
+
+        <span class="n">cs</span><span class="o">.</span><span class="n">snr_hol</span> <span class="o">=</span> <span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">roiavg</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mi">1000</span><span class="p">)</span><span class="o">/</span><span class="n">cs</span><span class="o">.</span><span class="n">roisd</span>
+        <span class="c"># uniformity</span>
+        <span class="n">maxdev</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">roiavg</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">cs</span><span class="o">.</span><span class="n">roiavg</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span>  <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">):</span>
+            <span class="n">maxdev</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">maxdev</span><span class="p">,</span><span class="nb">abs</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">roiavg</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">cs</span><span class="o">.</span><span class="n">roiavg</span><span class="p">[</span><span class="n">k</span><span class="p">]))</span>
+        <span class="n">cs</span><span class="o">.</span><span class="n">unif</span> <span class="o">=</span> <span class="o">-</span><span class="n">maxdev</span>
+
+        <span class="n">measured</span> <span class="o">=</span> <span class="p">[</span><span class="n">cs</span><span class="o">.</span><span class="n">roiavg</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="n">cs</span><span class="o">.</span><span class="n">roiavg</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">cs</span><span class="o">.</span><span class="n">skull_avg</span><span class="p">]</span>
+        <span class="n">GT</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessScanner</span><span class="o">.</span><span class="n">HeadGT</span>
+        <span class="k">print</span> <span class="s">&quot;[AnalyseCTHead] x,y&quot;</span><span class="p">,</span><span class="n">GT</span><span class="p">,</span><span class="n">measured</span>
+        <span class="n">cs</span><span class="o">.</span><span class="n">linearity</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">PearsonCoef</span><span class="p">(</span><span class="n">measured</span><span class="p">,</span><span class="n">GT</span><span class="p">)</span>
+
+        <span class="n">maxdev</span> <span class="o">=</span> <span class="n">measured</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">GT</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">m</span><span class="p">,</span><span class="n">g</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">measured</span><span class="p">,</span><span class="n">GT</span><span class="p">):</span>
+            <span class="k">if</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">m</span><span class="o">-</span><span class="n">g</span><span class="p">)</span><span class="o">&gt;</span><span class="nb">abs</span><span class="p">(</span><span class="n">maxdev</span><span class="p">)):</span>
+                <span class="n">maxdev</span> <span class="o">=</span> <span class="n">m</span><span class="o">-</span><span class="n">g</span>
+        <span class="n">cs</span><span class="o">.</span><span class="n">maxdev</span> <span class="o">=</span> <span class="n">maxdev</span>
+
+        <span class="n">error</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">return</span> <span class="n">error</span>
+</div>
+<div class="viewcode-block" id="CT_QC.AnalyseCTBody"><a class="viewcode-back" href="../../../../Plugins.CT.CT_Philips_QuickIQ.html#Plugins.CT.CT_Philips_QuickIQ.QCCT_lib.CT_QC.AnalyseCTBody">[docs]</a>    <span class="k">def</span> <span class="nf">AnalyseCTBody</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate uniformity, water#, noise, CT#, shift</span>
+<span class="sd">        1. Find fantom center shift</span>
+<span class="sd">        2. Find mean and SD in relevant ROIs</span>
+<span class="sd">        3. Find mean and SD in skull</span>
+<span class="sd">        4. Find</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">error</span> <span class="o">=</span> <span class="bp">True</span>
+
+        <span class="c"># 1. find center shift</span>
+        <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">dicomMode</span> <span class="o">==</span> <span class="n">wadwrapper_lib</span><span class="o">.</span><span class="n">stMode2D</span><span class="p">:</span>
+            <span class="n">error</span><span class="p">,</span><span class="n">cs</span><span class="o">.</span><span class="n">shiftxypx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">FindCenterShift2D</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="p">,</span><span class="n">matter</span><span class="o">=</span><span class="n">lit</span><span class="o">.</span><span class="n">stAir</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">error</span><span class="p">,</span><span class="n">cs</span><span class="o">.</span><span class="n">shiftxypx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">FindCenterShift2D</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="p">[</span><span class="n">cs</span><span class="o">.</span><span class="n">unif_slice</span><span class="p">],</span><span class="n">matter</span><span class="o">=</span><span class="n">lit</span><span class="o">.</span><span class="n">stAir</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">error</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&quot;[AnalyseCTBody] cannot findcentershift&quot;</span>
+            <span class="k">return</span> <span class="n">error</span>
+
+        <span class="c"># 2. find mean and SD in relevant regions</span>
+        <span class="c">#   1  2  3</span>
+        <span class="c">#</span>
+        <span class="c">#5  0  4</span>
+        <span class="c">#</span>
+        <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">dicomMode</span> <span class="o">==</span> <span class="n">wadwrapper_lib</span><span class="o">.</span><span class="n">stMode2D</span><span class="p">:</span>
+            <span class="n">datadiam</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">dcmInfile</span><span class="o">.</span><span class="n">ReconstructionDiameter</span> <span class="c"># data reconstruction diameter</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">datadiam</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">dcmInfile</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">ReconstructionDiameter</span> <span class="c"># data reconstruction diameter</span>
+        <span class="n">midx</span>     <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phantommm2pix</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="n">datadiam</span><span class="o">/</span><span class="mf">2.</span><span class="p">)</span><span class="o">+.</span><span class="mi">5</span><span class="p">)</span>
+        <span class="n">stepx</span>    <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phantommm2pix</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="mf">120.</span><span class="p">)</span><span class="o">+.</span><span class="mi">5</span><span class="p">)</span>
+        <span class="n">roidimIEC</span>   <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phantommm2pix</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="mf">30.</span><span class="p">)</span><span class="o">+.</span><span class="mi">5</span><span class="p">)</span> <span class="c"># 25 for body // IEC say at least 10% of diam (178mm)</span>
+        <span class="n">roidimMAT</span>   <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phantommm2pix</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="mf">18.</span><span class="p">)</span><span class="o">+.</span><span class="mi">5</span><span class="p">)</span> <span class="c"># 2non official, like for uniformity and outside</span>
+        <span class="n">sddimIEC</span>    <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mf">3.25</span><span class="o">*</span><span class="n">roidimIEC</span><span class="p">)</span><span class="c">#IEC say at least 40% of diam (178mm) and may not overlap with other structures</span>
+        <span class="n">hdiagstep</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phantommm2pix</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="mf">85.</span><span class="p">)</span><span class="o">+.</span><span class="mi">5</span><span class="p">);</span>
+        <span class="n">diagstep</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phantommm2pix</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="mf">115.75</span><span class="p">)</span><span class="o">+.</span><span class="mi">5</span><span class="p">);</span>
+
+        <span class="n">roidim</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">roidim</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">roidimIEC</span><span class="p">)</span>
+        <span class="n">roidim</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">roidimIEC</span><span class="p">)</span>
+        <span class="n">roidim</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">roidimIEC</span><span class="p">)</span>
+        <span class="n">roidim</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">roidimMAT</span><span class="p">)</span>
+        <span class="n">roidim</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">roidimMAT</span><span class="p">)</span>
+        <span class="n">roidim</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">roidimMAT</span><span class="p">)</span>
+        <span class="n">roidim</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sddimIEC</span><span class="p">)</span>
+        <span class="n">roix</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">roiy</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">roix</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">shiftxypx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">midx</span><span class="o">-</span><span class="nb">int</span><span class="p">(</span><span class="n">roidim</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">))</span> <span class="c"># center</span>
+        <span class="n">roix</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">roix</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>            <span class="c"># 12 o&#39;clock</span>
+        <span class="n">roix</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">roix</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">hdiagstep</span><span class="p">)</span>  <span class="c"># 1.3 o&#39;clock</span>
+        <span class="n">roix</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">shiftxypx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">midx</span><span class="o">-</span><span class="nb">int</span><span class="p">(</span><span class="n">roidim</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="n">diagstep</span><span class="p">)</span> <span class="c"># outside</span>
+        <span class="n">roiy</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">shiftxypx</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">midx</span><span class="o">-</span><span class="nb">int</span><span class="p">(</span><span class="n">roidim</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">))</span> <span class="c"># center</span>
+        <span class="n">roiy</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">roiy</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">stepx</span><span class="p">)</span>            <span class="c"># 12 o&#39;clock</span>
+        <span class="n">roiy</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">roiy</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">hdiagstep</span><span class="p">)</span>        <span class="c"># 1.3 o&#39;clock</span>
+        <span class="n">roiy</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">shiftxypx</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">midx</span><span class="o">-</span><span class="nb">int</span><span class="p">(</span><span class="n">roidim</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span><span class="o">-</span><span class="n">diagstep</span><span class="p">)</span> <span class="c"># outside</span>
+
+        <span class="c"># Find Teflon plug</span>
+        <span class="n">stepm</span>  <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phantommm2pix</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="mf">82.</span><span class="p">)</span><span class="o">+.</span><span class="mi">5</span><span class="p">)</span>
+        <span class="n">matdim</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phantommm2pix</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="mf">55.</span><span class="p">)</span><span class="o">+.</span><span class="mi">5</span><span class="p">)</span>
+        <span class="n">roix</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">shiftxypx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">midx</span><span class="o">-</span><span class="nb">int</span><span class="p">(</span><span class="n">roidim</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">))</span>
+        <span class="n">roiy</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">shiftxypx</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">midx</span><span class="o">-</span><span class="nb">int</span><span class="p">(</span><span class="n">roidim</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">))</span>
+        <span class="n">xstart</span> <span class="o">=</span> <span class="n">roix</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">+</span><span class="n">stepm</span><span class="o">-</span><span class="n">matdim</span><span class="o">/</span><span class="mi">2</span>
+        <span class="n">xend</span>   <span class="o">=</span> <span class="n">xstart</span><span class="o">+</span><span class="n">matdim</span>
+        <span class="n">ystart</span> <span class="o">=</span> <span class="n">roiy</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">-</span><span class="n">matdim</span><span class="o">/</span><span class="mi">2</span>
+        <span class="n">yend</span>   <span class="o">=</span> <span class="n">ystart</span><span class="o">+</span><span class="n">matdim</span>
+        <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">dicomMode</span> <span class="o">==</span> <span class="n">wadwrapper_lib</span><span class="o">.</span><span class="n">stMode2D</span><span class="p">:</span>
+            <span class="n">plugimage</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="p">[</span><span class="n">xstart</span><span class="p">:</span><span class="n">xend</span><span class="p">,</span><span class="n">ystart</span><span class="p">:</span><span class="n">yend</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">plugimage</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="p">[</span><span class="n">cs</span><span class="o">.</span><span class="n">unif_slice</span><span class="p">,</span><span class="n">xstart</span><span class="p">:</span><span class="n">xend</span><span class="p">,</span><span class="n">ystart</span><span class="p">:</span><span class="n">yend</span><span class="p">]</span>
+        <span class="n">error</span><span class="p">,</span><span class="n">shiftxyTeflon</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">FindCenterShift2D</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="n">plugimage</span><span class="p">,</span><span class="n">matter</span><span class="o">=</span><span class="n">lit</span><span class="o">.</span><span class="n">stTeflon</span><span class="p">)</span> <span class="c">## FIXME: moet toch pixeldata toestaan en shiftxy uitspugen</span>
+        <span class="k">print</span> <span class="s">&quot;[AnalyseCTBody] Teflon shift=&quot;</span><span class="p">,</span><span class="n">shiftxyTeflon</span>
+        <span class="n">roix</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="n">shiftxyTeflon</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="p">(</span><span class="n">xstart</span><span class="o">+</span><span class="n">xend</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="o">-</span><span class="nb">int</span><span class="p">(</span><span class="n">roidim</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span> <span class="c">#  3 o&#39;clock material</span>
+        <span class="n">roiy</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="n">shiftxyTeflon</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="p">(</span><span class="n">ystart</span><span class="o">+</span><span class="n">yend</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="o">-</span><span class="nb">int</span><span class="p">(</span><span class="n">roidim</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span>
+        <span class="k">if</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">verbose</span><span class="p">):</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">plugimage</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">&quot;Teflon&quot;</span><span class="p">)</span>
+            <span class="n">cs</span><span class="o">.</span><span class="n">hasmadeplots</span> <span class="o">=</span> <span class="bp">True</span>
+
+        <span class="c"># Find Water plug</span>
+        <span class="n">roix</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">shiftxypx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">midx</span><span class="o">-</span><span class="nb">int</span><span class="p">(</span><span class="n">roidim</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">))</span>
+        <span class="n">roiy</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">shiftxypx</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">midx</span><span class="o">-</span><span class="nb">int</span><span class="p">(</span><span class="n">roidim</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">))</span>
+        <span class="n">xstart</span> <span class="o">=</span> <span class="n">roix</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">-</span><span class="n">stepm</span><span class="o">-</span><span class="n">matdim</span><span class="o">/</span><span class="mi">2</span>
+        <span class="n">xend</span>   <span class="o">=</span> <span class="n">xstart</span><span class="o">+</span><span class="n">matdim</span>
+        <span class="n">ystart</span> <span class="o">=</span> <span class="n">roiy</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">-</span><span class="n">matdim</span><span class="o">/</span><span class="mi">2</span>
+        <span class="n">yend</span>   <span class="o">=</span> <span class="n">ystart</span><span class="o">+</span><span class="n">matdim</span>
+        <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">dicomMode</span> <span class="o">==</span> <span class="n">wadwrapper_lib</span><span class="o">.</span><span class="n">stMode2D</span><span class="p">:</span>
+            <span class="n">plugimage</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="p">[</span><span class="n">xstart</span><span class="p">:</span><span class="n">xend</span><span class="p">,</span><span class="n">ystart</span><span class="p">:</span><span class="n">yend</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">plugimage</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="p">[</span><span class="n">cs</span><span class="o">.</span><span class="n">unif_slice</span><span class="p">,</span><span class="n">xstart</span><span class="p">:</span><span class="n">xend</span><span class="p">,</span><span class="n">ystart</span><span class="p">:</span><span class="n">yend</span><span class="p">]</span>
+        <span class="n">error</span><span class="p">,</span><span class="n">shiftxyWater</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">FindCenterShift2D</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="n">plugimage</span><span class="p">,</span><span class="n">matter</span><span class="o">=</span><span class="n">lit</span><span class="o">.</span><span class="n">stWater</span><span class="p">)</span>
+        <span class="k">print</span> <span class="s">&quot;[AnalyseCTBody] Water shift=&quot;</span><span class="p">,</span><span class="n">shiftxyWater</span>
+        <span class="n">roix</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="o">=</span> <span class="n">shiftxyWater</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="p">(</span><span class="n">xstart</span><span class="o">+</span><span class="n">xend</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="o">-</span><span class="nb">int</span><span class="p">(</span><span class="n">roidim</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span> <span class="c">#  9 o&#39;clock material</span>
+        <span class="n">roiy</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="o">=</span> <span class="n">shiftxyWater</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="p">(</span><span class="n">ystart</span><span class="o">+</span><span class="n">yend</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="o">-</span><span class="nb">int</span><span class="p">(</span><span class="n">roidim</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span>
+        <span class="k">if</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">verbose</span><span class="p">):</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">plugimage</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">&quot;Water&quot;</span><span class="p">)</span>
+            <span class="n">cs</span><span class="o">.</span><span class="n">hasmadeplots</span> <span class="o">=</span> <span class="bp">True</span>
+
+        <span class="c"># sd roi</span>
+        <span class="n">roix</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">shiftxypx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">midx</span><span class="o">-</span><span class="nb">int</span><span class="p">(</span><span class="n">roidim</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">))</span> <span class="c"># center</span>
+        <span class="n">roiy</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">shiftxypx</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">midx</span><span class="o">-</span><span class="nb">int</span><span class="p">(</span><span class="n">roidim</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">))</span> <span class="c"># center</span>
+
+        <span class="c"># first avg</span>
+        <span class="n">cs</span><span class="o">.</span><span class="n">roiavg</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">kk</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">roix</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+<span class="c">#        for kk in range(0,1):</span>
+            <span class="n">roirad</span> <span class="o">=</span> <span class="n">roidim</span><span class="p">[</span><span class="n">kk</span><span class="p">]</span><span class="o">/</span><span class="mf">2.</span>
+            <span class="n">sumv</span> <span class="o">=</span> <span class="mf">0.</span><span class="p">;</span>
+            <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">ky</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">roidim</span><span class="p">[</span><span class="n">kk</span><span class="p">]):</span>
+                <span class="k">for</span> <span class="n">kx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">roidim</span><span class="p">[</span><span class="n">kk</span><span class="p">]):</span>
+                    <span class="k">if</span><span class="p">(</span> <span class="p">(</span><span class="n">kx</span><span class="o">-</span><span class="n">roirad</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="p">(</span><span class="n">ky</span><span class="o">-</span><span class="n">roirad</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="o">&lt;</span><span class="n">roirad</span><span class="o">**</span><span class="mi">2</span> <span class="p">):</span>
+                        <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">dicomMode</span> <span class="o">==</span> <span class="n">wadwrapper_lib</span><span class="o">.</span><span class="n">stMode2D</span><span class="p">:</span>
+                            <span class="n">sumv</span> <span class="o">+=</span> <span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="p">[</span><span class="n">roix</span><span class="p">[</span><span class="n">kk</span><span class="p">]</span><span class="o">+</span><span class="n">kx</span><span class="p">,</span><span class="n">roiy</span><span class="p">[</span><span class="n">kk</span><span class="p">]</span><span class="o">+</span><span class="n">ky</span><span class="p">]</span>
+                        <span class="c">#    self.pixeldataIn[roix[kk]+kx,roiy[kk]+ky] = -1000</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">sumv</span> <span class="o">+=</span> <span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="p">[</span><span class="n">cs</span><span class="o">.</span><span class="n">unif_slice</span><span class="p">,</span><span class="n">roix</span><span class="p">[</span><span class="n">kk</span><span class="p">]</span><span class="o">+</span><span class="n">kx</span><span class="p">,</span><span class="n">roiy</span><span class="p">[</span><span class="n">kk</span><span class="p">]</span><span class="o">+</span><span class="n">ky</span><span class="p">]</span>
+                        <span class="c"># self.pixeldataIn[iz,roix[kk]+kx,roiy[kk]+ky] = -1000</span>
+                        <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">if</span><span class="p">(</span><span class="n">count</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">):</span>
+                <span class="n">cs</span><span class="o">.</span><span class="n">roiavg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sumv</span><span class="o">/</span><span class="n">count</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">cs</span><span class="o">.</span><span class="n">roiavg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="c"># for gui</span>
+            <span class="n">cs</span><span class="o">.</span><span class="n">unif_rois</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">roix</span><span class="p">[</span><span class="n">kk</span><span class="p">]</span><span class="o">+</span><span class="n">roidim</span><span class="p">[</span><span class="n">kk</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="n">roiy</span><span class="p">[</span><span class="n">kk</span><span class="p">]</span><span class="o">+</span><span class="n">roidim</span><span class="p">[</span><span class="n">kk</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">roidim</span><span class="p">[</span><span class="n">kk</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">])</span>
+
+        <span class="c"># now SD</span>
+        <span class="n">cs</span><span class="o">.</span><span class="n">roisd</span> <span class="o">=</span> <span class="mf">0.</span><span class="p">;</span>
+        <span class="n">sdrad</span> <span class="o">=</span> <span class="n">roidim</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="mf">2.</span>
+        <span class="n">sumv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="mf">0.</span><span class="p">);</span>
+        <span class="n">sumv2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="mf">0.</span><span class="p">)</span>
+        <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">seterr</span><span class="p">(</span><span class="n">over</span><span class="o">=</span><span class="s">&#39;raise&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">ky</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">roidim</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="k">for</span> <span class="n">kx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">roidim</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
+                <span class="k">if</span><span class="p">(</span> <span class="p">(</span><span class="n">kx</span><span class="o">-</span><span class="n">sdrad</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="p">(</span><span class="n">ky</span><span class="o">-</span><span class="n">sdrad</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="o">&lt;</span><span class="n">sdrad</span><span class="o">**</span><span class="mi">2</span> <span class="p">):</span>
+                    <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">dicomMode</span> <span class="o">==</span> <span class="n">wadwrapper_lib</span><span class="o">.</span><span class="n">stMode2D</span><span class="p">:</span>
+                        <span class="n">val</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="p">[</span><span class="n">roix</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">kx</span><span class="p">,</span><span class="n">roiy</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">ky</span><span class="p">]</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">val</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="p">[</span><span class="n">cs</span><span class="o">.</span><span class="n">unif_slice</span><span class="p">,</span><span class="n">roix</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">kx</span><span class="p">,</span><span class="n">roiy</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">ky</span><span class="p">]</span>
+                    <span class="n">sumv</span> <span class="o">+=</span> <span class="n">val</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">sumv2</span> <span class="o">+=</span> <span class="n">val</span><span class="o">*</span><span class="n">val</span>
+                    <span class="k">except</span><span class="p">:</span>
+                        <span class="k">print</span> <span class="s">&quot;ERROR!&quot;</span><span class="p">,</span><span class="nb">type</span><span class="p">(</span><span class="n">val</span><span class="p">),</span><span class="nb">type</span><span class="p">(</span><span class="n">sumv</span><span class="p">),</span><span class="nb">type</span><span class="p">(</span><span class="n">sumv2</span><span class="p">),</span><span class="n">val</span><span class="p">,</span><span class="n">sumv</span><span class="p">,</span><span class="n">sumv2</span>
+                    <span class="c">#  self.pixeldataIn[iz,roix[kk]+kx,roiy[kk]+ky] = -1000</span>
+                    <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span><span class="p">(</span><span class="n">count</span><span class="o">&gt;</span><span class="mi">1</span><span class="p">):</span>
+            <span class="n">cs</span><span class="o">.</span><span class="n">roisd</span> <span class="o">=</span> <span class="p">(</span><span class="n">count</span><span class="o">*</span><span class="n">sumv2</span><span class="o">-</span><span class="n">sumv</span><span class="o">*</span><span class="n">sumv</span><span class="p">)</span><span class="o">/</span><span class="n">count</span>
+            <span class="n">cs</span><span class="o">.</span><span class="n">roisd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">roisd</span><span class="o">/</span><span class="p">(</span><span class="n">count</span><span class="o">-</span><span class="mf">1.</span><span class="p">))</span>
+
+        <span class="c"># for gui</span>
+        <span class="n">cs</span><span class="o">.</span><span class="n">unif_rois</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">roix</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">roidim</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="n">roiy</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">roidim</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">roidim</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">])</span>
+
+        <span class="n">cs</span><span class="o">.</span><span class="n">snr_hol</span> <span class="o">=</span> <span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">roiavg</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mi">1000</span><span class="p">)</span><span class="o">/</span><span class="n">cs</span><span class="o">.</span><span class="n">roisd</span>
+        <span class="c"># uniformity</span>
+        <span class="n">maxdev</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">roiavg</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">cs</span><span class="o">.</span><span class="n">roiavg</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span>  <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">):</span>
+            <span class="n">maxdev</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">maxdev</span><span class="p">,</span><span class="nb">abs</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">roiavg</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">cs</span><span class="o">.</span><span class="n">roiavg</span><span class="p">[</span><span class="n">k</span><span class="p">]))</span>
+        <span class="n">cs</span><span class="o">.</span><span class="n">unif</span> <span class="o">=</span> <span class="o">-</span><span class="n">maxdev</span>
+        <span class="n">measured</span> <span class="o">=</span> <span class="p">[</span><span class="n">cs</span><span class="o">.</span><span class="n">roiavg</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">cs</span><span class="o">.</span><span class="n">roiavg</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span><span class="n">cs</span><span class="o">.</span><span class="n">roiavg</span><span class="p">[</span><span class="mi">5</span><span class="p">]]</span>
+        <span class="n">GT</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessScanner</span><span class="o">.</span><span class="n">BodyGT</span>
+        <span class="k">print</span> <span class="s">&quot;[AnalyseCTBody] x,y&quot;</span><span class="p">,</span><span class="n">GT</span><span class="p">,</span><span class="n">measured</span>
+        <span class="n">cs</span><span class="o">.</span><span class="n">linearity</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">PearsonCoef</span><span class="p">(</span><span class="n">measured</span><span class="p">,</span><span class="n">GT</span><span class="p">)</span>
+        <span class="n">maxdev</span> <span class="o">=</span> <span class="n">measured</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">GT</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">m</span><span class="p">,</span><span class="n">g</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">measured</span><span class="p">,</span><span class="n">GT</span><span class="p">):</span>
+            <span class="k">if</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">m</span><span class="o">-</span><span class="n">g</span><span class="p">)</span><span class="o">&gt;</span><span class="nb">abs</span><span class="p">(</span><span class="n">maxdev</span><span class="p">)):</span>
+                <span class="n">maxdev</span> <span class="o">=</span> <span class="n">m</span><span class="o">-</span><span class="n">g</span>
+        <span class="n">cs</span><span class="o">.</span><span class="n">maxdev</span> <span class="o">=</span> <span class="n">maxdev</span>
+
+        <span class="n">error</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">return</span> <span class="n">error</span>
+
+<span class="c">#----------------------------------------------------------------------</span></div>
+<div class="viewcode-block" id="CT_QC.PearsonCoef"><a class="viewcode-back" href="../../../../Plugins.CT.CT_Philips_QuickIQ.html#Plugins.CT.CT_Philips_QuickIQ.QCCT_lib.CT_QC.PearsonCoef">[docs]</a>    <span class="k">def</span> <span class="nf">PearsonCoef</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">yarr</span><span class="p">,</span><span class="n">xarr</span><span class="p">):</span>
+        <span class="n">r1_value</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+        <span class="n">nonidentical</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="n">ssxm</span><span class="p">,</span> <span class="n">ssxym</span><span class="p">,</span> <span class="n">ssyxm</span><span class="p">,</span> <span class="n">ssym</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cov</span><span class="p">(</span><span class="n">xarr</span><span class="p">,</span><span class="n">yarr</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">flat</span>
+        <span class="k">if</span><span class="p">(</span><span class="n">ssxm</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="n">nonidentical</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">if</span><span class="p">(</span><span class="n">nonidentical</span><span class="p">):</span>
+            <span class="n">slope</span><span class="p">,</span> <span class="n">intercept</span><span class="p">,</span> <span class="n">r1_value</span><span class="p">,</span> <span class="n">p_value</span><span class="p">,</span> <span class="n">std_err</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">linregress</span><span class="p">(</span><span class="n">xarr</span><span class="p">,</span><span class="n">yarr</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">r1_value</span><span class="o">**</span><span class="mi">2</span>
+</div>
+<div class="viewcode-block" id="CT_QC.FindCenterShift2D"><a class="viewcode-back" href="../../../../Plugins.CT.CT_Philips_QuickIQ.html#Plugins.CT.CT_Philips_QuickIQ.QCCT_lib.CT_QC.FindCenterShift2D">[docs]</a>    <span class="k">def</span> <span class="nf">FindCenterShift2D</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">,</span><span class="n">pixeldata</span><span class="p">,</span><span class="n">matter</span><span class="p">):</span>
+        <span class="n">error</span> <span class="o">=</span> <span class="bp">True</span>
+
+        <span class="n">shiftxypx</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Needs 2d input pixeldata. If 3D, then input pixeldata[slice]</span>
+<span class="sd">        Concept:</span>
+<span class="sd">            1. blur with object dependend scale</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">pixeldata</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span><span class="o">!=</span><span class="mi">2</span><span class="p">):</span>
+            <span class="k">print</span> <span class="s">&quot;[FindCenterShift2D] Error, called with non-2D data!&quot;</span>
+            <span class="k">return</span> <span class="n">error</span>
+
+        <span class="n">wid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">pixeldata</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="c">## width/height in pixels</span>
+        <span class="n">hei</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">pixeldata</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="n">dscale</span> <span class="o">=</span> <span class="mf">7.0</span>
+        <span class="n">thresh</span> <span class="o">=</span> <span class="o">-</span><span class="mi">500</span>
+        <span class="n">lowmode</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">if</span><span class="p">(</span><span class="n">matter</span> <span class="o">==</span> <span class="n">lit</span><span class="o">.</span><span class="n">stTungsten</span><span class="p">):</span>
+            <span class="n">error</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="n">dscale</span> <span class="o">=</span> <span class="mf">1.</span>
+            <span class="n">thresh</span> <span class="o">=</span> <span class="mi">3</span>
+        <span class="k">if</span><span class="p">(</span><span class="n">matter</span> <span class="o">==</span> <span class="n">lit</span><span class="o">.</span><span class="n">stTeflon</span><span class="p">):</span>
+            <span class="n">error</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="n">thresh</span> <span class="o">=</span> <span class="mi">250</span>
+        <span class="k">if</span><span class="p">(</span><span class="n">matter</span> <span class="o">==</span> <span class="n">lit</span><span class="o">.</span><span class="n">stWater</span><span class="p">):</span>
+            <span class="n">error</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="n">thresh</span> <span class="o">=</span> <span class="mi">50</span>
+            <span class="n">lowmode</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">if</span><span class="p">(</span><span class="n">matter</span> <span class="o">==</span> <span class="n">lit</span><span class="o">.</span><span class="n">stAir</span><span class="p">):</span>
+            <span class="n">error</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="c"># 1. blur object</span>
+        <span class="n">blurIm</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">ndimage</span><span class="o">.</span><span class="n">gaussian_filter</span><span class="p">(</span><span class="n">pixeldata</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="n">dscale</span><span class="p">)</span>
+        <span class="c"># 2. only look for voxels below/above a threshold (eg. look for air)</span>
+        <span class="n">arrayLow</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">iy</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">hei</span><span class="p">):</span>
+            <span class="n">arrayLow</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">ix</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">wid</span><span class="p">):</span>
+                <span class="k">if</span><span class="p">(</span><span class="n">lowmode</span><span class="p">):</span>
+                    <span class="k">if</span><span class="p">(</span><span class="n">blurIm</span><span class="p">[</span><span class="n">ix</span><span class="p">,</span><span class="n">iy</span><span class="p">]</span><span class="o">&lt;</span><span class="n">thresh</span><span class="p">):</span>
+                        <span class="n">arrayLow</span><span class="p">[</span><span class="n">iy</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span><span class="p">(</span><span class="n">blurIm</span><span class="p">[</span><span class="n">ix</span><span class="p">,</span><span class="n">iy</span><span class="p">]</span><span class="o">&gt;</span><span class="n">thresh</span><span class="p">):</span>
+                        <span class="n">arrayLow</span><span class="p">[</span><span class="n">iy</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="k">if</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">verbose</span><span class="p">):</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">arrayLow</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">&quot;vertical &quot;</span><span class="o">+</span><span class="n">matter</span><span class="p">)</span>
+            <span class="n">cs</span><span class="o">.</span><span class="n">hasmadeplots</span> <span class="o">=</span> <span class="bp">True</span>
+
+        <span class="c"># 2.1 find left first pos without voxels below threshLow</span>
+        <span class="n">minLowId</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">minLow</span> <span class="o">=</span> <span class="n">arrayLow</span><span class="p">[</span><span class="n">minLowId</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">iy</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">hei</span><span class="p">):</span>
+            <span class="k">if</span><span class="p">(</span><span class="n">arrayLow</span><span class="p">[</span><span class="n">iy</span><span class="p">]</span><span class="o">&lt;</span><span class="n">minLow</span><span class="p">):</span>
+                <span class="n">minLowId</span> <span class="o">=</span> <span class="n">iy</span>
+                <span class="n">minLow</span> <span class="o">=</span> <span class="n">arrayLow</span><span class="p">[</span><span class="n">minLowId</span><span class="p">]</span>
+        <span class="n">shiftxypx</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">minLowId</span>
+        <span class="k">if</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">verbose</span><span class="p">):</span>
+            <span class="k">print</span> <span class="s">&quot;[FindCenterShift] vertical &quot;</span><span class="o">+</span><span class="n">matter</span><span class="p">,</span><span class="n">minLowId</span>
+       <span class="c"># 2.2 find right first pos without voxels below threshLow</span>
+        <span class="n">minLowId</span> <span class="o">=</span> <span class="n">hei</span><span class="o">-</span><span class="mi">1</span>
+        <span class="n">minLow</span> <span class="o">=</span> <span class="n">arrayLow</span><span class="p">[</span><span class="n">minLowId</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">iy</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">hei</span><span class="p">)):</span>
+            <span class="k">if</span><span class="p">(</span><span class="n">arrayLow</span><span class="p">[</span><span class="n">iy</span><span class="p">]</span><span class="o">&lt;</span><span class="n">minLow</span><span class="p">):</span>
+                <span class="n">minLowId</span> <span class="o">=</span> <span class="n">iy</span>
+                <span class="n">minLow</span> <span class="o">=</span> <span class="n">arrayLow</span><span class="p">[</span><span class="n">minLowId</span><span class="p">]</span>
+        <span class="c"># 2.3 mid is halfway left and right pos</span>
+        <span class="n">shiftxypx</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span><span class="p">(</span><span class="n">shiftxypx</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">minLowId</span><span class="o">-</span><span class="p">(</span><span class="n">hei</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span><span class="o">/</span><span class="mi">2</span>
+        <span class="k">if</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">verbose</span><span class="p">):</span>
+            <span class="k">print</span> <span class="s">&quot;[FindCenterShift] vertical &quot;</span><span class="o">+</span><span class="n">matter</span><span class="p">,</span><span class="n">minLowId</span><span class="p">,(</span><span class="n">hei</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="n">shiftxypx</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="c"># repeat for horizontal</span>
+        <span class="n">arrayLow</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">ix</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">wid</span><span class="p">):</span>
+            <span class="n">arrayLow</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">iy</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">hei</span><span class="p">):</span>
+                <span class="k">if</span><span class="p">(</span><span class="n">lowmode</span><span class="p">):</span>
+                    <span class="k">if</span><span class="p">(</span><span class="n">blurIm</span><span class="p">[</span><span class="n">ix</span><span class="p">,</span><span class="n">iy</span><span class="p">]</span><span class="o">&lt;</span><span class="n">thresh</span><span class="p">):</span>
+                        <span class="n">arrayLow</span><span class="p">[</span><span class="n">ix</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span><span class="p">(</span><span class="n">blurIm</span><span class="p">[</span><span class="n">ix</span><span class="p">,</span><span class="n">iy</span><span class="p">]</span><span class="o">&gt;</span><span class="n">thresh</span><span class="p">):</span>
+                        <span class="n">arrayLow</span><span class="p">[</span><span class="n">ix</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="k">if</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">verbose</span><span class="p">):</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">arrayLow</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">&quot;horizontal &quot;</span><span class="o">+</span><span class="n">matter</span><span class="p">)</span>
+            <span class="n">cs</span><span class="o">.</span><span class="n">hasmadeplots</span> <span class="o">=</span> <span class="bp">True</span>
+
+        <span class="c"># 2.1 find left first pos without voxels below threshLow</span>
+        <span class="n">minLowId</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">minLow</span> <span class="o">=</span> <span class="n">arrayLow</span><span class="p">[</span><span class="n">minLowId</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">iy</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">wid</span><span class="p">):</span>
+            <span class="k">if</span><span class="p">(</span><span class="n">arrayLow</span><span class="p">[</span><span class="n">iy</span><span class="p">]</span><span class="o">&lt;</span><span class="n">minLow</span><span class="p">):</span>
+                <span class="n">minLowId</span> <span class="o">=</span> <span class="n">iy</span>
+                <span class="n">minLow</span> <span class="o">=</span> <span class="n">arrayLow</span><span class="p">[</span><span class="n">minLowId</span><span class="p">]</span>
+        <span class="n">shiftxypx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">minLowId</span>
+        <span class="k">if</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">verbose</span><span class="p">):</span>
+            <span class="k">print</span> <span class="s">&quot;[FindCenterShift] horizontal &quot;</span><span class="o">+</span><span class="n">matter</span><span class="p">,</span><span class="n">minLowId</span>
+
+        <span class="c"># 2.2 find right first pos without voxels below threshLow</span>
+        <span class="n">minLowId</span> <span class="o">=</span> <span class="n">wid</span><span class="o">-</span><span class="mi">1</span>
+        <span class="n">minLow</span> <span class="o">=</span> <span class="n">arrayLow</span><span class="p">[</span><span class="n">minLowId</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">iy</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">wid</span><span class="p">)):</span>
+            <span class="k">if</span><span class="p">(</span><span class="n">arrayLow</span><span class="p">[</span><span class="n">iy</span><span class="p">]</span><span class="o">&lt;</span><span class="n">minLow</span><span class="p">):</span>
+                <span class="n">minLowId</span> <span class="o">=</span> <span class="n">iy</span>
+                <span class="n">minLow</span> <span class="o">=</span> <span class="n">arrayLow</span><span class="p">[</span><span class="n">minLowId</span><span class="p">]</span>
+        <span class="c"># 2.3 mid is halfway left and right pos</span>
+        <span class="n">shiftxypx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span><span class="p">(</span><span class="n">shiftxypx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">minLowId</span><span class="o">-</span><span class="p">(</span><span class="n">wid</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span><span class="o">/</span><span class="mi">2</span>
+        <span class="k">if</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">verbose</span><span class="p">):</span>
+            <span class="k">print</span> <span class="s">&quot;[FindCenterShift] horizontal &quot;</span><span class="o">+</span><span class="n">matter</span><span class="p">,</span><span class="n">minLowId</span><span class="p">,(</span><span class="n">wid</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="n">shiftxypx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">error</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">return</span> <span class="n">error</span><span class="p">,</span><span class="n">shiftxypx</span>
+
+<span class="c">#----------------------------------------------------------------------</span></div>
+<div class="viewcode-block" id="CT_QC.DICOMInfo"><a class="viewcode-back" href="../../../../Plugins.CT.CT_Philips_QuickIQ.html#Plugins.CT.CT_Philips_QuickIQ.QCCT_lib.CT_QC.DICOMInfo">[docs]</a>    <span class="k">def</span> <span class="nf">DICOMInfo</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">,</span><span class="n">info</span><span class="o">=</span><span class="s">&#39;dicom&#39;</span><span class="p">):</span>
+        <span class="c"># Different from ImageJ version; tags &quot;0008&quot;,&quot;0104&quot; and &quot;0054&quot;,&quot;0220&quot;</span>
+        <span class="c">#  appear to be part of sequences. This gives problems (cannot be found</span>
+        <span class="c">#  or returning whole sequence blocks)</span>
+        <span class="c"># Possibly this can be solved by using if(type(value) == type(dicom.sequence.Sequence()))</span>
+        <span class="c">#  but I don&#39;t see the relevance of these tags anymore, so set them to NO</span>
+
+        <span class="k">if</span><span class="p">(</span><span class="n">info</span> <span class="o">==</span> <span class="s">&quot;dicom&quot;</span><span class="p">):</span>
+            <span class="n">dicomfields</span> <span class="o">=</span> <span class="p">[</span>
+		    <span class="p">[</span><span class="s">&quot;0008,0022&quot;</span><span class="p">,</span> <span class="s">&quot;Acquisition Date&quot;</span><span class="p">],</span>
+		    <span class="p">[</span><span class="s">&quot;0008,0032&quot;</span><span class="p">,</span> <span class="s">&quot;Acquisition Time&quot;</span><span class="p">],</span>
+		    <span class="p">[</span><span class="s">&quot;0008,0060&quot;</span><span class="p">,</span> <span class="s">&quot;Modality&quot;</span><span class="p">],</span>
+		    <span class="p">[</span><span class="s">&quot;0008,0070&quot;</span><span class="p">,</span> <span class="s">&quot;Manufacturer&quot;</span><span class="p">],</span>
+		    <span class="p">[</span><span class="s">&quot;0008,1010&quot;</span><span class="p">,</span> <span class="s">&quot;Station Name&quot;</span><span class="p">],</span>
+		    <span class="p">[</span><span class="s">&quot;0008,1090&quot;</span><span class="p">,</span> <span class="s">&quot;Manufacturer Model Name&quot;</span><span class="p">],</span>
+		    <span class="p">[</span><span class="s">&quot;0018,0022&quot;</span><span class="p">,</span> <span class="s">&quot;Scan Options&quot;</span><span class="p">],</span> <span class="c"># Philips</span>
+		    <span class="p">[</span><span class="s">&quot;0018,0050&quot;</span><span class="p">,</span> <span class="s">&quot;Slice Thickness&quot;</span><span class="p">],</span>
+		    <span class="p">[</span><span class="s">&quot;0018,0060&quot;</span><span class="p">,</span> <span class="s">&quot;kVp&quot;</span><span class="p">],</span>
+		    <span class="p">[</span><span class="s">&quot;0018,0088&quot;</span><span class="p">,</span> <span class="s">&quot;Spacing Between Slices&quot;</span><span class="p">],</span> <span class="c"># Philips</span>
+		    <span class="p">[</span><span class="s">&quot;0018,0090&quot;</span><span class="p">,</span> <span class="s">&quot;Data Collection Diameter&quot;</span><span class="p">],</span>
+		    <span class="p">[</span><span class="s">&quot;0018,1020&quot;</span><span class="p">,</span> <span class="s">&quot;Software Versions(s)&quot;</span><span class="p">],</span>
+		    <span class="p">[</span><span class="s">&quot;0018,1030&quot;</span><span class="p">,</span> <span class="s">&quot;Protocol Name&quot;</span><span class="p">],</span>
+		    <span class="p">[</span><span class="s">&quot;0018,1100&quot;</span><span class="p">,</span> <span class="s">&quot;Reconstruction Diameter&quot;</span><span class="p">],</span>
+		    <span class="p">[</span><span class="s">&quot;0018,1120&quot;</span><span class="p">,</span> <span class="s">&quot;Gantry/Detector Tilt&quot;</span><span class="p">],</span>
+		    <span class="p">[</span><span class="s">&quot;0018,1130&quot;</span><span class="p">,</span> <span class="s">&quot;Table Height&quot;</span><span class="p">],</span>
+		    <span class="p">[</span><span class="s">&quot;0018,1140&quot;</span><span class="p">,</span> <span class="s">&quot;Rotation Direction&quot;</span><span class="p">],</span>
+		    <span class="p">[</span><span class="s">&quot;0018,1143&quot;</span><span class="p">,</span> <span class="s">&quot;Scan Arc&quot;</span><span class="p">],</span> <span class="c"># noPhilips noSiemens</span>
+		    <span class="p">[</span><span class="s">&quot;0018,1150&quot;</span><span class="p">,</span> <span class="s">&quot;Exposure Time ms&quot;</span><span class="p">],</span> <span class="c">#Siemens</span>
+		    <span class="p">[</span><span class="s">&quot;0018,1151&quot;</span><span class="p">,</span> <span class="s">&quot;X-ray Tube Current&quot;</span><span class="p">],</span>
+		    <span class="p">[</span><span class="s">&quot;0018,1152&quot;</span><span class="p">,</span> <span class="s">&quot;Exposure mAs&quot;</span><span class="p">],</span> <span class="c"># mA*tRot/pitch; tRot=exposure time</span>
+		    <span class="p">[</span><span class="s">&quot;0018,9345&quot;</span><span class="p">,</span> <span class="s">&quot;CTDIvol&quot;</span><span class="p">],</span>
+		    <span class="p">[</span><span class="s">&quot;0018,1160&quot;</span><span class="p">,</span> <span class="s">&quot;Filter Type&quot;</span><span class="p">],</span>
+		    <span class="p">[</span><span class="s">&quot;0018,1210&quot;</span><span class="p">,</span> <span class="s">&quot;Convolution Kernel&quot;</span><span class="p">],</span>
+		    <span class="p">[</span><span class="s">&quot;0018,5100&quot;</span><span class="p">,</span> <span class="s">&quot;Patient Position&quot;</span><span class="p">],</span>
+		    <span class="p">[</span><span class="s">&quot;0020,0013&quot;</span><span class="p">,</span> <span class="s">&quot;Image Number&quot;</span><span class="p">],</span>
+		    <span class="p">[</span><span class="s">&quot;0020,1041&quot;</span><span class="p">,</span> <span class="s">&quot;Slice Location&quot;</span><span class="p">],</span>
+		    <span class="p">[</span><span class="s">&quot;0028,0030&quot;</span><span class="p">,</span> <span class="s">&quot;Pixel Spacing&quot;</span><span class="p">],</span>
+		    <span class="p">[</span><span class="s">&quot;01F1,1027&quot;</span><span class="p">,</span> <span class="s">&quot;Rotation Time&quot;</span><span class="p">],</span> <span class="c"># Philips</span>
+		    <span class="p">[</span><span class="s">&quot;01F1,104B&quot;</span><span class="p">,</span> <span class="s">&quot;Collimation&quot;</span><span class="p">],</span> <span class="c"># Philips</span>
+		    <span class="p">[</span><span class="s">&quot;01F1,104E&quot;</span><span class="p">,</span> <span class="s">&quot;Protocol&quot;</span><span class="p">]</span> <span class="p">]</span> <span class="c"># Philips</span>
+
+        <span class="k">elif</span><span class="p">(</span><span class="n">info</span> <span class="o">==</span> <span class="s">&quot;idose&quot;</span><span class="p">):</span>
+            <span class="n">dicomfields</span> <span class="o">=</span> <span class="p">[</span>
+<span class="c">#		    &quot;0018,9323&quot;, &quot;Recon&quot;,</span>
+		    <span class="p">[</span><span class="s">&quot;01F7,109B&quot;</span><span class="p">,</span> <span class="s">&quot;iDose&quot;</span><span class="p">]</span> <span class="p">]</span>
+
+        <span class="k">elif</span><span class="p">(</span><span class="n">info</span> <span class="o">==</span> <span class="s">&quot;id&quot;</span><span class="p">):</span>
+            <span class="n">dicomfields</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="p">[</span><span class="s">&quot;0018,1030&quot;</span><span class="p">,</span> <span class="s">&quot;ProtocolName&quot;</span><span class="p">],</span>
+                <span class="p">[</span><span class="s">&quot;0008,0022&quot;</span><span class="p">,</span> <span class="s">&quot;AcquisitionDate&quot;</span><span class="p">],</span>
+                <span class="p">[</span><span class="s">&quot;0008,0032&quot;</span><span class="p">,</span> <span class="s">&quot;AcquisitionTime&quot;</span><span class="p">]</span>
+            <span class="p">]</span>
+
+        <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">df</span> <span class="ow">in</span> <span class="n">dicomfields</span><span class="p">:</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+            <span class="k">if</span><span class="p">(</span><span class="n">key</span><span class="o">==</span><span class="s">&quot;0018,0088&quot;</span><span class="p">):</span> <span class="c">#DICOM spacing</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">readDICOMspacing</span><span class="p">(</span><span class="n">cs</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">readDICOMtag</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="n">key</span><span class="p">)</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="n">value</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+            <span class="k">if</span><span class="p">(</span><span class="n">key</span><span class="o">==</span><span class="s">&quot;0018,1020&quot;</span><span class="p">):</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="s">&quot;&#39;&quot;</span><span class="o">+</span><span class="n">value</span>
+            <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">value</span><span class="p">)</span> <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">results</span>
+<span class="c">#----------------------------------------------------------------------</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

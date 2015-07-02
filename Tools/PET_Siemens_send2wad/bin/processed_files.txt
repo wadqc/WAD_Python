@@ -1,0 +1,7 @@
+
+../testdataSiemensPETQC\PETQCReport_07012014_083042.xml
+../testdataSiemensPETQC\PETQCReport_08012014_093431.xml
+../testdataSiemensPETQC\PETQCReport_09012014_081043.xml
+../testdataSiemensPETQC\PETQCReport_03012014_082249.xml
+../testdataSiemensPETQC\PETQCReport_06012014_090906.xml
+../testdataSiemensPETQC\PETQCReport_02012014_082412.xml

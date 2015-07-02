@@ -1,0 +1,171 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Plugin_development.Generic.generic &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for Plugin_development.Generic.generic</h1><div class="highlight"><pre>
+<span class="c"># -*- coding: utf-8 -*-</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">dicom</span>
+<span class="kn">from</span> <span class="nn">dicom.dataset</span> <span class="kn">import</span> <span class="n">Dataset</span><span class="p">,</span> <span class="n">FileDataset</span>
+<span class="kn">from</span> <span class="nn">ast</span> <span class="kn">import</span> <span class="n">literal_eval</span>
+
+<span class="kn">from</span> <span class="nn">pyWAD.plugindata</span> <span class="kn">import</span> <span class="n">PluginData</span>
+<span class="kn">from</span> <span class="nn">pyWAD.pluginresults</span> <span class="kn">import</span> <span class="n">PluginResults</span>
+
+
+
+<div class="viewcode-block" id="main"><a class="viewcode-back" href="../../../Plugin_development.Generic.html#Plugin_development.Generic.generic.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Function extracts results from dicom file, using the private dicom tag</span>
+<span class="sd">        configured in the config-xml [private_group,private_element] and writes</span>
+<span class="sd">        the results to the results-object for further processing.</span>
+<span class="sd">        </span>
+<span class="sd">        For an example, check:</span>
+<span class="sd">            Tools/Generic/create_dicom.py      (creates a dicom file)</span>
+<span class="sd">            Testing/Generic/generic_input.xml  (configures where and what to extract from the dicom file)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">parameters</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;params&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+
+    <span class="n">p</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">parameters</span><span class="p">:</span>
+        <span class="n">p</span><span class="p">[</span><span class="n">param</span><span class="o">.</span><span class="n">tag</span><span class="p">]</span> <span class="o">=</span> <span class="n">param</span><span class="o">.</span><span class="n">text</span>
+
+    <span class="n">tag_type</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;tag_type&#39;</span><span class="p">)</span>
+    <span class="n">private_group</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;private_group&#39;</span><span class="p">)</span>
+    <span class="n">private_element</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;private_element&#39;</span><span class="p">)</span>
+
+    <span class="c"># currently only one instance supported</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">dcm</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">getAllInstances</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">&#39;Error reading input data!&#39;</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">result_data</span> <span class="o">=</span> <span class="n">dcm</span><span class="p">[(</span><span class="n">private_group</span><span class="p">,</span><span class="n">private_element</span><span class="p">)]</span><span class="o">.</span><span class="n">value</span>
+
+    <span class="c"># probably not needed (but just in case): strip newlines, returns and tabs</span>
+    <span class="n">result_data</span> <span class="o">=</span> <span class="n">result_data</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\r</span><span class="s">&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\t</span><span class="s">&#39;</span><span class="p">,</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+
+    <span class="n">result_dict</span> <span class="o">=</span> <span class="n">literal_eval</span><span class="p">(</span><span class="n">result_data</span><span class="p">)</span>
+
+    <span class="n">data_description</span> <span class="o">=</span> <span class="n">result_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">print</span> <span class="s">&#39;Data description = </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span><span class="n">data_description</span>
+    <span class="n">data_list</span> <span class="o">=</span> <span class="n">result_dict</span><span class="p">[</span><span class="n">data_description</span><span class="p">]</span>
+
+
+    <span class="k">def</span> <span class="nf">translate_type_to_function</span><span class="p">(</span><span class="nb">type</span><span class="p">):</span>
+       <span class="k">return</span> <span class="p">{</span>
+         <span class="s">&#39;float&#39;</span>  <span class="p">:</span> <span class="s">&#39;addFloat&#39;</span><span class="p">,</span>
+         <span class="s">&#39;char&#39;</span>   <span class="p">:</span> <span class="s">&#39;addChar&#39;</span><span class="p">,</span>
+         <span class="s">&#39;bool&#39;</span>   <span class="p">:</span> <span class="s">&#39;addBool&#39;</span><span class="p">,</span>
+         <span class="s">&#39;object&#39;</span> <span class="p">:</span> <span class="s">&#39;addObject&#39;</span><span class="p">,</span>
+       <span class="p">}</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">type</span><span class="p">)</span>
+
+
+    <span class="c"># extracting data from post and adding them to the results object</span>
+    <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">data_list</span><span class="p">:</span>
+        <span class="c">#print measurement[&#39;description&#39;]</span>
+        <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;type&#39;</span><span class="p">)</span><span class="o">==</span><span class="s">&#39;object&#39;</span><span class="p">:</span>
+            <span class="c"># convert base64 string to binary file</span>
+            <span class="n">outdata</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;base64_blob&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s">&quot;base64&quot;</span><span class="p">)</span>
+            <span class="n">outfile</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;filename&#39;</span><span class="p">),</span> <span class="s">&quot;wb&quot;</span><span class="p">)</span>
+            <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">outdata</span><span class="p">)</span>
+            <span class="n">outfile</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="k">print</span> <span class="s">&#39;adding result for&#39;</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;description&#39;</span><span class="p">)</span>
+            <span class="n">results</span><span class="o">.</span><span class="n">addObject</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;description&#39;</span><span class="p">),</span><span class="n">m</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;filename&#39;</span><span class="p">),</span><span class="n">m</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;level&#39;</span><span class="p">),</span><span class="n">m</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;quantity&#39;</span><span class="p">),</span><span class="n">m</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;units&#39;</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;value&#39;</span><span class="p">))</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+            <span class="n">function_name</span><span class="o">=</span><span class="n">translate_type_to_function</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;type&#39;</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">function_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">print</span> <span class="s">&#39;adding result for&#39;</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;description&#39;</span><span class="p">)</span>
+                <span class="n">add_result</span><span class="o">=</span><span class="nb">getattr</span><span class="p">(</span><span class="n">results</span><span class="p">,</span><span class="n">function_name</span><span class="p">)</span>
+                <span class="n">add_result</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;description&#39;</span><span class="p">),</span><span class="n">m</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;value&#39;</span><span class="p">),</span><span class="n">m</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;level&#39;</span><span class="p">),</span><span class="n">m</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;quantity&#39;</span><span class="p">),</span><span class="n">m</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;units&#39;</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">print</span> <span class="s">&quot;Error: Unrecognized datatype &#39;</span><span class="si">%s</span><span class="s">&#39; (allowed: float, bool, object, char)!&quot;</span><span class="o">%</span><span class="nb">type</span>
+            </div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

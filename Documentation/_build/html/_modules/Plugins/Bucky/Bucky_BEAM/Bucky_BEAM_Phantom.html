@@ -1,0 +1,291 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Plugins.Bucky.Bucky_BEAM.Bucky_BEAM_Phantom &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="../../../../index.html" />
+    <link rel="up" title="Module code" href="../../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for Plugins.Bucky.Bucky_BEAM.Bucky_BEAM_Phantom</h1><div class="highlight"><pre>
+<span class="c"># PyWAD is open-source software and consists of a set of plugins written in python for the WAD-Software medical physics quality control software. </span>
+<span class="c"># The WAD Software can be found on https://github.com/wadqc</span>
+<span class="c"># </span>
+<span class="c"># The pywad package includes plugins for the automated analysis of QC images for various imaging modalities. </span>
+<span class="c"># PyWAD has been originaly initiated by Dennis Dickerscheid (AZN), Arnold Schilham (UMCU), Rob van Rooij (UMCU) and Tim de Wit (AMC) </span>
+<span class="c">#</span>
+<span class="c">#</span>
+
+<span class="n">__version__</span> <span class="o">=</span> <span class="s">&#39;01062015&#39;</span>
+<span class="n">__author__</span> <span class="o">=</span> <span class="s">&#39;DD&#39;</span>
+
+
+<span class="c">#</span>
+<span class="c"># Description of this plugin:</span>
+<span class="c"># This plugin was specifically developed for the analysis of a home made uniformity phantom in the St. Antonius hospital. The phantom consists of a square slab of perspex. The middle of the phantom consists of an aluminum ring with an aluminum ball inside to check if the phantom has been correctly positioned. </span>
+<span class="c">#The plugin looks for the center of the phantom and draws four ROIs relative to the location of the center. For each ROI a mean, std and snr are calculated. </span>
+<span class="c"># Finally the results for each ROI are combined and averaged and a thumbnail of the phantom acquisition is stored.</span>
+<span class="c">#</span>
+
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">ndimage</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="s">&#39;MPLCONFIGDIR&#39;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&#39;MPLCONFIGDIR&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&quot;/tmp/.matplotlib&quot;</span> <span class="c"># if this folder already exists it must be accessible by the owner of WAD_Processor </span>
+<span class="kn">import</span> <span class="nn">matplotlib</span>
+<span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s">&#39;Agg&#39;</span><span class="p">)</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+
+<span class="kn">import</span> <span class="nn">dicom</span>
+<span class="kn">from</span> <span class="nn">dicom</span> <span class="kn">import</span> <span class="n">tag</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span> 
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">ma</span>
+<span class="kn">import</span> <span class="nn">sys</span><span class="o">,</span> <span class="nn">getopt</span>
+
+<span class="kn">import</span> <span class="nn">itertools</span>
+<span class="kn">import</span> <span class="nn">xml.etree.ElementTree</span> <span class="kn">as</span> <span class="nn">ET</span>
+
+<span class="kn">import</span> <span class="nn">scipy</span>
+<span class="kn">import</span> <span class="nn">scipy.misc</span>
+
+<span class="kn">import</span> <span class="nn">operator</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">pyWADLib</span> <span class="kn">import</span> <span class="n">findmax</span>
+
+
+<div class="viewcode-block" id="calculate_beam_uniformity"><a class="viewcode-back" href="../../../../Plugins.Bucky.Bucky_BEAM.html#Plugins.Bucky.Bucky_BEAM.Bucky_BEAM_Phantom.calculate_beam_uniformity">[docs]</a><span class="k">def</span> <span class="nf">calculate_beam_uniformity</span> <span class="p">(</span><span class="n">imagearray</span><span class="p">,</span><span class="n">roidim</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span><span class="n">neighborhood_size</span><span class="o">=</span><span class="mi">400</span><span class="p">):</span>
+     <span class="sd">&#39;&#39;&#39; Function receives image array and optionally ROI dimension (#pixels). The optional neighborhood_size parameter determines the scale of the distances between local maxima.</span>
+
+<span class="sd">    Four ROIs are defined and for each ROI a mean, std and snr is calculated from the image array. The result is returned as a dictionary.</span>
+<span class="sd">     &#39;&#39;&#39;</span>
+
+     <span class="n">thr</span> <span class="o">=</span> <span class="n">imagearray</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="o">/</span><span class="mf">4.0</span>     
+     <span class="n">output</span> <span class="o">=</span> <span class="n">imagearray</span>
+     <span class="n">x</span><span class="p">,</span><span class="n">y</span> <span class="o">=</span> <span class="n">findmax</span><span class="o">.</span><span class="n">find_max</span><span class="p">(</span><span class="n">imagearray</span><span class="p">,</span><span class="n">neighborhood_size</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="n">thr</span><span class="p">)</span>
+
+     <span class="n">width</span> <span class="o">=</span> <span class="n">roidim</span>
+     <span class="n">height</span> <span class="o">=</span> <span class="n">roidim</span>
+
+     <span class="n">xdim</span> <span class="p">,</span><span class="n">ydim</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">imagearray</span><span class="p">)</span>
+
+     <span class="n">middle</span> <span class="o">=</span> <span class="p">[</span><span class="n">elem</span> <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">)</span> <span class="k">if</span> <span class="n">xdim</span><span class="o">/</span><span class="mi">2</span> <span class="o">-</span> <span class="n">neighborhood_size</span> <span class="o">&lt;</span> <span class="n">elem</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">xdim</span><span class="o">/</span><span class="mi">2</span> <span class="o">+</span> <span class="n">neighborhood_size</span> <span class="ow">and</span> <span class="n">ydim</span><span class="o">/</span><span class="mi">2</span> <span class="o">-</span> <span class="n">neighborhood_size</span> <span class="o">&lt;</span> <span class="n">elem</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">ydim</span><span class="o">/</span><span class="mi">2</span> <span class="o">+</span> <span class="n">neighborhood_size</span><span class="p">]</span>
+     
+     <span class="n">x0</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">middle</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+     <span class="n">x1</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">xdim</span> <span class="o">+</span> <span class="n">middle</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span><span class="o">/</span><span class="mi">2</span>
+     <span class="n">y0</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">middle</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+     <span class="n">y1</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">ydim</span> <span class="o">+</span> <span class="n">middle</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="mi">2</span>
+     
+     <span class="n">widthx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">xdim</span><span class="o">/</span><span class="mi">10</span><span class="p">)</span>
+     <span class="n">widthy</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">xdim</span><span class="o">/</span><span class="mi">10</span><span class="p">)</span>
+
+     <span class="n">deltax</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">xdim</span><span class="o">/</span><span class="mi">10</span><span class="p">)</span>
+     <span class="n">deltay</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">ydim</span><span class="o">/</span><span class="mi">10</span><span class="p">)</span>
+
+     <span class="n">roi1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">imagearray</span><span class="p">))</span>
+     <span class="n">roi1</span><span class="p">[</span><span class="n">x0</span> <span class="o">-</span> <span class="n">widthx</span> <span class="p">:</span> <span class="n">x0</span> <span class="o">+</span><span class="n">widthx</span><span class="p">,</span> <span class="n">y0</span> <span class="o">-</span> <span class="n">widthy</span><span class="p">:</span><span class="n">y0</span> <span class="o">+</span> <span class="n">widthy</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+     <span class="n">roi1</span> <span class="o">=</span> <span class="n">ma</span><span class="o">.</span><span class="n">make_mask</span><span class="p">(</span><span class="n">roi1</span><span class="p">)</span>
+
+     <span class="n">roi2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">imagearray</span><span class="p">))</span>
+     <span class="n">roi2</span><span class="p">[</span><span class="n">x1</span> <span class="o">-</span> <span class="n">widthx</span> <span class="p">:</span> <span class="n">x1</span> <span class="o">+</span> <span class="n">widthx</span><span class="p">,</span> <span class="n">y0</span> <span class="o">-</span> <span class="n">widthy</span><span class="p">:</span><span class="n">y0</span> <span class="o">+</span> <span class="n">widthy</span><span class="p">]</span><span class="o">=</span><span class="mi">1</span>
+     <span class="n">roi2</span> <span class="o">=</span> <span class="n">ma</span><span class="o">.</span><span class="n">make_mask</span><span class="p">(</span><span class="n">roi2</span><span class="p">)</span>
+
+     <span class="n">roi3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">imagearray</span><span class="p">))</span>
+     <span class="n">roi3</span><span class="p">[</span><span class="n">x0</span> <span class="o">-</span> <span class="n">widthx</span> <span class="p">:</span> <span class="n">x0</span> <span class="o">+</span> <span class="n">widthx</span><span class="p">,</span> <span class="n">y1</span> <span class="o">-</span> <span class="n">widthy</span><span class="p">:</span><span class="n">y1</span> <span class="o">+</span> <span class="n">widthy</span><span class="p">]</span><span class="o">=</span><span class="mi">1</span>
+     <span class="n">roi3</span> <span class="o">=</span> <span class="n">ma</span><span class="o">.</span><span class="n">make_mask</span><span class="p">(</span><span class="n">roi3</span><span class="p">)</span>
+
+     <span class="n">roi4</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">imagearray</span><span class="p">))</span>
+     <span class="n">roi4</span><span class="p">[</span><span class="n">x1</span> <span class="o">-</span> <span class="n">widthx</span> <span class="p">:</span> <span class="n">x1</span> <span class="o">+</span> <span class="n">widthx</span><span class="p">,</span> <span class="n">y1</span> <span class="o">-</span> <span class="n">widthy</span><span class="p">:</span><span class="n">y1</span> <span class="o">+</span> <span class="n">widthy</span><span class="p">]</span><span class="o">=</span><span class="mi">1</span>
+     <span class="n">roi4</span> <span class="o">=</span> <span class="n">ma</span><span class="o">.</span><span class="n">make_mask</span><span class="p">(</span><span class="n">roi4</span><span class="p">)</span>
+
+
+
+     <span class="n">results</span> <span class="o">=</span> <span class="p">{}</span>
+
+     <span class="n">tmp1</span> <span class="o">=</span> <span class="n">ma</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">imagearray</span><span class="p">,</span><span class="n">mask</span><span class="o">=</span><span class="mi">1</span><span class="o">-</span><span class="n">roi1</span><span class="p">)</span>
+     <span class="k">print</span> <span class="n">ma</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">tmp1</span><span class="p">)</span>
+     <span class="n">results</span><span class="p">[</span><span class="s">&#39;roi1&#39;</span><span class="p">]</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;mean&#39;</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">tmp1</span><span class="p">),</span><span class="s">&#39;std&#39;</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">tmp1</span><span class="p">)}</span>
+
+
+     <span class="n">tmp2</span> <span class="o">=</span> <span class="n">ma</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">imagearray</span><span class="p">,</span><span class="n">mask</span><span class="o">=</span><span class="mi">1</span><span class="o">-</span><span class="n">roi2</span><span class="p">)</span>
+     <span class="n">results</span><span class="p">[</span><span class="s">&#39;roi2&#39;</span><span class="p">]</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;mean&#39;</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">tmp2</span><span class="p">),</span><span class="s">&#39;std&#39;</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">tmp2</span><span class="p">)}</span>
+
+
+     <span class="n">tmp3</span> <span class="o">=</span> <span class="n">ma</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">imagearray</span><span class="p">,</span><span class="n">mask</span><span class="o">=</span><span class="mi">1</span><span class="o">-</span><span class="n">roi3</span><span class="p">)</span>
+     <span class="n">results</span><span class="p">[</span><span class="s">&#39;roi3&#39;</span><span class="p">]</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;mean&#39;</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">tmp3</span><span class="p">),</span><span class="s">&#39;std&#39;</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">tmp3</span><span class="p">)}</span>
+
+
+     <span class="n">tmp4</span> <span class="o">=</span> <span class="n">ma</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">imagearray</span><span class="p">,</span><span class="n">mask</span><span class="o">=</span><span class="mi">1</span><span class="o">-</span><span class="n">roi4</span><span class="p">)</span>
+     <span class="n">results</span><span class="p">[</span><span class="s">&#39;roi4&#39;</span><span class="p">]</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;mean&#39;</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">tmp4</span><span class="p">),</span><span class="s">&#39;std&#39;</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">tmp4</span><span class="p">)}</span>
+
+
+
+     
+     <span class="n">avgmean</span> <span class="o">=</span> <span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="s">&#39;roi1&#39;</span><span class="p">][</span><span class="s">&#39;mean&#39;</span><span class="p">]</span><span class="o">+</span><span class="n">results</span><span class="p">[</span><span class="s">&#39;roi2&#39;</span><span class="p">][</span><span class="s">&#39;mean&#39;</span><span class="p">]</span><span class="o">+</span><span class="n">results</span><span class="p">[</span><span class="s">&#39;roi3&#39;</span><span class="p">][</span><span class="s">&#39;mean&#39;</span><span class="p">]</span><span class="o">+</span><span class="n">results</span><span class="p">[</span><span class="s">&#39;roi4&#39;</span><span class="p">][</span><span class="s">&#39;mean&#39;</span><span class="p">])</span><span class="o">/</span><span class="mf">4.0</span>
+
+     <span class="n">avgstd</span> <span class="o">=</span> <span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="s">&#39;roi1&#39;</span><span class="p">][</span><span class="s">&#39;std&#39;</span><span class="p">]</span><span class="o">+</span><span class="n">results</span><span class="p">[</span><span class="s">&#39;roi2&#39;</span><span class="p">][</span><span class="s">&#39;std&#39;</span><span class="p">]</span><span class="o">+</span><span class="n">results</span><span class="p">[</span><span class="s">&#39;roi3&#39;</span><span class="p">][</span><span class="s">&#39;std&#39;</span><span class="p">]</span><span class="o">+</span><span class="n">results</span><span class="p">[</span><span class="s">&#39;roi4&#39;</span><span class="p">][</span><span class="s">&#39;std&#39;</span><span class="p">])</span><span class="o">/</span><span class="mf">4.0</span>
+
+     <span class="k">if</span> <span class="n">avgstd</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+          <span class="n">tmpsnr</span> <span class="o">=</span> <span class="n">avgmean</span><span class="o">/</span><span class="n">avgstd</span>
+     <span class="k">else</span><span class="p">:</span>
+          <span class="n">tmpsnr</span> <span class="o">=</span> <span class="o">-</span><span class="mi">999</span>
+
+     <span class="n">results</span><span class="p">[</span><span class="s">&#39;avg&#39;</span><span class="p">]</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;mean&#39;</span><span class="p">:</span><span class="n">avgmean</span><span class="p">,</span><span class="s">&#39;std&#39;</span><span class="p">:</span><span class="n">avgstd</span><span class="p">,</span><span class="s">&#39;snr&#39;</span><span class="p">:</span><span class="n">tmpsnr</span><span class="p">}</span>
+     <span class="n">results</span><span class="p">[</span><span class="s">&#39;middle&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">middle</span>
+     <span class="n">results</span><span class="p">[</span><span class="s">&#39;image&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">imagearray</span>
+
+     <span class="k">return</span> <span class="n">results</span>
+
+</div>
+<div class="viewcode-block" id="print_beam_output"><a class="viewcode-back" href="../../../../Plugins.Bucky.Bucky_BEAM.html#Plugins.Bucky.Bucky_BEAM.Bucky_BEAM_Phantom.print_beam_output">[docs]</a><span class="k">def</span> <span class="nf">print_beam_output</span><span class="p">(</span><span class="n">dcmfile</span><span class="p">,</span><span class="n">results</span><span class="p">):</span>
+     <span class="sd">&#39;&#39;&#39;Function receives a dicom file and results class object. The fuction calls the function calculate_beam_uniformity to calculate mean,std and snr and subsequently writes out the received results into the results class object.</span>
+<span class="sd">     &#39;&#39;&#39;</span>
+     
+     <span class="k">try</span><span class="p">:</span>
+          <span class="n">detectorname</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">dcmfile</span><span class="o">.</span><span class="n">SeriesDescription</span><span class="p">)</span>
+     <span class="k">except</span><span class="p">:</span>
+         <span class="n">detectorname</span> <span class="o">=</span> <span class="s">&#39;UnknownDetector&#39;</span>
+
+     <span class="n">calc_output</span> <span class="o">=</span> <span class="n">calculate_beam_uniformity</span><span class="p">(</span><span class="n">dcmfile</span><span class="o">.</span><span class="n">pixel_array</span><span class="p">)</span>
+
+     <span class="n">results</span><span class="o">.</span><span class="n">addFloat</span><span class="p">(</span><span class="s">&#39;Gemiddelde ROI SNR </span><span class="si">%s</span><span class="s">&#39;</span><span class="o">%</span><span class="n">detectorname</span><span class="p">,</span><span class="n">calc_output</span><span class="p">[</span><span class="s">&#39;avg&#39;</span><span class="p">][</span><span class="s">&#39;snr&#39;</span><span class="p">],</span><span class="n">level</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+     <span class="n">results</span><span class="o">.</span><span class="n">addFloat</span><span class="p">(</span><span class="s">&#39;Gemiddelde ROI mean </span><span class="si">%s</span><span class="s">&#39;</span><span class="o">%</span><span class="n">detectorname</span><span class="p">,</span><span class="n">calc_output</span><span class="p">[</span><span class="s">&#39;avg&#39;</span><span class="p">][</span><span class="s">&#39;mean&#39;</span><span class="p">],</span><span class="n">level</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+     <span class="n">results</span><span class="o">.</span><span class="n">addFloat</span><span class="p">(</span><span class="s">&#39;Gemiddelde stdev </span><span class="si">%s</span><span class="s">&#39;</span><span class="o">%</span><span class="n">detectorname</span><span class="p">,</span><span class="n">calc_output</span><span class="p">[</span><span class="s">&#39;avg&#39;</span><span class="p">][</span><span class="s">&#39;std&#39;</span><span class="p">],</span><span class="n">level</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+     <span class="n">results</span><span class="o">.</span><span class="n">addFloat</span><span class="p">(</span><span class="s">&#39;Gemiddelde ROI1 </span><span class="si">%s</span><span class="s">&#39;</span><span class="o">%</span><span class="n">detectorname</span><span class="p">,</span><span class="n">calc_output</span><span class="p">[</span><span class="s">&#39;roi1&#39;</span><span class="p">][</span><span class="s">&#39;mean&#39;</span><span class="p">],</span><span class="n">level</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+     <span class="n">results</span><span class="o">.</span><span class="n">addFloat</span><span class="p">(</span><span class="s">&#39;Gemiddelde ROI2 </span><span class="si">%s</span><span class="s">&#39;</span><span class="o">%</span><span class="n">detectorname</span><span class="p">,</span><span class="n">calc_output</span><span class="p">[</span><span class="s">&#39;roi2&#39;</span><span class="p">][</span><span class="s">&#39;mean&#39;</span><span class="p">],</span><span class="n">level</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+     <span class="n">results</span><span class="o">.</span><span class="n">addFloat</span><span class="p">(</span><span class="s">&#39;Gemiddelde ROI3 </span><span class="si">%s</span><span class="s">&#39;</span><span class="o">%</span><span class="n">detectorname</span><span class="p">,</span><span class="n">calc_output</span><span class="p">[</span><span class="s">&#39;roi3&#39;</span><span class="p">][</span><span class="s">&#39;mean&#39;</span><span class="p">],</span><span class="n">level</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>    
+     <span class="n">results</span><span class="o">.</span><span class="n">addFloat</span><span class="p">(</span><span class="s">&#39;Gemiddelde ROI4 </span><span class="si">%s</span><span class="s">&#39;</span><span class="o">%</span><span class="n">detectorname</span><span class="p">,</span><span class="n">calc_output</span><span class="p">[</span><span class="s">&#39;roi4&#39;</span><span class="p">][</span><span class="s">&#39;mean&#39;</span><span class="p">],</span><span class="n">level</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+     <span class="n">results</span><span class="o">.</span><span class="n">addFloat</span><span class="p">(</span><span class="s">&#39;stdev ROI1 </span><span class="si">%s</span><span class="s">&#39;</span><span class="o">%</span><span class="n">detectorname</span><span class="p">,</span><span class="n">calc_output</span><span class="p">[</span><span class="s">&#39;roi1&#39;</span><span class="p">][</span><span class="s">&#39;std&#39;</span><span class="p">],</span><span class="n">level</span><span class="o">=</span><span class="mi">2</span> <span class="p">)</span>
+     <span class="n">results</span><span class="o">.</span><span class="n">addFloat</span><span class="p">(</span><span class="s">&#39;stdev ROI2 </span><span class="si">%s</span><span class="s">&#39;</span><span class="o">%</span><span class="n">detectorname</span><span class="p">,</span><span class="n">calc_output</span><span class="p">[</span><span class="s">&#39;roi2&#39;</span><span class="p">][</span><span class="s">&#39;std&#39;</span><span class="p">],</span><span class="n">level</span><span class="o">=</span><span class="mi">2</span> <span class="p">)</span>
+     <span class="n">results</span><span class="o">.</span><span class="n">addFloat</span><span class="p">(</span><span class="s">&#39;stdev ROI3 </span><span class="si">%s</span><span class="s">&#39;</span><span class="o">%</span><span class="n">detectorname</span><span class="p">,</span><span class="n">calc_output</span><span class="p">[</span><span class="s">&#39;roi3&#39;</span><span class="p">][</span><span class="s">&#39;std&#39;</span><span class="p">],</span><span class="n">level</span><span class="o">=</span><span class="mi">2</span> <span class="p">)</span>    
+     <span class="n">results</span><span class="o">.</span><span class="n">addFloat</span><span class="p">(</span><span class="s">&#39;stdev ROI4 </span><span class="si">%s</span><span class="s">&#39;</span><span class="o">%</span><span class="n">detectorname</span><span class="p">,</span><span class="n">calc_output</span><span class="p">[</span><span class="s">&#39;roi4&#39;</span><span class="p">][</span><span class="s">&#39;std&#39;</span><span class="p">],</span><span class="n">level</span><span class="o">=</span><span class="mi">2</span> <span class="p">)</span>
+
+     <span class="k">print</span><span class="p">(</span><span class="s">&#39;CWD:&#39;</span><span class="p">,</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">())</span>
+     <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+     <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
+     <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">&quot;QC bucky&quot;</span><span class="p">)</span>
+     <span class="n">img</span> <span class="o">=</span> <span class="n">calc_output</span><span class="p">[</span><span class="s">&#39;image&#39;</span><span class="p">]</span>
+     <span class="n">middlex</span><span class="p">,</span> <span class="n">middley</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">calc_output</span><span class="p">[</span><span class="s">&#39;middle&#39;</span><span class="p">])</span>
+     <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">img</span><span class="p">)</span>
+     <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">middlex</span><span class="p">,</span><span class="n">middley</span><span class="p">)</span>
+     <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s">.png&#39;</span><span class="o">%</span><span class="n">detectorname</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&quot; &quot;</span><span class="p">,</span><span class="s">&quot;&quot;</span><span class="p">))</span>
+     <span class="n">results</span><span class="o">.</span><span class="n">addObject</span><span class="p">(</span><span class="s">&#39;QCbeeld&#39;</span><span class="p">,</span><span class="s">&#39;</span><span class="si">%s</span><span class="s">.png&#39;</span><span class="o">%</span><span class="n">detectorname</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&quot; &quot;</span><span class="p">,</span><span class="s">&quot;&quot;</span><span class="p">))</span>
+     <span class="k">print</span><span class="p">(</span><span class="s">&#39;CWD&#39;</span><span class="p">,</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">())</span>     
+
+
+
+</div>
+<div class="viewcode-block" id="QC_bucky_run"><a class="viewcode-back" href="../../../../Plugins.Bucky.Bucky_BEAM.html#Plugins.Bucky.Bucky_BEAM.Bucky_BEAM_Phantom.QC_bucky_run">[docs]</a><span class="k">def</span> <span class="nf">QC_bucky_run</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+     <span class="sd">&#39;&#39;&#39;Function extracts instances from data object. From the params section in the config XML file the filter for relevant bucky files is determined. For each relevant file the print_beam_output function is called.</span>
+<span class="sd">     &#39;&#39;&#39;</span>
+
+     <span class="n">paramdict</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;params&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span> <span class="c">#read out all the parameter tags from the config_xml</span>
+
+     <span class="n">select_instance_lst</span> <span class="o">=</span> <span class="p">[]</span> <span class="c">#create a list of all buckydata to be processed</span>
+     <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">paramdict</span><span class="p">:</span>
+          <span class="k">print</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">child</span><span class="p">),</span> <span class="n">child</span><span class="o">.</span><span class="n">tag</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">child</span><span class="o">.</span><span class="n">tag</span><span class="p">))</span>
+          <span class="k">if</span> <span class="s">&#39;bucky&#39;</span> <span class="ow">in</span> <span class="n">child</span><span class="o">.</span><span class="n">tag</span><span class="p">:</span>
+               <span class="n">select_instance_lst</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">child</span><span class="o">.</span><span class="n">attrib</span><span class="p">)</span> 
+
+     <span class="k">for</span> <span class="n">crit</span> <span class="ow">in</span> <span class="n">select_instance_lst</span><span class="p">:</span>
+          <span class="n">tmpfile</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">getInstanceByTags</span><span class="p">(</span><span class="n">crit</span><span class="p">)</span>
+          <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="n">tmpfile</span><span class="p">:</span>
+               <span class="k">try</span><span class="p">:</span>
+                    <span class="n">print_beam_output</span><span class="p">(</span><span class="n">elem</span><span class="p">,</span><span class="n">results</span><span class="p">)</span>
+               <span class="k">except</span><span class="p">:</span>
+                    <span class="k">print</span><span class="p">(</span><span class="s">&quot;Warning, failed </span><span class="si">%s</span><span class="s"> &quot;</span><span class="o">%</span><span class="n">crit</span><span class="p">)</span>
+</div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">pyWAD</span> <span class="kn">import</span> <span class="n">PluginTools</span>
+    
+    <span class="n">series_lst</span> <span class="o">=</span> <span class="p">[[],[]]</span> <span class="c">#to test from the command line add test files from a series here</span>
+    <span class="n">result_dir</span> <span class="o">=</span> <span class="s">&quot;./&quot;</span>
+    
+    <span class="n">data</span> <span class="o">=</span> <span class="n">PluginData</span><span class="p">()</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">PluginResults</span><span class="p">()</span>
+    <span class="n">QC_bucky_run</span><span class="p">()</span>
+    
+    <span class="k">for</span> <span class="n">result</span> <span class="ow">in</span> <span class="n">tools</span><span class="o">.</span><span class="n">results</span><span class="p">:</span>
+        <span class="k">print</span> <span class="n">result</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,164 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>pyWAD.xml_result_generator &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for pyWAD.xml_result_generator</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;Functions for converting plugin results to XML format&quot;&quot;&quot;</span>
+
+<span class="c">#Dictionary for translating limits tags in config XML to result XML</span>
+<span class="n">translate_limit_tags</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s">&quot;acc_low&quot;</span><span class="p">:</span> <span class="s">&quot;grens_acceptabel_onder&quot;</span><span class="p">,</span>
+    <span class="s">&quot;acc_high&quot;</span><span class="p">:</span> <span class="s">&quot;grens_acceptabel_boven&quot;</span><span class="p">,</span>
+    <span class="s">&quot;crit_low&quot;</span><span class="p">:</span> <span class="s">&quot;grens_kritisch_onder&quot;</span><span class="p">,</span>
+    <span class="s">&quot;crit_high&quot;</span><span class="p">:</span> <span class="s">&quot;grens_kritisch_boven&quot;</span><span class="p">,</span>
+    <span class="s">&quot;criterium&quot;</span><span class="p">:</span> <span class="s">&quot;criterium&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+
+
+<div class="viewcode-block" id="getResultsXML"><a class="viewcode-back" href="../../pyWAD.html#pyWAD.xml_result_generator.getResultsXML">[docs]</a><span class="k">def</span> <span class="nf">getResultsXML</span><span class="p">(</span><span class="n">result</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Convert a SingleResult object to XML.&quot;&quot;&quot;</span>
+
+    <span class="n">default_xml</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s">&#39;</span><span class="se">\t</span><span class="s">&lt;type&gt;{}&lt;/type&gt;</span><span class="se">\n</span><span class="s">&#39;</span>
+        <span class="s">&#39;</span><span class="se">\t</span><span class="s">&lt;omschrijving&gt;{}&lt;/omschrijving&gt;</span><span class="se">\n</span><span class="s">&#39;</span>
+        <span class="s">&#39;</span><span class="se">\t</span><span class="s">&lt;waarde&gt;{}&lt;/waarde&gt;</span><span class="se">\n</span><span class="s">&#39;</span>
+        <span class="s">&#39;</span><span class="se">\t</span><span class="s">&lt;grootheid&gt;{}&lt;/grootheid&gt;</span><span class="se">\n</span><span class="s">&#39;</span>
+        <span class="s">&#39;</span><span class="se">\t</span><span class="s">&lt;eenheid&gt;{}&lt;/eenheid&gt;</span><span class="se">\n</span><span class="s">&#39;</span>
+        <span class="s">&#39;</span><span class="se">\t</span><span class="s">&lt;niveau&gt;{}&lt;/niveau&gt;</span><span class="se">\n</span><span class="s">&#39;</span>
+        <span class="s">&#39;</span><span class="se">\t</span><span class="s">&lt;volgnummer&gt;{}&lt;/volgnummer&gt;</span><span class="se">\n</span><span class="s">&#39;</span>
+    <span class="p">)</span>
+
+    <span class="n">object_xml</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s">&#39;</span><span class="se">\t</span><span class="s">&lt;type&gt;{}&lt;/type&gt;</span><span class="se">\n</span><span class="s">&#39;</span>
+        <span class="s">&#39;</span><span class="se">\t</span><span class="s">&lt;omschrijving&gt;{}&lt;/omschrijving&gt;</span><span class="se">\n</span><span class="s">&#39;</span>
+        <span class="s">&#39;</span><span class="se">\t</span><span class="s">&lt;object_naam_pad&gt;{}&lt;/object_naam_pad&gt;</span><span class="se">\n</span><span class="s">&#39;</span>
+        <span class="s">&#39;</span><span class="se">\t</span><span class="s">&lt;niveau&gt;{}&lt;/niveau&gt;</span><span class="se">\n</span><span class="s">&#39;</span>
+        <span class="s">&#39;</span><span class="se">\t</span><span class="s">&lt;volgnummer&gt;{}&lt;/volgnummer&gt;</span><span class="se">\n</span><span class="s">&#39;</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">category</span> <span class="o">==</span> <span class="s">&quot;object&quot;</span><span class="p">:</span>
+        <span class="n">out_xml</span> <span class="o">=</span> <span class="n">object_xml</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">category</span><span class="p">,</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">description</span><span class="p">,</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">level</span><span class="p">,</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">out_xml</span> <span class="o">=</span> <span class="n">default_xml</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">category</span><span class="p">,</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">description</span><span class="p">,</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">quantity</span><span class="p">,</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">units</span><span class="p">,</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">level</span><span class="p">,</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">out_xml</span>
+
+</div>
+<div class="viewcode-block" id="getXMLFromResult"><a class="viewcode-back" href="../../pyWAD.html#pyWAD.xml_result_generator.getXMLFromResult">[docs]</a><span class="k">def</span> <span class="nf">getXMLFromResult</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">limits</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return the XML string for a SingleResult object and possible bounds&quot;&quot;&quot;</span>
+
+    <span class="n">bound_xml</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">limits</span><span class="p">:</span>
+        <span class="c">#Check if a result has corresponding limits and gather the XML tags.</span>
+        <span class="k">if</span> <span class="n">element</span><span class="o">.</span><span class="n">attrib</span><span class="p">[</span><span class="s">&quot;description&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">result</span><span class="o">.</span><span class="n">description</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">element</span><span class="p">:</span>
+                <span class="c">#Translate config XML tag to result XML tag</span>
+                <span class="n">label</span> <span class="o">=</span> <span class="n">translate_limit_tags</span><span class="p">[</span><span class="n">child</span><span class="o">.</span><span class="n">tag</span><span class="p">]</span>
+                <span class="n">bound_xml</span> <span class="o">+=</span> <span class="s">&quot;</span><span class="se">\t</span><span class="s">&lt;{0}&gt;{1}&lt;/{0}&gt;</span><span class="se">\n</span><span class="s">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">child</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+
+    <span class="n">xml_str</span> <span class="o">=</span> <span class="s">&quot;&lt;results&gt;</span><span class="se">\n</span><span class="s">&quot;</span>
+    <span class="n">xml_str</span> <span class="o">+=</span> <span class="n">getResultsXML</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+    <span class="n">xml_str</span> <span class="o">+=</span> <span class="n">bound_xml</span>
+    <span class="n">xml_str</span> <span class="o">+=</span> <span class="s">&quot;&lt;/results&gt;&quot;</span>
+    <span class="k">return</span> <span class="n">xml_str</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

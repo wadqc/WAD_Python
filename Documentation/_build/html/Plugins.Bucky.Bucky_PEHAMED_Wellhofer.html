@@ -1,0 +1,957 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Plugins.Bucky.Bucky_PEHAMED_Wellhofer package &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">..  documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="plugins-bucky-bucky-pehamed-wellhofer-package">
+<h1>Plugins.Bucky.Bucky_PEHAMED_Wellhofer package<a class="headerlink" href="#plugins-bucky-bucky-pehamed-wellhofer-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_constants">
+<span id="plugins-bucky-bucky-pehamed-wellhofer-qcxray-constants-module"></span><h2>Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_constants module<a class="headerlink" href="#module-Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_constants" title="Permalink to this headline">¶</a></h2>
+<p>String constants for usage in QCXRay</p>
+</div>
+<div class="section" id="module-Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib">
+<span id="plugins-bucky-bucky-pehamed-wellhofer-qcxray-lib-module"></span><h2>Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib module<a class="headerlink" href="#module-Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC">
+<em class="property">class </em><tt class="descclassname">Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.</tt><tt class="descname">XRayQC</tt><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayQC"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.AlignROI">
+<tt class="descname">AlignROI</tt><big>(</big><em>cs</em>, <em>roipts</em>, <em>what</em>, <em>blast_attempt=True</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayQC.AlignROI"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.AlignROI" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.AnalyseMTF">
+<tt class="descname">AnalyseMTF</tt><big>(</big><em>cs</em>, <em>roipts_orig=None</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayQC.AnalyseMTF"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.AnalyseMTF" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find rotation angle of linepairs insert. Cut out the back rotated insert.
+For each linepair, do an analysis</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.AnalyseMTF_Part">
+<tt class="descname">AnalyseMTF_Part</tt><big>(</big><em>cs</em>, <em>smallimage</em>, <em>startpos</em>, <em>endpos</em>, <em>vpi</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayQC.AnalyseMTF_Part"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.AnalyseMTF_Part" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Determine contrast in one bar pattern element</dt>
+<dd>contrast_response[vpi],contrast_high[vpi],contrast_low[vpi],contrast_tops[vpi],contrast_bots[vpi],calc_freq[vpi] = self.AnalyseMTF_Part(smallimage, startpos[vpi-1],endpos[vpi-1], vpi)</dd>
+</dl>
+<p>Already inverted smallimage as input</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.AnalyseWedge">
+<tt class="descname">AnalyseWedge</tt><big>(</big><em>cs</em>, <em>roipts_orig=None</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayQC.AnalyseWedge"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.AnalyseWedge" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Concept:</dt>
+<dd><ol class="first arabic simple">
+<li>Cut out rectangular roi</li>
+</ol>
+<p class="last">2. For each cu step, measure mean and sd
+4. Calculate SNR and CNR
+5. Calculate kV</p>
+</dd>
+</dl>
+<p>NB excel data fit shows perfectly linear pehamed Cu intensity with {0.55, 0.50, 0.40, 0.30, 0.20, 0.10, 0.00} (F10 after recalib 20090720)
+to make the 0.00 Cu lie on the line, all thicknesses other than 0.00 should be increased by 0.125mm
+the wellhofer wkz table1 data perfectly agrees with {0.57, 0.50, 0.40, 0.30, 0.20, 0.10, 0.00} including zero point</p>
+<p>Assuming that we have a linear read out (as it should be for Qc) meaning pixel value ~ -mu x
+By fitting a linear line through the mean pixelvalues of each step, we obtain I = a x + b
+If we compare the found coefficient a with the reference value which was obtained for a calibrated kV, we can
+calculate the current kV by linear interpolation from the NIST X-RAY Data for Cu; find the kV for which the ratio a/a_ref is the
+same as mu/mu_ref perfect predict if use 0.6 instead of 0.55</p>
+<p>Contrast from Cu Mean/SD?</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.CTFtoMTF">
+<tt class="descname">CTFtoMTF</tt><big>(</big><em>cs</em>, <em>freq_in</em>, <em>ctf</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayQC.CTFtoMTF"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.CTFtoMTF" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.CTFtoMTFNoFit">
+<tt class="descname">CTFtoMTFNoFit</tt><big>(</big><em>freq_in</em>, <em>ctf</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayQC.CTFtoMTFNoFit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.CTFtoMTFNoFit" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.ConsistencyAlign">
+<tt class="descname">ConsistencyAlign</tt><big>(</big><em>cs</em>, <em>roiptsold</em>, <em>roiptsnew</em>, <em>what</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayQC.ConsistencyAlign"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.ConsistencyAlign" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>4 types of motion:</dt>
+<dd><ol class="first last arabic simple">
+<li>Shift (all points move in same direction)</li>
+<li>Scale (all distance to center change by same amount)</li>
+<li>Rotation (all points rotate along same angle around center)</li>
+<li>Shear (some points rotate more than others. Do not allow)</li>
+</ol>
+</dd>
+</dl>
+<p>Some heuristics to correct for one corner point being very obviously wrong</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.CuWedge">
+<tt class="descname">CuWedge</tt><big>(</big><em>cs</em>, <em>roipts_orig=None</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayQC.CuWedge"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.CuWedge" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.DICOMInfo">
+<tt class="descname">DICOMInfo</tt><big>(</big><em>cs</em>, <em>info='dicom'</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayQC.DICOMInfo"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.DICOMInfo" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.FieldRotationFFT">
+<tt class="descname">FieldRotationFFT</tt><big>(</big><em>cs</em>, <em>roipts_orig</em>, <em>initangle=None</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayQC.FieldRotationFFT"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.FieldRotationFFT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cut out a part of the phantom that should contain only grid
+Make a FFT, select one quadrant and find the locations of the first N maximums
+Fit a line through the maximums</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.FillMTFBarDetails">
+<tt class="descname">FillMTFBarDetails</tt><big>(</big><em>cs</em>, <em>smallimage</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayQC.FillMTFBarDetails"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.FillMTFBarDetails" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make lists of all start/end positions of each linepair
+Just scale everything to a manual measurement
+Must already get inverted smallimage</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.FindAllExtrema">
+<tt class="descname">FindAllExtrema</tt><big>(</big><em>cs</em>, <em>pattern</em>, <em>xderiv1</em>, <em>yminmax</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayQC.FindAllExtrema"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.FindAllExtrema" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.FindExtrema">
+<tt class="descname">FindExtrema</tt><big>(</big><em>cs</em>, <em>pattern</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayQC.FindExtrema"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.FindExtrema" title="Permalink to this definition">¶</a></dt>
+<dd><p>&#8221;
+1. Find abs min and max
+2. Between (max+min)/2 point left and right
+3. find all tops and valleys</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.FindXRayEdge">
+<tt class="descname">FindXRayEdge</tt><big>(</big><em>cs</em>, <em>roipts</em>, <em>side</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayQC.FindXRayEdge"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.FindXRayEdge" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.HorizontalUniformity">
+<tt class="descname">HorizontalUniformity</tt><big>(</big><em>cs</em>, <em>roipts_orig=None</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayQC.HorizontalUniformity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.HorizontalUniformity" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.LowContrast">
+<tt class="descname">LowContrast</tt><big>(</big><em>cs</em>, <em>roipts_orig=None</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayQC.LowContrast"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.LowContrast" title="Permalink to this definition">¶</a></dt>
+<dd><p>for each disc, calc av in box in center and in box 1 cm above it (without Cu grid)
+Calculate CNR: (av(Cu)-av(bk))/sqrt((sd(Cu)^2+sd(bk)^2)/2)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.MTF">
+<tt class="descname">MTF</tt><big>(</big><em>cs</em>, <em>roipts_orig=None</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayQC.MTF"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.MTF" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.QC">
+<tt class="descname">QC</tt><big>(</big><em>cs</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayQC.QC"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.QC" title="Permalink to this definition">¶</a></dt>
+<dd><p>all in one package!</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.ROIConfidence">
+<tt class="descname">ROIConfidence</tt><big>(</big><em>cs</em>, <em>roipts</em>, <em>what</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayQC.ROIConfidence"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.ROIConfidence" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.ReportEntries">
+<tt class="descname">ReportEntries</tt><big>(</big><em>cs</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayQC.ReportEntries"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.ReportEntries" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convenience function to list all calculated items with names, only if cs completely filled</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.RotateBoundingBox">
+<tt class="descname">RotateBoundingBox</tt><big>(</big><em>roipts_orig</em>, <em>rotangledeg</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayQC.RotateBoundingBox"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.RotateBoundingBox" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.TableOrWall">
+<tt class="descname">TableOrWall</tt><big>(</big><em>cs</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayQC.TableOrWall"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.TableOrWall" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.TableOrWallFromSTDEV">
+<tt class="descname">TableOrWallFromSTDEV</tt><big>(</big><em>cs</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayQC.TableOrWallFromSTDEV"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.TableOrWallFromSTDEV" title="Permalink to this definition">¶</a></dt>
+<dd><p>Voor CALHOS (fosfor) kan Wand/Tafel onderscheid gemaakt worden met std van groot gedeelte image
+Misschien ook voor andere fosfor (WKZ)?
+:param cs:
+:return:</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.Uniformity">
+<tt class="descname">Uniformity</tt><big>(</big><em>cs</em>, <em>roipts=None</em>, <em>what=''</em>, <em>bshowplot=False</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayQC.Uniformity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.Uniformity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Concept:
+1. Cut out rectangular roi
+2. mask out the copper grid
+3. calculate line profile
+4. Check for difference between left and right</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.XRayDev">
+<tt class="descname">XRayDev</tt><big>(</big><em>cs</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayQC.XRayDev"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.XRayDev" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convenience function to calculate max deviation of L/R in %</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.XRayField">
+<tt class="descname">XRayField</tt><big>(</big><em>cs</em>, <em>roipts=None</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayQC.XRayField"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.XRayField" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use either min across line between box and edge, or use corner values</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.adjustmtfangledeg">
+<tt class="descname">adjustmtfangledeg</tt><em class="property"> = 0.0</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.adjustmtfangledeg" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.bIgnoreMTFError">
+<tt class="descname">bIgnoreMTFError</tt><em class="property"> = False</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.bIgnoreMTFError" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.bShowCTF">
+<tt class="descname">bShowCTF</tt><em class="property"> = True</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.bShowCTF" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.bShowMTFDetail">
+<tt class="descname">bShowMTFDetail</tt><em class="property"> = False</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.bShowMTFDetail" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.boxradmm">
+<tt class="descname">boxradmm</tt><em class="property"> = 110</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.boxradmm" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.checkPhantomRotation">
+<tt class="descname">checkPhantomRotation</tt><big>(</big><em>cs</em>, <em>ebbox=None</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayQC.checkPhantomRotation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.checkPhantomRotation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Concept: Try to find out if phantom is rotated over 90, 180 or 270 degrees (WKZ mostly)
+Workflow:
+1. Find center and orientation
+2. Find most likely location of CuWedge and LinePairs</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.crLimit">
+<tt class="descname">crLimit</tt><em class="property"> = 0.1</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.crLimit" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.diamondNESW">
+<tt class="descname">diamondNESW</tt><big>(</big><em>roipts_orig</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayQC.diamondNESW"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.diamondNESW" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.findPhantomOrientation">
+<tt class="descname">findPhantomOrientation</tt><big>(</big><em>cs</em>, <em>ebbox=None</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayQC.findPhantomOrientation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.findPhantomOrientation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.invertmaxval">
+<tt class="descname">invertmaxval</tt><big>(</big><em>cs</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayQC.invertmaxval"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.invertmaxval" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.mAsCalc">
+<tt class="descname">mAsCalc</tt><big>(</big><em>cs</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayQC.mAsCalc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.mAsCalc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convenience function to calculate mAs from DOP if not DR</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.phantommm2pix">
+<tt class="descname">phantommm2pix</tt><big>(</big><em>cs</em>, <em>mm</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayQC.phantommm2pix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.phantommm2pix" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.phantomposmm2pix">
+<tt class="descname">phantomposmm2pix</tt><big>(</big><em>roipts_orig</em>, <em>xmm</em>, <em>ymm</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayQC.phantomposmm2pix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.phantomposmm2pix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert position as indicated on phantom to image pixels</p>
+<p>input: x and y coordinates in phantom grid mm
+output: x and y in pix</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.pix2phantomm">
+<tt class="descname">pix2phantomm</tt><big>(</big><em>cs</em>, <em>pix</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayQC.pix2phantomm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.pix2phantomm" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.pixToGridScaleCm">
+<tt class="descname">pixToGridScaleCm</tt><big>(</big><em>cs</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayQC.pixToGridScaleCm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.pixToGridScaleCm" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.qcversion">
+<tt class="descname">qcversion</tt><em class="property"> = 20150618</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.qcversion" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.saveAnnotatedImage">
+<tt class="descname">saveAnnotatedImage</tt><big>(</big><em>cs</em>, <em>fname</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayQC.saveAnnotatedImage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.saveAnnotatedImage" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.sigma_ext">
+<tt class="descname">sigma_ext</tt><em class="property"> = 1.5</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.sigma_ext" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct">
+<em class="property">class </em><tt class="descclassname">Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.</tt><tt class="descname">XRayStruct</tt><big>(</big><em>dcmInfile</em>, <em>pixeldataIn</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayStruct"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="class">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.CuStruct">
+<em class="property">class </em><tt class="descname">CuStruct</tt><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayStruct.CuStruct"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.CuStruct" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.CuStruct.dynamicRange">
+<tt class="descname">dynamicRange</tt><em class="property"> = -1</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.CuStruct.dynamicRange" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.CuStruct.guesskVp">
+<tt class="descname">guesskVp</tt><em class="property"> = -1</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.CuStruct.guesskVp" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.CuStruct.roi">
+<tt class="descname">roi</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.CuStruct.roi" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.CuStruct.roi_cnr">
+<tt class="descname">roi_cnr</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.CuStruct.roi_cnr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.CuStruct.roi_mean">
+<tt class="descname">roi_mean</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.CuStruct.roi_mean" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.CuStruct.roi_mmcu">
+<tt class="descname">roi_mmcu</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.CuStruct.roi_mmcu" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.CuStruct.roi_sdev">
+<tt class="descname">roi_sdev</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.CuStruct.roi_sdev" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.CuStruct.roi_snr">
+<tt class="descname">roi_snr</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.CuStruct.roi_snr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.CuStruct.slope">
+<tt class="descname">slope</tt><em class="property"> = 0.0</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.CuStruct.slope" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.CuStruct.step_rois">
+<tt class="descname">step_rois</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.CuStruct.step_rois" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.CuStruct.wedge_confidence">
+<tt class="descname">wedge_confidence</tt><em class="property"> = -1.0</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.CuStruct.wedge_confidence" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.LoCoStruct">
+<em class="property">class </em><tt class="descclassname">XRayStruct.</tt><tt class="descname">LoCoStruct</tt><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayStruct.LoCoStruct"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.LoCoStruct" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.LoCoStruct.lo_rois">
+<tt class="descname">lo_rois</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.LoCoStruct.lo_rois" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.LoCoStruct.low_cnr">
+<tt class="descname">low_cnr</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.LoCoStruct.low_cnr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.LoCoStruct.mean_bk">
+<tt class="descname">mean_bk</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.LoCoStruct.mean_bk" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.LoCoStruct.mean_sg">
+<tt class="descname">mean_sg</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.LoCoStruct.mean_sg" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.LoCoStruct.sdev_bk">
+<tt class="descname">sdev_bk</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.LoCoStruct.sdev_bk" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.LoCoStruct.sdev_sg">
+<tt class="descname">sdev_sg</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.LoCoStruct.sdev_sg" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.MTFStruct">
+<em class="property">class </em><tt class="descclassname">XRayStruct.</tt><tt class="descname">MTFStruct</tt><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayStruct.MTFStruct"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.MTFStruct" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.MTFStruct.calc_freqs">
+<tt class="descname">calc_freqs</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.MTFStruct.calc_freqs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.MTFStruct.contrast_bots">
+<tt class="descname">contrast_bots</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.MTFStruct.contrast_bots" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.MTFStruct.contrast_freqs">
+<tt class="descname">contrast_freqs</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.MTFStruct.contrast_freqs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.MTFStruct.contrast_high">
+<tt class="descname">contrast_high</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.MTFStruct.contrast_high" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.MTFStruct.contrast_low">
+<tt class="descname">contrast_low</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.MTFStruct.contrast_low" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.MTFStruct.contrast_response">
+<tt class="descname">contrast_response</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.MTFStruct.contrast_response" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.MTFStruct.contrast_tops">
+<tt class="descname">contrast_tops</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.MTFStruct.contrast_tops" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.MTFStruct.ctfmtf">
+<tt class="descname">ctfmtf</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.MTFStruct.ctfmtf" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.MTFStruct.dotxys">
+<tt class="descname">dotxys</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.MTFStruct.dotxys" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.MTFStruct.freq_confidence">
+<tt class="descname">freq_confidence</tt><em class="property"> = -1.0</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.MTFStruct.freq_confidence" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.MTFStruct.mtf_aapm">
+<tt class="descname">mtf_aapm</tt><em class="property"> = -1.0</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.MTFStruct.mtf_aapm" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.MTFStruct.pos_confidence">
+<tt class="descname">pos_confidence</tt><em class="property"> = -1.0</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.MTFStruct.pos_confidence" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.MTFStruct.roi">
+<tt class="descname">roi</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.MTFStruct.roi" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.Room">
+<em class="property">class </em><tt class="descclassname">XRayStruct.</tt><tt class="descname">Room</tt><big>(</big><em>_name</em>, <em>outvalue=-1</em>, <em>tablesid=-1</em>, <em>wallsid=-1</em>, <em>tablepid=-1</em>, <em>wallpid=-1</em>, <em>phantom='pehamed'</em>, <em>sdthresh=-1</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayStruct.Room"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.Room" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.Room.name">
+<tt class="descname">name</tt><em class="property"> = ''</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.Room.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.Room.outvalue">
+<tt class="descname">outvalue</tt><em class="property"> = -1</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.Room.outvalue" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.Room.phantom">
+<tt class="descname">phantom</tt><em class="property"> = 'pehamed'</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.Room.phantom" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.Room.pidtablemm">
+<tt class="descname">pidtablemm</tt><em class="property"> = -1</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.Room.pidtablemm" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.Room.pidwallmm">
+<tt class="descname">pidwallmm</tt><em class="property"> = -1</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.Room.pidwallmm" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.Room.sdthresh">
+<tt class="descname">sdthresh</tt><em class="property"> = -1</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.Room.sdthresh" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.Room.setPIDs">
+<tt class="descname">setPIDs</tt><big>(</big><em>_pidtable</em>, <em>_pidwall</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayStruct.Room.setPIDs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.Room.setPIDs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.Room.setSIDS">
+<tt class="descname">setSIDS</tt><big>(</big><em>_sidtable</em>, <em>_sidwall</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayStruct.Room.setSIDS"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.Room.setSIDS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.Room.sidtablemm">
+<tt class="descname">sidtablemm</tt><em class="property"> = -1</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.Room.sidtablemm" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.Room.sidwallmm">
+<tt class="descname">sidwallmm</tt><em class="property"> = -1</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.Room.sidwallmm" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.Room.skipFFT">
+<tt class="descname">skipFFT</tt><em class="property"> = False</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.Room.skipFFT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.UnifStruct">
+<em class="property">class </em><tt class="descclassname">XRayStruct.</tt><tt class="descname">UnifStruct</tt><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayStruct.UnifStruct"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.UnifStruct" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.UnifStruct.BKmean">
+<tt class="descname">BKmean</tt><em class="property"> = -1</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.UnifStruct.BKmean" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.UnifStruct.BKsdev">
+<tt class="descname">BKsdev</tt><em class="property"> = -1</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.UnifStruct.BKsdev" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.UnifStruct.LRuniformity">
+<tt class="descname">LRuniformity</tt><em class="property"> = -1</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.UnifStruct.LRuniformity" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.UnifStruct.ROIuniformity">
+<tt class="descname">ROIuniformity</tt><em class="property"> = -1</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.UnifStruct.ROIuniformity" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.UnifStruct.intens">
+<tt class="descname">intens</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.UnifStruct.intens" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.UnifStruct.peakValue">
+<tt class="descname">peakValue</tt><em class="property"> = -1</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.UnifStruct.peakValue" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.UnifStruct.posval">
+<tt class="descname">posval</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.UnifStruct.posval" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.UnifStruct.roi">
+<tt class="descname">roi</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.UnifStruct.roi" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.UnifStruct.trend">
+<tt class="descname">trend</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.UnifStruct.trend" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.UnifStruct.trendMax">
+<tt class="descname">trendMax</tt><em class="property"> = -1</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.UnifStruct.trendMax" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.UnifStruct.trendMin">
+<tt class="descname">trendMin</tt><em class="property"> = -1</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.UnifStruct.trendMin" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.UnifStruct.verticalROI">
+<tt class="descname">verticalROI</tt><em class="property"> = False</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.UnifStruct.verticalROI" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.bbox_confidence">
+<tt class="descclassname">XRayStruct.</tt><tt class="descname">bbox_confidence</tt><em class="property"> = 0.0</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.bbox_confidence" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.cuwedge">
+<tt class="descclassname">XRayStruct.</tt><tt class="descname">cuwedge</tt><em class="property"> = None</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.cuwedge" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.dcmInfile">
+<tt class="descclassname">XRayStruct.</tt><tt class="descname">dcmInfile</tt><em class="property"> = None</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.dcmInfile" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.determineDeviceID">
+<tt class="descclassname">XRayStruct.</tt><tt class="descname">determineDeviceID</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayStruct.determineDeviceID"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.determineDeviceID" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.expertOverridepixToGridScaleCm">
+<tt class="descclassname">XRayStruct.</tt><tt class="descname">expertOverridepixToGridScaleCm</tt><em class="property"> = None</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.expertOverridepixToGridScaleCm" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.guessroom">
+<tt class="descclassname">XRayStruct.</tt><tt class="descname">guessroom</tt><em class="property"> = &lt;Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.Room instance at 0x2b9d96a4acf8&gt;</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.guessroom" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.hasmadeplots">
+<tt class="descclassname">XRayStruct.</tt><tt class="descname">hasmadeplots</tt><em class="property"> = False</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.hasmadeplots" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.knownTableOrWall">
+<tt class="descclassname">XRayStruct.</tt><tt class="descname">knownTableOrWall</tt><em class="property"> = None</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.knownTableOrWall" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.lastimage">
+<tt class="descclassname">XRayStruct.</tt><tt class="descname">lastimage</tt><em class="property"> = None</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.lastimage" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.loco">
+<tt class="descclassname">XRayStruct.</tt><tt class="descname">loco</tt><em class="property"> = None</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.loco" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.maybeInvert">
+<tt class="descclassname">XRayStruct.</tt><tt class="descname">maybeInvert</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_lib.html#XRayStruct.maybeInvert"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.maybeInvert" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.mtf">
+<tt class="descclassname">XRayStruct.</tt><tt class="descname">mtf</tt><em class="property"> = None</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.mtf" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.mustbeinverted">
+<tt class="descclassname">XRayStruct.</tt><tt class="descname">mustbeinverted</tt><em class="property"> = False</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.mustbeinverted" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.pixeldataIn">
+<tt class="descclassname">XRayStruct.</tt><tt class="descname">pixeldataIn</tt><em class="property"> = None</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.pixeldataIn" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.po_center_roi">
+<tt class="descclassname">XRayStruct.</tt><tt class="descname">po_center_roi</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.po_center_roi" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.po_fftroi">
+<tt class="descclassname">XRayStruct.</tt><tt class="descname">po_fftroi</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.po_fftroi" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.po_roi">
+<tt class="descclassname">XRayStruct.</tt><tt class="descname">po_roi</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.po_roi" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.po_rot">
+<tt class="descclassname">XRayStruct.</tt><tt class="descname">po_rot</tt><em class="property"> = 0</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.po_rot" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.roomCALHOS1">
+<tt class="descclassname">XRayStruct.</tt><tt class="descname">roomCALHOS1</tt><em class="property"> = &lt;Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.Room instance at 0x2b9d96a4acb0&gt;</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.roomCALHOS1" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.roomCMH">
+<tt class="descclassname">XRayStruct.</tt><tt class="descname">roomCMH</tt><em class="property"> = &lt;Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.Room instance at 0x2b9d96a4ac20&gt;</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.roomCMH" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.roomDRX1118">
+<tt class="descclassname">XRayStruct.</tt><tt class="descname">roomDRX1118</tt><em class="property"> = &lt;Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.Room instance at 0x2b9d95bd4fc8&gt;</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.roomDRX1118" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.roomDRX1119">
+<tt class="descclassname">XRayStruct.</tt><tt class="descname">roomDRX1119</tt><em class="property"> = &lt;Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.Room instance at 0x2b9d96a4abd8&gt;</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.roomDRX1119" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.roomF10">
+<tt class="descclassname">XRayStruct.</tt><tt class="descname">roomF10</tt><em class="property"> = &lt;Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.Room instance at 0x2b9d95bd4e60&gt;</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.roomF10" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.roomF11a">
+<tt class="descclassname">XRayStruct.</tt><tt class="descname">roomF11a</tt><em class="property"> = &lt;Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.Room instance at 0x2b9d95bd4ea8&gt;</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.roomF11a" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.roomF11b">
+<tt class="descclassname">XRayStruct.</tt><tt class="descname">roomF11b</tt><em class="property"> = &lt;Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.Room instance at 0x2b9d95bd4ef0&gt;</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.roomF11b" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.roomTrauma1">
+<tt class="descclassname">XRayStruct.</tt><tt class="descname">roomTrauma1</tt><em class="property"> = &lt;Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.Room instance at 0x2b9d95bd4f38&gt;</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.roomTrauma1" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.roomTrauma2">
+<tt class="descclassname">XRayStruct.</tt><tt class="descname">roomTrauma2</tt><em class="property"> = &lt;Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.Room instance at 0x2b9d95bd4f80&gt;</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.roomTrauma2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.roomUnknown">
+<tt class="descclassname">XRayStruct.</tt><tt class="descname">roomUnknown</tt><em class="property"> = &lt;Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.Room instance at 0x2b9d96a4acf8&gt;</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.roomUnknown" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.roomWKZ1">
+<tt class="descclassname">XRayStruct.</tt><tt class="descname">roomWKZ1</tt><em class="property"> = &lt;Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.Room instance at 0x2b9d95bd4dd0&gt;</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.roomWKZ1" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.roomWKZ2">
+<tt class="descclassname">XRayStruct.</tt><tt class="descname">roomWKZ2</tt><em class="property"> = &lt;Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.Room instance at 0x2b9d95bd4e18&gt;</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.roomWKZ2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.test_rois">
+<tt class="descclassname">XRayStruct.</tt><tt class="descname">test_rois</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.test_rois" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.unif">
+<tt class="descclassname">XRayStruct.</tt><tt class="descname">unif</tt><em class="property"> = None</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.unif" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.verbose">
+<tt class="descclassname">XRayStruct.</tt><tt class="descname">verbose</tt><em class="property"> = False</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.verbose" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.xr_roi">
+<tt class="descclassname">XRayStruct.</tt><tt class="descname">xr_roi</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.xr_roi" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.xrayNSWEmm">
+<tt class="descclassname">XRayStruct.</tt><tt class="descname">xrayNSWEmm</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.xrayNSWEmm" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_math">
+<span id="plugins-bucky-bucky-pehamed-wellhofer-qcxray-math-module"></span><h2>Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_math module<a class="headerlink" href="#module-Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_math" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_math.AreaUnderCurve">
+<tt class="descclassname">Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_math.</tt><tt class="descname">AreaUnderCurve</tt><big>(</big><em>freqs</em>, <em>merits</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_math.html#AreaUnderCurve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_math.AreaUnderCurve" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_math.FiniteDifference1D">
+<tt class="descclassname">Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_math.</tt><tt class="descname">FiniteDifference1D</tt><big>(</big><em>pSrc</em>, <em>BC='BC_MIRROR'</em>, <em>order=0</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_math.html#FiniteDifference1D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_math.FiniteDifference1D" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_math.MTF10pct">
+<tt class="descclassname">Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_math.</tt><tt class="descname">MTF10pct</tt><big>(</big><em>freqs</em>, <em>mtf</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_math.html#MTF10pct"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_math.MTF10pct" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_math.linearInterExtrapolate">
+<tt class="descclassname">Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_math.</tt><tt class="descname">linearInterExtrapolate</tt><big>(</big><em>xarr</em>, <em>yarr</em>, <em>xpos</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_math.html#linearInterExtrapolate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_math.linearInterExtrapolate" title="Permalink to this definition">¶</a></dt>
+<dd><p>linearly interpolates if xpos within bounds of xarr,
+else linearly extrapolates</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_wadwrapper">
+<span id="plugins-bucky-bucky-pehamed-wellhofer-qcxray-wadwrapper-module"></span><h2>Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_wadwrapper module<a class="headerlink" href="#module-Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_wadwrapper" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_wadwrapper.logTag">
+<tt class="descclassname">Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_wadwrapper.</tt><tt class="descname">logTag</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_wadwrapper.html#logTag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_wadwrapper.logTag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_wadwrapper.xrayheader_series">
+<tt class="descclassname">Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_wadwrapper.</tt><tt class="descname">xrayheader_series</tt><big>(</big><em>data</em>, <em>results</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_wadwrapper.html#xrayheader_series"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_wadwrapper.xrayheader_series" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read selected dicomfields and write to IQC database</p>
+<dl class="docutils">
+<dt>Workflow:</dt>
+<dd><ol class="first last arabic simple">
+<li>Read only headers</li>
+<li>Run tests</li>
+<li>Build xml output</li>
+</ol>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_wadwrapper.xrayqc_series">
+<tt class="descclassname">Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_wadwrapper.</tt><tt class="descname">xrayqc_series</tt><big>(</big><em>data</em>, <em>results</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/Plugins/Bucky/Bucky_PEHAMED_Wellhofer/QCXRay_wadwrapper.html#xrayqc_series"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_wadwrapper.xrayqc_series" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>QCXRay_UMCU checks:</dt>
+<dd>Horizontal uniformity
+XRayEdges
+LowContrast
+DynamicRange
+MTF</dd>
+<dt>Workflow:</dt>
+<dd><ol class="first last arabic simple" start="2">
+<li>Check data format</li>
+<li>Build and populate qcstructure</li>
+<li>Run tests</li>
+<li>Build xml output</li>
+<li>Build artefact picture thumbnail</li>
+</ol>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-Plugins.Bucky.Bucky_PEHAMED_Wellhofer">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-Plugins.Bucky.Bucky_PEHAMED_Wellhofer" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Plugins.Bucky.Bucky_PEHAMED_Wellhofer package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_constants">Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_constants module</a></li>
+<li><a class="reference internal" href="#module-Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib">Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib module</a></li>
+<li><a class="reference internal" href="#module-Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_math">Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_math module</a></li>
+<li><a class="reference internal" href="#module-Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_wadwrapper">Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_wadwrapper module</a></li>
+<li><a class="reference internal" href="#module-Plugins.Bucky.Bucky_PEHAMED_Wellhofer">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/Plugins.Bucky.Bucky_PEHAMED_Wellhofer.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">..  documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

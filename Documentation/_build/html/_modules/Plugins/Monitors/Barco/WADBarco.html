@@ -1,0 +1,292 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Plugins.Monitors.Barco.WADBarco &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="../../../../index.html" />
+    <link rel="up" title="Module code" href="../../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for Plugins.Monitors.Barco.WADBarco</h1><div class="highlight"><pre>
+<span class="c"># PyWAD is an open-source set of plugins for the WAD-Software medical physics quality control software. </span>
+<span class="c"># The WAD Software can be found on https://github.com/wadqc</span>
+<span class="c"># </span>
+<span class="c"># This package includes plugins for the automated analysis of QC images for various imaging modalities. </span>
+<span class="c"># PyWAD has been originaly initiated by Dennis Dickerscheid (AZN) and Arnold Schilham (UMCU) </span>
+<span class="c">#</span>
+<span class="c">#</span>
+<span class="c"># Date: </span>
+<span class="c"># Version: 0.2</span>
+<span class="c"># Authors: K. van Gils, D. Dickerscheid</span>
+<span class="c"># Changelog:</span>
+<span class="c">#</span>
+<span class="c">#</span>
+<span class="c"># Description of this plugin:</span>
+<span class="c">#</span>
+<span class="c"># </span>
+<span class="c">#</span>
+
+
+<span class="n">__version__</span><span class="o">=</span><span class="mo">01062015</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">tempfile</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&#39;MPLCONFIGDIR&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkdtemp</span><span class="p">()</span>
+<span class="c">#import pylab as plt</span>
+<span class="kn">import</span> <span class="nn">matplotlib</span>
+<span class="c"># Force matplotlib to not use any Xwindows backend.</span>
+<span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s">&#39;Agg&#39;</span><span class="p">)</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+
+<span class="kn">import</span> <span class="nn">csv</span>
+<span class="kn">import</span> <span class="nn">StringIO</span>
+<span class="kn">import</span> <span class="nn">dicom</span>
+<span class="kn">from</span> <span class="nn">dicom</span> <span class="kn">import</span> <span class="n">tag</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+
+<div class="viewcode-block" id="convertboolean"><a class="viewcode-back" href="../../../../Plugins.Monitors.Barco.html#Plugins.Monitors.Barco.WADBarco.convertboolean">[docs]</a><span class="k">def</span> <span class="nf">convertboolean</span><span class="p">(</span><span class="n">inputboolean</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">inputboolean</span><span class="p">:</span>
+        <span class="n">output</span><span class="o">=</span><span class="s">&#39;1&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">output</span><span class="o">=</span><span class="s">&#39;0&#39;</span>
+    <span class="k">return</span> <span class="n">output</span>
+
+</div>
+<div class="viewcode-block" id="barco_compliance"><a class="viewcode-back" href="../../../../Plugins.Monitors.Barco.html#Plugins.Monitors.Barco.WADBarco.barco_compliance">[docs]</a><span class="k">def</span> <span class="nf">barco_compliance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    
+    <span class="n">dcmlist</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">getAllInstances</span><span class="p">()</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dcmlist</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">&quot;only one instance supported!&quot;</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">()</span>
+
+    <span class="n">dicomobject</span> <span class="o">=</span> <span class="n">dcmlist</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">print</span> <span class="n">dicomobject</span>
+
+    <span class="n">csvfile</span><span class="o">=</span><span class="n">dicomobject</span><span class="p">[</span><span class="n">tag</span><span class="o">.</span><span class="n">Tag</span><span class="p">(</span><span class="s">&quot;0071&quot;</span><span class="p">,</span><span class="s">&quot;0071&quot;</span><span class="p">)]</span><span class="o">.</span><span class="n">value</span>
+    <span class="n">csvfileread</span><span class="o">=</span><span class="n">StringIO</span><span class="o">.</span><span class="n">StringIO</span><span class="p">(</span><span class="n">csvfile</span><span class="p">)</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">(</span><span class="n">csvfileread</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s">&#39;</span><span class="se">\t</span><span class="s">&#39;</span><span class="p">)</span>
+
+    <span class="n">contrastlijst</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">contrastlijsttarget</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">contrasterrorlijst</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">counter</span><span class="o">=</span><span class="mi">0</span>
+    <span class="n">countertarget</span><span class="o">=</span><span class="mi">0</span>
+    <span class="n">resultxml</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+
+            <span class="n">info</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="p">)</span>
+            <span class="n">datum</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">info</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">])</span>
+            <span class="n">scherm</span><span class="o">=</span><span class="n">info</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;-&#39;</span><span class="p">)</span>
+            <span class="n">scherm</span><span class="o">=</span><span class="n">scherm</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">print</span> <span class="n">info</span><span class="p">[</span><span class="mi">10</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">info</span><span class="p">[</span><span class="mi">9</span><span class="p">]</span><span class="o">==</span><span class="s">&quot;contrast&quot;</span> <span class="ow">and</span> <span class="n">info</span><span class="p">[</span><span class="mi">11</span><span class="p">]</span><span class="o">==</span><span class="s">&quot;error&quot;</span><span class="p">:</span>
+                    <span class="n">data</span><span class="o">=</span><span class="n">info</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s">&#39;%&#39;</span><span class="p">)</span>
+                    <span class="n">contrasterrorlijst</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+            <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+                <span class="k">pass</span>
+            
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">info</span><span class="p">[</span><span class="mi">9</span><span class="p">]</span><span class="o">==</span><span class="s">&quot;Ambient&quot;</span> <span class="ow">and</span> <span class="n">info</span><span class="p">[</span><span class="mi">10</span><span class="p">]</span><span class="o">==</span><span class="s">&quot;light:&quot;</span><span class="p">:</span>
+                    <span class="n">AmbientLightvalue</span><span class="o">=</span><span class="n">info</span><span class="p">[</span><span class="mi">11</span><span class="p">]</span>
+                    <span class="n">results</span><span class="o">.</span><span class="n">addFloat</span><span class="p">(</span><span class="s">&#39;Omgevingslicht&#39;</span><span class="p">,</span><span class="n">AmbientLightvalue</span><span class="p">,</span><span class="n">level</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+                <span class="k">pass</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">info</span><span class="p">[</span><span class="mi">9</span><span class="p">]</span><span class="o">==</span><span class="s">&quot;Error&quot;</span> <span class="ow">and</span> <span class="n">info</span><span class="p">[</span><span class="mi">10</span><span class="p">]</span><span class="o">==</span><span class="s">&quot;tolerance:&quot;</span><span class="p">:</span>
+                    <span class="n">Barcotolerance</span><span class="o">=</span><span class="n">info</span><span class="p">[</span><span class="mi">11</span><span class="p">]</span>
+                    <span class="n">results</span><span class="o">.</span><span class="n">addFloat</span><span class="p">(</span><span class="s">&#39;Barco contrast tolerantiewaarde&#39;</span><span class="p">,</span><span class="n">Barcotolerance</span><span class="p">,</span><span class="n">level</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+                <span class="k">pass</span>
+
+
+            <span class="k">try</span><span class="p">:</span>     
+                <span class="k">if</span> <span class="n">info</span><span class="p">[</span><span class="mi">9</span><span class="p">]</span><span class="o">==</span><span class="s">&quot;Measured&quot;</span> <span class="ow">and</span> <span class="n">info</span><span class="p">[</span><span class="mi">10</span><span class="p">]</span><span class="o">==</span><span class="s">&quot;Contrast&quot;</span><span class="p">:</span>
+                    <span class="n">counter</span><span class="o">=</span><span class="mi">17</span>
+            <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+                <span class="k">pass</span>
+
+            <span class="k">try</span><span class="p">:</span>              
+
+                 <span class="k">if</span> <span class="n">info</span><span class="p">[</span><span class="mi">9</span><span class="p">]</span><span class="o">==</span><span class="s">&quot;contrastResponse:&quot;</span> <span class="ow">and</span> <span class="n">counter</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+                    <span class="n">contrastlijst</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">info</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+                    <span class="n">counter</span><span class="o">-=</span><span class="mi">1</span>
+            <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+                 <span class="k">pass</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                 <span class="k">if</span> <span class="n">info</span><span class="p">[</span><span class="mi">9</span><span class="p">]</span><span class="o">==</span><span class="s">&quot;Target&quot;</span> <span class="ow">and</span> <span class="n">info</span><span class="p">[</span><span class="mi">10</span><span class="p">]</span><span class="o">==</span><span class="s">&quot;Contrast&quot;</span><span class="p">:</span>
+                    <span class="n">countertarget</span><span class="o">=</span><span class="mi">17</span>
+                    <span class="k">print</span> <span class="s">&#39;hoi&#39;</span>
+            <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+                 <span class="k">pass</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">info</span><span class="p">[</span><span class="mi">9</span><span class="p">]</span><span class="o">==</span><span class="s">&quot;contrastResponse:&quot;</span> <span class="ow">and</span> <span class="n">countertarget</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+                    <span class="n">contrastlijsttarget</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">info</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+                    <span class="n">countertarget</span><span class="o">-=</span><span class="mi">1</span>
+            <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+                <span class="k">pass</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">info</span><span class="p">[</span><span class="mi">13</span><span class="p">]</span><span class="o">==</span><span class="s">&quot;Status:&quot;</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">info</span><span class="p">[</span><span class="mi">14</span><span class="p">]</span><span class="o">==</span><span class="s">&quot;true&quot;</span><span class="p">:</span>
+                        <span class="n">DICOMluminance</span><span class="o">=</span><span class="bp">True</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">DICOMluminance</span><span class="o">=</span><span class="bp">False</span>
+            <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+                <span class="k">pass</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">info</span><span class="p">[</span><span class="mi">9</span><span class="p">]</span><span class="o">==</span><span class="s">&quot;Result:&quot;</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">info</span><span class="p">[</span><span class="mi">10</span><span class="p">]</span><span class="o">==</span><span class="s">&quot;OK&quot;</span><span class="p">:</span>
+                        <span class="n">Result</span><span class="o">=</span><span class="bp">True</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">Result</span><span class="o">=</span><span class="bp">False</span>
+            <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+                <span class="k">pass</span>
+
+
+    
+
+    <span class="n">tolerance</span><span class="o">=</span><span class="mi">10</span>
+    <span class="n">error</span><span class="o">=</span><span class="bp">True</span>
+
+    <span class="k">for</span> <span class="n">contrasterror</span> <span class="ow">in</span> <span class="n">contrasterrorlijst</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">contrasterror</span><span class="o">&gt;=</span><span class="n">tolerance</span><span class="p">:</span>
+            <span class="n">error</span><span class="o">=</span><span class="bp">False</span>
+
+
+    <span class="k">print</span> <span class="n">contrastlijst</span>
+
+    <span class="k">print</span> <span class="n">contrastlijsttarget</span>
+
+    <span class="k">print</span> <span class="n">contrasterrorlijst</span>
+
+    <span class="n">results</span><span class="o">.</span><span class="n">addBool</span><span class="p">(</span><span class="s">&#39;Contrast eigen tolerantie&#39;</span><span class="p">,</span><span class="n">error</span><span class="p">,</span><span class="n">level</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">print</span> <span class="n">DICOMluminance</span>
+    <span class="n">results</span><span class="o">.</span><span class="n">addBool</span><span class="p">(</span><span class="s">&#39;Barco Luminance&#39;</span><span class="p">,</span><span class="n">DICOMluminance</span><span class="p">,</span><span class="n">level</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">print</span> <span class="n">Result</span>
+    <span class="n">results</span><span class="o">.</span><span class="n">addBool</span><span class="p">(</span><span class="s">&#39;Barco Result&#39;</span><span class="p">,</span><span class="n">Result</span><span class="p">,</span><span class="n">level</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">helpcounter</span><span class="o">=</span><span class="mi">0</span>
+    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">contrastlijst</span><span class="p">:</span>
+        <span class="n">results</span><span class="o">.</span><span class="n">addFloat</span><span class="p">(</span><span class="s">&#39;Contrast &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">helpcounter</span><span class="p">),</span><span class="n">row</span><span class="p">,</span><span class="n">level</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">helpcounter</span><span class="o">+=</span><span class="mi">1</span>
+
+
+
+<span class="c">#-------------------------    </span>
+    <span class="n">object_naam</span> <span class="o">=</span> <span class="s">&#39;GSDFcurve.png&#39;</span> 
+
+    <span class="n">x</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="mi">17</span><span class="p">)</span>
+
+    <span class="n">toleranties</span><span class="o">=</span><span class="p">[</span><span class="n">y</span><span class="o">*</span><span class="n">tolerance</span><span class="o">/</span><span class="mi">100</span> <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">contrastlijsttarget</span><span class="p">]</span>
+
+    <span class="n">tolerantiehoog</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">tolerantielaag</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">contrastlijsttarget</span><span class="p">):</span>
+        <span class="n">tolerantiehoog</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">contrastlijsttarget</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">+</span> <span class="n">toleranties</span><span class="p">[</span><span class="n">index</span><span class="p">])</span>
+        <span class="n">tolerantielaag</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">contrastlijsttarget</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">-</span> <span class="n">toleranties</span><span class="p">[</span><span class="n">index</span><span class="p">])</span>
+
+
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">contrastlijst</span><span class="p">,</span><span class="s">&#39;b.&#39;</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">tolerantiehoog</span><span class="p">,</span><span class="s">&#39;r--&#39;</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">tolerantielaag</span><span class="p">,</span><span class="s">&#39;r--&#39;</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">contrastlijsttarget</span><span class="p">,</span><span class="s">&#39;b:&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s">&#39;Display &#39;</span> <span class="o">+</span> <span class="n">scherm</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span><span class="n">datum</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">yscale</span><span class="p">(</span><span class="s">&#39;log&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s">&#39;dL/L&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s">&#39;Measurement point&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">object_naam</span><span class="p">)</span>
+
+    <span class="n">results</span><span class="o">.</span><span class="n">addObject</span><span class="p">(</span><span class="s">&#39;GSDF curve&#39;</span><span class="p">,</span><span class="n">object_naam</span><span class="p">,</span><span class="n">level</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+
+    <span class="c">#object_naam = &#39;csvfile.csv&#39;</span>
+    <span class="c">#results.addObject(&#39;GSDF curve data&#39;,object_naam,level=2)</span>
+</pre></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

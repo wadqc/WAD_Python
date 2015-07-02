@@ -1,0 +1,296 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="../../../../index.html" />
+    <link rel="up" title="Module code" href="../../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper</h1><div class="highlight"><pre>
+<span class="c"># PyWAD is open-source software and consists of a set of plugins written in python for the WAD-Software medical physics quality control software. </span>
+<span class="c"># The WAD Software can be found on https://github.com/wadqc</span>
+<span class="c"># </span>
+<span class="c"># The pywad package includes plugins for the automated analysis of QC images for various imaging modalities. </span>
+<span class="c"># PyWAD has been originaly initiated by Dennis Dickerscheid (AZN), Arnold Schilham (UMCU), Rob van Rooij (UMCU) and Tim de Wit (AMC) </span>
+<span class="c">#</span>
+<span class="c">#</span>
+
+<span class="n">__version__</span> <span class="o">=</span> <span class="s">&#39;01062015&#39;</span>
+<span class="n">__author__</span> <span class="o">=</span> <span class="s">&#39;aschilham&#39;</span>
+
+
+
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="s">&#39;MPLCONFIGDIR&#39;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&#39;MPLCONFIGDIR&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&quot;/tmp/.matplotlib&quot;</span> <span class="c"># if this folder already exists it must be accessible by the owner of WAD_Processor </span>
+<span class="kn">import</span> <span class="nn">matplotlib</span>
+<span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s">&#39;Agg&#39;</span><span class="p">)</span> <span class="c"># Force matplotlib to not use any Xwindows backend.</span>
+
+<span class="kn">import</span> <span class="nn">CDMam_lib</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">wadwrapper_lib</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">pyWADLib</span> <span class="kn">import</span> <span class="n">wadwrapper_lib</span>
+
+<div class="viewcode-block" id="logTag"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_CDMam.html#Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.logTag">[docs]</a><span class="k">def</span> <span class="nf">logTag</span><span class="p">():</span>
+    <span class="k">return</span> <span class="s">&quot;[CDMam_wadwrapper] &quot;</span>
+
+<span class="c"># MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!</span>
+
+
+<span class="c">##### Series wrappers</span></div>
+<div class="viewcode-block" id="cdmamsetup_series"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_CDMam.html#Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.cdmamsetup_series">[docs]</a><span class="k">def</span> <span class="nf">cdmamsetup_series</span><span class="p">(</span><span class="n">inputfile</span><span class="p">,</span><span class="n">params</span><span class="p">,</span><span class="n">headers_only</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Shared routine to set runtime parameters and build structure</span>
+<span class="sd">    Workflow:</span>
+<span class="sd">        1. Set runtime parameters</span>
+<span class="sd">        2. Check data format</span>
+<span class="sd">        3. Build and populate qcstructure</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># 1. Set runtime parameters</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">headers_only</span><span class="p">:</span> <span class="c"># then we can skip the parameter check</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">phantomversion</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;phantomversion&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">logTag</span><span class="p">()</span><span class="o">+</span><span class="s">&quot; missing phantomversion parameter!&quot;</span><span class="p">)</span>
+    
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">modeCDCOM</span> <span class="o">=</span> <span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&quot;modeCDCOM&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span> <span class="o">==</span> <span class="s">&#39;True&#39;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">logTag</span><span class="p">()</span><span class="o">+</span><span class="s">&quot; missing cdcommode parameter!&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">phantomversion</span> <span class="o">=</span> <span class="s">&#39;3.2&#39;</span> <span class="c"># dummy for headers</span>
+        <span class="n">modeCDCOM</span> <span class="o">=</span> <span class="bp">False</span>
+
+    <span class="c"># 2. Check data format</span>
+    <span class="n">dcmInfile</span><span class="p">,</span><span class="n">pixeldataIn</span><span class="p">,</span><span class="n">dicomMode</span> <span class="o">=</span> <span class="n">wadwrapper_lib</span><span class="o">.</span><span class="n">prepareInput</span><span class="p">(</span><span class="n">inputfile</span><span class="p">,</span><span class="n">headers_only</span><span class="o">=</span><span class="n">headers_only</span><span class="p">,</span><span class="n">logTag</span><span class="o">=</span><span class="n">logTag</span><span class="p">())</span>
+
+    <span class="c"># 3. Build and populate qcstructure</span>
+    <span class="n">qclib</span> <span class="o">=</span> <span class="n">CDMam_lib</span><span class="o">.</span><span class="n">CDMam</span><span class="p">()</span>
+    <span class="n">cs</span> <span class="o">=</span> <span class="n">CDMam_lib</span><span class="o">.</span><span class="n">CDMamStruct</span><span class="p">(</span><span class="n">dcmInfile</span><span class="p">,</span><span class="n">pixeldataIn</span><span class="p">,</span><span class="n">phantomversion</span><span class="p">)</span>
+    <span class="n">cs</span><span class="o">.</span><span class="n">imnum</span> <span class="o">=</span> <span class="mi">0</span> <span class="c"># needs to be set to an increasing number if multiple files are used</span>
+    <span class="n">cs</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="bp">False</span> <span class="c"># do not produce detailed logging</span>
+    <span class="n">cs</span><span class="o">.</span><span class="n">imageFileName</span> <span class="o">=</span> <span class="n">inputfile</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="c"># only for CDCOM.exe</span>
+    <span class="n">qclib</span><span class="o">.</span><span class="n">determineScannerID</span><span class="p">(</span><span class="n">cs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">qclib</span><span class="p">,</span><span class="n">cs</span><span class="p">,</span><span class="n">modeCDCOM</span>
+</div>
+<div class="viewcode-block" id="identifyName"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_CDMam.html#Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.identifyName">[docs]</a><span class="k">def</span> <span class="nf">identifyName</span><span class="p">(</span><span class="n">cs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Come up with a simple identification tag</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">idname</span> <span class="o">=</span> <span class="s">&quot;_XX&quot;</span>
+    <span class="k">if</span> <span class="s">&quot;RHO&quot;</span> <span class="ow">in</span> <span class="n">cs</span><span class="o">.</span><span class="n">filtername</span><span class="p">:</span>
+        <span class="n">idname</span> <span class="o">=</span> <span class="s">&quot;_RH&quot;</span>
+    <span class="k">elif</span> <span class="s">&quot;MOL&quot;</span> <span class="ow">in</span> <span class="n">cs</span><span class="o">.</span><span class="n">filtername</span><span class="p">:</span>
+        <span class="n">idname</span> <span class="o">=</span> <span class="s">&quot;_MO&quot;</span>
+    <span class="k">elif</span> <span class="s">&quot;ALU&quot;</span> <span class="ow">in</span> <span class="n">cs</span><span class="o">.</span><span class="n">filtername</span><span class="p">:</span>
+        <span class="n">idname</span> <span class="o">=</span> <span class="s">&quot;_AL&quot;</span> <span class="c"># only one image &quot;_SUMPRES&quot;</span>
+    <span class="k">elif</span> <span class="s">&quot;SILV&quot;</span> <span class="ow">in</span> <span class="n">cs</span><span class="o">.</span><span class="n">filtername</span><span class="p">:</span>
+        <span class="n">idname</span> <span class="o">=</span> <span class="s">&quot;_AG&quot;</span>
+
+    <span class="k">if</span> <span class="s">&#39;SUM&#39;</span> <span class="ow">in</span> <span class="n">cs</span><span class="o">.</span><span class="n">energypresentation</span><span class="p">:</span> <span class="c"># sum, high, low</span>
+        <span class="n">idname</span> <span class="o">+=</span> <span class="s">&#39;su&#39;</span>
+    <span class="k">elif</span> <span class="s">&#39;HIGH&#39;</span> <span class="ow">in</span> <span class="n">cs</span><span class="o">.</span><span class="n">energypresentation</span><span class="p">:</span> <span class="c"># sum, high, low</span>
+        <span class="n">idname</span> <span class="o">+=</span> <span class="s">&#39;hi&#39;</span>
+    <span class="k">elif</span> <span class="s">&#39;LOW&#39;</span> <span class="ow">in</span> <span class="n">cs</span><span class="o">.</span><span class="n">energypresentation</span><span class="p">:</span> <span class="c"># sum, high, low</span>
+        <span class="n">idname</span> <span class="o">+=</span> <span class="s">&#39;lo&#39;</span>
+    <span class="k">if</span> <span class="s">&#39;PROC&#39;</span> <span class="ow">in</span> <span class="n">cs</span><span class="o">.</span><span class="n">energypresentation</span><span class="p">:</span> <span class="c"># presentation or processing</span>
+        <span class="n">idname</span> <span class="o">+=</span> <span class="s">&#39;proc&#39;</span>
+    <span class="k">elif</span> <span class="s">&#39;PRES&#39;</span> <span class="ow">in</span> <span class="n">cs</span><span class="o">.</span><span class="n">energypresentation</span><span class="p">:</span> <span class="c"># presentation or processing</span>
+        <span class="n">idname</span> <span class="o">+=</span> <span class="s">&#39;pres&#39;</span>
+    
+    <span class="k">return</span> <span class="n">idname</span>
+</div>
+<div class="viewcode-block" id="cdmamqc_list"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_CDMam.html#Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.cdmamqc_list">[docs]</a><span class="k">def</span> <span class="nf">cdmamqc_list</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="n">results</span><span class="p">,</span><span class="n">params</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    CDMAM analysis for a list of images (as should be!) see cdmamqc_series for more information</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">finalscore</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">phantom</span><span class="o">.</span><span class="n">groundtruth</span><span class="p">),</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">))</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="c"># 1.-3.</span>
+    <span class="n">imnum</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">fname</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">series_filelist</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+        <span class="n">inputfile</span> <span class="o">=</span> <span class="p">[</span><span class="n">fname</span><span class="p">]</span>
+        <span class="n">qclib</span><span class="p">,</span><span class="n">cs</span><span class="p">,</span><span class="n">modeCDCOM</span> <span class="o">=</span> <span class="n">cdmamsetup_series</span><span class="p">(</span><span class="n">inputfile</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">headers_only</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+        <span class="n">cs</span><span class="o">.</span><span class="n">imnum</span> <span class="o">=</span> <span class="n">imnum</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">modeCDCOM</span><span class="p">:</span>
+            <span class="n">score</span> <span class="o">=</span> <span class="n">qclib</span><span class="o">.</span><span class="n">CDMamSingle</span><span class="p">(</span><span class="n">cs</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">score</span> <span class="o">=</span> <span class="n">qclib</span><span class="o">.</span><span class="n">CDCOMSingle</span><span class="p">(</span><span class="n">cs</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">score</span><span class="p">)):</span>
+            <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">score</span><span class="p">[</span><span class="mi">0</span><span class="p">])):</span>
+                <span class="n">finalscore</span><span class="p">[</span><span class="n">y</span><span class="p">][</span><span class="n">x</span><span class="p">]</span> <span class="o">+=</span> <span class="n">score</span><span class="p">[</span><span class="n">y</span><span class="p">][</span><span class="n">x</span><span class="p">]</span>
+        
+        <span class="n">imnum</span> <span class="o">+=</span><span class="mi">1</span>
+        
+    <span class="c"># calculate average score</span>
+    <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">finalscore</span><span class="p">)):</span>
+        <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">finalscore</span><span class="p">[</span><span class="mi">0</span><span class="p">])):</span>
+            <span class="n">finalscore</span><span class="p">[</span><span class="n">y</span><span class="p">][</span><span class="n">x</span><span class="p">]</span> <span class="o">/=</span> <span class="nb">len</span><span class="p">(</span><span class="n">imagelist</span><span class="p">)</span>
+
+    <span class="n">qclib</span><span class="o">.</span><span class="n">thresholdThickness</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="n">finalscore</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="cdmamqc_series"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_CDMam.html#Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.cdmamqc_series">[docs]</a><span class="k">def</span> <span class="nf">cdmamqc_series</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    CDMAM analysis:</span>
+<span class="sd">        Use a model observer to detect location of gold disc, for different thicknesses and diameters of the disc.</span>
+<span class="sd">        Predict the threshold thicknesses for each diameter for a human observer</span>
+<span class="sd">        Calculate a comprehensive image quality factor from the predicted human observer performance.</span>
+<span class="sd">        NOTE: CDMAM analysis should be performed on 10-16 slightly shifted images to get a meaningful number.</span>
+<span class="sd">              Here the analysis is done on one image, but the interface for multiple images already exist as cdmamqc_list.</span>
+<span class="sd">    Params needs to define:</span>
+<span class="sd">      1. phantomversion = phantomversion (which version of the phantom is used? &#39;3.2&#39; or &#39;3.4&#39;)</span>
+<span class="sd">      2. modeCDCOM = &#39;False&#39; or &#39;True&#39; (use external executable cdcom.exe (&#39;True&#39;) or not (&#39;False&#39;))</span>
+
+<span class="sd">    Workflow:</span>
+<span class="sd">        1. Set runtime parameters</span>
+<span class="sd">        2. Check data format</span>
+<span class="sd">        3. Build and populate qcstructure</span>
+<span class="sd">        4. Run tests</span>
+<span class="sd">        5. Build xml output</span>
+<span class="sd">        6. Build artefact picture thumbnail</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c"># 1.-3.</span>
+    <span class="n">inputfile</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">series_filelist</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="c"># give me a [filename]</span>
+    <span class="n">qclib</span><span class="p">,</span><span class="n">cs</span><span class="p">,</span><span class="n">modeCDCOM</span> <span class="o">=</span> <span class="n">cdmamsetup_series</span><span class="p">(</span><span class="n">inputfile</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">headers_only</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+
+    <span class="c"># 4. Run tests</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">modeCDCOM</span><span class="p">:</span>
+        <span class="n">score</span> <span class="o">=</span> <span class="n">qclib</span><span class="o">.</span><span class="n">CDMamSingle</span><span class="p">(</span><span class="n">cs</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">score</span> <span class="o">=</span> <span class="n">qclib</span><span class="o">.</span><span class="n">CDCOMSingle</span><span class="p">(</span><span class="n">cs</span><span class="p">)</span>
+    <span class="n">qclib</span><span class="o">.</span><span class="n">thresholdThickness</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="n">score</span><span class="p">)</span>
+
+    <span class="c"># 5. Build xml output</span>
+    <span class="c"># Struct now contains all the results and we can write these to the WAD IQ database</span>
+    <span class="n">includedlist</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s">&#39;diam_mm&#39;</span><span class="p">,</span> <span class="c"># list of diameters in mm</span>
+        <span class="s">&#39;limit_um&#39;</span><span class="p">,</span> <span class="c"># list of predicted human detectable thickness thresholds in um</span>
+        <span class="s">&#39;iqf&#39;</span><span class="p">,</span> <span class="c"># image quality factor</span>
+        <span class="s">&#39;threshold_fnames&#39;</span><span class="p">,</span>
+        <span class="s">&#39;fit_fnames&#39;</span>
+    <span class="p">]</span>
+    <span class="n">idname</span> <span class="o">=</span> <span class="n">identifyName</span><span class="p">(</span><span class="n">cs</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">di</span><span class="p">,</span><span class="n">lim</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">diam_mm</span><span class="p">,</span><span class="n">cs</span><span class="o">.</span><span class="n">limit_um</span><span class="p">):</span>
+        <span class="n">results</span><span class="o">.</span><span class="n">addFloat</span><span class="p">(</span><span class="s">&#39;limit_um_&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%0.2f</span><span class="s">&#39;</span><span class="o">%</span><span class="n">di</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span><span class="o">+</span><span class="n">idname</span><span class="p">,</span> <span class="n">lim</span><span class="p">,</span> <span class="n">quantity</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="s">&#39;threshold_limit&#39;</span><span class="p">))</span>
+    <span class="n">results</span><span class="o">.</span><span class="n">addFloat</span><span class="p">(</span><span class="s">&#39;iqf&#39;</span><span class="o">+</span><span class="n">idname</span><span class="p">,</span> <span class="n">cs</span><span class="o">.</span><span class="n">iqf</span><span class="p">,</span> <span class="n">quantity</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="s">&#39;iqf&#39;</span><span class="p">))</span>
+
+    <span class="c"># 6. also store images as results</span>
+    <span class="k">for</span> <span class="n">fn</span> <span class="ow">in</span> <span class="n">cs</span><span class="o">.</span><span class="n">threshold_fnames</span><span class="p">:</span>
+        <span class="n">results</span><span class="o">.</span><span class="n">addObject</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">fn</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span><span class="n">fn</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">fn</span> <span class="ow">in</span> <span class="n">cs</span><span class="o">.</span><span class="n">fit_fnames</span><span class="p">:</span>
+        <span class="n">results</span><span class="o">.</span><span class="n">addObject</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">fn</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span><span class="n">fn</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="cdmamheader_series"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_CDMam.html#Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.cdmamheader_series">[docs]</a><span class="k">def</span> <span class="nf">cdmamheader_series</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="n">results</span><span class="p">,</span><span class="n">params</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Read selected dicomfields and write to IQC database</span>
+
+<span class="sd">    Workflow:</span>
+<span class="sd">        1. Set runtime parameters</span>
+<span class="sd">        2. Check data format</span>
+<span class="sd">        3. Build and populate qcstructure</span>
+<span class="sd">        4. Run tests</span>
+<span class="sd">        5. Build xml output</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># 1.-3.</span>
+    <span class="n">inputfile</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">series_filelist</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="c"># give me a [filename]</span>
+    <span class="n">qclib</span><span class="p">,</span><span class="n">cs</span><span class="p">,</span><span class="n">modeCDCOM</span> <span class="o">=</span> <span class="n">cdmamsetup_series</span><span class="p">(</span><span class="n">inputfile</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">headers_only</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+    <span class="c"># 4. Run tests</span>
+    <span class="n">dicominfo</span> <span class="o">=</span> <span class="n">qclib</span><span class="o">.</span><span class="n">DICOMInfo</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="s">&#39;qc&#39;</span><span class="p">)</span>
+
+    <span class="c">## find filtername</span>
+    <span class="n">idname</span> <span class="o">=</span> <span class="n">identifyName</span><span class="p">(</span><span class="n">cs</span><span class="p">)</span>
+        
+    <span class="c">## 2. Add results to &#39;result&#39; object</span>
+    <span class="n">results</span><span class="o">.</span><span class="n">addChar</span><span class="p">(</span><span class="s">&#39;pluginversion&#39;</span><span class="o">+</span><span class="n">idname</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">qclib</span><span class="o">.</span><span class="n">qcversion</span><span class="p">))</span> <span class="c"># do not specify level, use default from config</span>
+    <span class="k">for</span> <span class="n">di</span> <span class="ow">in</span> <span class="n">dicominfo</span><span class="p">:</span>
+        <span class="n">results</span><span class="o">.</span><span class="n">addChar</span><span class="p">(</span><span class="n">di</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">idname</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">di</span><span class="p">[</span><span class="mi">1</span><span class="p">])[:</span><span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">di</span><span class="p">[</span><span class="mi">1</span><span class="p">])),</span><span class="mi">128</span><span class="p">)])</span> <span class="c"># do not specify level, use default from config</span>
+</pre></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Configuratie voor WAD NM analyse module
+-->
+<WAD_NM_config>
+    <!-- naam van de configuratie -->
+    <name>NM uniformity</name>
+    <!-- beschrijving -->
+    <description>WAD uniformity cfg</description>
+    <!-- versie / datum -->
+    <version>20150119</version>
+    <!-- Logfile verbose options -->
+
+    <action>
+        <plugin>Plugins.NM.NM_NEMA_Uniformity.QCUnif_wadwrapper</plugin>
+        <function>nm_uniformity</function>
+        <default_level>1</default_level>
+
+        <params>
+            <dcmmodality>None</dcmmodality>
+<!--            <unif1 seriesdescription="Intrinsic Verification Flood" instancetag="0008,0060">NM</unif1> -->
+            <unif1 seriesdescription="Dual Extrinsic Floods" instancetag="0008,0060">NM</unif1>
+            <perform_dome_correction>0</perform_dome_correction>
+        </params>
+
+        <limits>
+            <result description="DU_x (UFOV)">
+                <acc_low>0</acc_low>
+                <acc_high>5</acc_high>
+                <crit_low>0</crit_low>
+                <crit_high>8</crit_high>
+            </result>
+            <result description="DU_y (UFOV)">
+                <acc_low>0</acc_low>
+                <acc_high>5</acc_high>
+                <crit_low>0</crit_low>
+                <crit_high>8</crit_high>
+            </result>
+        </limits>
+
+    </action>
+
+</WAD_NM_config>

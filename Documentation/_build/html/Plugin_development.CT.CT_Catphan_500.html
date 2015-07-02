@@ -1,0 +1,301 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Plugin_development.CT.CT_Catphan_500 package &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">..  documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="plugin-development-ct-ct-catphan-500-package">
+<h1>Plugin_development.CT.CT_Catphan_500 package<a class="headerlink" href="#plugin-development-ct-ct-catphan-500-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-Plugin_development.CT.CT_Catphan_500.Analyzer">
+<span id="plugin-development-ct-ct-catphan-500-analyzer-module"></span><h2>Plugin_development.CT.CT_Catphan_500.Analyzer module<a class="headerlink" href="#module-Plugin_development.CT.CT_Catphan_500.Analyzer" title="Permalink to this headline">¶</a></h2>
+<p>This code borrows extensively from pylinac software:</p>
+<p><a class="reference external" href="https://pypi.python.org/pypi/pylinac">https://pypi.python.org/pypi/pylinac</a></p>
+<p>PyTG142 (pytg) provides TG-142 quality assurance (QA) tools to Python programmers in the field of therapy medical
+physics. This package&#8217;s intention is to create a free and open-source alternative to TG-142 QA commercial solutions.</p>
+<dl class="class">
+<dt id="Plugin_development.CT.CT_Catphan_500.Analyzer.CATPHAN">
+<em class="property">class </em><tt class="descclassname">Plugin_development.CT.CT_Catphan_500.Analyzer.</tt><tt class="descname">CATPHAN</tt><big>(</big><em>using_pyqa=False</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/CT/CT_Catphan_500/Analyzer.html#CATPHAN"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.CT.CT_Catphan_500.Analyzer.CATPHAN" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<p>A class for loading and analyzing Cone-Beam CT DICOM files of a CatPhan 500. Analyzes: Uniformity,
+Spatial Resolution, Contrast, &amp; HU Linearity.
+#TODO: Low Contrast</p>
+<dl class="method">
+<dt id="Plugin_development.CT.CT_Catphan_500.Analyzer.CATPHAN.analyze">
+<tt class="descname">analyze</tt><big>(</big><em>params</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/CT/CT_Catphan_500/Analyzer.html#CATPHAN.analyze"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.CT.CT_Catphan_500.Analyzer.CATPHAN.analyze" title="Permalink to this definition">¶</a></dt>
+<dd><p>One-method analysis of catphan files.
+:return:</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugin_development.CT.CT_Catphan_500.Analyzer.CATPHAN.draw_ROIs">
+<tt class="descname">draw_ROIs</tt><big>(</big><em>results</em>, <em>show=True</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/CT/CT_Catphan_500/Analyzer.html#CATPHAN.draw_ROIs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.CT.CT_Catphan_500.Analyzer.CATPHAN.draw_ROIs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw the ROI boxes for a given analysis (e.g. The boxes where HU was calculated from).
+:return:</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugin_development.CT.CT_Catphan_500.Analyzer.CATPHAN.find_GEO">
+<tt class="descname">find_GEO</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Plugin_development/CT/CT_Catphan_500/Analyzer.html#CATPHAN.find_GEO"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.CT.CT_Catphan_500.Analyzer.CATPHAN.find_GEO" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine the geometric distortion. Averages 3 slices around HU slice.
+:return:</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugin_development.CT.CT_Catphan_500.Analyzer.CATPHAN.find_HU">
+<tt class="descname">find_HU</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Plugin_development/CT/CT_Catphan_500/Analyzer.html#CATPHAN.find_HU"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.CT.CT_Catphan_500.Analyzer.CATPHAN.find_HU" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine HU values from HU slice. Averages 3 slices.
+:return:</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugin_development.CT.CT_Catphan_500.Analyzer.CATPHAN.find_SR">
+<tt class="descname">find_SR</tt><big>(</big><em>plot_ROIs=False</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/CT/CT_Catphan_500/Analyzer.html#CATPHAN.find_SR"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.CT.CT_Catphan_500.Analyzer.CATPHAN.find_SR" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine the Spatial Resolution from the Line-Pair slice. Averages 3 slices.
+:return:</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugin_development.CT.CT_Catphan_500.Analyzer.CATPHAN.find_UNIF">
+<tt class="descname">find_UNIF</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Plugin_development/CT/CT_Catphan_500/Analyzer.html#CATPHAN.find_UNIF"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.CT.CT_Catphan_500.Analyzer.CATPHAN.find_UNIF" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine Uniformity from Uniformity slice. Averages 3 slices
+:return:</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugin_development.CT.CT_Catphan_500.Analyzer.CATPHAN.find_phan_centers">
+<tt class="descname">find_phan_centers</tt><big>(</big><em>params</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/CT/CT_Catphan_500/Analyzer.html#CATPHAN.find_phan_centers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.CT.CT_Catphan_500.Analyzer.CATPHAN.find_phan_centers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find the center of the phantom for the slices of analysis
+:return:</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugin_development.CT.CT_Catphan_500.Analyzer.CATPHAN.find_roll">
+<tt class="descname">find_roll</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Plugin_development/CT/CT_Catphan_500/Analyzer.html#CATPHAN.find_roll"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.CT.CT_Catphan_500.Analyzer.CATPHAN.find_roll" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine the roll of the phantom based on the phantom air bubbles on the HU slice.
+:return:</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugin_development.CT.CT_Catphan_500.Analyzer.CATPHAN.return_results">
+<tt class="descname">return_results</tt><big>(</big><em>results</em>, <em>using_pyqa=False</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/CT/CT_Catphan_500/Analyzer.html#CATPHAN.return_results"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.CT.CT_Catphan_500.Analyzer.CATPHAN.return_results" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugin_development.CT.CT_Catphan_500.Analyzer.CATPHAN.sector_mask">
+<tt class="descname">sector_mask</tt><big>(</big><em>shape</em>, <em>centre</em>, <em>radius</em>, <em>angle_range</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/CT/CT_Catphan_500/Analyzer.html#CATPHAN.sector_mask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.CT.CT_Catphan_500.Analyzer.CATPHAN.sector_mask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a boolean mask for a circular sector. The start/stop angles in
+<cite>angle_range</cite> should be given in clockwise order.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="Plugin_development.CT.CT_Catphan_500.Analyzer.catphan500">
+<tt class="descclassname">Plugin_development.CT.CT_Catphan_500.Analyzer.</tt><tt class="descname">catphan500</tt><big>(</big><em>data</em>, <em>results</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/CT/CT_Catphan_500/Analyzer.html#catphan500"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.CT.CT_Catphan_500.Analyzer.catphan500" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-Plugin_development.CT.CT_Catphan_500.common_functions">
+<span id="plugin-development-ct-ct-catphan-500-common-functions-module"></span><h2>Plugin_development.CT.CT_Catphan_500.common_functions module<a class="headerlink" href="#module-Plugin_development.CT.CT_Catphan_500.common_functions" title="Permalink to this headline">¶</a></h2>
+<p>This module contains common functions used to analyze the catphan phantom.
+Original code: <a class="reference external" href="https://pypi.python.org/pypi/pylinac">https://pypi.python.org/pypi/pylinac</a></p>
+<dl class="function">
+<dt id="Plugin_development.CT.CT_Catphan_500.common_functions.dist_2points">
+<tt class="descclassname">Plugin_development.CT.CT_Catphan_500.common_functions.</tt><tt class="descname">dist_2points</tt><big>(</big><em>point1</em>, <em>point2</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/CT/CT_Catphan_500/common_functions.html#dist_2points"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.CT.CT_Catphan_500.common_functions.dist_2points" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find the distance from point1 to point2</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Plugin_development.CT.CT_Catphan_500.common_functions.find_slices_of_interest">
+<tt class="descclassname">Plugin_development.CT.CT_Catphan_500.common_functions.</tt><tt class="descname">find_slices_of_interest</tt><big>(</big><em>data</em>, <em>params</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/CT/CT_Catphan_500/common_functions.html#find_slices_of_interest"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.CT.CT_Catphan_500.common_functions.find_slices_of_interest" title="Permalink to this definition">¶</a></dt>
+<dd><p>This routine expects the data to be ordered z-y-x such that a specific z-slice can be addressed using array[id,:,:]</p>
+<p>The workflow is as follows:
+1) walk through the stack of slices and for each slice:</p>
+<blockquote>
+<div><ul class="simple">
+<li>determine if it is the positioning slice</li>
+<li>determine if it is the center of a module</li>
+</ul>
+</div></blockquote>
+<ol class="arabic simple" start="2">
+<li>Given the scan direction and location of the positioning slice we identify the HU, SR and UN modules</li>
+</ol>
+<p>Parameters that can be set in the params block of the config-xml file:</p>
+<p>&lt;scandirection&gt; 
+&lt;linewidth&gt; 
+&lt;profilelen&gt;
+&lt;detthreshold&gt; 
+&lt;roidim&gt; 
+&lt;refroidim&gt;
+&lt;refroioffset&gt;</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Plugin_development.CT.CT_Catphan_500.common_functions.findindex">
+<tt class="descclassname">Plugin_development.CT.CT_Catphan_500.common_functions.</tt><tt class="descname">findindex</tt><big>(</big><em>number</em>, <em>mylist</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/CT/CT_Catphan_500/common_functions.html#findindex"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.CT.CT_Catphan_500.common_functions.findindex" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="Plugin_development.CT.CT_Catphan_500.common_functions.invert">
+<tt class="descclassname">Plugin_development.CT.CT_Catphan_500.common_functions.</tt><tt class="descname">invert</tt><big>(</big><em>matrix</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/CT/CT_Catphan_500/common_functions.html#invert"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.CT.CT_Catphan_500.common_functions.invert" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the imcomplement of the matrix/image. Equivalent to Matlab&#8217;s imcomplement function.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Plugin_development.CT.CT_Catphan_500.common_functions.point2edge_min">
+<tt class="descclassname">Plugin_development.CT.CT_Catphan_500.common_functions.</tt><tt class="descname">point2edge_min</tt><big>(</big><em>image</em>, <em>point</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/CT/CT_Catphan_500/common_functions.html#point2edge_min"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.CT.CT_Catphan_500.common_functions.point2edge_min" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates minimum distance from user point to image edges
+point = (y,x)</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Plugin_development.CT.CT_Catphan_500.common_functions.point_line_dist">
+<tt class="descclassname">Plugin_development.CT.CT_Catphan_500.common_functions.</tt><tt class="descname">point_line_dist</tt><big>(</big><em>p</em>, <em>seg</em>, <em>testSegmentEnds=False</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/CT/CT_Catphan_500/common_functions.html#point_line_dist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.CT.CT_Catphan_500.common_functions.point_line_dist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Minimum Distance between a Point and a Line
+Written by Paul Bourke,    October 1988
+<a class="reference external" href="http://astronomy.swin.edu.au/~pbourke/geometry/pointline/">http://astronomy.swin.edu.au/~pbourke/geometry/pointline/</a></p>
+<p>input:
+p: point, y,x
+seg: y1,x1,y2,x2</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Plugin_development.CT.CT_Catphan_500.common_functions.point_line_dist_multiline">
+<tt class="descclassname">Plugin_development.CT.CT_Catphan_500.common_functions.</tt><tt class="descname">point_line_dist_multiline</tt><big>(</big><em>p</em>, <em>segs</em>, <em>minormax='max'</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/CT/CT_Catphan_500/common_functions.html#point_line_dist_multiline"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.CT.CT_Catphan_500.common_functions.point_line_dist_multiline" title="Permalink to this definition">¶</a></dt>
+<dd><p>smallest/biggest distance of a point to a sequence of line segments</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Plugin_development.CT.CT_Catphan_500.common_functions.point_to_2point_line_dist">
+<tt class="descclassname">Plugin_development.CT.CT_Catphan_500.common_functions.</tt><tt class="descname">point_to_2point_line_dist</tt><big>(</big><em>point</em>, <em>line_point</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/CT/CT_Catphan_500/common_functions.html#point_to_2point_line_dist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.CT.CT_Catphan_500.common_functions.point_to_2point_line_dist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine the minimum distance from a point to a line defined by two points.
+Based on Wikipedia article: <a class="reference external" href="http://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line">http://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line</a>, paragraph: Line defined by two points</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>point</strong> &#8211; (y,x)</li>
+<li><strong>line_point1</strong> &#8211; (y,x)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="Plugin_development.CT.CT_Catphan_500.common_functions.size">
+<tt class="descclassname">Plugin_development.CT.CT_Catphan_500.common_functions.</tt><tt class="descname">size</tt><big>(</big><em>matrix</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/CT/CT_Catphan_500/common_functions.html#size"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.CT.CT_Catphan_500.common_functions.size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Matlab equivalent of size; returns the size of the matrix in [rows, columns]</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-Plugin_development.CT.CT_Catphan_500">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-Plugin_development.CT.CT_Catphan_500" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Plugin_development.CT.CT_Catphan_500 package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-Plugin_development.CT.CT_Catphan_500.Analyzer">Plugin_development.CT.CT_Catphan_500.Analyzer module</a></li>
+<li><a class="reference internal" href="#module-Plugin_development.CT.CT_Catphan_500.common_functions">Plugin_development.CT.CT_Catphan_500.common_functions module</a></li>
+<li><a class="reference internal" href="#module-Plugin_development.CT.CT_Catphan_500">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/Plugin_development.CT.CT_Catphan_500.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">..  documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

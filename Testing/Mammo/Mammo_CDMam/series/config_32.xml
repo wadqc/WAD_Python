@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Config for QCMammo plugin for Hologic Dimensions
+date: 20150202
+author: Arnold Schilham, UMCU
+original name: dimensions_mammo_umcu_series.xml
+-->
+<config>
+    <action>
+        <plugin>Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper</plugin>
+        <function>cdmamheader_series</function>
+        <default_level>2</default_level>
+        
+	<limits>
+            <result description="EnergyComponent_ALsuproc">
+                <criterium>SUM FOR PROCESSING</criterium>
+            </result>
+        </limits>
+    </action>
+    
+    <action>
+        <plugin>Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper</plugin>
+        <function>cdmamqc_series</function>
+        <default_level>1</default_level>
+	
+        
+	<limits>
+	  <result description="iqf_ALsuproc">
+	    <acc_low>1.</acc_low>
+	    <acc_high>1.25</acc_high>
+	    <crit_low>1.</crit_low>
+	    <crit_high>1.5</crit_high>
+	  </result>
+        </limits>
+        
+	<params>
+            <phantomversion>3.2</phantomversion>
+            <modeCDCOM>False</modeCDCOM>
+        </params>
+    </action>
+</config>

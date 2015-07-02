@@ -1,0 +1,201 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Plugin_development.Fluoro.Pehamed.QCDDL_wadwrapper &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="../../../../index.html" />
+    <link rel="up" title="Module code" href="../../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for Plugin_development.Fluoro.Pehamed.QCDDL_wadwrapper</h1><div class="highlight"><pre>
+<span class="c"># PyWAD is open-source software and consists of a set of plugins written in python for the WAD-Software medical physics quality control software. </span>
+<span class="c"># The WAD Software can be found on https://github.com/wadqc</span>
+<span class="c"># </span>
+<span class="c"># The pywad package includes plugins for the automated analysis of QC images for various imaging modalities. </span>
+<span class="c"># PyWAD has been originaly initiated by Dennis Dickerscheid (AZN), Arnold Schilham (UMCU), Rob van Rooij (UMCU) and Tim de Wit (AMC) </span>
+<span class="c">#</span>
+<span class="c">#</span>
+
+<span class="n">__version__</span> <span class="o">=</span> <span class="s">&#39;01062015&#39;</span>
+<span class="n">__author__</span> <span class="o">=</span> <span class="s">&#39;aschilham&#39;</span>
+
+
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="s">&#39;MPLCONFIGDIR&#39;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&#39;MPLCONFIGDIR&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&quot;/tmp/.matplotlib&quot;</span> <span class="c"># if this folder already exists it must be accessible by the owner of WAD_Processor </span>
+<span class="kn">import</span> <span class="nn">matplotlib</span>
+<span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s">&#39;Agg&#39;</span><span class="p">)</span> <span class="c"># Force matplotlib to not use any Xwindows backend.</span>
+
+<span class="kn">import</span> <span class="nn">dicom</span>
+<span class="kn">import</span> <span class="nn">QCDDL_lib</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">wadwrapper_lib</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">pyWADLib</span> <span class="kn">import</span> <span class="n">wadwrapper_lib</span>
+
+<span class="c"># MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!</span>
+
+<div class="viewcode-block" id="logTag"><a class="viewcode-back" href="../../../../Plugin_development.Fluoro.Pehamed.html#Plugin_development.Fluoro.Pehamed.QCDDL_wadwrapper.logTag">[docs]</a><span class="k">def</span> <span class="nf">logTag</span><span class="p">():</span>
+    <span class="k">return</span> <span class="s">&quot;[QCDDL_wadwrapper] &quot;</span>
+
+<span class="c">##### Series wrappers</span></div>
+<div class="viewcode-block" id="qc_series"><a class="viewcode-back" href="../../../../Plugin_development.Fluoro.Pehamed.html#Plugin_development.Fluoro.Pehamed.QCDDL_wadwrapper.qc_series">[docs]</a><span class="k">def</span> <span class="nf">qc_series</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    QCDDL_UMCU checks:</span>
+<span class="sd">        Horizontal uniformity</span>
+<span class="sd">        LowContrast</span>
+<span class="sd">        DynamicRange</span>
+
+<span class="sd">    Workflow:</span>
+<span class="sd">        2. Check data format</span>
+<span class="sd">        3. Build and populate qcstructure</span>
+<span class="sd">        4. Run tests</span>
+<span class="sd">        5. Build xml output</span>
+<span class="sd">        6. Build artefact picture thumbnail</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c">## 2. Check data format</span>
+    <span class="n">dcmInfile</span><span class="p">,</span><span class="n">pixeldataIn</span><span class="p">,</span><span class="n">dicomMode</span> <span class="o">=</span> <span class="n">wadwrapper_lib</span><span class="o">.</span><span class="n">prepareInput</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">series_filelist</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">headers_only</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span><span class="n">logTag</span><span class="o">=</span><span class="n">logTag</span><span class="p">())</span>
+
+    <span class="c">## 3. Build and populate qcstructure</span>
+    <span class="n">remark</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+    <span class="n">qclib</span> <span class="o">=</span> <span class="n">QCDDL_lib</span><span class="o">.</span><span class="n">DDLQC</span><span class="p">()</span>
+    <span class="n">cs</span> <span class="o">=</span> <span class="n">QCDDL_lib</span><span class="o">.</span><span class="n">DDLStruct</span><span class="p">(</span><span class="n">dcmInfile</span><span class="p">,</span><span class="n">pixeldataIn</span><span class="p">,</span><span class="n">dicomMode</span><span class="p">)</span>
+    <span class="n">cs</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="bp">False</span> <span class="c"># do not produce detailed logging</span>
+
+    <span class="c">## 4. Run tests</span>
+    <span class="n">error</span><span class="p">,</span><span class="n">msg</span> <span class="o">=</span> <span class="n">qclib</span><span class="o">.</span><span class="n">QC</span><span class="p">(</span><span class="n">cs</span><span class="p">)</span>
+
+    <span class="c">## 5. Build xml output</span>
+    <span class="c">## Struct now contains all the results and we can write these to the WAD IQ database</span>
+    <span class="n">stand</span> <span class="o">=</span> <span class="n">qclib</span><span class="o">.</span><span class="n">HorizontalOrVertical</span><span class="p">(</span><span class="n">cs</span><span class="p">)</span>
+    <span class="n">idname</span> <span class="o">=</span> <span class="s">&#39;_&#39;</span><span class="o">+</span><span class="n">stand</span>
+
+    <span class="n">labvals</span> <span class="o">=</span> <span class="n">qclib</span><span class="o">.</span><span class="n">ReportEntries</span><span class="p">(</span><span class="n">cs</span><span class="p">)</span>
+    <span class="n">tmpdict</span><span class="o">=</span><span class="p">{}</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span><span class="n">val</span> <span class="ow">in</span> <span class="n">labvals</span><span class="p">:</span>
+        <span class="n">results</span><span class="o">.</span><span class="n">addFloat</span><span class="p">(</span><span class="n">key</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">idname</span><span class="p">),</span> <span class="n">val</span><span class="p">,</span> <span class="n">quantity</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">key</span><span class="p">))</span>
+
+    <span class="c">## 6. Build artefact picture thumbnail</span>
+    <span class="n">filename</span> <span class="o">=</span> <span class="s">&#39;test&#39;</span><span class="o">+</span><span class="n">idname</span><span class="o">+</span><span class="s">&#39;.jpg&#39;</span> <span class="c"># Use jpg if a thumbnail is desired</span>
+
+    <span class="n">qclib</span><span class="o">.</span><span class="n">saveAnnotatedImage</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="n">filename</span><span class="p">)</span>
+    <span class="n">results</span><span class="o">.</span><span class="n">addObject</span><span class="p">(</span><span class="s">&#39;AnnotatedImage&#39;</span><span class="o">+</span><span class="n">idname</span><span class="p">,</span><span class="n">filename</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="header_series"><a class="viewcode-back" href="../../../../Plugin_development.Fluoro.Pehamed.html#Plugin_development.Fluoro.Pehamed.QCDDL_wadwrapper.header_series">[docs]</a><span class="k">def</span> <span class="nf">header_series</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="n">results</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Read selected dicomfields and write to IQC database</span>
+
+<span class="sd">    Workflow:</span>
+<span class="sd">        1. Read only headers</span>
+<span class="sd">        2. Run tests</span>
+<span class="sd">        3. Build xml output</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">info</span> <span class="o">=</span> <span class="s">&#39;qc&#39;</span>
+
+    <span class="c">## 1. read only headers</span>
+    <span class="n">dcmInfile</span><span class="p">,</span><span class="n">pixeldataIn</span><span class="p">,</span><span class="n">dicomMode</span> <span class="o">=</span> <span class="n">wadwrapper_lib</span><span class="o">.</span><span class="n">prepareInput</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">series_filelist</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">headers_only</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span><span class="n">logTag</span><span class="o">=</span><span class="n">logTag</span><span class="p">())</span>
+
+    <span class="c">## 2. Run tests</span>
+    <span class="n">qclib</span> <span class="o">=</span> <span class="n">QCDDL_lib</span><span class="o">.</span><span class="n">DDLQC</span><span class="p">()</span>
+
+    <span class="c">## Table or Wall? from distances and sensitivity; for well defined protocols to be defined in DESCRIPTION field</span>
+    <span class="n">cs</span> <span class="o">=</span> <span class="n">QCDDL_lib</span><span class="o">.</span><span class="n">DDLStruct</span><span class="p">(</span><span class="n">dcmInfile</span><span class="p">,</span><span class="bp">None</span><span class="p">,</span><span class="n">dicomMode</span><span class="p">)</span>
+    <span class="n">cs</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="bp">False</span> <span class="c"># do not produce detailed logging</span>
+    <span class="n">dicominfo</span> <span class="o">=</span> <span class="n">qclib</span><span class="o">.</span><span class="n">DICOMInfo</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="n">info</span><span class="p">)</span>
+    <span class="n">idname</span> <span class="o">=</span> <span class="s">&#39;_&#39;</span><span class="o">+</span><span class="n">qclib</span><span class="o">.</span><span class="n">HorizontalOrVertical</span><span class="p">(</span><span class="n">cs</span><span class="p">)</span>
+
+    <span class="c">## 3. Build xml output</span>
+    <span class="n">floatlist</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">results</span><span class="o">.</span><span class="n">addChar</span><span class="p">(</span><span class="s">&#39;pluginversion&#39;</span><span class="o">+</span><span class="n">idname</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">qclib</span><span class="o">.</span><span class="n">qcversion</span><span class="p">))</span> <span class="c"># do not specify level, use default from config</span>
+    <span class="k">for</span> <span class="n">di</span> <span class="ow">in</span> <span class="n">dicominfo</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">di</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="n">floatlist</span><span class="p">:</span>
+            <span class="n">results</span><span class="o">.</span><span class="n">addFloat</span><span class="p">(</span><span class="n">di</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">idname</span><span class="p">,</span> <span class="n">di</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="c"># do not specify level, use default from config</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">results</span><span class="o">.</span><span class="n">addChar</span><span class="p">(</span><span class="n">di</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">idname</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">di</span><span class="p">[</span><span class="mi">1</span><span class="p">])[:</span><span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">di</span><span class="p">[</span><span class="mi">1</span><span class="p">])),</span><span class="mi">128</span><span class="p">)])</span> <span class="c"># do not specify level, use default from config</span>
+
+    <span class="n">results</span><span class="o">.</span><span class="n">addChar</span><span class="p">(</span><span class="s">&#39;room&#39;</span><span class="o">+</span><span class="n">idname</span><span class="p">,</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span><span class="o">.</span><span class="n">name</span><span class="p">)</span> <span class="c"># do not specify level, use default from config</span>
+    <span class="n">results</span><span class="o">.</span><span class="n">addChar</span><span class="p">(</span><span class="s">&#39;stand&#39;</span><span class="o">+</span><span class="n">idname</span><span class="p">,</span> <span class="n">qclib</span><span class="o">.</span><span class="n">HorizontalOrVertical</span><span class="p">(</span><span class="n">cs</span><span class="p">))</span> <span class="c"># do not specify level, use default from config</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

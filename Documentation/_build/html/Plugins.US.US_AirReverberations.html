@@ -1,0 +1,644 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Plugins.US.US_AirReverberations package &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">..  documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="plugins-us-us-airreverberations-package">
+<h1>Plugins.US.US_AirReverberations package<a class="headerlink" href="#plugins-us-us-airreverberations-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-Plugins.US.US_AirReverberations.QCUS_lib">
+<span id="plugins-us-us-airreverberations-qcus-lib-module"></span><h2>Plugins.US.US_AirReverberations.QCUS_lib module<a class="headerlink" href="#module-Plugins.US.US_AirReverberations.QCUS_lib" title="Permalink to this headline">¶</a></h2>
+<p>Analysis of reverberations in Air pattern.
+Workflow:
+input: dicomobject,pixeldata  (the pixeldata is already cleaned; color is removed, leaving plain grayscale)
+1. Isolate the reverberations pattern from the other information:</p>
+<blockquote>
+<div><ol class="loweralpha simple">
+<li>Connected components analysis of pixelvalues &gt;0</li>
+<li>Merge all not-to small components found along the y-axis in the middle of the imagedata, 
+excluding components fixed to the top of the image</li>
+<li>Use as a mask to isolate reverberations pattern</li>
+</ol>
+</div></blockquote>
+<ol class="arabic simple" start="2">
+<li>Straighten curve probe data:</li>
+</ol>
+<blockquote>
+<div><ol class="loweralpha simple">
+<li>Detect points left and right from the middle, along the top of the reveberation pattern; if too few points
+are detected, the probe is not curved, so just crop the reveberation pattern -&gt; rect_image</li>
+<li>Fit a circle through these points</li>
+<li>Interpolate data to straightend grid -&gt; rect_image</li>
+</ol>
+</div></blockquote>
+<ol class="arabic simple" start="3">
+<li>Sensitivity analyis of rect_image to determine vertical extend of reverberation pattern:</li>
+</ol>
+<blockquote>
+<div><ol class="loweralpha simple">
+<li>Make a profile along the vertical: average of cetral part of rect_image</li>
+<li>Extend: Determine noise_level, and calculate intersection of profile with noise_level</li>
+<li>Extend_fft: Do a fourier analysis to find the ringing pattern; remove it an find the minimum of the 
+background trend</li>
+</ol>
+</div></blockquote>
+<ol class="arabic simple" start="4">
+<li>Uniformity analysis of rect_image to find dips that suggest problems with the probe:</li>
+</ol>
+<blockquote>
+<div><ol class="loweralpha simple">
+<li>Make a profile along the horizontal of the rect_image upto sensitivity_extend;
+FASTMODE: (experimental) use onle rect_image of first ring; should have all the info there already</li>
+<li>Detect dips that are deep enough, find the minimum in of the dips, and overal and the overal non-uniformity</li>
+</ol>
+</div></blockquote>
+<p>Warning: THIS MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!</p>
+<dl class="docutils">
+<dt>TODO:</dt>
+<dd>o Maybe put hard threshold on peak value for uniformity (is normalized, so why not?!)</dd>
+<dt>Changelog:</dt>
+<dd>20150626: remove division by zero for snr
+20150610: moved peakfit to wadwrapper_lib
+20150520: cleanup label
+20150429: Fixes reading of files wihtout NumberOfFrames tag
+20150422: Clean up; added documentation
+20150421: Added fft analysis; clean-up; added FAST_MODE: scipy.map_coordinates, x-prof only first ring; localnormalization
+20150420: Overal non-uniformity added; allow min/max at start/end
+20150417: Removed valleyfit; fixed radius range
+20150416: Sensitivity analysis and uniformity analysis
+20150410: Initial version</dd>
+</dl>
+<dl class="class">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.USStruct">
+<em class="property">class </em><tt class="descclassname">Plugins.US.US_AirReverberations.QCUS_lib.</tt><tt class="descname">USStruct</tt><big>(</big><em>dcmInfile</em>, <em>pixeldataIn</em>, <em>dicomMode</em><big>)</big><a class="reference internal" href="_modules/Plugins/US/US_AirReverberations/QCUS_lib.html#USStruct"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.USStruct" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.USStruct.cca_image">
+<tt class="descname">cca_image</tt><em class="property"> = None</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.USStruct.cca_image" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.USStruct.curve_angles">
+<tt class="descname">curve_angles</tt><em class="property"> = None</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.USStruct.curve_angles" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.USStruct.curve_opendeg">
+<tt class="descname">curve_opendeg</tt><em class="property"> = None</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.USStruct.curve_opendeg" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.USStruct.curve_radii">
+<tt class="descname">curve_radii</tt><em class="property"> = None</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.USStruct.curve_radii" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.USStruct.curve_residu">
+<tt class="descname">curve_residu</tt><em class="property"> = None</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.USStruct.curve_residu" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.USStruct.curve_xyr">
+<tt class="descname">curve_xyr</tt><em class="property"> = None</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.USStruct.curve_xyr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.USStruct.dcmInfile">
+<tt class="descname">dcmInfile</tt><em class="property"> = None</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.USStruct.dcmInfile" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.USStruct.dicomMode">
+<tt class="descname">dicomMode</tt><em class="property"> = '2D'</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.USStruct.dicomMode" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.USStruct.hasmadeplots">
+<tt class="descname">hasmadeplots</tt><em class="property"> = False</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.USStruct.hasmadeplots" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.USStruct.image_fnames">
+<tt class="descname">image_fnames</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.USStruct.image_fnames" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.USStruct.pixeldataIn">
+<tt class="descname">pixeldataIn</tt><em class="property"> = None</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.USStruct.pixeldataIn" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.USStruct.rect_image">
+<tt class="descname">rect_image</tt><em class="property"> = None</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.USStruct.rect_image" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.USStruct.report">
+<tt class="descname">report</tt><em class="property"> = None</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.USStruct.report" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.USStruct.rev_mask">
+<tt class="descname">rev_mask</tt><em class="property"> = None</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.USStruct.rev_mask" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.USStruct.rev_maxx">
+<tt class="descname">rev_maxx</tt><em class="property"> = None</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.USStruct.rev_maxx" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.USStruct.rev_maxy">
+<tt class="descname">rev_maxy</tt><em class="property"> = None</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.USStruct.rev_maxy" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.USStruct.rev_midx">
+<tt class="descname">rev_midx</tt><em class="property"> = None</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.USStruct.rev_midx" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.USStruct.rev_minx">
+<tt class="descname">rev_minx</tt><em class="property"> = None</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.USStruct.rev_minx" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.USStruct.rev_miny">
+<tt class="descname">rev_miny</tt><em class="property"> = None</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.USStruct.rev_miny" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.USStruct.reverb_image">
+<tt class="descname">reverb_image</tt><em class="property"> = None</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.USStruct.reverb_image" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.USStruct.sens_basewavelength">
+<tt class="descname">sens_basewavelength</tt><em class="property"> = None</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.USStruct.sens_basewavelength" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.USStruct.sens_noiseM">
+<tt class="descname">sens_noiseM</tt><em class="property"> = None</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.USStruct.sens_noiseM" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.USStruct.sens_noiserange">
+<tt class="descname">sens_noiserange</tt><em class="property"> = None</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.USStruct.sens_noiserange" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.USStruct.sens_numbots">
+<tt class="descname">sens_numbots</tt><em class="property"> = None</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.USStruct.sens_numbots" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.USStruct.sens_numtops">
+<tt class="descname">sens_numtops</tt><em class="property"> = None</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.USStruct.sens_numtops" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.USStruct.sens_ylim">
+<tt class="descname">sens_ylim</tt><em class="property"> = None</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.USStruct.sens_ylim" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.USStruct.sens_ylim2">
+<tt class="descname">sens_ylim2</tt><em class="property"> = None</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.USStruct.sens_ylim2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.USStruct.testing">
+<tt class="descname">testing</tt><em class="property"> = False</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.USStruct.testing" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.USStruct.unif_bots">
+<tt class="descname">unif_bots</tt><em class="property"> = None</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.USStruct.unif_bots" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.USStruct.unif_line">
+<tt class="descname">unif_line</tt><em class="property"> = 0</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.USStruct.unif_line" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.USStruct.unif_low">
+<tt class="descname">unif_low</tt><em class="property"> = 0</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.USStruct.unif_low" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.USStruct.unif_lowest">
+<tt class="descname">unif_lowest</tt><em class="property"> = 0</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.USStruct.unif_lowest" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.USStruct.verbose">
+<tt class="descname">verbose</tt><em class="property"> = False</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.USStruct.verbose" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.US_QC">
+<em class="property">class </em><tt class="descclassname">Plugins.US.US_AirReverberations.QCUS_lib.</tt><tt class="descname">US_QC</tt><big>(</big><em>guimode=False</em>, <em>fastmode=False</em>, <em>modelocalnorm=False</em><big>)</big><a class="reference internal" href="_modules/Plugins/US/US_AirReverberations/QCUS_lib.html#US_QC"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.US_QC" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.US_QC.Analyse">
+<tt class="descname">Analyse</tt><big>(</big><em>cs</em><big>)</big><a class="reference internal" href="_modules/Plugins/US/US_AirReverberations/QCUS_lib.html#US_QC.Analyse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.US_QC.Analyse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Analysis of reverberations in air.
+Workflow:
+1. Find reverberations as largest connected component != 0
+2. Straighten curved data if needed
+3. Uniformity of reverb analysis
+4. Sensitivity analysis</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.US_QC.DICOMInfo">
+<tt class="descname">DICOMInfo</tt><big>(</big><em>cs</em>, <em>info='dicom'</em><big>)</big><a class="reference internal" href="_modules/Plugins/US/US_AirReverberations/QCUS_lib.html#US_QC.DICOMInfo"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.US_QC.DICOMInfo" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.US_QC.check_asym">
+<tt class="descname">check_asym</tt><em class="property"> = False</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.US_QC.check_asym" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.US_QC.delta_uniformity">
+<tt class="descname">delta_uniformity</tt><em class="property"> = 0.15</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.US_QC.delta_uniformity" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.US_QC.fastmode">
+<tt class="descname">fastmode</tt><em class="property"> = False</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.US_QC.fastmode" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.US_QC.fdelta_sensitivity">
+<tt class="descname">fdelta_sensitivity</tt><em class="property"> = 0.1</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.US_QC.fdelta_sensitivity" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.US_QC.fftAnalysis">
+<tt class="descname">fftAnalysis</tt><big>(</big><em>cs</em>, <em>profile</em>, <em>mode='sensitivity'</em><big>)</big><a class="reference internal" href="_modules/Plugins/US/US_AirReverberations/QCUS_lib.html#US_QC.fftAnalysis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.US_QC.fftAnalysis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fourier analysis: find main frequencies and power therein</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.US_QC.fft_skip">
+<tt class="descname">fft_skip</tt><em class="property"> = 5</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.US_QC.fft_skip" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.US_QC.imageID">
+<tt class="descname">imageID</tt><big>(</big><em>cs</em>, <em>probeonly=False</em><big>)</big><a class="reference internal" href="_modules/Plugins/US/US_AirReverberations/QCUS_lib.html#US_QC.imageID"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.US_QC.imageID" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.US_QC.isolateReverbrations">
+<tt class="descname">isolateReverbrations</tt><big>(</big><em>cs</em><big>)</big><a class="reference internal" href="_modules/Plugins/US/US_AirReverberations/QCUS_lib.html#US_QC.isolateReverbrations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.US_QC.isolateReverbrations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find reverbrations part of image.
+Workflow:
+1. Find reverberations as largest connected component != 0
+2. Return</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.US_QC.modeLocalNorm">
+<tt class="descname">modeLocalNorm</tt><em class="property"> = False</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.US_QC.modeLocalNorm" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.US_QC.offsetHOR">
+<tt class="descname">offsetHOR</tt><em class="property"> = 0</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.US_QC.offsetHOR" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.US_QC.offsetVER">
+<tt class="descname">offsetVER</tt><em class="property"> = 0</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.US_QC.offsetVER" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.US_QC.pixels2mm">
+<tt class="descname">pixels2mm</tt><big>(</big><em>cs</em>, <em>px</em><big>)</big><a class="reference internal" href="_modules/Plugins/US/US_AirReverberations/QCUS_lib.html#US_QC.pixels2mm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.US_QC.pixels2mm" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.US_QC.qcversion">
+<tt class="descname">qcversion</tt><em class="property"> = 20150626</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.US_QC.qcversion" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.US_QC.readDICOMtag">
+<tt class="descname">readDICOMtag</tt><big>(</big><em>cs</em>, <em>key</em>, <em>imslice=0</em><big>)</big><a class="reference internal" href="_modules/Plugins/US/US_AirReverberations/QCUS_lib.html#US_QC.readDICOMtag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.US_QC.readDICOMtag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.US_QC.reportEntries">
+<tt class="descname">reportEntries</tt><big>(</big><em>cs</em><big>)</big><a class="reference internal" href="_modules/Plugins/US/US_AirReverberations/QCUS_lib.html#US_QC.reportEntries"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.US_QC.reportEntries" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.US_QC.reverbUniformity">
+<tt class="descname">reverbUniformity</tt><big>(</big><em>cs</em><big>)</big><a class="reference internal" href="_modules/Plugins/US/US_AirReverberations/QCUS_lib.html#US_QC.reverbUniformity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.US_QC.reverbUniformity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Analysis uniformity of reverb pattern
+Workflow:
+1. Define ROI of reverb (dependend on vertical profile)
+2. Average ROI horizontally and calculate COV
+3. Normalize profile as deviation wrt mean
+4. Find dips in profile</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.US_QC.sens_hicut">
+<tt class="descname">sens_hicut</tt><em class="property"> = True</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.US_QC.sens_hicut" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.US_QC.sensitivityAnalysis">
+<tt class="descname">sensitivityAnalysis</tt><big>(</big><em>cs</em><big>)</big><a class="reference internal" href="_modules/Plugins/US/US_AirReverberations/QCUS_lib.html#US_QC.sensitivityAnalysis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.US_QC.sensitivityAnalysis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Workflow:
+1. Calculate profile (vertically)
+2. Determine noise level
+3. Exponential fit to peaks in profile
+4. total sensitivity = penetration depth (intercept fit and noise)
+5. Repeat for subsets</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.US_QC.smooth_sensitivity">
+<tt class="descname">smooth_sensitivity</tt><em class="property"> = 3</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.US_QC.smooth_sensitivity" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.US_QC.smooth_uniformity">
+<tt class="descname">smooth_uniformity</tt><em class="property"> = 1</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.US_QC.smooth_uniformity" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.US_QC.straightenCurve">
+<tt class="descname">straightenCurve</tt><big>(</big><em>cs</em><big>)</big><a class="reference internal" href="_modules/Plugins/US/US_AirReverberations/QCUS_lib.html#US_QC.straightenCurve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.US_QC.straightenCurve" title="Permalink to this definition">¶</a></dt>
+<dd><p>Straighten curved reverb image if applicable
+Workflow:
+1. Fit circle through top of reverb data</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.cropImage">
+<tt class="descclassname">Plugins.US.US_AirReverberations.QCUS_lib.</tt><tt class="descname">cropImage</tt><big>(</big><em>image</em>, <em>offX</em>, <em>offY</em><big>)</big><a class="reference internal" href="_modules/Plugins/US/US_AirReverberations/QCUS_lib.html#cropImage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.cropImage" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="Plugins.US.US_AirReverberations.QCUS_lib.rfftfreq">
+<tt class="descclassname">Plugins.US.US_AirReverberations.QCUS_lib.</tt><tt class="descname">rfftfreq</tt><big>(</big><em>n</em>, <em>d=1.0</em><big>)</big><a class="reference internal" href="_modules/Plugins/US/US_AirReverberations/QCUS_lib.html#rfftfreq"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_lib.rfftfreq" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the Discrete Fourier Transform sample frequencies
+(for usage with rfft, irfft).
+The returned float array <cite>f</cite> contains the frequency bin centers in cycles
+per unit of the sample spacing (with zero at the start).  For instance, if
+the sample spacing is in seconds, then the frequency unit is cycles/second.
+Given a window length <cite>n</cite> and a sample spacing <cite>d</cite>:</p>
+<div class="highlight-python"><div class="highlight"><pre>f = [0, 1, ...,     n/2-1,     n/2] / (d*n)   if n is even
+f = [0, 1, ..., (n-1)/2-1, (n-1)/2] / (d*n)   if n is odd
+</pre></div>
+</div>
+<p>Unlike <cite>fftfreq</cite> (but like <cite>scipy.fftpack.rfftfreq</cite>)
+the Nyquist frequency component is considered to be positive.
+Parameters
+&#8212;&#8212;&#8212;-
+n : int</p>
+<blockquote>
+<div>Window length.</div></blockquote>
+<dl class="docutils">
+<dt>d <span class="classifier-delimiter">:</span> <span class="classifier">scalar, optional</span></dt>
+<dd>Sample spacing (inverse of the sampling rate). Defaults to 1.</dd>
+</dl>
+<dl class="docutils">
+<dt>f <span class="classifier-delimiter">:</span> <span class="classifier">ndarray</span></dt>
+<dd>Array of length <tt class="docutils literal"><span class="pre">n//2</span> <span class="pre">+</span> <span class="pre">1</span></tt> containing the sample frequencies.</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-Plugins.US.US_AirReverberations.QCUS_math">
+<span id="plugins-us-us-airreverberations-qcus-math-module"></span><h2>Plugins.US.US_AirReverberations.QCUS_math module<a class="headerlink" href="#module-Plugins.US.US_AirReverberations.QCUS_math" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="Plugins.US.US_AirReverberations.QCUS_math.CircleFit">
+<em class="property">class </em><tt class="descclassname">Plugins.US.US_AirReverberations.QCUS_math.</tt><tt class="descname">CircleFit</tt><big>(</big><em>data_xy</em><big>)</big><a class="reference internal" href="_modules/Plugins/US/US_AirReverberations/QCUS_math.html#CircleFit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_math.CircleFit" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="Plugins.US.US_AirReverberations.QCUS_math.CircleFit.calc_R">
+<tt class="descname">calc_R</tt><big>(</big><em>xc</em>, <em>yc</em><big>)</big><a class="reference internal" href="_modules/Plugins/US/US_AirReverberations/QCUS_math.html#CircleFit.calc_R"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_math.CircleFit.calc_R" title="Permalink to this definition">¶</a></dt>
+<dd><p>calculate the distance of each 2D points from the center (xc, yc)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugins.US.US_AirReverberations.QCUS_math.CircleFit.f_2">
+<tt class="descname">f_2</tt><big>(</big><em>c</em><big>)</big><a class="reference internal" href="_modules/Plugins/US/US_AirReverberations/QCUS_math.html#CircleFit.f_2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_math.CircleFit.f_2" title="Permalink to this definition">¶</a></dt>
+<dd><p>calculate the algebraic distance between the data points and the mean circle centered at c=(xc, yc)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugins.US.US_AirReverberations.QCUS_math.CircleFit.fit">
+<tt class="descname">fit</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Plugins/US/US_AirReverberations/QCUS_math.html#CircleFit.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_math.CircleFit.fit" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_math.CircleFit.residu">
+<tt class="descname">residu</tt><em class="property"> = -1</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_math.CircleFit.residu" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_math.CircleFit.x">
+<tt class="descname">x</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_math.CircleFit.x" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.US.US_AirReverberations.QCUS_math.CircleFit.y">
+<tt class="descname">y</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_math.CircleFit.y" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="Plugins.US.US_AirReverberations.QCUS_math.localnormalization">
+<tt class="descclassname">Plugins.US.US_AirReverberations.QCUS_math.</tt><tt class="descname">localnormalization</tt><big>(</big><em>pSrc</em>, <em>sigma</em>, <em>bksigma=None</em><big>)</big><a class="reference internal" href="_modules/Plugins/US/US_AirReverberations/QCUS_math.html#localnormalization"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_math.localnormalization" title="Permalink to this definition">¶</a></dt>
+<dd><p>Local normalization: [ i(x,y)-mean(x,y) ]/stdev(x,y)
+Can be approximated as [ I- Gauss{I,sigma}] / sqrt[ Gauss{I-Gauss{I,sigma},sigma}^2]</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Plugins.US.US_AirReverberations.QCUS_math.movingaverage">
+<tt class="descclassname">Plugins.US.US_AirReverberations.QCUS_math.</tt><tt class="descname">movingaverage</tt><big>(</big><em>data1d</em>, <em>window_size</em><big>)</big><a class="reference internal" href="_modules/Plugins/US/US_AirReverberations/QCUS_math.html#movingaverage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_math.movingaverage" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-Plugins.US.US_AirReverberations.QCUS_testing">
+<span id="plugins-us-us-airreverberations-qcus-testing-module"></span><h2>Plugins.US.US_AirReverberations.QCUS_testing module<a class="headerlink" href="#module-Plugins.US.US_AirReverberations.QCUS_testing" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-Plugins.US.US_AirReverberations.QCUS_wadwrapper">
+<span id="plugins-us-us-airreverberations-qcus-wadwrapper-module"></span><h2>Plugins.US.US_AirReverberations.QCUS_wadwrapper module<a class="headerlink" href="#module-Plugins.US.US_AirReverberations.QCUS_wadwrapper" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="Plugins.US.US_AirReverberations.QCUS_wadwrapper.header_series">
+<tt class="descclassname">Plugins.US.US_AirReverberations.QCUS_wadwrapper.</tt><tt class="descname">header_series</tt><big>(</big><em>data</em>, <em>results</em>, <em>params</em><big>)</big><a class="reference internal" href="_modules/Plugins/US/US_AirReverberations/QCUS_wadwrapper.html#header_series"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_wadwrapper.header_series" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read selected dicomfields and write to IQC database</p>
+<dl class="docutils">
+<dt>Workflow:</dt>
+<dd><ol class="first last arabic simple">
+<li>Set runtime parameters</li>
+<li>Check data format</li>
+<li>Build and populate qcstructure</li>
+<li>Run tests</li>
+<li>Build xml output</li>
+</ol>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="Plugins.US.US_AirReverberations.QCUS_wadwrapper.logTag">
+<tt class="descclassname">Plugins.US.US_AirReverberations.QCUS_wadwrapper.</tt><tt class="descname">logTag</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Plugins/US/US_AirReverberations/QCUS_wadwrapper.html#logTag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_wadwrapper.logTag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="Plugins.US.US_AirReverberations.QCUS_wadwrapper.qc_series">
+<tt class="descclassname">Plugins.US.US_AirReverberations.QCUS_wadwrapper.</tt><tt class="descname">qc_series</tt><big>(</big><em>data</em>, <em>results</em>, <em>params</em><big>)</big><a class="reference internal" href="_modules/Plugins/US/US_AirReverberations/QCUS_wadwrapper.html#qc_series"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_wadwrapper.qc_series" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>US Reverberations in Air analysis:</dt>
+<dd>Check the uniformity of the reverberation patterns</dd>
+<dt>Params needs to define:</dt>
+<dd>nothing yet</dd>
+<dt>Workflow:</dt>
+<dd><ol class="first last arabic simple">
+<li>Set runtime parameters</li>
+<li>Check data format</li>
+<li>Build and populate qcstructure</li>
+<li>Run tests</li>
+<li>Build xml output</li>
+<li>Build artefact picture thumbnail</li>
+</ol>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="Plugins.US.US_AirReverberations.QCUS_wadwrapper.setup_series">
+<tt class="descclassname">Plugins.US.US_AirReverberations.QCUS_wadwrapper.</tt><tt class="descname">setup_series</tt><big>(</big><em>inputfile</em>, <em>params</em>, <em>headers_only</em><big>)</big><a class="reference internal" href="_modules/Plugins/US/US_AirReverberations/QCUS_wadwrapper.html#setup_series"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.US.US_AirReverberations.QCUS_wadwrapper.setup_series" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shared routine to set runtime parameters and build structure
+Workflow:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>Set runtime parameters</li>
+<li>Check data format</li>
+<li>Build and populate qcstructure</li>
+</ol>
+</div></blockquote>
+</dd></dl>
+
+</div>
+<div class="section" id="module-Plugins.US.US_AirReverberations">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-Plugins.US.US_AirReverberations" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Plugins.US.US_AirReverberations package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-Plugins.US.US_AirReverberations.QCUS_lib">Plugins.US.US_AirReverberations.QCUS_lib module</a></li>
+<li><a class="reference internal" href="#module-Plugins.US.US_AirReverberations.QCUS_math">Plugins.US.US_AirReverberations.QCUS_math module</a></li>
+<li><a class="reference internal" href="#module-Plugins.US.US_AirReverberations.QCUS_testing">Plugins.US.US_AirReverberations.QCUS_testing module</a></li>
+<li><a class="reference internal" href="#module-Plugins.US.US_AirReverberations.QCUS_wadwrapper">Plugins.US.US_AirReverberations.QCUS_wadwrapper module</a></li>
+<li><a class="reference internal" href="#module-Plugins.US.US_AirReverberations">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/Plugins.US.US_AirReverberations.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">..  documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

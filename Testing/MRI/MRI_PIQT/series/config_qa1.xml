@@ -1,0 +1,536 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Config for QCMR plugin for Philips MRI UMCU AZUMR3,AZUMR6,AZUMR9
+date: 20150204
+author: Arnold Schilham, UMCU
+original name: philips_mri_umcu_series_mr3.xml
+-->
+<config>
+    <action>
+        <plugin>Plugins.MRI.MRI_PIQT.QCMR_wadwrapper</plugin>
+        <function>mrheader_series</function>
+        <default_level>2</default_level>
+        
+<!--
+        <filters>
+            <tag name="SeriesDescription">Flat Field</tag>
+            <tag name="0x008,0x1030">Weekly QC</tag>
+        </filters>
+-->
+      <limits>
+	  <result description="Patients Name_QA1_3_1_30">
+	    <criterium>PIQT</criterium>
+	  </result>
+	  <result description="Patients Name_QA1_2_1_30">
+	    <criterium>PIQT</criterium>
+	  </result>
+	  <result description="Patients Name_QA1_4_1_30">
+	    <criterium>PIQT</criterium>
+	  </result>
+	  <result description="Patients Name_QA1_5_1_30">
+	    <criterium>PIQT</criterium>
+	  </result>
+	  <result description="Patients Name_QA1_3_2_100">
+	    <criterium>PIQT</criterium>
+	  </result>
+	  <result description="Patients Name_QA1_4_2_100">
+	    <criterium>PIQT</criterium>
+	  </result>
+	  <result description="Patients Name_QA1_5_2_100">
+	    <criterium>PIQT</criterium>
+	  </result>
+
+	  <result description="Patients Name_QA2_2_1_15">
+	    <criterium>PIQT</criterium>
+	  </result>
+	  <result description="Patients Name_QA2_3_1_15">
+	    <criterium>PIQT</criterium>
+	  </result>
+
+	  <result description="Patients Name_QA3_1_1_50">
+	    <criterium>PIQT</criterium>
+	  </result>
+	  <result description="Patients Name_QA3_1_2_100">
+	    <criterium>PIQT</criterium>
+	  </result>
+	  <result description="Patients Name_QA3_1_3_150">
+	    <criterium>PIQT</criterium>
+	  </result>
+      </limits>
+    </action>
+    
+    <action>
+        <plugin>Plugins.MRI.MRI_PIQT.QCMR_wadwrapper</plugin>
+        <function>mrqc_series</function>
+        <default_level>1</default_level>
+        
+	<limits>
+	  <result description="S/N (B)_QA1_3_1_30"><!-- only crit_low given -->
+	    <acc_low>135.</acc_low>
+	    <acc_high>175.</acc_high>
+	    <crit_low>125.</crit_low>
+	    <crit_high>175.</crit_high>
+	  </result>
+	  <result description="S/N (B)_QA1_3_2_100"><!-- only crit_low given -->
+	    <acc_low>101.</acc_low>
+	    <acc_high>125.</acc_high>
+	    <crit_low>96.</crit_low>
+	    <crit_high>125.</crit_high>
+	  </result>
+	  <result description="S/N (B)_QA2_2_1_15"><!-- only crit_low given -->
+	    <acc_low>95.</acc_low>
+	    <acc_high>120.</acc_high>
+	    <crit_low>89.</crit_low>
+	    <crit_high>120.</crit_high>
+	  </result>
+	  <result description="S/N (B)_QA3_1_1_50"><!-- only crit_low given -->
+	    <acc_low>60.</acc_low>
+	    <acc_high>80.</acc_high>
+	    <crit_low>60.</crit_low>
+	    <crit_high>80.</crit_high>
+	  </result>
+	  <result description="S/N (B)_QA3_1_2_100"><!-- only crit_low given -->
+	    <acc_low>52.</acc_low>
+	    <acc_high>70.</acc_high>
+	    <crit_low>52.</crit_low>
+	    <crit_high>70.</crit_high>
+	  </result>
+	  <result description="S/N (B)_QA3_1_3_150"><!-- only crit_low given -->
+	    <acc_low>42.</acc_low>
+	    <acc_high>60.</acc_high>
+	    <crit_low>42.</crit_low>
+	    <crit_high>60.</crit_high>
+	  </result>
+
+	  <result description="C-10/C+10_QA1_3_1_30"><!-- only crit_low given -->
+	    <acc_low>71.</acc_low>
+	    <acc_high>100.</acc_high>
+	    <crit_low>61.</crit_low>
+	    <crit_high>100.</crit_high>
+	  </result>
+	  <result description="C-10/C+10_QA1_3_2_100"><!-- only crit_low given -->
+	    <acc_low>71.</acc_low>
+	    <acc_high>100.</acc_high>
+	    <crit_low>61.</crit_low>
+	    <crit_high>100.</crit_high>
+	  </result>
+	  <result description="C-10/C+10_QA2_2_1_15"><!-- only crit_low given -->
+	    <acc_low>71.</acc_low>
+	    <acc_high>100.</acc_high>
+	    <crit_low>61.</crit_low>
+	    <crit_high>100.</crit_high>
+	  </result>
+	  <result description="C-10/C+10_QA3_1_1_50"><!-- only crit_low given -->
+	    <acc_low>94.</acc_low>
+	    <acc_high>100.</acc_high>
+	    <crit_low>92.</crit_low>
+	    <crit_high>100.</crit_high>
+	  </result>
+	  <result description="C-10/C+10_QA3_1_2_100"><!-- only crit_low given -->
+	    <acc_low>94.</acc_low>
+	    <acc_high>100.</acc_high>
+	    <crit_low>92.</crit_low>
+	    <crit_high>100.</crit_high>
+	  </result>
+	  <result description="C-10/C+10_QA3_1_3_150"><!-- only crit_low given -->
+	    <acc_low>94.</acc_low>
+	    <acc_high>100.</acc_high>
+	    <crit_low>90.</crit_low>
+	    <crit_high>100.</crit_high>
+	  </result>
+
+	  <result description="Rad 10%_QA1_3_1_30"><!-- only crit_low given -->
+	    <acc_low>60.</acc_low>
+	    <acc_high>100.</acc_high>
+	    <crit_low>45.</crit_low>
+	    <crit_high>100.</crit_high>
+	  </result>
+	  <result description="Rad 10%_QA1_3_2_100"><!-- only crit_low given -->
+	    <acc_low>60.</acc_low>
+	    <acc_high>100.</acc_high>
+	    <crit_low>45.</crit_low>
+	    <crit_high>100.</crit_high>
+	  </result>
+	  <result description="Rad 10%_QA2_2_1_15"><!-- only crit_low given -->
+	    <acc_low>60.</acc_low>
+	    <acc_high>100.</acc_high>
+	    <crit_low>45.</crit_low>
+	    <crit_high>100.</crit_high>
+	  </result>
+	  <result description="Rad 10%_QA3_1_1_50"><!-- only crit_low given -->
+	    <acc_low>92.</acc_low>
+	    <acc_high>100.</acc_high>
+	    <crit_low>90.</crit_low>
+	    <crit_high>100.</crit_high>
+	  </result>
+	  <result description="Rad 10%_QA3_1_2_100"><!-- only crit_low given -->
+	    <acc_low>92.</acc_low>
+	    <acc_high>100.</acc_high>
+	    <crit_low>90.</crit_low>
+	    <crit_high>100.</crit_high>
+	  </result>
+	  <result description="Rad 10%_QA3_1_3_150"><!-- only crit_low given -->
+	    <acc_low>92.</acc_low>
+	    <acc_high>100.</acc_high>
+	    <crit_low>86.</crit_low>
+	    <crit_high>100.</crit_high>
+	  </result>
+
+	  <result description="T/C-20_QA1_3_1_30"><!-- only crit_high given -->
+	    <acc_low>0.</acc_low>
+	    <acc_high>7.</acc_high>
+	    <crit_low>0.</crit_low>
+	    <crit_high>9.</crit_high>
+	  </result>
+	  <result description="T/C-20_QA1_3_2_100"><!-- only crit_high given -->
+	    <acc_low>0.</acc_low>
+	    <acc_high>7.</acc_high>
+	    <crit_low>0.</crit_low>
+	    <crit_high>9.</crit_high>
+	  </result>
+	  <result description="T/C-20_QA2_2_1_15"><!-- only crit_high given -->
+	    <acc_low>0.</acc_low>
+	    <acc_high>7.</acc_high>
+	    <crit_low>0.</crit_low>
+	    <crit_high>9.</crit_high>
+	  </result>
+	  <result description="T/C-20_QA3_1_1_50"><!-- only crit_high given -->
+	    <acc_low>0.</acc_low>
+	    <acc_high>4.</acc_high>
+	    <crit_low>0.</crit_low>
+	    <crit_high>5.</crit_high>
+	  </result>
+	  <result description="T/C-20_QA3_1_2_100"><!-- only crit_high given -->
+	    <acc_low>0.</acc_low>
+	    <acc_high>4.</acc_high>
+	    <crit_low>0.</crit_low>
+	    <crit_high>5.</crit_high>
+	  </result>
+	  <result description="T/C-20_QA3_1_3_150"><!-- only crit_high given -->
+	    <acc_low>0.</acc_low>
+	    <acc_high>4.</acc_high>
+	    <crit_low>0.</crit_low>
+	    <crit_high>5.</crit_high>
+	  </result>
+
+	  <result description="C-20/C-10_QA1_3_1_30"><!-- only crit_high given -->
+	    <acc_low>0.</acc_low>
+	    <acc_high>9.</acc_high>
+	    <crit_low>0.</crit_low>
+	    <crit_high>13.</crit_high>
+	  </result>
+	  <result description="C-20/C-10_QA1_3_2_100"><!-- only crit_high given -->
+	    <acc_low>0.</acc_low>
+	    <acc_high>9.</acc_high>
+	    <crit_low>0.</crit_low>
+	    <crit_high>13.</crit_high>
+	  </result>
+	  <result description="C-20/C-10_QA2_2_1_15"><!-- only crit_high given -->
+	    <acc_low>0.</acc_low>
+	    <acc_high>9.</acc_high>
+	    <crit_low>0.</crit_low>
+	    <crit_high>13.</crit_high>
+	  </result>
+	  <result description="C-20/C-10_QA3_1_1_50"><!-- only crit_high given -->
+	    <acc_low>0.</acc_low>
+	    <acc_high>2.</acc_high>
+	    <crit_low>0.</crit_low>
+	    <crit_high>3.</crit_high>
+	  </result>
+	  <result description="C-20/C-10_QA3_1_2_100"><!-- only crit_high given -->
+	    <acc_low>0.</acc_low>
+	    <acc_high>2.</acc_high>
+	    <crit_low>0.</crit_low>
+	    <crit_high>3.</crit_high>
+	  </result>
+	  <result description="C-20/C-10_QA3_1_3_150"><!-- only crit_high given -->
+	    <acc_low>0.</acc_low>
+	    <acc_high>4.</acc_high>
+	    <crit_low>0.</crit_low>
+	    <crit_high>5.</crit_high>
+	  </result>
+	
+	  <result description="C+10/C+20_QA1_3_1_30"><!-- only crit_high given -->
+	    <acc_low>0.</acc_low>
+	    <acc_high>15.</acc_high>
+	    <crit_low>0.</crit_low>
+	    <crit_high>20.</crit_high>
+	  </result>
+	  <result description="C+10/C+20_QA1_3_2_100"><!-- only crit_high given -->
+	    <acc_low>0.</acc_low>
+	    <acc_high>15.</acc_high>
+	    <crit_low>0.</crit_low>
+	    <crit_high>20.</crit_high>
+	  </result>
+	  <result description="C+10/C+20_QA2_2_1_15"><!-- only crit_high given -->
+	    <acc_low>0.</acc_low>
+	    <acc_high>15.</acc_high>
+	    <crit_low>0.</crit_low>
+	    <crit_high>20.</crit_high>
+	  </result>
+	  <result description="C+10/C+20_QA3_1_1_50"><!-- only crit_high given -->
+	    <acc_low>0.</acc_low>
+	    <acc_high>1.5</acc_high>
+	    <crit_low>0.</crit_low>
+	    <crit_high>2.</crit_high>
+	  </result>
+	  <result description="C+10/C+20_QA3_1_2_100"><!-- only crit_high given -->
+	    <acc_low>0.</acc_low>
+	    <acc_high>1.5</acc_high>
+	    <crit_low>0.</crit_low>
+	    <crit_high>2.</crit_high>
+	  </result>
+	  <result description="C+10/C+20_QA3_1_3_150"><!-- only crit_high given -->
+	    <acc_low>0.</acc_low>
+	    <acc_high>1.5</acc_high>
+	    <crit_low>0.</crit_low>
+	    <crit_high>2.</crit_high>
+	  </result>
+	
+	  <result description="C+20/Max_QA1_3_1_30"><!-- only crit_high given -->
+	    <acc_low>0.</acc_low>
+	    <acc_high>4.</acc_high>
+	    <crit_low>0.</crit_low>
+	    <crit_high>5.</crit_high>
+	  </result>
+	  <result description="C+20/Max_QA1_3_2_100"><!-- only crit_high given -->
+	    <acc_low>0.</acc_low>
+	    <acc_high>4.</acc_high>
+	    <crit_low>0.</crit_low>
+	    <crit_high>5.</crit_high>
+	  </result>
+	  <result description="C+20/Max_QA2_2_1_15"><!-- only crit_high given -->
+	    <acc_low>0.</acc_low>
+	    <acc_high>4.</acc_high>
+	    <crit_low>0.</crit_low>
+	    <crit_high>5.</crit_high>
+	  </result>
+	  <result description="C+20/Max_QA3_1_1_50"><!-- only crit_high given -->
+	    <acc_low>0.</acc_low>
+	    <acc_high>1.5</acc_high>
+	    <crit_low>0.</crit_low>
+	    <crit_high>2.</crit_high>
+	  </result>
+	  <result description="C+20/Max_QA3_1_2_100"><!-- only crit_high given -->
+	    <acc_low>0.</acc_low>
+	    <acc_high>1.5</acc_high>
+	    <crit_low>0.</crit_low>
+	    <crit_high>2.</crit_high>
+	  </result>
+	  <result description="C+20/Max_QA3_1_3_150"><!-- only crit_high given -->
+	    <acc_low>0.</acc_low>
+	    <acc_high>1.5</acc_high>
+	    <crit_low>0.</crit_low>
+	    <crit_high>2.</crit_high>
+	  </result>
+	
+	  <result description="phant_rot_QA1_2_1_30">
+	    <acc_low>-2.5</acc_low>
+	    <acc_high>2.5</acc_high>
+	    <crit_low>-5.</crit_low>
+	    <crit_high>5.</crit_high>
+	  </result>
+<!--	
+	  <result description="m/p_angle_QA1_2_1_30">
+	    <acc_low>89.5</acc_low>
+	    <acc_high>90.5</acc_high>
+	    <crit_low>89.</crit_low>
+	    <crit_high>91.</crit_high>
+	  </result>
+-->	
+	  <result description="size_hor_QA1_2_1_30">
+	    <acc_low>149.75</acc_low>
+	    <acc_high>150.25</acc_high>
+	    <crit_low>149.5</crit_low>
+	    <crit_high>150.5</crit_high>
+	  </result>
+
+	  <result description="hor_int_av_QA1_2_1_30"><!-- only crit_high given -->
+	    <acc_low>0.</acc_low>
+	    <acc_high>0.25</acc_high>
+	    <crit_low>0.</crit_low>
+	    <crit_high>0.5</crit_high>
+	  </result>
+	  <result description="hor_int_dev_QA1_2_1_30"><!-- only crit_high given -->
+	    <acc_low>0.</acc_low>
+	    <acc_high>0.25</acc_high>
+	    <crit_low>0.</crit_low>
+	    <crit_high>0.5</crit_high>
+	  </result>
+	  <result description="hor_max_right_QA1_2_1_30"><!-- only crit_high given -->
+	    <acc_low>0.</acc_low>
+	    <acc_high>0.5</acc_high>
+	    <crit_low>0.</crit_low>
+	    <crit_high>1.</crit_high>
+	  </result>
+	  <result description="hor_max_left_QA1_2_1_30"><!-- only crit_high given -->
+	    <acc_low>0.</acc_low>
+	    <acc_high>0.5</acc_high>
+	    <crit_low>0.</crit_low>
+	    <crit_high>1.</crit_high>
+	  </result>
+	  <result description="hor_diff_av_QA1_2_1_30">
+	    <acc_low>-0.5</acc_low>
+	    <acc_high>0.5</acc_high>
+	    <crit_low>-1.</crit_low>
+	    <crit_high>1.</crit_high>
+	  </result>
+	  <result description="hor_diff_dev_QA1_2_1_30"><!-- only crit_high given -->
+	    <acc_low>0.</acc_low>
+	    <acc_high>0.5</acc_high>
+	    <crit_low>0.</crit_low>
+	    <crit_high>1.</crit_high>
+	  </result>
+	  <result description="hor_max_QA1_2_1_30"><!-- only crit_high given -->
+	    <acc_low>0.</acc_low>
+	    <acc_high>1.</acc_high>
+	    <crit_low>0.</crit_low>
+	    <crit_high>2.</crit_high>
+	  </result>
+	  <result description="hor_min_QA1_2_1_30"><!-- only crit_low given -->
+	    <acc_low>-1.0</acc_low>
+	    <acc_high>0</acc_high>
+	    <crit_low>-2.</crit_low>
+	    <crit_high>0</crit_high>
+	  </result>
+
+	  <result description="ver_int_av_QA1_2_1_30"><!-- only crit_high given -->
+	    <acc_low>0.</acc_low>
+	    <acc_high>0.25</acc_high>
+	    <crit_low>0.</crit_low>
+	    <crit_high>0.5</crit_high>
+	  </result>
+	  <result description="ver_int_dev_QA1_2_1_30"><!-- only crit_high given -->
+	    <acc_low>0.</acc_low>
+	    <acc_high>0.25</acc_high>
+	    <crit_low>0.</crit_low>
+	    <crit_high>0.5</crit_high>
+	  </result>
+	  <result description="ver_max_up_QA1_2_1_30"><!-- only crit_high given -->
+	    <acc_low>0.</acc_low>
+	    <acc_high>0.5</acc_high>
+	    <crit_low>0.</crit_low>
+	    <crit_high>1.</crit_high>
+	  </result>
+	  <result description="ver_max_down_QA1_2_1_30"><!-- only crit_high given -->
+	    <acc_low>0.</acc_low>
+	    <acc_high>0.5</acc_high>
+	    <crit_low>0.</crit_low>
+	    <crit_high>1.</crit_high>
+	  </result>
+	  <result description="ver_diff_av_QA1_2_1_30">
+	    <acc_low>-0.5</acc_low>
+	    <acc_high>0.5</acc_high>
+	    <crit_low>-1.</crit_low>
+	    <crit_high>1.</crit_high>
+	  </result>
+	  <result description="ver_diff_dev_QA1_2_1_30"><!-- only crit_high given -->
+	    <acc_low>0.</acc_low>
+	    <acc_high>0.5</acc_high>
+	    <crit_low>0.</crit_low>
+	    <crit_high>1.</crit_high>
+	  </result>
+	  <result description="ver_max_QA1_2_1_30"><!-- only crit_high given -->
+	    <acc_low>0.</acc_low>
+	    <acc_high>1.</acc_high>
+	    <crit_low>0.</crit_low>
+	    <crit_high>2.</crit_high>
+	  </result>
+	  <result description="ver_min_QA1_2_1_30"><!-- only crit_low given -->
+	    <acc_low>-1.0</acc_low>
+	    <acc_high>0</acc_high>
+	    <crit_low>-2.</crit_low>
+	    <crit_high>0</crit_high>
+	  </result>
+
+	  <result description="FWHM_QA1_4_1_30">
+	    <acc_low>4.7</acc_low>
+	    <acc_high>5.1</acc_high>
+	    <crit_low>4.65</crit_low>
+	    <crit_high>5.15</crit_high>
+	  </result>
+	  <result description="FWHM_QA1_4_2_100">
+	    <acc_low>4.35</acc_low>
+	    <acc_high>4.75</acc_high>
+	    <crit_low>4.3</crit_low>
+	    <crit_high>4.8</crit_high>
+	  </result>
+	  <result description="FWHM_QA2_3_1_15">
+	    <acc_low>4.85</acc_low>
+	    <acc_high>5.25</acc_high>
+	    <crit_low>4.8</crit_low>
+	    <crit_high>5.3</crit_high>
+	  </result>
+
+	  <result description="FWTM_QA1_4_1_30">
+	    <acc_low>0.</acc_low>
+	    <acc_high>4.</acc_high>
+	    <crit_low>0.</crit_low>
+	    <crit_high>8.</crit_high>
+	  </result>
+	  <result description="FWTM_QA1_4_2_100">
+	    <acc_low>0.</acc_low>
+	    <acc_high>4.</acc_high>
+	    <crit_low>0</crit_low>
+	    <crit_high>8.</crit_high>
+	  </result>
+
+	  <result description="Slice_int_QA1_4_1_30">
+	    <acc_low>4.65</acc_low>
+	    <acc_high>4.95</acc_high>
+	    <crit_low>4.55</crit_low>
+	    <crit_high>5.05</crit_high>
+	  </result>
+	  <result description="Slice_int_QA1_4_2_100">
+	    <acc_low>4.35</acc_low>
+	    <acc_high>4.75</acc_high>
+	    <crit_low>4.3</crit_low>
+	    <crit_high>4.8</crit_high>
+	  </result>
+	  <result description="Slice_int_QA2_3_1_15">
+	    <acc_low>4.95</acc_low>
+	    <acc_high>5.25</acc_high>
+	    <crit_low>4.85</crit_low>
+	    <crit_high>5.35</crit_high>
+	  </result>
+
+	  <result description="Phase_Shift_QA1_4_1_30"><!-- only crit_high given -->
+	    <acc_low>0.</acc_low>
+	    <acc_high>10.</acc_high>
+	    <crit_low>0.</crit_low>
+	    <crit_high>15.</crit_high>
+	  </result>
+	  <result description="Phase_Shift_QA1_4_2_100"><!-- only crit_high given -->
+	    <acc_low>0.</acc_low>
+	    <acc_high>15.</acc_high>
+	    <crit_low>0</crit_low>
+	    <crit_high>20.</crit_high>
+	  </result>
+	
+	  <result description="Hor_pxl_size_QA1_5_1_30"><!-- only crit_high given -->
+	    <acc_low>0.</acc_low>
+	    <acc_high>1.</acc_high>
+	    <crit_low>0</crit_low>
+	    <crit_high>1.2</crit_high>
+	  </result>
+	  <result description="Hor_pxl_size_QA1_5_2_100"><!-- only crit_high given -->
+	    <acc_low>0.</acc_low>
+	    <acc_high>1.</acc_high>
+	    <crit_low>0</crit_low>
+	    <crit_high>1.2</crit_high>
+	  </result>
+	  <result description="Ver_pxl_size_QA1_5_1_30"><!-- only crit_high given -->
+	    <acc_low>0.</acc_low>
+	    <acc_high>1.</acc_high>
+	    <crit_low>0</crit_low>
+	    <crit_high>1.2</crit_high>
+	  </result>
+	  <result description="Ver_pxl_size_QA1_5_2_100"><!-- only crit_high given -->
+	    <acc_low>0.</acc_low>
+	    <acc_high>1.</acc_high>
+	    <crit_low>0</crit_low>
+	    <crit_high>1.2</crit_high>
+	  </result>
+	</limits>
+    </action>
+</config>

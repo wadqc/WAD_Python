@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Config for QCMammo plugin for Hologic Dimensions
+date: 20150202
+author: Arnold Schilham, UMCU
+original name: dimensions_mammo_umcu_series.xml
+-->
+<config>
+    <action>
+        <plugin>Plugins.Mammo.Mammo_Flatfield.QCMammo_wadwrapper</plugin>
+        <function>mammoheader_series</function>
+        <default_level>2</default_level>
+        
+<!--
+        <filters>
+            <tag name="SeriesDescription">Flat Field</tag>
+            <tag name="0x008,0x1030">Weekly QC</tag>
+        </filters>
+-->
+	<limits>
+            <result description="Grid_RH">
+                <criterium>IN</criterium>
+            </result>
+            <result description="ProtocolName_RH">
+                <criterium>Flat Field Conv</criterium>
+            </result>
+            <result description="Grid_AG">
+                <criterium>IN</criterium>
+            </result>
+            <result description="ProtocolName_AG">
+                <criterium>Flat Field Conv</criterium>
+            </result>
+        </limits>
+
+	<params>
+            <info>qc</info>
+        </params>
+    </action>
+    
+    <action>
+        <plugin>Plugins.Mammo.Mammo_Flatfield.QCMammo_wadwrapper</plugin>
+        <function>mammoqc_series</function>
+        <default_level>1</default_level>
+	
+        
+	<limits>
+	  <result description="unif_pct_RH">
+	    <acc_low>0</acc_low>
+	    <acc_high>7.5</acc_high>
+	    <crit_low>0</crit_low>
+	    <crit_high>10</crit_high>
+	  </result>
+	  <result description="snr_hol_RH">
+	    <acc_low>60</acc_low>
+	    <acc_high>80</acc_high>
+	    <crit_low>60</crit_low>
+	    <crit_high>100</crit_high>
+	  </result>
+	  <result description="doseratio_RH">
+	    <acc_low>0.95</acc_low>
+	    <acc_high>1.05</acc_high>
+	    <crit_low>0.90</crit_low>
+	    <crit_high>1.10</crit_high>
+	  </result>
+	  <result description="art_clusters_RH">
+	    <acc_low>0</acc_low>
+	    <acc_high>0</acc_high>
+	    <crit_low>0</crit_low>
+	    <crit_high>1</crit_high>
+	  </result>
+	  <result description="expert_inoutoverin_RH">
+	    <acc_low>-.1</acc_low>
+	    <acc_high>.5</acc_high>
+	    <crit_low>-.2</crit_low>
+	    <crit_high>1</crit_high>
+	  </result>
+	  
+	  <result description="unif_pct_AG">
+	    <acc_low>0</acc_low>
+	    <acc_high>7.5</acc_high>
+	    <crit_low>0</crit_low>
+	    <crit_high>10</crit_high>
+	  </result>
+	  <result description="snr_hol_AG">
+	    <acc_low>50</acc_low>
+	    <acc_high>70</acc_high>
+	    <crit_low>50</crit_low>
+	    <crit_high>90</crit_high>
+	  </result>
+	  <result description="doseratio_AG">
+	    <acc_low>0.95</acc_low>
+	    <acc_high>1.05</acc_high>
+	    <crit_low>0.90</crit_low>
+	    <crit_high>1.10</crit_high>
+	  </result>
+	  <result description="art_clusters_AG">
+	    <acc_low>0</acc_low>
+	    <acc_high>0</acc_high>
+	    <crit_low>0</crit_low>
+	    <crit_high>1</crit_high>
+	  </result>
+	  <result description="expert_inoutoverin_AG">
+	    <acc_low>-.1</acc_low>
+	    <acc_high>.5</acc_high>
+	    <crit_low>-.2</crit_low>
+	    <crit_high>1</crit_high>
+	  </result>
+        </limits>
+        
+<!--
+        <params>
+            <some_parameter SomeAttribute="Some attribute text">This is some parameter!</some_parameter>
+            <parent NumberOfKids="2">
+                <child>This is child 1</child>
+                <child>This is child 2</child>
+            </parent>
+        </params>
+-->        
+    </action>
+</config>

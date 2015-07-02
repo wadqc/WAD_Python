@@ -1,0 +1,308 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Plugin_development.CT.CT_Catphan_500.common_functions &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="../../../../index.html" />
+    <link rel="up" title="Module code" href="../../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for Plugin_development.CT.CT_Catphan_500.common_functions</h1><div class="highlight"><pre>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">This module contains common functions used to analyze the catphan phantom.</span>
+<span class="sd">Original code: https://pypi.python.org/pypi/pylinac</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">sqrt</span>
+<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">os.path</span> <span class="kn">as</span> <span class="nn">osp</span>
+<span class="kn">from</span> <span class="nn">scipy.ndimage</span> <span class="kn">import</span> <span class="n">center_of_mass</span> <span class="k">as</span> <span class="n">cm</span>
+<span class="kn">from</span> <span class="nn">skimage.feature</span> <span class="kn">import</span> <span class="n">peak_local_max</span>
+
+
+<div class="viewcode-block" id="find_slices_of_interest"><a class="viewcode-back" href="../../../../Plugin_development.CT.CT_Catphan_500.html#Plugin_development.CT.CT_Catphan_500.common_functions.find_slices_of_interest">[docs]</a><span class="k">def</span> <span class="nf">find_slices_of_interest</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="n">params</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    This routine expects the data to be ordered z-y-x such that a specific z-slice can be addressed using array[id,:,:]</span>
+<span class="sd">    </span>
+<span class="sd">    The workflow is as follows:</span>
+<span class="sd">    1) walk through the stack of slices and for each slice:</span>
+<span class="sd">     - determine if it is the positioning slice</span>
+<span class="sd">     - determine if it is the center of a module </span>
+
+<span class="sd">    2) Given the scan direction and location of the positioning slice we identify the HU, SR and UN modules</span>
+
+
+<span class="sd">    Parameters that can be set in the params block of the config-xml file:</span>
+
+<span class="sd">    &lt;scandirection&gt; </span>
+<span class="sd">    &lt;linewidth&gt; </span>
+<span class="sd">    &lt;profilelen&gt;</span>
+<span class="sd">    &lt;detthreshold&gt; </span>
+<span class="sd">    &lt;roidim&gt; </span>
+<span class="sd">    &lt;refroidim&gt;</span>
+<span class="sd">    &lt;refroioffset&gt;</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">scandirection</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&#39;scandirection&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span>
+    <span class="n">linewidth</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&#39;linewidth&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+    <span class="n">profilelen</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&#39;profilelen&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+    <span class="n">detthreshold</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&#39;detthreshold&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+    <span class="n">roidim</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&#39;roidim&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+    <span class="n">refroidim</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&#39;refroidim&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+    <span class="n">refroioffset</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&#39;refroioffset&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+
+    <span class="n">com</span> <span class="o">=</span> <span class="n">cm</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span>
+    <span class="k">print</span> <span class="p">(</span><span class="s">&#39;com&#39;</span><span class="p">,</span><span class="n">com</span><span class="p">)</span>
+    <span class="n">number_of_slices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">data</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">possiblerefslice</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">modslice</span> <span class="o">=</span> <span class="p">[]</span>
+
+    
+    <span class="k">for</span> <span class="n">sliceid</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">number_of_slices</span><span class="p">):</span>
+        <span class="n">tmpslice</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">sliceid</span><span class="p">,:,:]</span>
+        <span class="n">lineprofile_E</span> <span class="o">=</span> <span class="n">tmpslice</span><span class="p">[</span><span class="n">com</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">linewidth</span><span class="p">:</span><span class="n">com</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">linewidth</span><span class="p">,</span><span class="n">com</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span><span class="n">com</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">profilelen</span><span class="p">]</span>
+        <span class="n">lineprofile_W</span> <span class="o">=</span> <span class="n">tmpslice</span><span class="p">[</span><span class="n">com</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">linewidth</span><span class="p">:</span><span class="n">com</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">linewidth</span><span class="p">,</span><span class="n">com</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">profilelen</span><span class="p">:</span><span class="n">com</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+        <span class="n">lineprofile_S</span> <span class="o">=</span> <span class="n">tmpslice</span><span class="p">[</span><span class="n">com</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">com</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">profilelen</span><span class="p">,</span><span class="n">com</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">linewidth</span><span class="p">:</span><span class="n">com</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">linewidth</span><span class="p">]</span>
+        <span class="n">lineprofile_N</span> <span class="o">=</span> <span class="n">tmpslice</span><span class="p">[</span><span class="n">com</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">profilelen</span><span class="p">:</span><span class="n">com</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">com</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">linewidth</span><span class="p">:</span><span class="n">com</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">linewidth</span><span class="p">]</span>
+        
+        <span class="n">lines</span> <span class="o">=</span> <span class="p">[</span><span class="n">lineprofile_N</span><span class="p">,</span><span class="n">lineprofile_S</span><span class="p">,</span><span class="n">lineprofile_E</span><span class="p">,</span><span class="n">lineprofile_W</span><span class="p">]</span>
+        
+
+
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">line</span><span class="p">)</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">])</span> <span class="o">&gt;</span> <span class="n">detthreshold</span><span class="p">:</span>
+            <span class="n">tmpcommean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">tmpslice</span><span class="p">[</span><span class="n">com</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">roidim</span><span class="p">:</span><span class="n">com</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">roidim</span><span class="p">,</span><span class="n">com</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">roidim</span><span class="p">:</span><span class="n">com</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">roidim</span><span class="p">])</span> 
+            <span class="k">if</span> <span class="p">(</span><span class="mi">0</span> <span class="o">&lt;</span> <span class="n">tmpcommean</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">tmpcommean</span> <span class="o">&lt;</span> <span class="mi">100</span><span class="p">):</span>
+                <span class="n">possiblerefslice</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sliceid</span><span class="p">)</span>
+
+        <span class="n">modslice</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">tmpslice</span><span class="p">[</span><span class="n">com</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">refroioffset</span><span class="o">-</span><span class="n">refroidim</span><span class="p">:</span><span class="n">com</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">refroioffset</span><span class="o">+</span><span class="n">refroidim</span><span class="p">,</span><span class="n">com</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">refroidim</span><span class="p">:</span><span class="n">com</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">refroidim</span><span class="p">]))</span>
+
+
+
+
+    <span class="k">print</span> <span class="n">modslice</span>
+    <span class="k">print</span> <span class="n">possiblerefslice</span>
+    <span class="n">outdict</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;HU&#39;</span><span class="p">:</span><span class="bp">None</span><span class="p">,</span><span class="s">&#39;SR&#39;</span><span class="p">:</span><span class="bp">None</span><span class="p">,</span><span class="s">&#39;UN&#39;</span><span class="p">:</span><span class="bp">None</span><span class="p">}</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">possiblerefslice</span><span class="p">)</span><span class="o">==</span><span class="mi">1</span><span class="p">:</span>
+        <span class="n">refslice</span> <span class="o">=</span>  <span class="n">possiblerefslice</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        
+        <span class="n">pkcrds</span> <span class="o">=</span> <span class="n">peak_local_max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">modslice</span><span class="p">),</span> <span class="n">min_distance</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+ 
+        <span class="k">print</span> <span class="p">(</span><span class="s">&#39;pkcrds&#39;</span><span class="p">,</span><span class="n">pkcrds</span><span class="p">)</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">findindex</span><span class="p">(</span><span class="n">refslice</span><span class="p">,</span><span class="nb">list</span><span class="p">(</span><span class="n">pkcrds</span><span class="p">))</span>
+        
+
+        <span class="k">if</span> <span class="n">scandirection</span> <span class="o">==</span> <span class="s">&#39;down&#39;</span><span class="p">:</span>
+            <span class="n">outdict</span><span class="p">[</span><span class="s">&#39;HU&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">pkcrds</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">outdict</span><span class="p">[</span><span class="s">&#39;SR&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">pkcrds</span><span class="p">[</span><span class="n">idx</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">outdict</span><span class="p">[</span><span class="s">&#39;UN&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">pkcrds</span><span class="p">[</span><span class="n">idx</span><span class="o">-</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">elif</span> <span class="n">scandirection</span> <span class="o">==</span> <span class="s">&#39;up&#39;</span><span class="p">:</span>
+            <span class="n">outdict</span><span class="p">[</span><span class="s">&#39;HU&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">pkcrds</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">outdict</span><span class="p">[</span><span class="s">&#39;SR&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">pkcrds</span><span class="p">[</span><span class="n">idx</span><span class="o">+</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">outdict</span><span class="p">[</span><span class="s">&#39;UN&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">pkcrds</span><span class="p">[</span><span class="n">idx</span><span class="o">+</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">outdict</span>
+</div>
+<div class="viewcode-block" id="findindex"><a class="viewcode-back" href="../../../../Plugin_development.CT.CT_Catphan_500.html#Plugin_development.CT.CT_Catphan_500.common_functions.findindex">[docs]</a><span class="k">def</span> <span class="nf">findindex</span><span class="p">(</span><span class="n">number</span><span class="p">,</span><span class="n">mylist</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">number</span> <span class="ow">in</span> <span class="n">mylist</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">mylist</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">number</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">number</span><span class="o">-</span><span class="mi">1</span> <span class="ow">in</span> <span class="n">mylist</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">mylist</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">number</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">number</span><span class="o">+</span><span class="mi">1</span> <span class="ow">in</span> <span class="n">mylist</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">mylist</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">number</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">None</span>
+
+</div>
+<div class="viewcode-block" id="point_to_2point_line_dist"><a class="viewcode-back" href="../../../../Plugin_development.CT.CT_Catphan_500.html#Plugin_development.CT.CT_Catphan_500.common_functions.point_to_2point_line_dist">[docs]</a><span class="k">def</span> <span class="nf">point_to_2point_line_dist</span><span class="p">(</span><span class="n">point</span><span class="p">,</span> <span class="n">line_point</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Determine the minimum distance from a point to a line defined by two points.</span>
+<span class="sd">    Based on Wikipedia article: http://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line, paragraph: Line defined by two points</span>
+
+<span class="sd">    :param point: (y,x)</span>
+<span class="sd">    :param line_point1: (y,x)</span>
+<span class="sd">    :return:</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">x0</span> <span class="o">=</span> <span class="n">point</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">y0</span> <span class="o">=</span> <span class="n">point</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">x1</span> <span class="o">=</span> <span class="n">line_point</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">y1</span> <span class="o">=</span> <span class="n">line_point</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">x2</span> <span class="o">=</span> <span class="n">line_point</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">y2</span> <span class="o">=</span> <span class="n">line_point</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">Dx</span> <span class="o">=</span> <span class="n">x2</span> <span class="o">-</span> <span class="n">x1</span>
+    <span class="n">Dy</span> <span class="o">=</span> <span class="n">y2</span> <span class="o">-</span> <span class="n">y1</span>
+    <span class="n">numerator</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">Dy</span><span class="o">*</span><span class="n">x0</span> <span class="o">-</span> <span class="n">Dx</span><span class="o">*</span><span class="n">y0</span> <span class="o">-</span> <span class="n">x1</span><span class="o">*</span><span class="n">y2</span> <span class="o">+</span> <span class="n">x2</span><span class="o">*</span><span class="n">y1</span><span class="p">)</span>
+    <span class="n">denom</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">Dx</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">Dy</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">distance</span> <span class="o">=</span> <span class="n">numerator</span><span class="o">/</span><span class="n">denom</span>
+    <span class="k">return</span> <span class="n">distance</span>
+</div>
+<div class="viewcode-block" id="point_line_dist"><a class="viewcode-back" href="../../../../Plugin_development.CT.CT_Catphan_500.html#Plugin_development.CT.CT_Catphan_500.common_functions.point_line_dist">[docs]</a><span class="k">def</span> <span class="nf">point_line_dist</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">seg</span><span class="p">,</span> <span class="n">testSegmentEnds</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Minimum Distance between a Point and a Line</span>
+<span class="sd">    Written by Paul Bourke,    October 1988</span>
+<span class="sd">    http://astronomy.swin.edu.au/~pbourke/geometry/pointline/</span>
+
+<span class="sd">    input:</span>
+<span class="sd">    p: point, y,x</span>
+<span class="sd">    seg: y1,x1,y2,x2</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">y3</span><span class="p">,</span> <span class="n">x3</span> <span class="o">=</span> <span class="n">p</span>
+    <span class="n">y1</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="n">y2</span><span class="p">,</span> <span class="n">x2</span> <span class="o">=</span> <span class="n">seg</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">seg</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">seg</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">seg</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+
+    <span class="n">dx21</span> <span class="o">=</span> <span class="p">(</span><span class="n">x2</span> <span class="o">-</span> <span class="n">x1</span><span class="p">)</span>
+    <span class="n">dy21</span> <span class="o">=</span> <span class="p">(</span><span class="n">y2</span> <span class="o">-</span> <span class="n">y1</span><span class="p">)</span>
+
+    <span class="n">lensq21</span> <span class="o">=</span> <span class="n">dx21</span> <span class="o">*</span> <span class="n">dx21</span> <span class="o">+</span> <span class="n">dy21</span> <span class="o">*</span> <span class="n">dy21</span>
+    <span class="k">if</span> <span class="n">lensq21</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="c">#20080821 raise ValueError, &quot;zero length line segment&quot;</span>
+        <span class="n">dy</span> <span class="o">=</span> <span class="n">y3</span> <span class="o">-</span> <span class="n">y1</span>
+        <span class="n">dx</span> <span class="o">=</span> <span class="n">x3</span> <span class="o">-</span> <span class="n">x1</span>
+        <span class="k">return</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">dx</span> <span class="o">*</span> <span class="n">dx</span> <span class="o">+</span> <span class="n">dy</span> <span class="o">*</span> <span class="n">dy</span><span class="p">)</span>  <span class="c"># return point to point distance</span>
+
+    <span class="n">u</span> <span class="o">=</span> <span class="p">(</span><span class="n">x3</span> <span class="o">-</span> <span class="n">x1</span><span class="p">)</span> <span class="o">*</span> <span class="n">dx21</span> <span class="o">+</span> <span class="p">(</span><span class="n">y3</span> <span class="o">-</span> <span class="n">y1</span><span class="p">)</span> <span class="o">*</span> <span class="n">dy21</span>
+    <span class="n">u</span> <span class="o">=</span> <span class="n">u</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">lensq21</span><span class="p">)</span>
+
+    <span class="n">x</span> <span class="o">=</span> <span class="n">x1</span> <span class="o">+</span> <span class="n">u</span> <span class="o">*</span> <span class="n">dx21</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">y1</span> <span class="o">+</span> <span class="n">u</span> <span class="o">*</span> <span class="n">dy21</span>
+
+    <span class="k">if</span> <span class="n">testSegmentEnds</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">u</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">x1</span><span class="p">,</span> <span class="n">y1</span>
+        <span class="k">elif</span> <span class="n">u</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">x2</span><span class="p">,</span> <span class="n">y2</span>
+
+    <span class="n">dx30</span> <span class="o">=</span> <span class="n">x3</span> <span class="o">-</span> <span class="n">x</span>
+    <span class="n">dy30</span> <span class="o">=</span> <span class="n">y3</span> <span class="o">-</span> <span class="n">y</span>
+
+    <span class="k">return</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">dx30</span> <span class="o">*</span> <span class="n">dx30</span> <span class="o">+</span> <span class="n">dy30</span> <span class="o">*</span> <span class="n">dy30</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="point_line_dist_multiline"><a class="viewcode-back" href="../../../../Plugin_development.CT.CT_Catphan_500.html#Plugin_development.CT.CT_Catphan_500.common_functions.point_line_dist_multiline">[docs]</a><span class="k">def</span> <span class="nf">point_line_dist_multiline</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">segs</span><span class="p">,</span> <span class="n">minormax</span><span class="o">=</span><span class="s">&#39;max&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    smallest/biggest distance of a point to a sequence of line segments</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">minormax</span> <span class="o">==</span> <span class="s">&#39;min&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">min</span><span class="p">([</span><span class="n">point_line_dist</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">seg</span><span class="p">)</span> <span class="k">for</span> <span class="n">seg</span> <span class="ow">in</span> <span class="n">segs</span><span class="p">])</span>
+    <span class="k">elif</span> <span class="n">minormax</span> <span class="o">==</span> <span class="s">&#39;max&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">max</span><span class="p">([</span><span class="n">point_line_dist</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">seg</span><span class="p">)</span> <span class="k">for</span> <span class="n">seg</span> <span class="ow">in</span> <span class="n">segs</span><span class="p">])</span>
+</div>
+<div class="viewcode-block" id="point2edge_min"><a class="viewcode-back" href="../../../../Plugin_development.CT.CT_Catphan_500.html#Plugin_development.CT.CT_Catphan_500.common_functions.point2edge_min">[docs]</a><span class="k">def</span> <span class="nf">point2edge_min</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">point</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculates minimum distance from user point to image edges</span>
+<span class="sd">    point = (y,x)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span> <span class="o">=</span> <span class="n">size</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+    <span class="n">disttoedge</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+    <span class="n">disttoedge</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">rows</span> <span class="o">-</span> <span class="n">point</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">disttoedge</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">cols</span> <span class="o">-</span> <span class="n">point</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">disttoedge</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">point</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">disttoedge</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">point</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">return</span> <span class="nb">min</span><span class="p">(</span><span class="n">disttoedge</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="size"><a class="viewcode-back" href="../../../../Plugin_development.CT.CT_Catphan_500.html#Plugin_development.CT.CT_Catphan_500.common_functions.size">[docs]</a><span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="n">matrix</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Matlab equivalent of size; returns the size of the matrix in [rows, columns]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">rows</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">matrix</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">cols</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">matrix</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span>
+</div>
+<div class="viewcode-block" id="invert"><a class="viewcode-back" href="../../../../Plugin_development.CT.CT_Catphan_500.html#Plugin_development.CT.CT_Catphan_500.common_functions.invert">[docs]</a><span class="k">def</span> <span class="nf">invert</span><span class="p">(</span><span class="n">matrix</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return the imcomplement of the matrix/image. Equivalent to Matlab&#39;s imcomplement function.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">newmatrix</span> <span class="o">=</span> <span class="o">-</span><span class="n">matrix</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">matrix</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">matrix</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">newmatrix</span>
+</div>
+<div class="viewcode-block" id="dist_2points"><a class="viewcode-back" href="../../../../Plugin_development.CT.CT_Catphan_500.html#Plugin_development.CT.CT_Catphan_500.common_functions.dist_2points">[docs]</a><span class="k">def</span> <span class="nf">dist_2points</span><span class="p">(</span><span class="n">point1</span><span class="p">,</span> <span class="n">point2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Find the distance from point1 to point2</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c">#TODO: make this multi-dimensional</span>
+    <span class="n">dist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">point1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">point2</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">point1</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">point2</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">dist</span>
+</pre></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

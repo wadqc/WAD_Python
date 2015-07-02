@@ -1,0 +1,286 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Plugins.NM.NM_SPECT_COR.NM_SPECT_COR &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="../../../../index.html" />
+    <link rel="up" title="Module code" href="../../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for Plugins.NM.NM_SPECT_COR.NM_SPECT_COR</h1><div class="highlight"><pre>
+<span class="c"># PyWAD is open-source software and consists of a set of plugins written in python for the WAD-Software medical physics quality control software. </span>
+<span class="c"># The WAD Software can be found on https://github.com/wadqc</span>
+<span class="c"># </span>
+<span class="c"># The pywad package includes plugins for the automated analysis of QC images for various imaging modalities. </span>
+<span class="c"># PyWAD has been originaly initiated by Dennis Dickerscheid (AZN), Arnold Schilham (UMCU), Rob van Rooij (UMCU) and Tim de Wit (AMC) </span>
+<span class="c">#</span>
+<span class="c">#</span>
+<span class="c"># Description of this plugin:</span>
+<span class="c">#</span>
+<span class="c"># This program reads projection data and </span>
+<span class="c"># determines the COR shift.</span>
+<span class="c">#</span>
+<span class="n">__version__</span> <span class="o">=</span> <span class="s">&#39;01062015&#39;</span>
+<span class="n">__author__</span> <span class="o">=</span> <span class="s">&#39;DD&#39;</span>
+
+
+
+
+<span class="kn">import</span> <span class="nn">sys</span><span class="o">,</span><span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">dicom</span><span class="o">,</span> <span class="nn">getopt</span>
+<span class="kn">from</span> <span class="nn">dicom</span> <span class="kn">import</span> <span class="n">tag</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">random</span> <span class="k">as</span> <span class="n">rnd</span>
+
+<span class="kn">import</span> <span class="nn">tempfile</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&#39;MPLCONFIGDIR&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkdtemp</span><span class="p">()</span>
+
+<span class="c">#import pylab as plt</span>
+<span class="kn">import</span> <span class="nn">matplotlib</span>
+<span class="c"># Force matplotlib to not use any Xwindows backend.</span>
+<span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s">&#39;Agg&#39;</span><span class="p">)</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+<span class="c">#import matplotlib.pyplot</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+
+
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">optimize</span>
+<span class="kn">from</span> <span class="nn">scipy.optimize</span> <span class="kn">import</span> <span class="n">curve_fit</span>
+
+<span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="kn">import</span> <span class="n">norm</span>
+<span class="kn">import</span> <span class="nn">matplotlib.mlab</span> <span class="kn">as</span> <span class="nn">mlab</span>
+<span class="kn">from</span> <span class="nn">pyWADLib</span> <span class="kn">import</span> <span class="n">findmax</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+
+<div class="viewcode-block" id="gaussian"><a class="viewcode-back" href="../../../../Plugins.NM.NM_SPECT_COR.html#Plugins.NM.NM_SPECT_COR.NM_SPECT_COR.gaussian">[docs]</a><span class="k">def</span> <span class="nf">gaussian</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">a</span><span class="p">,</span><span class="n">mu</span><span class="p">,</span><span class="n">sigma</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Returns the gaussian function for B=m,stdev,max,offset &#39;&#39;&#39;</span>
+    <span class="k">return</span> <span class="n">a</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">((</span><span class="n">x</span><span class="o">-</span><span class="n">mu</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">sigma</span><span class="o">**</span><span class="mi">2</span><span class="p">)))</span>
+
+
+</div>
+<div class="viewcode-block" id="sinogramfit"><a class="viewcode-back" href="../../../../Plugins.NM.NM_SPECT_COR.html#Plugins.NM.NM_SPECT_COR.NM_SPECT_COR.sinogramfit">[docs]</a><span class="k">def</span> <span class="nf">sinogramfit</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span><span class="n">d</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">a</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">b</span><span class="o">*</span><span class="n">x</span><span class="o">+</span><span class="n">c</span><span class="p">)</span> <span class="o">+</span> <span class="n">d</span>
+</div>
+<div class="viewcode-block" id="Datatree"><a class="viewcode-back" href="../../../../Plugins.NM.NM_SPECT_COR.html#Plugins.NM.NM_SPECT_COR.NM_SPECT_COR.Datatree">[docs]</a><span class="k">class</span> <span class="nc">Datatree</span><span class="p">(</span><span class="nb">file</span><span class="p">):</span>
+ 
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">file</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dcmfile</span> <span class="o">=</span> <span class="nb">file</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pixelmap</span> <span class="o">=</span> <span class="nb">file</span><span class="o">.</span><span class="n">pixel_array</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zdim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pixelmap</span><span class="p">)</span>
+
+        <span class="c">## get the locations of the point sources from the first projection</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">bandwidth</span> <span class="o">=</span> <span class="mi">20</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sources</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">findmax</span><span class="p">(</span><span class="n">frame_id</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="n">neighborhood_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">bandwidth</span><span class="p">)</span>
+        
+        <span class="c">## the &quot;y&quot; component contains the number and location of sources</span>
+        <span class="c">## The function show sinogram shows the sinogram for these sources</span>
+        
+
+
+        
+
+<div class="viewcode-block" id="Datatree.fitted_gauss"><a class="viewcode-back" href="../../../../Plugins.NM.NM_SPECT_COR.html#Plugins.NM.NM_SPECT_COR.NM_SPECT_COR.Datatree.fitted_gauss">[docs]</a>    <span class="k">def</span> <span class="nf">fitted_gauss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">ydata</span><span class="p">):</span>
+        
+        <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">ydata</span>
+        
+        <span class="n">p0</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">100</span><span class="p">,</span><span class="mi">10</span><span class="p">]</span>
+
+        <span class="n">popt</span><span class="p">,</span> <span class="n">pcov</span> <span class="o">=</span> <span class="n">curve_fit</span><span class="p">(</span><span class="n">gaussian</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">p0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">popt</span>
+
+
+
+        
+        </div>
+<div class="viewcode-block" id="Datatree.show_sinogram"><a class="viewcode-back" href="../../../../Plugins.NM.NM_SPECT_COR.html#Plugins.NM.NM_SPECT_COR.NM_SPECT_COR.Datatree.show_sinogram">[docs]</a>    <span class="k">def</span> <span class="nf">show_sinogram</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        
+
+        
+        <span class="k">for</span> <span class="n">source</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">sources</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+<span class="c">#            print &quot;source =&quot;, source</span>
+
+            <span class="n">tmp_sinogram_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pixelmap</span><span class="p">[:,</span><span class="n">source</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">bandwidth</span><span class="o">/</span><span class="mi">2</span><span class="p">:</span><span class="n">source</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">bandwidth</span><span class="o">/</span><span class="mi">2</span><span class="p">,:],</span><span class="mi">1</span><span class="p">)</span>
+            
+
+            <span class="c">## First detector</span>
+
+            <span class="n">det1data</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">zdim</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+
+            <span class="c">## Second detector</span>
+
+            <span class="n">det2data</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">zdim</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">zdim</span><span class="p">)</span>
+
+            <span class="n">detlist</span> <span class="o">=</span> <span class="p">[</span><span class="n">det1data</span><span class="p">,</span><span class="n">det2data</span><span class="p">]</span>
+            <span class="n">detdict</span> <span class="o">=</span> <span class="p">{}</span>
+
+            <span class="k">for</span> <span class="n">detector</span> <span class="ow">in</span> <span class="n">detlist</span><span class="p">:</span>
+                <span class="n">source_sinograms</span> <span class="o">=</span> <span class="p">{}</span>
+
+                <span class="n">tmpx</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">detidx</span> <span class="o">=</span> <span class="n">detlist</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">detector</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+                <span class="k">print</span> <span class="s">&quot;DETECTOR&quot;</span><span class="p">,</span> <span class="n">detidx</span>
+                <span class="k">print</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span>
+                <span class="k">for</span> <span class="n">angle</span> <span class="ow">in</span> <span class="n">detector</span><span class="p">:</span>
+                    <span class="n">tmpx</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fitted_gauss</span><span class="p">(</span><span class="n">tmp_sinogram_data</span><span class="p">[</span><span class="n">angle</span><span class="p">,:])[</span><span class="mi">1</span><span class="p">])</span>
+
+
+                <span class="n">source_sinograms</span><span class="p">[</span><span class="n">source</span><span class="p">]</span> <span class="o">=</span> <span class="n">tmpx</span>
+                <span class="n">detdict</span><span class="p">[</span><span class="n">detidx</span><span class="p">]</span> <span class="o">=</span> <span class="n">source_sinograms</span>
+                
+        <span class="k">return</span> <span class="n">detdict</span>
+
+            
+
+</div>
+<div class="viewcode-block" id="Datatree.show_histogram"><a class="viewcode-back" href="../../../../Plugins.NM.NM_SPECT_COR.html#Plugins.NM.NM_SPECT_COR.NM_SPECT_COR.Datatree.show_histogram">[docs]</a>    <span class="k">def</span> <span class="nf">show_histogram</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">frame_id</span><span class="p">,</span> <span class="n">pixelmap</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="n">pixelmap</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">pixelmap</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pixelmap</span>
+
+        <span class="n">pylab</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">pixelmap</span><span class="p">[</span><span class="n">frame_id</span><span class="p">])</span>
+        <span class="k">return</span>
+</div>
+<div class="viewcode-block" id="Datatree.findmax"><a class="viewcode-back" href="../../../../Plugins.NM.NM_SPECT_COR.html#Plugins.NM.NM_SPECT_COR.NM_SPECT_COR.Datatree.findmax">[docs]</a>    <span class="k">def</span> <span class="nf">findmax</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">frame_id</span><span class="p">,</span><span class="n">neighborhood_size</span><span class="p">):</span>
+        <span class="n">x</span><span class="p">,</span><span class="n">y</span> <span class="o">=</span> <span class="n">findmax</span><span class="o">.</span><span class="n">find_max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pixelmap</span><span class="p">[</span><span class="n">frame_id</span><span class="p">],</span><span class="n">neighborhood_size</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">x</span><span class="p">,</span><span class="n">y</span>
+
+
+        
+</div></div>
+<div class="viewcode-block" id="spect_cor_main"><a class="viewcode-back" href="../../../../Plugins.NM.NM_SPECT_COR.html#Plugins.NM.NM_SPECT_COR.NM_SPECT_COR.spect_cor_main">[docs]</a><span class="k">def</span> <span class="nf">spect_cor_main</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="n">results</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+    <span class="k">print</span> <span class="s">&quot;Starting SPECT cor analysis&quot;</span>
+    <span class="n">relevantfile</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">getAllInstances</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">pixel_map</span> <span class="o">=</span> <span class="n">relevantfile</span><span class="o">.</span><span class="n">pixel_array</span>
+    <span class="n">pixelsize</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">relevantfile</span><span class="p">[</span><span class="n">tag</span><span class="o">.</span><span class="n">Tag</span><span class="p">(</span><span class="s">&quot;0028&quot;</span><span class="p">,</span><span class="s">&quot;0030&quot;</span><span class="p">)]</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+  
+    <span class="n">data</span> <span class="o">=</span> <span class="n">Datatree</span><span class="p">(</span><span class="n">relevantfile</span><span class="p">)</span>
+    <span class="n">detdict</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">show_sinogram</span><span class="p">()</span>
+
+    <span class="n">corlist</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">print</span> <span class="s">&quot;detdict.keys()&quot;</span><span class="p">,</span><span class="n">detdict</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">det</span> <span class="ow">in</span> <span class="n">detdict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="k">print</span> <span class="n">det</span><span class="p">,</span> <span class="n">detdict</span><span class="p">[</span><span class="n">det</span><span class="p">]</span>
+        <span class="n">source_sinograms</span> <span class="o">=</span> <span class="n">detdict</span><span class="p">[</span><span class="n">det</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">source_sinograms</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">print</span> <span class="s">&quot;key=&quot;</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">source_sinograms</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+
+            <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">zdim</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+
+            <span class="n">y</span> <span class="o">=</span> <span class="n">source_sinograms</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        
+            <span class="n">p0</span> <span class="o">=</span> <span class="p">[</span><span class="mf">60.</span><span class="p">,</span><span class="mi">1</span><span class="o">/</span><span class="mf">360.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="n">data</span><span class="o">.</span><span class="n">zdim</span><span class="o">/</span><span class="mf">2.</span><span class="p">]</span>
+
+            <span class="n">popt</span><span class="p">,</span> <span class="n">pcov</span> <span class="o">=</span> <span class="n">curve_fit</span><span class="p">(</span><span class="n">sinogramfit</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">p0</span><span class="p">)</span>
+
+            <span class="n">tmp_cor</span> <span class="o">=</span>  <span class="p">((</span><span class="n">popt</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">-</span><span class="p">((</span><span class="n">data</span><span class="o">.</span><span class="n">xdim</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mf">2.0</span><span class="p">))</span><span class="o">*</span><span class="n">pixelsize</span>
+            <span class="n">corlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tmp_cor</span><span class="p">)</span>
+
+            <span class="n">yfit</span> <span class="o">=</span>  <span class="n">sinogramfit</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="o">*</span><span class="n">popt</span><span class="p">)</span>
+           
+            <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">det</span><span class="p">))</span>
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">&quot;detector &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">det</span><span class="p">))</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="s">&#39;bo&#39;</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">yfit</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="s">&quot;COR$_{avg}$ = </span><span class="si">%.2f</span><span class="s">&quot;</span><span class="o">%</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">corlist</span><span class="p">),</span> <span class="n">size</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span><span class="n">ha</span><span class="o">=</span><span class="s">&quot;left&quot;</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s">&quot;top&quot;</span><span class="p">,</span> <span class="n">bbox</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">boxstyle</span><span class="o">=</span><span class="s">&quot;square&quot;</span><span class="p">,</span><span class="n">ec</span><span class="o">=</span><span class="p">(</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">),</span><span class="n">fc</span><span class="o">=</span><span class="p">(</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">),))</span>                 
+
+            <span class="n">object_naam</span> <span class="o">=</span> <span class="s">&#39;Sinogram_det_</span><span class="si">%s</span><span class="s">.png&#39;</span><span class="o">%</span><span class="nb">str</span><span class="p">(</span><span class="n">det</span><span class="p">)</span>   
+            <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">object_naam</span><span class="p">)</span>
+
+            <span class="n">results</span><span class="o">.</span><span class="n">addObject</span><span class="p">(</span><span class="s">&#39;Sinogram det </span><span class="si">%s</span><span class="s">&#39;</span><span class="o">%</span><span class="nb">str</span><span class="p">(</span><span class="n">det</span><span class="p">),</span><span class="n">object_naam</span><span class="p">,</span><span class="n">level</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+
+
+        <span class="n">results</span><span class="o">.</span><span class="n">addFloat</span><span class="p">(</span><span class="s">&#39;COR det </span><span class="si">%s</span><span class="s">&#39;</span><span class="o">%</span><span class="nb">str</span><span class="p">(</span><span class="n">det</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">corlist</span><span class="p">),</span><span class="n">level</span><span class="o">=</span><span class="mi">1</span> <span class="p">)</span>
+</div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

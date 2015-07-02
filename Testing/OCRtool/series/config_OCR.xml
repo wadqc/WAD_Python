@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    Configuratie voor WAD OCR analyse module
+-->
+
+<WAD_OCR_config>
+
+    <!-- naam van de configuratie -->
+    <name>OCRtool</name>
+    <!-- beschrijving -->
+    <description>WAD OCR cfg</description>
+    <!-- versie / datum -->
+    <version>20150122</version>
+    <!-- Logfile verbose options -->
+
+    <action>
+        <plugin>Plugins.OCRtool.ocr</plugin>
+        <function>extract</function>
+        <default_level>1</default_level>
+
+        <params>
+            <measurement>
+                <type>float</type>
+                <description>det1 center of rotation</description>
+                <upper_left_coordinates>(862,141)</upper_left_coordinates>
+                <width>100</width>
+                <height>25</height>
+                <level>1</level>
+                <quantity>COR shift</quantity>
+                <units>mm</units>
+            </measurement>
+            <measurement>
+                <type>float</type>
+                <description>det1 axial shift</description>
+                <upper_left_coordinates>(862,171)</upper_left_coordinates>
+                <width>100</width>
+                <height>25</height>
+                <level>1</level>
+                <quantity>axial shift</quantity>
+                <units>mm</units>
+            </measurement>
+            <measurement>
+                <type>float</type>
+                <description>det1 back projection angle</description>
+                <upper_left_coordinates>(862,203)</upper_left_coordinates>
+                <width>100</width>
+                <height>25</height>
+                <level>1</level>
+                <quantity/>
+                <units>degrees</units>
+            </measurement>
+            <measurement>
+                <type>float</type>
+                <description>det1 system resolution at 20cm</description>
+                <upper_left_coordinates>(862,234)</upper_left_coordinates>
+                <width>100</width>
+                <height>25</height>
+                <level>1</level>
+                <quantity>resolution</quantity>
+                <units>mm</units>
+            </measurement>
+            <measurement>
+                <type>float</type>
+                <description>det1 principal ray</description>
+                <upper_left_coordinates>(862,266)</upper_left_coordinates>
+                <width>100</width>
+                <height>25</height>
+                <level>1</level>
+                <quantity/>
+                <units>mm</units>
+            </measurement>
+            <measurement>
+                <type>float</type>
+                <description>det1 focal length</description>
+                <upper_left_coordinates>(862,296)</upper_left_coordinates>
+                <width>100</width>
+                <height>25</height>
+                <level>1</level>
+                <quantity/>
+                <units>mm</units>
+            </measurement>
+            <measurement>
+                <type>float</type>
+                <description>det2 center of rotation</description>
+                <upper_left_coordinates>(862,480)</upper_left_coordinates>
+                <width>100</width>
+                <height>25</height>
+                <level>1</level>
+                <quantity>COR shift</quantity>
+                <units>mm</units>
+            </measurement>
+            <measurement>
+                <type>float</type>
+                <description>det2 axial shift</description>
+                <upper_left_coordinates>(862,510)</upper_left_coordinates>
+                <width>100</width>
+                <height>25</height>
+                <level>1</level>
+                <quantity>axial shift</quantity>
+                <units>mm</units>
+            </measurement>
+            <measurement>
+                <type>float</type>
+                <description>det2 back projection angle</description>
+                <upper_left_coordinates>(862,542)</upper_left_coordinates>
+                <width>100</width>
+                <height>25</height>
+                <level>1</level>
+                <quantity/>
+                <units>degrees</units>
+            </measurement>
+            <measurement>
+                <type>float</type>
+                <description>det2 system resolution at 20cm</description>
+                <upper_left_coordinates>(862,573)</upper_left_coordinates>
+                <width>100</width>
+                <height>25</height>
+                <level>1</level>
+                <quantity>resolution</quantity>
+                <units>mm</units>
+            </measurement>
+            <measurement>
+                <type>float</type>
+                <description>det2 principal ray</description>
+                <upper_left_coordinates>(862,603)</upper_left_coordinates>
+                <width>100</width>
+                <height>25</height>
+                <level>1</level>
+                <quantity/>
+                <units>mm</units>
+            </measurement>
+            <measurement>
+                <type>float</type>
+                <description>det2 focal length</description>
+                <upper_left_coordinates>(862,631)</upper_left_coordinates>
+                <width>100</width>
+                <height>25</height>
+                <level>1</level>
+                <quantity/>
+                <units>mm</units>
+            </measurement>
+            <measurement>
+                <type>object</type>
+                <description>Sinogram</description>
+                <upper_left_coordinates>(29,128)</upper_left_coordinates>
+                <width>493</width>
+                <height>297</height>
+                <level>1</level>
+                <quantity/>
+                <units/>
+                <filename>sinogram.png</filename>
+            </measurement>
+        </params>
+
+        <limits>
+            <result description="det1 center of rotation">
+                <acc_low>-1</acc_low>
+                <acc_high>1</acc_high>
+                <crit_low>-2</crit_low>
+                <crit_high>2</crit_high>
+            </result>
+            <result description="det2 center of rotation">
+                <acc_low>-1</acc_low>
+                <acc_high>1</acc_high>
+                <crit_low>-2</crit_low>
+                <crit_high>2</crit_high>
+            </result>
+            <result description="det1 axial shift">
+                <acc_low>-1</acc_low>
+                <acc_high>1</acc_high>
+                <crit_low>-2</crit_low>
+                <crit_high>2</crit_high>
+            </result>
+            <result description="det2 axial shift">
+                <acc_low>-1</acc_low>
+                <acc_high>1</acc_high>
+                <crit_low>-2</crit_low>
+                <crit_high>2</crit_high>
+            </result>
+            <result description="det1 back projection angle">
+                <acc_low>-0.1</acc_low>
+                <acc_high>0.1</acc_high>
+                <crit_low>-0.2</crit_low>
+                <crit_high>0.2</crit_high>
+            </result>
+            <result description="det2 back projection angle">
+                <acc_low>-0.1</acc_low>
+                <acc_high>0.1</acc_high>
+                <crit_low>-0.2</crit_low>
+                <crit_high>0.2</crit_high>
+            </result>
+        </limits>
+
+    </action>
+
+</WAD_OCR_config>

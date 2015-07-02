@@ -1,0 +1,257 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Plugins.MRI.MRI_PIQT.PIQTparser &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="../../../../index.html" />
+    <link rel="up" title="Module code" href="../../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for Plugins.MRI.MRI_PIQT.PIQTparser</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">dicom</span> <span class="kn">import</span> <span class="n">tag</span>
+<span class="kn">import</span> <span class="nn">lxml.html</span>
+<span class="kn">import</span> <span class="nn">xml.etree.ElementTree</span> <span class="kn">as</span> <span class="nn">ET</span>
+<span class="kn">import</span> <span class="nn">lxml.etree</span> <span class="kn">as</span> <span class="nn">etree</span>
+
+<div class="viewcode-block" id="print_xml"><a class="viewcode-back" href="../../../../Plugins.MRI.MRI_PIQT.html#Plugins.MRI.MRI_PIQT.PIQTparser.print_xml">[docs]</a><span class="k">def</span> <span class="nf">print_xml</span><span class="p">(</span><span class="n">xmlroot</span><span class="p">):</span>
+   <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">xmlroot</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">&#39;==&#39;</span><span class="o">*</span><span class="mi">20</span>
+        <span class="k">print</span> <span class="n">child</span><span class="o">.</span><span class="n">tag</span><span class="p">,</span> <span class="n">child</span><span class="o">.</span><span class="n">attrib</span><span class="p">,</span> <span class="n">child</span><span class="o">.</span><span class="n">text</span>
+        
+        <span class="k">for</span> <span class="n">subchild</span> <span class="ow">in</span> <span class="n">child</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&#39;1 </span><span class="se">\t</span><span class="s">&#39;</span><span class="p">,</span> <span class="n">subchild</span><span class="o">.</span><span class="n">tag</span><span class="p">,</span> <span class="n">subchild</span><span class="o">.</span><span class="n">attrib</span><span class="p">,</span> <span class="n">subchild</span><span class="o">.</span><span class="n">text</span>
+
+            <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">subchild</span><span class="p">:</span>
+                <span class="k">print</span> <span class="s">&#39;2 </span><span class="se">\t\t</span><span class="s">&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">.</span><span class="n">tag</span><span class="p">,</span> <span class="n">value</span><span class="o">.</span><span class="n">attrib</span><span class="p">,</span> <span class="n">value</span><span class="o">.</span><span class="n">text</span>
+                <span class="k">for</span> <span class="n">subvalue</span> <span class="ow">in</span> <span class="n">value</span><span class="p">:</span>
+                    <span class="k">print</span> <span class="s">&#39;3 </span><span class="se">\t\t\t</span><span class="s">&#39;</span><span class="p">,</span> <span class="n">subvalue</span><span class="o">.</span><span class="n">tag</span><span class="p">,</span> <span class="n">subvalue</span><span class="o">.</span><span class="n">attrib</span><span class="p">,</span> <span class="n">subvalue</span><span class="o">.</span><span class="n">text</span>
+
+                    <span class="k">for</span> <span class="n">subsubvalue</span> <span class="ow">in</span> <span class="n">subvalue</span><span class="p">:</span>
+                        <span class="k">print</span> <span class="s">&#39;4 </span><span class="se">\t\t\t\t</span><span class="s">&#39;</span><span class="p">,</span> <span class="n">subsubvalue</span><span class="o">.</span><span class="n">tag</span><span class="p">,</span> <span class="n">subsubvalue</span><span class="o">.</span><span class="n">attrib</span><span class="p">,</span> <span class="n">subsubvalue</span><span class="o">.</span><span class="n">text</span>
+
+<span class="c">#flood field uniformity</span>
+<span class="c">#spatial linearity</span>
+<span class="c">#slice profile</span>
+<span class="c">#spatial resolution</span>
+</div>
+<div class="viewcode-block" id="section_SpatialResulution"><a class="viewcode-back" href="../../../../Plugins.MRI.MRI_PIQT.html#Plugins.MRI.MRI_PIQT.PIQTparser.section_SpatialResulution">[docs]</a><span class="k">def</span> <span class="nf">section_SpatialResulution</span><span class="p">(</span><span class="n">html</span><span class="p">):</span>
+   <span class="c">#name</span>
+   <span class="c">#date</span>
+   <span class="c">#list type</span>
+   <span class="c">#applied verif files</span>
+   
+
+   <span class="c">#Table</span>
+   <span class="c">#patient</span>
+   <span class="c">#scan name</span>
+   <span class="c">#scan date </span>
+   <span class="c"># ...</span>
+
+   <span class="c">#&#39;Field Strength&#39;,&#39;Gradient Chain&#39;,&#39;Gradient Coil&#39;,&#39;Magnet&#39;,&#39;Tested by&#39;</span>
+
+    <span class="k">return</span>
+
+</div>
+<div class="viewcode-block" id="split_piqt_report"><a class="viewcode-back" href="../../../../Plugins.MRI.MRI_PIQT.html#Plugins.MRI.MRI_PIQT.PIQTparser.split_piqt_report">[docs]</a><span class="k">def</span> <span class="nf">split_piqt_report</span><span class="p">(</span><span class="n">html</span><span class="p">):</span>
+   <span class="k">return</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">html</span><span class="p">)</span><span class="o">.</span><span class="n">readlines</span><span class="p">())</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\r\n</span><span class="s">&lt;br&gt;&lt;b&gt;&#39;</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="parse_html"><a class="viewcode-back" href="../../../../Plugins.MRI.MRI_PIQT.html#Plugins.MRI.MRI_PIQT.PIQTparser.parse_html">[docs]</a><span class="k">def</span> <span class="nf">parse_html</span><span class="p">(</span><span class="n">html</span><span class="p">):</span>
+   <span class="n">output</span> <span class="o">=</span> <span class="p">[]</span>
+   <span class="n">tmplist</span> <span class="o">=</span> <span class="p">[]</span>
+
+
+   <span class="n">resultdict</span> <span class="o">=</span> <span class="p">{}</span>
+
+   <span class="n">html2etree</span> <span class="o">=</span> <span class="n">lxml</span><span class="o">.</span><span class="n">html</span><span class="o">.</span><span class="n">fromstring</span><span class="p">(</span><span class="n">html</span><span class="p">)</span>
+   <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">html2etree</span><span class="o">.</span><span class="n">getchildren</span><span class="p">():</span>
+      <span class="k">if</span> <span class="n">child</span><span class="o">.</span><span class="n">tag</span> <span class="ow">in</span> <span class="n">resultdict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+         <span class="n">resultdict</span><span class="p">[</span><span class="n">child</span><span class="o">.</span><span class="n">tag</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">child</span><span class="p">)</span>
+      <span class="k">else</span><span class="p">:</span>
+         <span class="n">resultdict</span><span class="p">[</span><span class="n">child</span><span class="o">.</span><span class="n">tag</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">child</span><span class="p">]</span>
+
+   <span class="k">if</span> <span class="s">&#39;font&#39;</span> <span class="ow">in</span> <span class="n">resultdict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+      <span class="n">name</span> <span class="o">=</span> <span class="n">resultdict</span><span class="p">[</span><span class="s">&#39;font&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text_content</span><span class="p">()</span>
+      <span class="c">#print &#39;naam:&#39;, naam</span>
+   
+   <span class="n">tmpout</span> <span class="o">=</span> <span class="p">[]</span>
+   <span class="k">if</span> <span class="s">&#39;table&#39;</span> <span class="ow">in</span> <span class="n">resultdict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+      <span class="k">for</span> <span class="n">table</span> <span class="ow">in</span> <span class="n">resultdict</span><span class="p">[</span><span class="s">&#39;table&#39;</span><span class="p">]:</span>
+         <span class="n">tmpdict</span> <span class="o">=</span> <span class="p">{}</span>
+         <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;Flood Field Uniformity&#39;</span><span class="p">,</span><span class="s">&#39;Spatial Linearity&#39;</span><span class="p">,</span><span class="s">&#39;Slice Profile&#39;</span><span class="p">]:</span>
+            <span class="k">print</span> <span class="s">&#39;name&#39;</span><span class="p">,</span><span class="n">name</span>
+
+            <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s">&#39;Flood Field Uniformity&#39;</span><span class="p">:</span>
+               <span class="n">prename</span> <span class="o">=</span> <span class="s">&#39;FFU&#39;</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s">&#39;Spatial Linearity&#39;</span><span class="p">:</span>
+               <span class="n">prename</span> <span class="o">=</span> <span class="s">&#39;SL&#39;</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s">&#39;Slice Profile&#39;</span><span class="p">:</span>
+               <span class="n">prename</span> <span class="o">=</span> <span class="s">&#39;SP&#39;</span>
+
+
+            <span class="n">rows</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s">&quot;tr&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
+               <span class="n">output</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tmpdict</span><span class="p">)</span>
+               <span class="n">tmprow</span> <span class="o">=</span> <span class="p">[</span><span class="n">prename</span><span class="o">+</span><span class="s">&#39;_&#39;</span><span class="o">+</span><span class="n">c</span><span class="o">.</span><span class="n">text_content</span><span class="p">()</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">row</span><span class="o">.</span><span class="n">getchildren</span><span class="p">()]</span>
+               <span class="n">tmpkey</span> <span class="o">=</span> <span class="n">tmprow</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+               <span class="c">#print tmpkey</span>
+
+               <span class="k">if</span> <span class="n">tmpkey</span> <span class="o">==</span> <span class="s">&#39;Scan_Name&#39;</span><span class="p">:</span>
+                  <span class="n">tmprow</span> <span class="o">=</span> <span class="n">row</span><span class="o">.</span><span class="n">getchildren</span><span class="p">()</span>
+                  <span class="n">scanlayout</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">attrib</span><span class="p">[</span><span class="s">&#39;colspan&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">tmprow</span><span class="p">]</span>
+                  <span class="k">print</span> <span class="s">&#39;scanlayout&#39;</span><span class="p">,</span><span class="n">scanlayout</span>
+
+
+               <span class="k">if</span> <span class="n">tmpkey</span> <span class="o">==</span> <span class="s">&#39;Echo_No&#39;</span><span class="p">:</span>
+                  <span class="n">tmprow</span> <span class="o">=</span> <span class="n">row</span><span class="o">.</span><span class="n">getchildren</span><span class="p">()</span>
+                  <span class="n">echolayout</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">attrib</span><span class="p">[</span><span class="s">&#39;colspan&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">tmprow</span><span class="p">]</span>
+                  <span class="k">print</span> <span class="s">&#39;echolayout&#39;</span><span class="p">,</span><span class="n">echolayout</span>
+
+
+
+               <span class="k">if</span> <span class="n">tmpkey</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;Field Strength&#39;</span><span class="p">,</span><span class="s">&#39;Gradient Chain&#39;</span><span class="p">,</span><span class="s">&#39;Gradient Coil&#39;</span><span class="p">,</span><span class="s">&#39;Magnet&#39;</span><span class="p">,</span><span class="s">&#39;Tested by&#39;</span><span class="p">]:</span>
+                  <span class="n">tmpdict</span><span class="p">[</span><span class="n">tmprow</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="n">tmprow</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                  <span class="n">tmpdict</span><span class="p">[</span><span class="n">tmprow</span><span class="p">[</span><span class="mi">2</span><span class="p">]]</span> <span class="o">=</span> <span class="n">tmprow</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+               <span class="k">else</span><span class="p">:</span>
+                  <span class="n">tmpdict</span><span class="p">[</span><span class="n">tmpkey</span><span class="p">]</span><span class="o">=</span><span class="n">tmprow</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+            <span class="n">tmpout</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tmpdict</span><span class="p">)</span>
+
+   <span class="k">print</span> <span class="n">tmpout</span>
+   <span class="c">#for key in tmpdict.keys():</span>
+   <span class="c">#   print key,tmpdict[key]</span>
+
+   <span class="n">headerpars</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;&#39;</span><span class="p">]</span>
+
+   <span class="n">outdict</span> <span class="o">=</span> <span class="p">{}</span>
+
+   <span class="c">#for key in tmpdict.keys():</span>
+   <span class="c">#   print key</span>
+
+   <span class="k">return</span> <span class="n">tmpout</span>
+
+
+</div>
+<div class="viewcode-block" id="parseqcreport"><a class="viewcode-back" href="../../../../Plugins.MRI.MRI_PIQT.html#Plugins.MRI.MRI_PIQT.PIQTparser.parseqcreport">[docs]</a><span class="k">def</span> <span class="nf">parseqcreport</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="n">results</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="n">params</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;params&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">params</span><span class="p">:</span>
+        <span class="n">p</span><span class="p">[</span><span class="n">param</span><span class="o">.</span><span class="n">tag</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">text</span><span class="p">,</span><span class="n">param</span><span class="o">.</span><span class="n">attrib</span><span class="p">)</span>
+
+    <span class="k">print</span> <span class="n">p</span>
+    <span class="n">relevantfile</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">getAllInstances</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">xmltext</span> <span class="o">=</span> <span class="n">relevantfile</span><span class="p">[</span><span class="n">tag</span><span class="o">.</span><span class="n">Tag</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;use_private_tag&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">))]</span>
+
+    <span class="n">root</span> <span class="o">=</span> <span class="n">etree</span><span class="o">.</span><span class="n">fromstring</span><span class="p">(</span><span class="n">xmltext</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+    <span class="n">print_xml</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
+
+    <span class="c">#Sections:</span>
+    <span class="c">#Title</span>
+
+    <span class="c">#Scandate</span>
+
+
+    <span class="c">#Phantomparameters</span>
+    <span class="c">#phantompars = root.find(&#39;cPhantomParameters&#39;)</span>
+    <span class="c">#Isotope = phantompars.find(&#39;aIsotope&#39;).text</span>
+    <span class="c">#results.addChar(&#39;Isotope&#39;,Isotope,level=1)</span>
+
+    <span class="c">#results.addFloat(&#39;BlockTimingWidth&#39;,BlockTimingWidth,level=2)</span>
+    <span class="c">#TimeAlignmentResidual =  detres.find(&#39;lTAResidual&#39;).find(&#39;cBlkValue&#39;).find(&#39;aValue&#39;).text</span>
+    <span class="c">#results.addFloat(&#39;Time alignment residual&#39;,TimeAlignmentResidual,level=2)</span>
+
+</div>
+<div class="viewcode-block" id="main"><a class="viewcode-back" href="../../../../Plugins.MRI.MRI_PIQT.html#Plugins.MRI.MRI_PIQT.PIQTparser.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+   <span class="n">filename</span> <span class="o">=</span> <span class="s">&#39;/data/SoftwareTools/WAD_Software/WADplugins/pywad2/Tools/PIQT/testdata/SPT report2.htm&#39;</span>
+   
+   <span class="n">splitfile</span> <span class="o">=</span> <span class="n">split_piqt_report</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+
+
+
+   <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="n">splitfile</span><span class="p">:</span>
+      <span class="n">parse_html</span><span class="p">(</span><span class="n">elem</span><span class="p">)</span>
+
+</div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+   <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

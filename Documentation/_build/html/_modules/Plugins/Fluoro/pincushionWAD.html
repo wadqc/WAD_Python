@@ -1,0 +1,340 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Plugins.Fluoro.pincushionWAD &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for Plugins.Fluoro.pincushionWAD</h1><div class="highlight"><pre>
+<span class="c"># PyWAD is an open-source set of plugins for the WAD-Software medical physics quality control software. </span>
+<span class="c"># The WAD Software can be found on https://github.com/wadqc</span>
+<span class="c"># </span>
+<span class="c"># This package includes plugins for the automated analysis of QC images for various imaging modalities. </span>
+<span class="c"># PyWAD has been originaly initiated by Dennis Dickerscheid (AZN) and Arnold Schilham (UMCU) </span>
+<span class="c">#</span>
+<span class="c">#</span>
+<span class="c"># Date: </span>
+<span class="c"># Version: 0.2</span>
+<span class="c"># Authors: Koen v. Gils, DD</span>
+<span class="c"># Changelog:</span>
+<span class="c">#</span>
+<span class="c">#</span>
+<span class="c"># Description of this plugin:</span>
+<span class="c">#</span>
+<span class="c"># </span>
+<span class="c">#</span>
+
+<span class="c">#####</span>
+
+<span class="n">__version__</span> <span class="o">=</span> <span class="mi">10062015</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">tempfile</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&#39;MPLCONFIGDIR&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkdtemp</span><span class="p">()</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy.ndimage.filters</span> <span class="kn">import</span> <span class="n">maximum_filter</span>
+<span class="kn">from</span> <span class="nn">scipy.ndimage.morphology</span> <span class="kn">import</span> <span class="n">generate_binary_structure</span><span class="p">,</span> <span class="n">binary_erosion</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">ndimage</span>
+<span class="kn">import</span> <span class="nn">math</span>
+
+<span class="kn">import</span> <span class="nn">scipy.misc</span>
+<span class="kn">import</span> <span class="nn">dicom</span>
+<span class="kn">import</span> <span class="nn">matplotlib</span>
+<span class="c"># Force matplotlib to not use any Xwindows backend.</span>
+<span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s">&#39;Agg&#39;</span><span class="p">)</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">matplotlib.cm</span> <span class="kn">as</span> <span class="nn">cm</span>
+
+<span class="kn">from</span> <span class="nn">skimage.feature</span> <span class="kn">import</span> <span class="n">corner_peaks</span>
+<span class="kn">from</span> <span class="nn">skimage</span> <span class="kn">import</span> <span class="n">data</span><span class="p">,</span> <span class="n">img_as_float</span>
+
+
+<div class="viewcode-block" id="xselector"><a class="viewcode-back" href="../../../Plugins.Fluoro.html#Plugins.Fluoro.pincushionWAD.xselector">[docs]</a><span class="k">def</span> <span class="nf">xselector</span><span class="p">(</span><span class="n">coordinates</span><span class="p">,</span><span class="n">location</span><span class="p">,</span><span class="n">interval</span><span class="p">):</span>
+    <span class="n">subsetx</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">subsety</span><span class="o">=</span><span class="p">[]</span>
+    <span class="k">for</span> <span class="n">coordinate</span> <span class="ow">in</span> <span class="n">coordinates</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">location</span><span class="o">-</span><span class="n">interval</span><span class="o">&lt;</span><span class="n">coordinate</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">&lt;</span><span class="n">location</span><span class="o">+</span><span class="n">interval</span><span class="p">:</span>
+            <span class="n">subsetx</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">coordinate</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">subsety</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">coordinate</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">subsetx</span><span class="p">,</span> <span class="n">subsety</span>
+
+
+</div>
+<div class="viewcode-block" id="findcenter"><a class="viewcode-back" href="../../../Plugins.Fluoro.html#Plugins.Fluoro.pincushionWAD.findcenter">[docs]</a><span class="k">def</span> <span class="nf">findcenter</span><span class="p">(</span><span class="n">listy</span><span class="p">,</span><span class="n">size</span><span class="p">):</span>
+    <span class="n">diff</span><span class="o">=</span><span class="n">size</span>
+    <span class="n">center</span><span class="o">=</span><span class="mi">0</span>
+    <span class="n">counter</span><span class="o">=</span><span class="mi">0</span>
+
+    <span class="k">for</span> <span class="n">listitem</span> <span class="ow">in</span> <span class="n">listy</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">listitem</span><span class="o">-</span><span class="n">size</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span><span class="o">&lt;</span><span class="n">diff</span><span class="p">:</span>
+            <span class="n">diff</span><span class="o">=</span><span class="nb">abs</span><span class="p">(</span><span class="n">listitem</span><span class="o">-</span><span class="n">size</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+            <span class="n">center</span><span class="o">=</span><span class="n">listitem</span>
+            <span class="n">location</span><span class="o">=</span><span class="n">counter</span>
+        <span class="n">counter</span><span class="o">+=</span><span class="mi">1</span>
+    <span class="k">return</span> <span class="n">location</span>
+</div>
+<div class="viewcode-block" id="fluoroscopydistortion"><a class="viewcode-back" href="../../../Plugins.Fluoro.html#Plugins.Fluoro.pincushionWAD.fluoroscopydistortion">[docs]</a><span class="k">def</span> <span class="nf">fluoroscopydistortion</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="n">results</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Function receives an image of a grid and calculates S-distortion and Pincushion distortion.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">relevantfile</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">getAllInstances</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+
+
+     
+    <span class="c">#Read DCM file, threshold to separate grid from background</span>
+    <span class="n">rawdata</span><span class="o">=</span><span class="n">relevantfile</span>
+    <span class="n">pixeldata</span><span class="o">=</span><span class="n">rawdata</span><span class="o">.</span><span class="n">pixel_array</span>
+    <span class="n">array_np</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">pixeldata</span><span class="p">)</span>
+    <span class="n">size</span><span class="o">=</span><span class="n">array_np</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">size</span><span class="o">!=</span><span class="mi">512</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">&#39;Resizing image array...&#39;</span>
+        <span class="n">array_np</span><span class="o">=</span><span class="n">scipy</span><span class="o">.</span><span class="n">misc</span><span class="o">.</span><span class="n">imresize</span><span class="p">(</span><span class="n">array_np</span><span class="p">,(</span><span class="mi">512</span><span class="p">,</span><span class="mi">512</span><span class="p">))</span>
+        <span class="n">size</span><span class="o">=</span><span class="n">array_np</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">forexport</span><span class="o">=</span><span class="n">array_np</span>
+    <span class="n">mean_pixel</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">pixeldata</span><span class="p">)</span>
+    <span class="n">high_values_indices</span> <span class="o">=</span> <span class="n">array_np</span> <span class="o">&gt;</span> <span class="n">mean_pixel</span>
+    <span class="n">low_values_indices</span> <span class="o">=</span> <span class="n">array_np</span><span class="o">&lt;=</span><span class="n">mean_pixel</span>
+    <span class="n">zero_values_indices</span> <span class="o">=</span> <span class="n">array_np</span><span class="o">==</span><span class="mi">0</span>
+    <span class="n">array_np</span><span class="p">[</span><span class="n">high_values_indices</span><span class="p">]</span><span class="o">=</span><span class="mi">2</span>
+    <span class="n">array_np</span><span class="p">[</span><span class="n">low_values_indices</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">array_np</span><span class="p">[</span><span class="n">zero_values_indices</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">resultxml</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c">#Define an area for peak detection, resize image matrix if other than 512x512</span>
+    <span class="n">area</span><span class="o">=</span><span class="mi">10</span>
+
+        
+    <span class="c">#Plot resized and threholded image</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">array_np</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+    <span class="c">#print (array_np==1).sum()</span>
+
+
+    <span class="c">#Detect intersections by adjacent cell values</span>
+    <span class="n">dimensionrange</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
+    <span class="n">xarray</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">yarray</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">dimensionrange</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">dimensionrange</span><span class="p">:</span>
+            
+            <span class="k">if</span> <span class="n">array_np</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span><span class="o">==</span><span class="mi">1</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">array_np</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span><span class="o">==</span><span class="mi">1</span> <span class="ow">and</span> <span class="n">array_np</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span><span class="o">==</span><span class="mi">1</span> <span class="ow">and</span> <span class="n">array_np</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">==</span><span class="mi">1</span> <span class="ow">and</span> <span class="n">array_np</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">==</span><span class="mi">1</span> <span class="ow">and</span> <span class="n">array_np</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="o">+</span><span class="mi">2</span><span class="p">]</span><span class="o">==</span><span class="mi">1</span> <span class="ow">and</span> <span class="n">array_np</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="o">+</span><span class="mi">3</span><span class="p">]</span><span class="o">==</span><span class="mi">1</span> <span class="ow">and</span> <span class="n">array_np</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">3</span><span class="p">,</span><span class="n">j</span><span class="p">]</span><span class="o">==</span><span class="mi">1</span> <span class="ow">and</span> <span class="n">array_np</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span><span class="n">j</span><span class="p">]</span><span class="o">==</span><span class="mi">1</span> <span class="ow">and</span> <span class="n">array_np</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">j</span><span class="p">]</span><span class="o">==</span><span class="mi">1</span> <span class="ow">and</span> <span class="n">array_np</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">j</span><span class="p">]</span><span class="o">==</span><span class="mi">1</span> <span class="ow">and</span> <span class="n">array_np</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">2</span><span class="p">,</span><span class="n">j</span><span class="p">]</span><span class="o">==</span><span class="mi">1</span> <span class="ow">and</span> <span class="n">array_np</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">3</span><span class="p">,</span><span class="n">j</span><span class="p">]</span><span class="o">==</span><span class="mi">1</span><span class="p">:</span>
+                    <span class="n">xarray</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+                    <span class="n">yarray</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">j</span><span class="p">)</span>
+
+
+    <span class="n">dotsarray</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">size</span><span class="p">,</span><span class="n">size</span><span class="p">))</span>
+    <span class="n">dotsarray</span><span class="p">[</span><span class="n">xarray</span><span class="p">,</span><span class="n">yarray</span><span class="p">]</span><span class="o">=</span><span class="mi">1</span>
+    <span class="c">#plt.imshow(dotsarray)</span>
+    <span class="c">#plt.show()</span>
+
+    <span class="c">#Detect peaks and plot</span>
+    <span class="n">coordinates</span><span class="o">=</span><span class="n">corner_peaks</span><span class="p">(</span><span class="n">dotsarray</span><span class="p">,</span> <span class="n">min_distance</span><span class="o">=</span><span class="n">area</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">coordinates</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span><span class="n">coordinates</span><span class="p">[:,</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+    <span class="c">#Find center row in grid, sort peaks from left to right, find central peak and determine grid rotation</span>
+    <span class="p">(</span><span class="n">subsetx</span><span class="p">,</span><span class="n">subsety</span><span class="p">)</span><span class="o">=</span><span class="n">xselector</span><span class="p">(</span><span class="n">coordinates</span><span class="p">,</span><span class="n">size</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="mi">15</span><span class="p">)</span>
+    <span class="p">(</span><span class="n">subsety</span><span class="p">,</span><span class="n">subsetx</span><span class="p">)</span><span class="o">=</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="nb">sorted</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">subsety</span><span class="p">,</span> <span class="n">subsetx</span><span class="p">),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">pair</span><span class="p">:</span> <span class="n">pair</span><span class="p">[</span><span class="mi">0</span><span class="p">]))]</span>
+    <span class="n">location</span><span class="o">=</span><span class="n">findcenter</span><span class="p">(</span><span class="n">subsety</span><span class="p">,</span><span class="n">size</span><span class="p">)</span>
+    <span class="n">rotation</span><span class="o">=</span><span class="n">math</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">atan</span><span class="p">((</span><span class="nb">float</span><span class="p">(</span><span class="n">subsetx</span><span class="p">[</span><span class="n">location</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span><span class="o">-</span><span class="nb">float</span><span class="p">(</span><span class="n">subsetx</span><span class="p">[</span><span class="n">location</span><span class="o">+</span><span class="mi">2</span><span class="p">]))</span><span class="o">/</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">subsety</span><span class="p">[</span><span class="n">location</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span><span class="o">-</span><span class="nb">float</span><span class="p">(</span><span class="n">subsety</span><span class="p">[</span><span class="n">location</span><span class="o">+</span><span class="mi">2</span><span class="p">]))))</span>
+    <span class="k">print</span> <span class="n">rotation</span>
+
+    <span class="c">#Rotate image to correct for grid rotation and plot corrected peaks</span>
+    <span class="n">rotateddotsarray</span><span class="o">=</span><span class="n">scipy</span><span class="o">.</span><span class="n">misc</span><span class="o">.</span><span class="n">imrotate</span><span class="p">(</span><span class="n">dotsarray</span><span class="p">,</span> <span class="n">rotation</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="s">&#39;bilinear&#39;</span><span class="p">)</span>
+    <span class="n">rotatedcoordinates</span><span class="o">=</span><span class="n">corner_peaks</span><span class="p">(</span><span class="n">rotateddotsarray</span><span class="p">,</span> <span class="n">min_distance</span><span class="o">=</span><span class="n">area</span><span class="p">)</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">rotatedcoordinates</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span><span class="n">rotatedcoordinates</span><span class="p">[:,</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+
+    <span class="c">#Find center row in rotated grid</span>
+    <span class="p">(</span><span class="n">subsetx</span><span class="p">,</span><span class="n">subsety</span><span class="p">)</span><span class="o">=</span><span class="n">xselector</span><span class="p">(</span><span class="n">rotatedcoordinates</span><span class="p">,</span><span class="n">size</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="mi">15</span><span class="p">)</span>
+    <span class="p">(</span><span class="n">subsety</span><span class="p">,</span><span class="n">subsetx</span><span class="p">)</span><span class="o">=</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="nb">sorted</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">subsety</span><span class="p">,</span> <span class="n">subsetx</span><span class="p">),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">pair</span><span class="p">:</span> <span class="n">pair</span><span class="p">[</span><span class="mi">0</span><span class="p">]))]</span>
+
+    <span class="c">#Determine position of central line to aid in finding consecutive lines in grid</span>
+    <span class="n">centralline</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">subsetx</span><span class="p">)</span>
+
+
+    <span class="c">#find central peak of rotated grid</span>
+    <span class="n">location</span><span class="o">=</span><span class="n">findcenter</span><span class="p">(</span><span class="n">subsety</span><span class="p">,</span><span class="n">size</span><span class="p">)</span>
+    <span class="n">ycenter</span><span class="o">=</span><span class="n">subsetx</span><span class="p">[</span><span class="n">location</span><span class="p">]</span>
+    <span class="n">xcenter</span><span class="o">=</span><span class="n">subsety</span><span class="p">[</span><span class="n">location</span><span class="p">]</span>
+    <span class="k">print</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">subsety</span><span class="p">)</span>
+
+    <span class="c">#Determine unit size of grid in center of image</span>
+    <span class="c">#unitsize= np.amin(np.nonzero(np.diff(subsety)))</span>
+    <span class="n">unitsize</span><span class="o">=</span> <span class="p">(</span><span class="n">subsety</span><span class="p">[</span><span class="n">location</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">subsety</span><span class="p">[</span><span class="n">location</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="mi">2</span>
+    <span class="k">print</span> <span class="n">unitsize</span>
+
+
+    <span class="c">#Determine the squares x squares area of grid investigated</span>
+    <span class="c">#squares=6</span>
+    <span class="n">squares</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">((</span><span class="mf">0.60</span><span class="o">*</span><span class="mi">512</span><span class="p">)</span><span class="o">/</span><span class="n">unitsize</span><span class="p">))</span><span class="o">/</span><span class="mi">2</span>
+    <span class="k">print</span> <span class="n">squares</span>
+
+    <span class="c">#Determine distortion in x direction to aid in finding consecutive lines in grid</span>
+    <span class="n">xdistortion</span><span class="o">=</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">subsety</span><span class="p">[</span><span class="n">location</span><span class="o">+</span><span class="n">squares</span><span class="p">])</span><span class="o">-</span><span class="nb">float</span><span class="p">(</span><span class="n">subsety</span><span class="p">[</span><span class="n">location</span><span class="o">-</span><span class="n">squares</span><span class="p">]))</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">squares</span><span class="o">*</span><span class="n">unitsize</span><span class="p">)</span>
+
+
+
+    <span class="c">#Determine grid points in lower part of image</span>
+    <span class="p">(</span><span class="n">subsetx</span><span class="p">,</span><span class="n">subsety</span><span class="p">)</span><span class="o">=</span><span class="n">xselector</span><span class="p">(</span><span class="n">rotatedcoordinates</span><span class="p">,</span><span class="n">centralline</span><span class="o">-</span><span class="n">squares</span><span class="o">*</span><span class="n">unitsize</span><span class="o">*</span><span class="n">xdistortion</span><span class="p">,</span><span class="n">unitsize</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+    <span class="p">(</span><span class="n">subsety</span><span class="p">,</span><span class="n">subsetx</span><span class="p">)</span><span class="o">=</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="nb">sorted</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">subsety</span><span class="p">,</span> <span class="n">subsetx</span><span class="p">),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">pair</span><span class="p">:</span> <span class="n">pair</span><span class="p">[</span><span class="mi">0</span><span class="p">]))]</span>
+    <span class="n">location</span><span class="o">=</span><span class="n">findcenter</span><span class="p">(</span><span class="n">subsety</span><span class="p">,</span><span class="n">size</span><span class="p">)</span>
+
+    <span class="c">#Determine corners of selected square area</span>
+    <span class="n">x1</span><span class="o">=</span><span class="n">subsety</span><span class="p">[</span><span class="n">location</span><span class="o">-</span><span class="n">squares</span><span class="p">]</span>
+    <span class="n">y1</span><span class="o">=</span><span class="n">subsetx</span><span class="p">[</span><span class="n">location</span><span class="o">-</span><span class="n">squares</span><span class="p">]</span>
+    <span class="k">print</span> <span class="p">(</span><span class="n">x1</span><span class="p">,</span><span class="n">y1</span><span class="p">)</span>
+    <span class="n">x3</span><span class="o">=</span><span class="n">subsety</span><span class="p">[</span><span class="n">location</span><span class="o">+</span><span class="n">squares</span><span class="p">]</span>
+    <span class="n">y3</span><span class="o">=</span><span class="n">subsetx</span><span class="p">[</span><span class="n">location</span><span class="o">+</span><span class="n">squares</span><span class="p">]</span>
+    <span class="n">s1</span><span class="o">=</span><span class="n">subsetx</span><span class="p">[</span><span class="n">location</span><span class="p">]</span>
+
+
+
+    <span class="p">(</span><span class="n">subsetx</span><span class="p">,</span><span class="n">subsety</span><span class="p">)</span><span class="o">=</span><span class="n">xselector</span><span class="p">(</span><span class="n">rotatedcoordinates</span><span class="p">,</span><span class="n">centralline</span><span class="o">+</span><span class="n">squares</span><span class="o">*</span><span class="n">unitsize</span><span class="o">*</span><span class="n">xdistortion</span><span class="p">,</span><span class="n">unitsize</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+    <span class="p">(</span><span class="n">subsety</span><span class="p">,</span><span class="n">subsetx</span><span class="p">)</span><span class="o">=</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="nb">sorted</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">subsety</span><span class="p">,</span> <span class="n">subsetx</span><span class="p">),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">pair</span><span class="p">:</span> <span class="n">pair</span><span class="p">[</span><span class="mi">0</span><span class="p">]))]</span>
+    <span class="k">print</span> <span class="n">subsetx</span><span class="p">,</span><span class="n">subsety</span>
+    <span class="n">location</span><span class="o">=</span><span class="n">findcenter</span><span class="p">(</span><span class="n">subsety</span><span class="p">,</span><span class="n">size</span><span class="p">)</span>
+
+    <span class="n">x2</span><span class="o">=</span><span class="n">subsety</span><span class="p">[</span><span class="n">location</span><span class="o">+</span><span class="n">squares</span><span class="p">]</span>
+    <span class="n">y2</span><span class="o">=</span><span class="n">subsetx</span><span class="p">[</span><span class="n">location</span><span class="o">+</span><span class="n">squares</span><span class="p">]</span>
+    <span class="n">x4</span><span class="o">=</span><span class="n">subsety</span><span class="p">[</span><span class="n">location</span><span class="o">-</span><span class="n">squares</span><span class="p">]</span>
+    <span class="n">y4</span><span class="o">=</span><span class="n">subsetx</span><span class="p">[</span><span class="n">location</span><span class="o">-</span><span class="n">squares</span><span class="p">]</span>
+    <span class="n">s2</span><span class="o">=</span><span class="n">subsetx</span><span class="p">[</span><span class="n">location</span><span class="p">]</span>
+
+ 
+    <span class="n">pincushion1</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">x2</span><span class="o">-</span><span class="n">x1</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="p">(</span><span class="n">y2</span><span class="o">-</span><span class="n">y1</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">squares</span><span class="o">*</span><span class="n">unitsize</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+    <span class="n">pincushion2</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">x3</span><span class="o">-</span><span class="n">x4</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="p">(</span><span class="n">y3</span><span class="o">-</span><span class="n">y4</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">squares</span><span class="o">*</span><span class="n">unitsize</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+
+    <span class="n">pincushionratio</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">pincushion2</span><span class="o">/</span><span class="n">pincushion1</span><span class="p">)</span>
+
+    <span class="n">sartifacttop1</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">s1</span><span class="o">-</span><span class="n">y1</span><span class="p">)</span>
+    <span class="n">sartifacttop2</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">s1</span><span class="o">-</span><span class="n">y3</span><span class="p">)</span>
+    <span class="n">sartifactbottom1</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">s2</span><span class="o">-</span><span class="n">y2</span><span class="p">)</span>
+    <span class="n">sartifactbottom2</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">s2</span><span class="o">-</span><span class="n">y4</span><span class="p">)</span>
+
+
+
+
+    <span class="k">print</span> <span class="n">pincushion1</span><span class="p">,</span><span class="n">pincushion2</span><span class="p">,</span><span class="n">pincushionratio</span>
+    <span class="n">results</span><span class="o">.</span><span class="n">addFloat</span><span class="p">(</span><span class="s">&#39;Pincushion 1&#39;</span><span class="p">,</span> <span class="n">pincushion1</span><span class="p">,</span><span class="n">level</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">results</span><span class="o">.</span><span class="n">addFloat</span><span class="p">(</span><span class="s">&#39;Pincushion 2&#39;</span><span class="p">,</span> <span class="n">pincushion2</span><span class="p">,</span><span class="n">level</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">results</span><span class="o">.</span><span class="n">addFloat</span><span class="p">(</span><span class="s">&#39;Pincushion ratio&#39;</span><span class="p">,</span><span class="n">pincushionratio</span><span class="p">,</span><span class="n">level</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">results</span><span class="o">.</span><span class="n">addFloat</span><span class="p">(</span><span class="s">&#39;S distortion top 1&#39;</span><span class="p">,</span><span class="n">sartifacttop1</span><span class="p">,</span><span class="n">level</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">results</span><span class="o">.</span><span class="n">addFloat</span><span class="p">(</span><span class="s">&#39;S distortion top 2&#39;</span><span class="p">,</span><span class="n">sartifacttop2</span><span class="p">,</span><span class="n">level</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">results</span><span class="o">.</span><span class="n">addFloat</span><span class="p">(</span><span class="s">&#39;S distortion bottom 1&#39;</span><span class="p">,</span><span class="n">sartifactbottom1</span><span class="p">,</span><span class="n">level</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">results</span><span class="o">.</span><span class="n">addFloat</span><span class="p">(</span><span class="s">&#39;S distortion bottom 2&#39;</span><span class="p">,</span><span class="n">sartifactbottom2</span><span class="p">,</span><span class="n">level</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="c">#------------------------- </span>
+
+
+    <span class="n">object_naam</span> <span class="o">=</span> <span class="s">&#39;export.png&#39;</span>
+
+
+    <span class="n">size</span><span class="o">=</span><span class="n">pixeldata</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">size</span><span class="o">!=</span><span class="mi">512</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">&#39;Resizing image array...&#39;</span>
+        <span class="n">pixeldata</span><span class="o">=</span><span class="n">scipy</span><span class="o">.</span><span class="n">misc</span><span class="o">.</span><span class="n">imresize</span><span class="p">(</span><span class="n">pixeldata</span><span class="p">,(</span><span class="mi">512</span><span class="p">,</span><span class="mi">512</span><span class="p">))</span>
+
+    <span class="n">rotated</span><span class="o">=</span><span class="n">scipy</span><span class="o">.</span><span class="n">misc</span><span class="o">.</span><span class="n">imrotate</span><span class="p">(</span><span class="n">pixeldata</span><span class="p">,</span> <span class="n">rotation</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="s">&#39;bilinear&#39;</span><span class="p">)</span>
+    <span class="n">rotated</span><span class="p">[</span><span class="n">y1</span><span class="o">-</span><span class="mi">3</span><span class="p">:</span><span class="n">y1</span><span class="o">+</span><span class="mi">3</span><span class="p">,</span><span class="n">x1</span><span class="o">-</span><span class="mi">3</span><span class="p">:</span><span class="n">x1</span><span class="o">+</span><span class="mi">3</span><span class="p">]</span><span class="o">=</span><span class="mi">255</span>
+    <span class="n">rotated</span><span class="p">[</span><span class="n">y2</span><span class="o">-</span><span class="mi">3</span><span class="p">:</span><span class="n">y2</span><span class="o">+</span><span class="mi">3</span><span class="p">,</span><span class="n">x2</span><span class="o">-</span><span class="mi">3</span><span class="p">:</span><span class="n">x2</span><span class="o">+</span><span class="mi">3</span><span class="p">]</span><span class="o">=</span><span class="mi">255</span>
+    <span class="n">rotated</span><span class="p">[</span><span class="n">y3</span><span class="o">-</span><span class="mi">3</span><span class="p">:</span><span class="n">y3</span><span class="o">+</span><span class="mi">3</span><span class="p">,</span><span class="n">x3</span><span class="o">-</span><span class="mi">3</span><span class="p">:</span><span class="n">x3</span><span class="o">+</span><span class="mi">3</span><span class="p">]</span><span class="o">=</span><span class="mi">255</span>
+    <span class="n">rotated</span><span class="p">[</span><span class="n">y4</span><span class="o">-</span><span class="mi">3</span><span class="p">:</span><span class="n">y4</span><span class="o">+</span><span class="mi">3</span><span class="p">,</span><span class="n">x4</span><span class="o">-</span><span class="mi">3</span><span class="p">:</span><span class="n">x4</span><span class="o">+</span><span class="mi">3</span><span class="p">]</span><span class="o">=</span><span class="mi">255</span>
+    <span class="n">rotated</span><span class="p">[</span><span class="n">y4</span><span class="o">-</span><span class="mi">3</span><span class="p">:</span><span class="n">y4</span><span class="o">+</span><span class="mi">3</span><span class="p">,</span><span class="n">x4</span><span class="o">-</span><span class="mi">3</span><span class="p">:</span><span class="n">x4</span><span class="o">+</span><span class="mi">3</span><span class="p">]</span><span class="o">=</span><span class="mi">255</span>
+    <span class="n">rotated</span><span class="p">[</span><span class="n">ycenter</span><span class="o">-</span><span class="mi">3</span><span class="p">:</span><span class="n">ycenter</span><span class="o">+</span><span class="mi">3</span><span class="p">,</span><span class="n">xcenter</span><span class="o">-</span><span class="mi">3</span><span class="p">:</span><span class="n">xcenter</span><span class="o">+</span><span class="mi">3</span><span class="p">]</span><span class="o">=</span><span class="mi">255</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">rotated</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+
+    <span class="n">scipy</span><span class="o">.</span><span class="n">misc</span><span class="o">.</span><span class="n">imsave</span><span class="p">(</span><span class="n">object_naam</span><span class="p">,</span><span class="n">rotated</span><span class="p">)</span>
+    <span class="n">results</span><span class="o">.</span><span class="n">addObject</span><span class="p">(</span><span class="s">&#39;Image&#39;</span><span class="p">,</span><span class="n">object_naam</span><span class="p">,</span><span class="n">level</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

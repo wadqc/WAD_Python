@@ -1,0 +1,421 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Plugins.Mammo.Mammo_CDMam package &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">..  documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="plugins-mammo-mammo-cdmam-package">
+<h1>Plugins.Mammo.Mammo_CDMam package<a class="headerlink" href="#plugins-mammo-mammo-cdmam-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-Plugins.Mammo.Mammo_CDMam.CDMam_constants">
+<span id="plugins-mammo-mammo-cdmam-cdmam-constants-module"></span><h2>Plugins.Mammo.Mammo_CDMam.CDMam_constants module<a class="headerlink" href="#module-Plugins.Mammo.Mammo_CDMam.CDMam_constants" title="Permalink to this headline">¶</a></h2>
+<p>String constants for usage in CDMam</p>
+</div>
+<div class="section" id="module-Plugins.Mammo.Mammo_CDMam.CDMam_lib">
+<span id="plugins-mammo-mammo-cdmam-cdmam-lib-module"></span><h2>Plugins.Mammo.Mammo_CDMam.CDMam_lib module<a class="headerlink" href="#module-Plugins.Mammo.Mammo_CDMam.CDMam_lib" title="Permalink to this headline">¶</a></h2>
+<p>CDMam_lib: classes and routines for calculation of CDMAM scores
+Warning: THIS MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!</p>
+<dl class="docutils">
+<dt>Some stuff that can be optimized:</dt>
+<dd><ul class="first last simple">
+<li>choice for detection scale (radius around expectation locations)</li>
+<li>choice for integration scale (sigma_bx in blurring/integration)</li>
+<li>maybe exclude better influence of text next to boundary cells</li>
+<li>maybe crop image to interesting size (before or first step of removal of grid)</li>
+<li>speed up removal of grid (maybe with grid detection on lower scale?)</li>
+</ul>
+</dd>
+<dt>Changelog:</dt>
+<dd>20150213: first working version</dd>
+</dl>
+<dl class="class">
+<dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam">
+<em class="property">class </em><tt class="descclassname">Plugins.Mammo.Mammo_CDMam.CDMam_lib.</tt><tt class="descname">CDMam</tt><big>(</big><em>guimode=False</em><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_lib.html#CDMam"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class for calculation of CDMAM score</p>
+<dl class="method">
+<dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.AlignROI">
+<tt class="descname">AlignROI</tt><big>(</big><em>cs</em>, <em>roipts</em>, <em>distmm=5</em><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_lib.html#CDMam.AlignROI"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.AlignROI" title="Permalink to this definition">¶</a></dt>
+<dd><p>Moves the four cornerpoints of a ROI to the most likely crossing in the gridimage, within &lt;distmm&gt; distance from the starting point.
+Returns four adjusted cornerpoints.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.CDCOMSingle">
+<tt class="descname">CDCOMSingle</tt><big>(</big><em>cs</em><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_lib.html#CDMam.CDCOMSingle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.CDCOMSingle" title="Permalink to this definition">¶</a></dt>
+<dd><p>run cdcom.exe on given file
+input matrix.inp and matrix2.inp, and average
+(matrix2.inp should be matrix.inp after plain_nnc; avg shouldbe matrix.inp after my ncc, but this is not the case)
+run ncc
+calc threshold thickness</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.CDMamSingle">
+<tt class="descname">CDMamSingle</tt><big>(</big><em>cs</em><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_lib.html#CDMam.CDMamSingle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.CDMamSingle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate score for one CDMam image
+WorkFlow:
+1. Extract grid from image (will be used to define regions of interest for observer)
+2. Find starting grid cell
+3. Locate all gridcells
+4. Test observer on each cell</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.DICOMInfo">
+<tt class="descname">DICOMInfo</tt><big>(</big><em>cs</em>, <em>info='dicom'</em><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_lib.html#CDMam.DICOMInfo"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.DICOMInfo" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extract some info from the DICOM header. &lt;info&gt; is either &#8216;dicom&#8217; (extensive list) or &#8216;qc&#8217; (short list).
+Returns list of &lt;tag description&gt;,&lt;tag value&gt;</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.detectVarGauss">
+<tt class="descname">detectVarGauss</tt><big>(</big><em>cs</em>, <em>di</em>, <em>th</em><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_lib.html#CDMam.detectVarGauss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.detectVarGauss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Blur with Gaussian of sigma matched to diameter of disc == averaging over disc size
+Detect max response within search radius around expected location</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.determineScannerID">
+<tt class="descname">determineScannerID</tt><big>(</big><em>cs</em><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_lib.html#CDMam.determineScannerID"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.determineScannerID" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tries to identify machine model, used filter, and energy presentation</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.findStartingCell">
+<tt class="descname">findStartingCell</tt><big>(</big><em>cs</em><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_lib.html#CDMam.findStartingCell"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.findStartingCell" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find first gridcell for gridcell locating.
+Required:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>in image onscreen, phantom is located at lefthand side, with radboud logo in lower right corner,</li>
+</ol>
+<blockquote>
+<div>with the irradiated area which is not covered by the phantom on the righthand side</div></blockquote>
+<ol class="arabic simple" start="2">
+<li>uncovered detector area has higher pixel value than covered area</li>
+<li>Phantom 3.2 cell is 1cm by 1 cm, approx 45 deg rotated.</li>
+</ol>
+</div></blockquote>
+<p>Workflow:
+1. Find in gridlines image the first row with four crossings from non-grid to grid.
+2. top corner of first cell is mid of the last two crossings
+3. Other points from  cell is 1cm by 1 cm, approx 45 deg rotated
+4. Look for max in small area around each of the four cornerpoints</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.locateGridCells">
+<tt class="descname">locateGridCells</tt><big>(</big><em>cs</em><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_lib.html#CDMam.locateGridCells"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.locateGridCells" title="Permalink to this definition">¶</a></dt>
+<dd><p>Starting from one a given box, locate all gridcells, using the previous one as a starting point.
+This way local deformations will not lead to mismatches further away/
+Returns a matrix or roicornerpoints in cs.gridrois</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.nearestNeighborCorrection">
+<tt class="descname">nearestNeighborCorrection</tt><big>(</big><em>cs</em>, <em>scorematrix</em><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_lib.html#CDMam.nearestNeighborCorrection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.nearestNeighborCorrection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Nearest Neighbor Correction.
+From the CDMAM manual:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>A True needs 2 or more correctly indicated nearest neighbours to remain a True</li>
+<li>A False or Not indicated disk will be considered as True when it has 3 or 4 correctly indicated nearest neighbours.</li>
+<li>A True which has only 2 nearest neighbours (at the edges of the phantom) needs only 1 correctly indicated nearest neighbour to remain True.</li>
+<li>A False or Not indicated disk which has only 2 nearest neighbours will be regarded True if both nearest neighbours are correctly indicated.</li>
+<li>The absent corners of the phantom (0.03 mm/2.0 mm and 2.00mm/0.06 mm) will be regarded True when both nearest neighbours are correctly indicated.</li>
+</ol>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.observerScore">
+<tt class="descname">observerScore</tt><big>(</big><em>cs</em><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_lib.html#CDMam.observerScore"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.observerScore" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate score of model observer:
+Workflow:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>is max response in cell in the correct corner?</li>
+<li>consistency fix of scoring sheet</li>
+</ol>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.pixDim">
+<tt class="descname">pixDim</tt><big>(</big><em>cs</em><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_lib.html#CDMam.pixDim"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.pixDim" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.qcversion">
+<tt class="descname">qcversion</tt><em class="property"> = 20150213</em><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.qcversion" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.removeGrid">
+<tt class="descname">removeGrid</tt><big>(</big><em>cs</em>, <em>removeGrid</em><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_lib.html#CDMam.removeGrid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.removeGrid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Detect the grid of the phantom and remove it from the image</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.thresholdThickness">
+<tt class="descname">thresholdThickness</tt><big>(</big><em>cs</em>, <em>hitmatrix</em><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_lib.html#CDMam.thresholdThickness"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.thresholdThickness" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculation of threshold thickness</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMamPhantom">
+<em class="property">class </em><tt class="descclassname">Plugins.Mammo.Mammo_CDMam.CDMam_lib.</tt><tt class="descname">CDMamPhantom</tt><big>(</big><em>version</em><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_lib.html#CDMamPhantom"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMamPhantom" title="Permalink to this definition">¶</a></dt>
+<dd><p>Description of the CDMAM Phantom. For now version 3.2 and 3.4 are implemented</p>
+<dl class="attribute">
+<dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMamPhantom.diameter_mm">
+<tt class="descname">diameter_mm</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMamPhantom.diameter_mm" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMamPhantom.groundtruth">
+<tt class="descname">groundtruth</tt><em class="property"> = [[0, 3, 2, 1, 4, 3, 2, 1, 2, 3, 0, 0, 0, 0, 0, 0], [1, 1, 2, 3, 2, 3, 3, 1, 2, 1, 4, 0, 0, 0, 0, 0], [1, 3, 1, 1, 4, 4, 1, 4, 3, 3, 4, 2, 0, 0, 0, 0], [2, 4, 3, 4, 3, 2, 1, 3, 2, 3, 1, 4, 2, 0, 0, 0], [1, 1, 3, 1, 2, 1, 4, 2, 4, 2, 2, 3, 3, 1, 0, 0], [4, 2, 1, 4, 2, 1, 4, 1, 3, 4, 1, 2, 2, 4, 1, 0], [1, 4, 2, 4, 4, 2, 1, 3, 2, 2, 3, 1, 3, 1, 4, 2], [2, 1, 1, 2, 3, 3, 4, 1, 4, 4, 3, 1, 2, 1, 4, 1], [3, 3, 1, 4, 1, 4, 2, 2, 3, 2, 4, 3, 2, 3, 1, 2], [0, 2, 4, 2, 1, 3, 3, 1, 1, 4, 3, 3, 4, 4, 1, 1], [0, 0, 1, 3, 4, 2, 4, 3, 2, 2, 3, 4, 3, 3, 4, 4], [0, 0, 0, 4, 1, 4, 2, 2, 4, 4, 2, 4, 2, 1, 3, 1], [0, 0, 0, 0, 2, 4, 4, 3, 4, 2, 3, 1, 2, 4, 2, 1], [0, 0, 0, 0, 0, 2, 1, 2, 3, 2, 3, 4, 3, 4, 3, 4], [0, 0, 0, 0, 0, 0, 3, 2, 3, 3, 1, 1, 4, 3, 3, 2], [0, 0, 0, 0, 0, 0, 0, 4, 2, 2, 4, 2, 2, 3, 4, 0]]</em><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMamPhantom.groundtruth" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMamPhantom.humanfactor">
+<tt class="descname">humanfactor</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMamPhantom.humanfactor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMamPhantom.phantomlim">
+<tt class="descname">phantomlim</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMamPhantom.phantomlim" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMamPhantom.thickness_um">
+<tt class="descname">thickness_um</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMamPhantom.thickness_um" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMamPhantom.version">
+<tt class="descname">version</tt><em class="property"> = '0.0'</em><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMamPhantom.version" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMamStruct">
+<em class="property">class </em><tt class="descclassname">Plugins.Mammo.Mammo_CDMam.CDMam_lib.</tt><tt class="descname">CDMamStruct</tt><big>(</big><em>dcmInfile</em>, <em>pixeldataIn</em>, <em>phantomversion</em><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_lib.html#CDMamStruct"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMamStruct" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class holding all information for IO between gui and Lib</p>
+<dl class="attribute">
+<dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMamStruct.dcmInfile">
+<tt class="descname">dcmInfile</tt><em class="property"> = None</em><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMamStruct.dcmInfile" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMamStruct.hasmadeplots">
+<tt class="descname">hasmadeplots</tt><em class="property"> = False</em><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMamStruct.hasmadeplots" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMamStruct.imageFileName">
+<tt class="descname">imageFileName</tt><em class="property"> = None</em><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMamStruct.imageFileName" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMamStruct.pixeldataIn">
+<tt class="descname">pixeldataIn</tt><em class="property"> = None</em><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMamStruct.pixeldataIn" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMamStruct.verbose">
+<tt class="descname">verbose</tt><em class="property"> = False</em><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMamStruct.verbose" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper">
+<span id="plugins-mammo-mammo-cdmam-cdmam-wadwrapper-module"></span><h2>Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper module<a class="headerlink" href="#module-Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.cdmamheader_series">
+<tt class="descclassname">Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.</tt><tt class="descname">cdmamheader_series</tt><big>(</big><em>data</em>, <em>results</em>, <em>params</em><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_wadwrapper.html#cdmamheader_series"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.cdmamheader_series" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read selected dicomfields and write to IQC database</p>
+<dl class="docutils">
+<dt>Workflow:</dt>
+<dd><ol class="first last arabic simple">
+<li>Set runtime parameters</li>
+<li>Check data format</li>
+<li>Build and populate qcstructure</li>
+<li>Run tests</li>
+<li>Build xml output</li>
+</ol>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.cdmamqc_list">
+<tt class="descclassname">Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.</tt><tt class="descname">cdmamqc_list</tt><big>(</big><em>data</em>, <em>results</em>, <em>params</em><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_wadwrapper.html#cdmamqc_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.cdmamqc_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>CDMAM analysis for a list of images (as should be!) see cdmamqc_series for more information</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.cdmamqc_series">
+<tt class="descclassname">Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.</tt><tt class="descname">cdmamqc_series</tt><big>(</big><em>data</em>, <em>results</em>, <em>params</em><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_wadwrapper.html#cdmamqc_series"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.cdmamqc_series" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>CDMAM analysis:</dt>
+<dd><p class="first">Use a model observer to detect location of gold disc, for different thicknesses and diameters of the disc.
+Predict the threshold thicknesses for each diameter for a human observer
+Calculate a comprehensive image quality factor from the predicted human observer performance.
+NOTE: CDMAM analysis should be performed on 10-16 slightly shifted images to get a meaningful number.</p>
+<blockquote class="last">
+<div>Here the analysis is done on one image, but the interface for multiple images already exist as cdmamqc_list.</div></blockquote>
+</dd>
+<dt>Params needs to define:</dt>
+<dd><ol class="first last arabic simple">
+<li>phantomversion = phantomversion (which version of the phantom is used? &#8216;3.2&#8217; or &#8216;3.4&#8217;)</li>
+<li>modeCDCOM = &#8216;False&#8217; or &#8216;True&#8217; (use external executable cdcom.exe (&#8216;True&#8217;) or not (&#8216;False&#8217;))</li>
+</ol>
+</dd>
+<dt>Workflow:</dt>
+<dd><ol class="first last arabic simple">
+<li>Set runtime parameters</li>
+<li>Check data format</li>
+<li>Build and populate qcstructure</li>
+<li>Run tests</li>
+<li>Build xml output</li>
+<li>Build artefact picture thumbnail</li>
+</ol>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.cdmamsetup_series">
+<tt class="descclassname">Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.</tt><tt class="descname">cdmamsetup_series</tt><big>(</big><em>inputfile</em>, <em>params</em>, <em>headers_only</em><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_wadwrapper.html#cdmamsetup_series"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.cdmamsetup_series" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shared routine to set runtime parameters and build structure
+Workflow:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>Set runtime parameters</li>
+<li>Check data format</li>
+<li>Build and populate qcstructure</li>
+</ol>
+</div></blockquote>
+</dd></dl>
+
+<dl class="function">
+<dt id="Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.identifyName">
+<tt class="descclassname">Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.</tt><tt class="descname">identifyName</tt><big>(</big><em>cs</em><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_wadwrapper.html#identifyName"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.identifyName" title="Permalink to this definition">¶</a></dt>
+<dd><p>Come up with a simple identification tag</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.logTag">
+<tt class="descclassname">Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.</tt><tt class="descname">logTag</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_wadwrapper.html#logTag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.logTag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-Plugins.Mammo.Mammo_CDMam">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-Plugins.Mammo.Mammo_CDMam" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Plugins.Mammo.Mammo_CDMam package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-Plugins.Mammo.Mammo_CDMam.CDMam_constants">Plugins.Mammo.Mammo_CDMam.CDMam_constants module</a></li>
+<li><a class="reference internal" href="#module-Plugins.Mammo.Mammo_CDMam.CDMam_lib">Plugins.Mammo.Mammo_CDMam.CDMam_lib module</a></li>
+<li><a class="reference internal" href="#module-Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper">Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper module</a></li>
+<li><a class="reference internal" href="#module-Plugins.Mammo.Mammo_CDMam">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/Plugins.Mammo.Mammo_CDMam.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">..  documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

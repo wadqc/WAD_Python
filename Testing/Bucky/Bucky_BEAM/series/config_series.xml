@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+テスト
+    Configuratie voor WAD MG analyse module
+-->
+
+<WAD_Bucky_config>
+    <!-- naam van de configuratie -->
+    <name>NM uniformity</name>
+
+    <!-- beschrijving -->
+    <description>WAD uniformity cfg</description>
+
+    <!-- versie / datum -->
+    <version>20130502</version>
+        
+    <!-- Logfile verbose options -->
+    <logverbose>
+	<!-- mode: 0 = quiet, 1 = to logfile, 2 = to screen, 3 = to log + screen -->
+	<mode>1</mode>
+	<!-- level: 1 = normal, 2 = output series search -->
+	<level>1</level>
+    </logverbose>
+
+    <action>
+	<plugin>Plugins.Bucky.Bucky_BEAM.Bucky_BEAM_Phantom</plugin>
+	<function>QC_bucky_run</function>
+	<match></match>	
+	<level>2</level>
+
+
+	<params>
+	  <dcmmodality>none</dcmmodality>
+	  
+	  <bucky1 SeriesDescription="Beam Wand"></bucky1>
+	  <bucky2 SeriesDescription="Beam Tafel"></bucky2>
+	  <bucky3 SeriesDescription="Beam los"></bucky3>
+
+
+	</params>
+
+	<limit>
+	  <test>Average mean</test>
+	  <acc_onder>0</acc_onder>
+	  <acc_boven>5</acc_boven>
+	  <krit_onder>0</krit_onder>
+	  <krit_boven>8</krit_boven>
+	</limit>
+    </action>
+
+
+
+
+
+
+</WAD_Bucky_config>

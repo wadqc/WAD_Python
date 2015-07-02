@@ -1,0 +1,523 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Plugin_development.PET.PET_EARL.SUVplugin &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="../../../../index.html" />
+    <link rel="up" title="Module code" href="../../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for Plugin_development.PET.PET_EARL.SUVplugin</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/env python </span>
+<span class="k">print</span> <span class="s">&#39;...&#39;</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">import</span> <span class="nn">pylab</span>
+<span class="kn">from</span> <span class="nn">matplotlib.patches</span> <span class="kn">import</span> <span class="n">Rectangle</span><span class="p">,</span> <span class="n">Circle</span><span class="p">,</span> <span class="n">PathPatch</span>
+<span class="kn">from</span> <span class="nn">matplotlib.path</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">os.path</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">dicom</span>
+
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+
+<span class="c">#CONFIGFILE = &quot;.\\config.txt&quot;</span>
+<span class="n">CONFIGFILE</span> <span class="o">=</span> <span class="s">&quot;config.txt&quot;</span>
+
+<div class="viewcode-block" id="SUVanalyzer"><a class="viewcode-back" href="../../../../Plugin_development.PET.PET_EARL.html#Plugin_development.PET.PET_EARL.SUVplugin.SUVanalyzer">[docs]</a><span class="k">class</span> <span class="nc">SUVanalyzer</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">data</span><span class="p">,</span><span class="n">info</span><span class="p">):</span>
+
+
+        <span class="n">config_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s">&quot;DefaultPath&quot;</span><span class="p">,</span>
+                            <span class="s">&quot;ImageSize&quot;</span><span class="p">,</span><span class="s">&quot;CropHeight&quot;</span><span class="p">,</span><span class="s">&quot;GraphHeight&quot;</span><span class="p">,</span>
+                            <span class="s">&quot;AxialRange&quot;</span><span class="p">,</span><span class="s">&quot;Diameter&quot;</span><span class="p">,</span><span class="s">&quot;SquareSize&quot;</span><span class="p">,</span>
+                            <span class="s">&quot;GermaniumHalflife&quot;</span><span class="p">,</span><span class="s">&quot;GeGaCalibrationDate&quot;</span><span class="p">,</span>
+                            <span class="s">&quot;GeGaCalibrationActivity&quot;</span><span class="p">,</span><span class="s">&quot;GeGaVolume&quot;</span><span class="p">,</span>
+                            <span class="s">&quot;RequiredDecays&quot;</span><span class="p">,</span> <span class="s">&quot;RDMargin&quot;</span><span class="p">,</span>
+                            <span class="s">&quot;NU_limit&quot;</span><span class="p">,</span><span class="s">&quot;CV_limit&quot;</span><span class="p">,</span><span class="s">&quot;SUV_limit&quot;</span><span class="p">,</span><span class="s">&quot;Counts_limit&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cnf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">loadConfig</span><span class="p">(</span><span class="n">config_variables</span><span class="p">)</span>
+
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">QC_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">info</span><span class="p">[</span><span class="s">&#39;AcquisitionDate&#39;</span><span class="p">],</span><span class="s">&quot;%Y%m</span><span class="si">%d</span><span class="s">&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%d</span><span class="s">-%m-%Y&quot;</span><span class="p">)</span>
+        <span class="c">#now = datetime.datetime.now()</span>
+        <span class="c">#today_string = &quot;-&quot;.join([str(now.day),str(now.month),str(now.year)])</span>
+        <span class="c">#self.QC_date = &#39;01-05-2012&#39; #today_string</span>
+
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">QC_activity</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">QC_duration</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">Dicom_activity</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Dicom_duration</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">showdata</span> <span class="o">=</span> <span class="p">[]</span>
+
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">info</span> <span class="o">=</span> <span class="n">info</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">calculated</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">getActivity</span><span class="p">()</span>
+
+
+        <span class="k">print</span> <span class="bp">self</span><span class="o">.</span><span class="n">QC_date</span>
+        <span class="k">print</span> <span class="bp">self</span><span class="o">.</span><span class="n">QC_activity</span>
+        <span class="k">print</span> <span class="bp">self</span><span class="o">.</span><span class="n">QC_duration</span>
+
+        <span class="k">print</span> <span class="s">&#39;*&#39;</span><span class="o">*</span><span class="mi">20</span>
+        <span class="k">print</span> <span class="s">&#39;*&#39;</span><span class="o">*</span><span class="mi">20</span>
+        <span class="k">print</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculated</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="k">print</span> <span class="s">&#39;*&#39;</span><span class="o">*</span><span class="mi">20</span>
+        <span class="k">print</span> <span class="s">&#39;*&#39;</span><span class="o">*</span><span class="mi">20</span>
+
+        <span class="k">print</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculated</span><span class="p">[</span><span class="s">&#39;center_slice&#39;</span><span class="p">]</span>
+
+        <span class="n">pylab</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[:,:,</span><span class="bp">self</span><span class="o">.</span><span class="n">calculated</span><span class="p">[</span><span class="s">&#39;center_slice&#39;</span><span class="p">]])</span>
+        <span class="n">pylab</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        
+        <span class="n">pylab</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[:,</span><span class="mi">200</span><span class="p">,:])</span>
+        <span class="n">pylab</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+        <span class="n">pylab</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">200</span><span class="p">,:,:])</span>
+        <span class="n">pylab</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+        <span class="k">print</span> <span class="s">&#39;*&#39;</span><span class="o">*</span><span class="mi">20</span>
+        <span class="k">print</span> <span class="s">&#39;*&#39;</span><span class="o">*</span><span class="mi">20</span>
+        <span class="c">#print self.results</span>
+        <span class="k">print</span> <span class="s">&#39;*&#39;</span><span class="o">*</span><span class="mi">20</span>
+        <span class="k">print</span> <span class="s">&#39;*&#39;</span><span class="o">*</span><span class="mi">20</span>
+
+        
+
+
+        <span class="n">xsize</span> <span class="o">=</span> <span class="mi">300</span>
+        <span class="n">ysize</span> <span class="o">=</span> <span class="mi">240</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">pylab</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="n">xsize</span><span class="o">/</span><span class="mf">100.0</span><span class="p">,</span><span class="n">ysize</span><span class="o">/</span><span class="mf">100.0</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="bp">True</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">showdata</span><span class="p">)</span> <span class="c">#COV curve</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="s">&quot;SUV_curve&quot;</span><span class="p">])</span> <span class="c">#COV curve</span>
+        <span class="n">pylab</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="SUVanalyzer.getActivity"><a class="viewcode-back" href="../../../../Plugin_development.PET.PET_EARL.html#Plugin_development.PET.PET_EARL.SUVplugin.SUVanalyzer.getActivity">[docs]</a>    <span class="k">def</span> <span class="nf">getActivity</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">halflife</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cnf</span><span class="p">[</span><span class="s">&quot;GermaniumHalflife&quot;</span><span class="p">])</span> <span class="o">*</span> <span class="mi">86400</span>
+        <span class="n">cal_activity</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cnf</span><span class="p">[</span><span class="s">&quot;GeGaCalibrationActivity&quot;</span><span class="p">])</span>
+        <span class="n">cal_date</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cnf</span><span class="p">[</span><span class="s">&quot;GeGaCalibrationDate&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&quot;-&quot;</span><span class="p">)</span>
+        <span class="n">qc_date</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">QC_date</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&quot;-&quot;</span><span class="p">)</span>
+        <span class="n">activity</span> <span class="o">=</span> <span class="n">calcActivity</span><span class="p">(</span><span class="n">cal_date</span><span class="p">,</span> <span class="n">qc_date</span><span class="p">,</span> <span class="n">halflife</span><span class="p">,</span> <span class="n">cal_activity</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">QC_activity</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%.2f</span><span class="s">&quot;</span><span class="o">%</span><span class="n">activity</span>
+        
+        <span class="n">settime</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cnf</span><span class="p">[</span><span class="s">&quot;RequiredDecays&quot;</span><span class="p">])</span><span class="o">/</span><span class="n">activity</span><span class="o">/</span><span class="mf">60.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">QC_duration</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%.2f</span><span class="s">&quot;</span><span class="o">%</span><span class="n">settime</span>
+        
+        <span class="p">[</span><span class="n">data</span><span class="p">,</span> <span class="n">info</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="p">]</span>
+        
+        <span class="n">qcd</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s">&quot;AcquisitionDate&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">QC_date</span> <span class="o">=</span> <span class="n">qcd</span><span class="p">[</span><span class="mi">6</span><span class="p">:]</span><span class="o">+</span><span class="s">&quot;-&quot;</span><span class="o">+</span><span class="n">qcd</span><span class="p">[</span><span class="mi">4</span><span class="p">:</span><span class="mi">6</span><span class="p">]</span><span class="o">+</span><span class="s">&quot;-&quot;</span><span class="o">+</span><span class="n">qcd</span><span class="p">[:</span><span class="mi">4</span><span class="p">]</span>
+
+
+        <span class="n">dicom_activity</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s">&quot;RadionuclideTotalDose&quot;</span><span class="p">]</span>
+        <span class="n">dicom_activity</span> <span class="o">=</span> <span class="n">dicom_activity</span> <span class="o">*</span> <span class="mf">1E-6</span>
+        <span class="n">dicom_duration</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s">&quot;ActualFrameDuration&quot;</span><span class="p">]</span>
+        <span class="n">dicom_duration</span> <span class="o">=</span> <span class="p">(</span><span class="n">dicom_duration</span> <span class="o">*</span> <span class="mf">1E-3</span><span class="p">)</span><span class="o">/</span><span class="mi">60</span>                
+
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        self.dicom_activity_label.config(text=&quot;&quot;)</span>
+<span class="sd">        self.dicom_duration_label.config(text=&quot;&quot;)</span>
+<span class="sd">        if abs(dicom_activity - float(self.QC_activity.get())) &gt; 0.02:</span>
+<span class="sd">            self.dicom_activity_label.config(text=&quot;%.2f MBq volgens dicom header&quot;%dicom_activity)</span>
+<span class="sd">        if abs(dicom_duration - float(self.QC_duration.get())) &gt; 0.02:</span>
+<span class="sd">            self.dicom_duration_label.config(text=&quot;%.2f min volgens dicom header&quot;%dicom_duration)</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">const</span> <span class="o">=</span> <span class="p">{</span><span class="s">&quot;AxialRange&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cnf</span><span class="p">[</span><span class="s">&quot;AxialRange&quot;</span><span class="p">]),</span>
+                 <span class="s">&quot;Diameter&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cnf</span><span class="p">[</span><span class="s">&quot;Diameter&quot;</span><span class="p">]),</span>
+                 <span class="s">&quot;SquareSize&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cnf</span><span class="p">[</span><span class="s">&quot;SquareSize&quot;</span><span class="p">]),</span>
+                 <span class="s">&quot;Activity&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">QC_activity</span><span class="p">),</span>
+                 <span class="s">&quot;GeGaVolume&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cnf</span><span class="p">[</span><span class="s">&quot;GeGaVolume&quot;</span><span class="p">]),</span>
+                 <span class="s">&quot;CropHeight&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cnf</span><span class="p">[</span><span class="s">&quot;CropHeight&quot;</span><span class="p">])}</span>
+        
+        <span class="n">axial_center</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">info</span><span class="p">[</span><span class="s">&quot;slice_locations&quot;</span><span class="p">])</span>
+        <span class="n">ax_low</span> <span class="o">=</span> <span class="n">axial_center</span> <span class="o">-</span> <span class="n">const</span><span class="p">[</span><span class="s">&quot;AxialRange&quot;</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span>
+        <span class="n">ax_high</span> <span class="o">=</span> <span class="n">axial_center</span> <span class="o">+</span> <span class="n">const</span><span class="p">[</span><span class="s">&quot;AxialRange&quot;</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span>
+        <span class="n">use_slices</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">loc</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">info</span><span class="p">[</span><span class="s">&quot;slice_locations&quot;</span><span class="p">])</span> <span class="k">if</span> <span class="p">(</span><span class="n">ax_low</span> <span class="o">&lt;=</span> <span class="n">loc</span> <span class="o">&lt;=</span> <span class="n">ax_high</span><span class="p">)]</span>
+
+        <span class="n">pict_size</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">xmin</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">pict_size</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">const</span><span class="p">[</span><span class="s">&quot;CropHeight&quot;</span><span class="p">])</span><span class="o">/</span><span class="mf">2.0</span><span class="p">)</span>
+        <span class="n">xmax</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">pict_size</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">const</span><span class="p">[</span><span class="s">&quot;CropHeight&quot;</span><span class="p">])</span><span class="o">/</span><span class="mf">2.0</span><span class="p">)</span>
+
+        <span class="n">r_size</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s">&quot;pixel_spacing&quot;</span><span class="p">]</span>
+        <span class="n">z_size</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">info</span><span class="p">[</span><span class="s">&quot;slice_locations&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">info</span><span class="p">[</span><span class="s">&quot;slice_locations&quot;</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="n">center_slice</span> <span class="o">=</span> <span class="n">use_slices</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">use_slices</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">)]</span>
+        <span class="n">vmax</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">xmin</span><span class="p">:</span><span class="n">xmax</span><span class="p">,</span><span class="n">xmin</span><span class="p">:</span><span class="n">xmax</span><span class="p">,</span><span class="n">center_slice</span> <span class="p">]))</span>
+        <span class="n">vmin</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+        <span class="n">max_factor</span> <span class="o">=</span> <span class="mf">2.0</span>
+        <span class="n">def_factor</span> <span class="o">=</span> <span class="mf">1.2</span>
+
+        <span class="n">rad_pixel_bound</span> <span class="o">=</span> <span class="n">const</span><span class="p">[</span><span class="s">&quot;Diameter&quot;</span><span class="p">]</span><span class="o">/</span><span class="n">info</span><span class="p">[</span><span class="s">&quot;pixel_spacing&quot;</span><span class="p">]</span><span class="o">/</span><span class="mf">2.0</span>
+        <span class="n">square_size</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">const</span><span class="p">[</span><span class="s">&quot;SquareSize&quot;</span><span class="p">]</span><span class="o">/</span><span class="n">info</span><span class="p">[</span><span class="s">&quot;pixel_spacing&quot;</span><span class="p">]))</span>
+
+        <span class="n">t1</span><span class="o">=</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="p">[</span><span class="n">allcounts</span><span class="p">,</span> <span class="n">squares_pos</span><span class="p">,</span> <span class="n">center_of_mass</span><span class="p">,</span> <span class="n">vertices</span><span class="p">,</span> <span class="n">codes</span><span class="p">]</span> <span class="o">=</span> <span class="n">calculate</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">const</span><span class="p">,</span> <span class="n">use_slices</span><span class="p">,</span> <span class="n">center_slice</span><span class="p">,</span> <span class="n">xmin</span><span class="p">,</span> <span class="n">rad_pixel_bound</span><span class="p">,</span> <span class="n">square_size</span><span class="p">)</span>
+        <span class="k">print</span> <span class="s">&quot;Calculating </span><span class="si">%.4f</span><span class="s"> sec.&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="o">-</span><span class="n">t1</span><span class="p">)</span>
+
+
+        
+        <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">showdata</span><span class="p">]</span> <span class="o">=</span> <span class="n">getResults</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">const</span><span class="p">,</span> <span class="n">allcounts</span><span class="p">,</span> <span class="n">square_size</span><span class="p">)</span>
+   
+        <span class="c">### self.calculated holds information needed to draw the patches in the images</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">calculated</span><span class="p">[</span><span class="s">&quot;done&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">calculated</span><span class="p">[</span><span class="s">&quot;use_slices&quot;</span><span class="p">]</span><span class="o">=</span> <span class="n">use_slices</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">calculated</span><span class="p">[</span><span class="s">&quot;center_slice&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">center_slice</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">calculated</span><span class="p">[</span><span class="s">&quot;center_of_mass&quot;</span><span class="p">]</span><span class="o">=</span> <span class="n">center_of_mass</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">calculated</span><span class="p">[</span><span class="s">&quot;xmin&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">xmin</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">calculated</span><span class="p">[</span><span class="s">&quot;rad_pixel_bound&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rad_pixel_bound</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">calculated</span><span class="p">[</span><span class="s">&quot;squares_pos&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">squares_pos</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">calculated</span><span class="p">[</span><span class="s">&quot;square_size&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">square_size</span>
+
+
+            
+                        
+        </div>
+<div class="viewcode-block" id="SUVanalyzer.loadConfig"><a class="viewcode-back" href="../../../../Plugin_development.PET.PET_EARL.html#Plugin_development.PET.PET_EARL.SUVplugin.SUVanalyzer.loadConfig">[docs]</a>    <span class="k">def</span> <span class="nf">loadConfig</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config_variables</span><span class="p">):</span>
+        <span class="n">cnf</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">error</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">CONFIGFILE</span><span class="p">):</span>
+            <span class="nb">open</span><span class="p">(</span><span class="n">CONFIGFILE</span><span class="p">,</span> <span class="s">&#39;w&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            
+        <span class="n">fp</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">CONFIGFILE</span><span class="p">,</span> <span class="s">&quot;r+&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">fp</span><span class="p">:</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="p">)</span> <span class="ow">and</span> <span class="n">line</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="n">config_variables</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">line</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&quot;#&quot;</span><span class="p">:</span>
+                    <span class="n">error</span><span class="o">=</span><span class="n">line</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">cnf</span><span class="p">[</span><span class="n">line</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        
+        <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">config_variables</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">var</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cnf</span><span class="p">:</span>
+                <span class="n">fp</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="o">+</span><span class="n">var</span><span class="o">+</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+                <span class="n">error</span> <span class="o">=</span> <span class="n">var</span>
+
+        <span class="n">fp</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>        
+                
+        <span class="k">if</span> <span class="n">error</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="o">+</span><span class="mi">20</span><span class="o">*</span><span class="s">&quot;*&quot;</span>
+            <span class="k">print</span> <span class="s">&quot;Geen waarde voor &quot;</span> <span class="o">+</span> <span class="n">error</span> <span class="o">+</span> <span class="s">&quot; in&#39;&quot;</span> <span class="o">+</span> <span class="n">CONFIGFILE</span> <span class="o">+</span> <span class="s">&quot;&#39;!&quot;</span>
+            <span class="k">print</span> <span class="mi">20</span><span class="o">*</span><span class="s">&quot;*&quot;</span><span class="o">+</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">cnf</span>
+
+    </div></div>
+<div class="viewcode-block" id="calculate"><a class="viewcode-back" href="../../../../Plugin_development.PET.PET_EARL.html#Plugin_development.PET.PET_EARL.SUVplugin.calculate">[docs]</a><span class="k">def</span> <span class="nf">calculate</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">const</span><span class="p">,</span> <span class="n">use_slices</span><span class="p">,</span> <span class="n">center_slice</span><span class="p">,</span> <span class="n">xmin</span><span class="p">,</span> <span class="n">rad_pixel_bound</span><span class="p">,</span> <span class="n">square_size</span><span class="p">):</span>
+    <span class="n">allcounts</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">center_of_mass</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">squares_pos</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">vertices</span> <span class="o">=</span> <span class="p">[[],[]]</span>
+    <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="n">use_slices</span><span class="p">:</span>
+        <span class="c">### Determine center for each slice and fill with squares up to the radial boundary</span>
+        <span class="n">center_of_mass</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">get_center_of_mass</span><span class="p">(</span><span class="n">data</span><span class="p">[:,:,</span><span class="n">index</span><span class="p">])[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="p">)</span>
+        <span class="n">squares_pos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">getSquares</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">center_of_mass</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">rad_pixel_bound</span><span class="p">,</span> <span class="n">square_size</span><span class="p">)</span> <span class="p">)</span>
+
+        <span class="c">### List the total nr of counts in each square, in each slice</span>
+        <span class="n">allcounts</span><span class="o">.</span><span class="n">append</span><span class="p">([])</span>
+        <span class="k">for</span> <span class="n">pos</span> <span class="ow">in</span> <span class="n">squares_pos</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="n">allcounts</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">pos</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">pos</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">square_size</span><span class="p">,</span><span class="n">pos</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span><span class="n">pos</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">square_size</span><span class="p">,</span><span class="n">index</span><span class="p">]))</span>
+
+        <span class="c">### Create bounding box in image 1 and 2. Indicates the area used for calculation.</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">verts</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">vertices</span><span class="p">):</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">center_of_mass</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="o">-</span><span class="n">rad_pixel_bound</span><span class="o">-</span><span class="n">xmin</span><span class="p">)</span>
+            <span class="n">end</span> <span class="o">=</span> <span class="p">(</span><span class="n">start</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">start</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">verts</span><span class="o">+=</span><span class="p">[</span><span class="n">start</span><span class="p">,</span><span class="n">end</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">index</span> <span class="o">==</span> <span class="n">center_slice</span><span class="p">:</span>
+            <span class="n">center_slice_index</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">allcounts</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span>
+
+    <span class="k">for</span> <span class="n">verts</span> <span class="ow">in</span> <span class="n">vertices</span><span class="p">:</span>
+        <span class="n">verts</span> <span class="o">+=</span> <span class="p">[(</span><span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">v</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mf">2.0</span><span class="o">*</span><span class="n">rad_pixel_bound</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">verts</span><span class="p">)]</span>
+        <span class="n">verts</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">verts</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">verts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">verts</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">codes</span> <span class="o">=</span> <span class="p">[</span><span class="n">Path</span><span class="o">.</span><span class="n">LINETO</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">vertices</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+    <span class="n">codes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">Path</span><span class="o">.</span><span class="n">MOVETO</span>
+    <span class="n">codes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">Path</span><span class="o">.</span><span class="n">CLOSEPOLY</span>
+
+    <span class="k">return</span> <span class="p">[</span><span class="n">allcounts</span><span class="p">,</span> <span class="n">squares_pos</span><span class="p">,</span> <span class="n">center_of_mass</span><span class="p">,</span> <span class="n">vertices</span><span class="p">,</span> <span class="n">codes</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="getNU"><a class="viewcode-back" href="../../../../Plugin_development.PET.PET_EARL.html#Plugin_development.PET.PET_EARL.SUVplugin.getNU">[docs]</a><span class="k">def</span> <span class="nf">getNU</span><span class="p">(</span><span class="n">counts</span><span class="p">):</span>
+        <span class="n">av</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">average</span><span class="p">(</span><span class="n">counts</span><span class="p">))</span>
+        <span class="n">mx</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">counts</span><span class="p">))</span>
+        <span class="n">mn</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">counts</span><span class="p">))</span>
+        <span class="k">return</span> <span class="p">[(</span><span class="n">mx</span><span class="o">-</span><span class="n">av</span><span class="p">)</span><span class="o">/</span><span class="n">av</span><span class="o">*</span><span class="mi">100</span><span class="p">,(</span><span class="n">mn</span><span class="o">-</span><span class="n">av</span><span class="p">)</span><span class="o">/</span><span class="n">av</span><span class="o">*</span><span class="mi">100</span><span class="p">]</span>
+    </div>
+<div class="viewcode-block" id="getResults"><a class="viewcode-back" href="../../../../Plugin_development.PET.PET_EARL.html#Plugin_development.PET.PET_EARL.SUVplugin.getResults">[docs]</a><span class="k">def</span> <span class="nf">getResults</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">const</span><span class="p">,</span> <span class="n">allcounts</span><span class="p">,</span> <span class="n">square_size</span><span class="p">):</span><span class="c">#, use_slices, center_slice_index, r_size, z_size, square_size):</span>
+    <span class="k">print</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">--- Results ---&quot;</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="p">{}</span>
+
+    
+    <span class="c">### Average slice counts</span>
+    <span class="c">#Vpix = info[&quot;SliceThickness&quot;] * r_size**2 * 0.001</span>
+    <span class="n">Time</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s">&quot;ActualFrameDuration&quot;</span><span class="p">]</span><span class="o">*</span><span class="mf">1e-3</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    avcounts = numpy.average(allcounts[center_slice_index])/square_size**2</span>
+
+<span class="sd">    print &quot;RescaleSlope : &quot;, info[&quot;rescale_slope&quot;]</span>
+<span class="sd">    print &quot;Slice-Thickness, Slice-Spacing, Pixel-Spacing: &quot;, info[&quot;SliceThickness&quot;], z_size, r_size</span>
+<span class="sd">    act = 1000 * const[&quot;Activity&quot;] / const[&quot;GeGaVolume&quot;]</span>
+<span class="sd">    print &quot;C/s / mL         : &quot;, avcounts/(Time*Vpix)</span>
+<span class="sd">    print &quot;Activity / mL    : &quot;, act</span>
+<span class="sd">    print &quot;Ratio            : &quot;, avcounts/(Time*Vpix)/act</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    
+    <span class="c">### Slice uniformity</span>
+    <span class="n">NU_slice</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">CV_slice</span> <span class="o">=</span> <span class="p">[]</span>
+
+    
+
+    <span class="n">SUV_factor</span> <span class="o">=</span> <span class="mf">0.001</span> <span class="o">*</span> <span class="n">info</span><span class="p">[</span><span class="s">&quot;rescale_slope&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">const</span><span class="p">[</span><span class="s">&quot;GeGaVolume&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="p">(</span><span class="n">const</span><span class="p">[</span><span class="s">&quot;Activity&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">square_size</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">print</span> <span class="s">&quot;eeeee&quot;</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">allcounts</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">slicecounts</span> <span class="ow">in</span> <span class="n">allcounts</span><span class="p">:</span>
+        <span class="n">NU_slice</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">getNU</span><span class="p">(</span><span class="n">slicecounts</span><span class="p">))</span>
+        <span class="n">CV_slice</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">coefficient_of_variation</span><span class="p">(</span><span class="n">slicecounts</span><span class="p">)</span><span class="o">*</span><span class="mi">100</span><span class="p">)</span>
+
+
+    <span class="n">showdata</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">NU_slice</span><span class="p">),[</span><span class="n">CV_slice</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+    <span class="n">results</span><span class="p">[</span><span class="s">&quot;SlcNU_max&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">NU_slice</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">results</span><span class="p">[</span><span class="s">&quot;SlcNU_min&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">NU_slice</span><span class="p">)[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">results</span><span class="p">[</span><span class="s">&quot;SlcCV&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">CV_slice</span><span class="p">)</span>
+
+    <span class="c">### Volume uniformity</span>
+    <span class="n">flattened</span> <span class="o">=</span> <span class="p">[</span><span class="n">counts</span> <span class="k">for</span> <span class="n">slicecounts</span> <span class="ow">in</span> <span class="n">allcounts</span> <span class="k">for</span> <span class="n">counts</span> <span class="ow">in</span> <span class="n">slicecounts</span><span class="p">]</span>
+    <span class="n">NU_volume</span> <span class="o">=</span> <span class="n">getNU</span><span class="p">(</span><span class="n">flattened</span><span class="p">)</span>
+    <span class="n">CV_volume</span> <span class="o">=</span> <span class="n">coefficient_of_variation</span><span class="p">(</span><span class="n">flattened</span><span class="p">)</span><span class="o">*</span><span class="mi">100</span>
+    <span class="k">print</span> <span class="s">&quot;Volume: &quot;</span><span class="p">,</span> <span class="n">NU_volume</span><span class="p">,</span> <span class="n">CV_volume</span>
+    <span class="n">results</span><span class="p">[</span><span class="s">&quot;VolNU_max&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">NU_volume</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">results</span><span class="p">[</span><span class="s">&quot;VolNU_min&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">NU_volume</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">results</span><span class="p">[</span><span class="s">&quot;VolCV&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">CV_volume</span>
+    
+    <span class="c">### System uniformity</span>
+    <span class="n">av_counts</span> <span class="o">=</span> <span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">average</span><span class="p">(</span><span class="n">slicecounts</span><span class="p">)</span> <span class="k">for</span> <span class="n">slicecounts</span> <span class="ow">in</span> <span class="n">allcounts</span><span class="p">]</span>
+    <span class="n">NU_system</span> <span class="o">=</span> <span class="n">getNU</span><span class="p">(</span><span class="n">av_counts</span><span class="p">)</span>
+    <span class="n">CV_system</span> <span class="o">=</span> <span class="n">coefficient_of_variation</span><span class="p">(</span><span class="n">av_counts</span><span class="p">)</span><span class="o">*</span><span class="mi">100</span>
+    <span class="k">print</span> <span class="s">&quot;System: &quot;</span><span class="p">,</span> <span class="n">NU_system</span><span class="p">,</span> <span class="n">CV_system</span>
+    <span class="n">results</span><span class="p">[</span><span class="s">&quot;SysNU_max&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">NU_system</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">results</span><span class="p">[</span><span class="s">&quot;SysNU_min&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">NU_system</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">results</span><span class="p">[</span><span class="s">&quot;SysCV&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">CV_system</span>
+ 
+   <span class="c">### SUV = counts/pixel * rescale_slope / (activity*10^6 / volume*10^3) = counts * SUV_factor</span>
+
+    <span class="n">SUV</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">average</span><span class="p">(</span><span class="n">flattened</span><span class="p">))</span><span class="o">*</span><span class="n">SUV_factor</span>
+    <span class="k">print</span> <span class="s">&quot;SUV average      : &quot;</span><span class="p">,</span> <span class="n">SUV</span>
+    <span class="n">results</span><span class="p">[</span><span class="s">&quot;SUV_av&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">SUV</span>
+    <span class="k">print</span> <span class="n">numpy</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">flattened</span><span class="p">)</span>
+
+   
+ 
+    <span class="c">### Measured activity (relying on rescale_slope).</span>
+    <span class="n">decays</span> <span class="o">=</span> <span class="n">SUV</span> <span class="o">*</span> <span class="n">const</span><span class="p">[</span><span class="s">&quot;Activity&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">Time</span>
+    <span class="n">results</span><span class="p">[</span><span class="s">&quot;Decays&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">decays</span>
+    <span class="k">print</span> <span class="s">&quot;Expected decays  : &quot;</span><span class="p">,</span> <span class="n">const</span><span class="p">[</span><span class="s">&quot;Activity&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">Time</span>
+    <span class="k">print</span> <span class="s">&quot;Decays (1E6)     : &quot;</span><span class="p">,</span> <span class="n">decays</span>
+    <span class="k">print</span> <span class="s">&quot;---------------</span><span class="se">\n</span><span class="s">&quot;</span>
+    
+    <span class="k">return</span> <span class="p">[</span><span class="n">results</span><span class="p">,</span> <span class="n">showdata</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="get_center_of_mass"><a class="viewcode-back" href="../../../../Plugin_development.PET.PET_EARL.html#Plugin_development.PET.PET_EARL.SUVplugin.get_center_of_mass">[docs]</a><span class="k">def</span> <span class="nf">get_center_of_mass</span><span class="p">(</span><span class="n">image</span><span class="p">):</span>
+    <span class="c">### Copy from scipy.ndimage.measurements.center_of_mass (copied to reduce compiled size, prevents importing scipy)</span>
+    <span class="n">normalizer</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+    <span class="n">grids</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ogrid</span><span class="p">[[</span><span class="nb">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">]]</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">image</span> <span class="o">*</span> <span class="n">grids</span><span class="p">[</span><span class="nb">dir</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">))</span> <span class="o">/</span> <span class="n">normalizer</span> <span class="k">for</span> <span class="nb">dir</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">ndim</span><span class="p">)]</span>
+    <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>     
+</div>
+<div class="viewcode-block" id="coefficient_of_variation"><a class="viewcode-back" href="../../../../Plugin_development.PET.PET_EARL.html#Plugin_development.PET.PET_EARL.SUVplugin.coefficient_of_variation">[docs]</a><span class="k">def</span> <span class="nf">coefficient_of_variation</span><span class="p">(</span><span class="n">lijst</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">lijst</span><span class="p">)</span><span class="o">/</span><span class="n">numpy</span><span class="o">.</span><span class="n">average</span><span class="p">(</span><span class="n">lijst</span><span class="p">)</span>
+    </div>
+<div class="viewcode-block" id="getSquares"><a class="viewcode-back" href="../../../../Plugin_development.PET.PET_EARL.html#Plugin_development.PET.PET_EARL.SUVplugin.getSquares">[docs]</a><span class="k">def</span> <span class="nf">getSquares</span><span class="p">(</span><span class="n">pict_size</span><span class="p">,</span> <span class="n">center_of_mass</span><span class="p">,</span> <span class="n">radius</span><span class="p">,</span> <span class="n">square_size</span><span class="p">):</span>
+    <span class="c">### Returns a list of square locations (lower-left corner) within the bounded radius.</span>
+    <span class="c">#Only check within (minx,miny) and (maxx,maxy). Integer multiples of the square_size, -1.</span>
+    <span class="n">minx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">center_of_mass</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">radius</span><span class="p">)</span><span class="o">/</span><span class="n">square_size</span><span class="p">)</span><span class="o">*</span><span class="n">square_size</span>
+    <span class="n">miny</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">center_of_mass</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">radius</span><span class="p">)</span><span class="o">/</span><span class="n">square_size</span><span class="p">)</span><span class="o">*</span><span class="n">square_size</span>
+    <span class="n">maxx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">center_of_mass</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">radius</span><span class="p">)</span><span class="o">/</span><span class="n">square_size</span><span class="p">)</span><span class="o">*</span><span class="n">square_size</span> <span class="o">+</span> <span class="n">square_size</span>
+    <span class="n">maxy</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">center_of_mass</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">radius</span><span class="p">)</span><span class="o">/</span><span class="n">square_size</span><span class="p">)</span><span class="o">*</span><span class="n">square_size</span> <span class="o">+</span> <span class="n">square_size</span>
+
+    <span class="c">#Don&#39;t check within center square: Certain to fall within circle.</span>
+    <span class="n">max_minx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">center_of_mass</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="p">(</span><span class="mf">0.7</span><span class="o">*</span><span class="n">radius</span><span class="p">))</span><span class="o">+</span><span class="mi">1</span>
+    <span class="n">min_maxx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">center_of_mass</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="p">(</span><span class="mf">0.7</span><span class="o">*</span><span class="n">radius</span><span class="p">))</span>
+    <span class="n">max_miny</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">center_of_mass</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="p">(</span><span class="mf">0.7</span><span class="o">*</span><span class="n">radius</span><span class="p">))</span><span class="o">+</span><span class="mi">1</span>
+    <span class="n">min_maxy</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">center_of_mass</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="p">(</span><span class="mf">0.7</span><span class="o">*</span><span class="n">radius</span><span class="p">))</span>
+
+    <span class="n">radsq</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">radius</span><span class="p">)</span>
+    <span class="n">mat</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">maxx</span><span class="o">-</span><span class="n">minx</span><span class="p">,</span> <span class="n">maxy</span><span class="o">-</span><span class="n">miny</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">int8</span><span class="p">)</span>
+    <span class="c">#For every pixel within (minx,miny)and (maxx,maxy), check whether it lies in the circle.</span>
+    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">minx</span><span class="p">,</span><span class="n">maxx</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">miny</span><span class="p">,</span><span class="n">maxy</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">max_minx</span> <span class="o">&lt;</span> <span class="n">x</span> <span class="o">&lt;</span> <span class="n">min_maxx</span> <span class="ow">and</span> <span class="n">max_miny</span> <span class="o">&lt;</span> <span class="n">y</span> <span class="o">&lt;</span> <span class="n">min_maxy</span><span class="p">:</span>
+                <span class="n">mat</span><span class="p">[</span><span class="n">x</span><span class="o">-</span><span class="n">minx</span><span class="p">,</span> <span class="n">y</span><span class="o">-</span><span class="n">miny</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">dist</span> <span class="o">=</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">-</span><span class="n">center_of_mass</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="o">-</span><span class="n">center_of_mass</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span>
+                <span class="k">if</span> <span class="n">dist</span> <span class="o">&lt;</span> <span class="n">radsq</span><span class="p">:</span>
+                    <span class="n">mat</span><span class="p">[</span><span class="n">x</span><span class="o">-</span><span class="n">minx</span><span class="p">,</span><span class="n">y</span><span class="o">-</span><span class="n">miny</span><span class="p">]</span><span class="o">=</span><span class="mi">1</span>
+            
+    <span class="n">squares_pos</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">square_size</span> <span class="o">-</span> <span class="mi">1</span>
+    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">maxx</span><span class="o">-</span><span class="n">minx</span><span class="p">,</span><span class="n">square_size</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">maxy</span><span class="o">-</span><span class="n">miny</span><span class="p">,</span><span class="n">square_size</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">mat</span><span class="p">[</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">]</span> <span class="ow">and</span> <span class="n">mat</span><span class="p">[</span><span class="n">x</span><span class="o">+</span><span class="n">s</span><span class="p">,</span><span class="n">y</span><span class="p">]</span> <span class="ow">and</span> <span class="n">mat</span><span class="p">[</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="o">+</span><span class="n">s</span><span class="p">]</span> <span class="ow">and</span> <span class="n">mat</span><span class="p">[</span><span class="n">x</span><span class="o">+</span><span class="n">s</span><span class="p">,</span><span class="n">y</span><span class="o">+</span><span class="n">s</span><span class="p">]:</span>
+                <span class="n">squares_pos</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">minx</span><span class="o">+</span><span class="n">x</span><span class="p">,</span><span class="n">miny</span><span class="o">+</span><span class="n">y</span><span class="p">])</span>
+                
+    <span class="k">return</span> <span class="n">squares_pos</span>
+
+</div>
+<div class="viewcode-block" id="getDicom"><a class="viewcode-back" href="../../../../Plugin_development.PET.PET_EARL.html#Plugin_development.PET.PET_EARL.SUVplugin.getDicom">[docs]</a><span class="k">def</span> <span class="nf">getDicom</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">string</span><span class="p">):</span>
+  <span class="c">#  dirlist = [filename for filename in os.listdir(path) if filename.endswith(&quot;.IMA&quot;)]</span>
+    <span class="n">dirlist</span> <span class="o">=</span> <span class="p">[</span><span class="n">filename</span> <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="p">]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dirlist</span><span class="p">):</span>
+        <span class="n">dc</span><span class="o">=</span><span class="n">dicom</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">dirlist</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+        <span class="k">return</span> <span class="n">dc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">string</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="calcActivity"><a class="viewcode-back" href="../../../../Plugin_development.PET.PET_EARL.html#Plugin_development.PET.PET_EARL.SUVplugin.calcActivity">[docs]</a><span class="k">def</span> <span class="nf">calcActivity</span><span class="p">(</span><span class="n">cal_date</span><span class="p">,</span> <span class="n">qc_date</span><span class="p">,</span> <span class="n">halflife</span><span class="p">,</span> <span class="n">cal_activity</span><span class="p">):</span>
+        <span class="n">sec</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">date</span> <span class="ow">in</span> <span class="p">[</span><span class="n">cal_date</span><span class="p">,</span> <span class="n">qc_date</span><span class="p">]:</span>
+            <span class="n">pydate</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">date</span><span class="p">[</span><span class="mi">2</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="n">date</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="n">date</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="n">sec</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">mktime</span><span class="p">(</span><span class="n">pydate</span><span class="o">.</span><span class="n">timetuple</span><span class="p">()))</span>
+        <span class="n">decay</span> <span class="o">=</span> <span class="p">(</span><span class="n">sec</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">sec</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">/</span><span class="n">halflife</span>
+        <span class="k">return</span> <span class="n">cal_activity</span> <span class="o">*</span> <span class="mf">0.5</span><span class="o">**</span><span class="n">decay</span>
+</div>
+<div class="viewcode-block" id="suv_main"><a class="viewcode-back" href="../../../../Plugin_development.PET.PET_EARL.html#Plugin_development.PET.PET_EARL.SUVplugin.suv_main">[docs]</a><span class="k">def</span> <span class="nf">suv_main</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="n">results</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+    
+    <span class="n">first</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="n">info</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">slice_locations</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">slice_index</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="n">filelst</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">getAllInstances</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">dcmfile</span> <span class="ow">in</span> <span class="n">filelst</span><span class="p">:</span>
+        <span class="c">### Load data</span>
+    
+        <span class="n">dc</span><span class="o">=</span><span class="n">dcmfile</span>
+        
+        <span class="k">if</span> <span class="n">first</span><span class="p">:</span>
+            <span class="n">first</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="c">#print dc</span>
+            <span class="n">info</span><span class="p">[</span><span class="s">&quot;rescale_slope&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">dc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;RescaleSlope&#39;</span><span class="p">))</span>
+            <span class="n">info</span><span class="p">[</span><span class="s">&quot;pixel_spacing&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">dc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;PixelSpacing&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">info</span><span class="p">[</span><span class="s">&quot;SliceThickness&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">dc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;SliceThickness&#39;</span><span class="p">))</span>
+            <span class="n">info</span><span class="p">[</span><span class="s">&quot;ActualFrameDuration&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">dc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;ActualFrameDuration&#39;</span><span class="p">))</span>
+            <span class="n">info</span><span class="p">[</span><span class="s">&quot;AcquisitionDate&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;AcquisitionDate&#39;</span><span class="p">)</span>
+            <span class="k">print</span> <span class="s">&quot;wtp????&quot;</span>
+            <span class="n">wtp</span> <span class="o">=</span> <span class="mi">100</span> <span class="c">#float(dc.get(&quot;Radiopharmaceutical_Information_Sequence&quot;)[0].get(&quot;Radionuclide_Total_Dose&quot;))</span>
+            <span class="k">print</span> <span class="n">wtp</span>
+            <span class="n">info</span><span class="p">[</span><span class="s">&quot;RadionuclideTotalDose&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">wtp</span>
+            <span class="n">nr_of_slices</span> <span class="o">=</span>  <span class="mi">111</span> <span class="c">#(int(dc.get(&#39;NumberOfSlices&#39;)))</span>
+
+            <span class="n">rows</span> <span class="o">=</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">dc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;Rows&#39;</span><span class="p">)))</span>
+            <span class="n">cols</span> <span class="o">=</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">dc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;Columns&#39;</span><span class="p">)))</span>
+            <span class="k">if</span> <span class="n">rows</span> <span class="o">!=</span> <span class="n">cols</span><span class="p">:</span>
+                <span class="k">print</span> <span class="s">&quot;Slices niet vierkant!&quot;</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">empty</span><span class="p">([</span><span class="n">rows</span><span class="p">,</span> <span class="n">rows</span><span class="p">,</span> <span class="n">nr_of_slices</span><span class="p">],</span><span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+        <span class="n">slice_index</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">dc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;ImageIndex&#39;</span><span class="p">))</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">slice_locations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">dc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;SliceLocation&#39;</span><span class="p">)))</span>
+        <span class="n">data</span><span class="p">[:,:,</span><span class="n">slice_index</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">pixel_array</span>
+        
+    <span class="c">### Determine boundaries</span>
+    <span class="n">ind</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">slice_index</span><span class="p">)</span>
+    <span class="n">info</span><span class="p">[</span><span class="s">&quot;slice_locations&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">slice_locations</span><span class="p">)[</span><span class="n">ind</span><span class="p">]</span>
+
+    <span class="k">print</span> <span class="n">info</span>
+    <span class="n">SUVanalyzer</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="n">info</span><span class="p">)</span>
+
+
+
+
+</div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">app</span> <span class="o">=</span> <span class="n">SUVanalyzer</span><span class="p">(</span><span class="s">&#39;/data/SoftwareTools/PythonScripts/PETQC/TEST2&#39;</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

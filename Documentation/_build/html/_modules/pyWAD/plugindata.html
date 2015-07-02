@@ -1,0 +1,230 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>pyWAD.plugindata &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for pyWAD.plugindata</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">dicom</span>
+
+
+<span class="c">### Helper functions</span>
+<div class="viewcode-block" id="getValue"><a class="viewcode-back" href="../../pyWAD.html#pyWAD.plugindata.getValue">[docs]</a><span class="k">def</span> <span class="nf">getValue</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">label</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return the value of a pydicom DataElement in Dataset identified by label.</span>
+
+<span class="sd">    ds: pydicom Dataset</span>
+<span class="sd">    label: dicom identifier, in either pydicom Tag object, string or tuple form.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c">#Assume form &quot;0x0008,0x1030&quot;</span>
+            <span class="n">tag</span> <span class="o">=</span> <span class="n">dicom</span><span class="o">.</span><span class="n">tag</span><span class="o">.</span><span class="n">Tag</span><span class="p">(</span><span class="n">label</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">))</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c">#Assume form &quot;SeriesDescription&quot;</span>
+                <span class="n">tag</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">data_element</span><span class="p">(</span><span class="n">label</span><span class="p">)</span><span class="o">.</span><span class="n">tag</span>
+            <span class="k">except</span> <span class="p">(</span><span class="ne">AttributeError</span><span class="p">,</span> <span class="ne">KeyError</span><span class="p">):</span>
+                <span class="c">#`label` string doesn&#39;t represent an element of the DataSet</span>
+                <span class="k">return</span> <span class="bp">None</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c">#Assume label is of form (0x0008,0x1030) or is a pydicom Tag object.</span>
+        <span class="n">tag</span> <span class="o">=</span> <span class="n">dicom</span><span class="o">.</span><span class="n">tag</span><span class="o">.</span><span class="n">Tag</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">ds</span><span class="p">[</span><span class="n">tag</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="c">#Tag doesn&#39;t exist in the DataSet</span>
+        <span class="k">return</span> <span class="bp">None</span>
+
+</div>
+<div class="viewcode-block" id="isFiltered"><a class="viewcode-back" href="../../pyWAD.html#pyWAD.plugindata.isFiltered">[docs]</a><span class="k">def</span> <span class="nf">isFiltered</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">filters</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return True if the Dataset `ds` complies to the `filters`,</span>
+<span class="sd">    otherwise return False.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">tag</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">filters</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">str</span><span class="p">(</span><span class="n">getValue</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">tag</span><span class="p">))</span> <span class="o">==</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+            <span class="c"># Convert both values to string before comparison. Reason is that</span>
+            <span class="c"># pydicom can return &#39;str&#39;, &#39;int&#39; or &#39;dicom.valuerep&#39; types of data.</span>
+            <span class="c"># Similarly, the user (or XML) supplied value can be of any type.</span>
+            <span class="k">return</span> <span class="bp">False</span>
+    <span class="k">return</span> <span class="bp">True</span>
+
+</div>
+<div class="viewcode-block" id="flatten"><a class="viewcode-back" href="../../pyWAD.html#pyWAD.plugindata.flatten">[docs]</a><span class="k">def</span> <span class="nf">flatten</span><span class="p">(</span><span class="n">nestedlist</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Flatten a list of lists&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">item</span> <span class="k">for</span> <span class="n">sublist</span> <span class="ow">in</span> <span class="n">nestedlist</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">sublist</span><span class="p">]</span>
+
+</div>
+<div class="viewcode-block" id="applyFilters"><a class="viewcode-back" href="../../pyWAD.html#pyWAD.plugindata.applyFilters">[docs]</a><span class="k">def</span> <span class="nf">applyFilters</span><span class="p">(</span><span class="n">series_filelist</span><span class="p">,</span> <span class="n">filters</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Apply `filters` to the `series_filelist` and return the filtered list.</span>
+
+<span class="sd">    First, convert `filters` from an ElementTree Element to a dictionary</span>
+<span class="sd">    Next, create a new list in the same shape as `series_filelist`, but only</span>
+<span class="sd">    include filenames for which isFiltered returns True.</span>
+<span class="sd">    Only include sublists (i.e., series) which are non empty.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c">#Turn ElementTree element attributes and text into filters</span>
+    <span class="n">filter_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">element</span><span class="o">.</span><span class="n">attrib</span><span class="p">[</span><span class="s">&quot;name&quot;</span><span class="p">]:</span> <span class="n">element</span><span class="o">.</span><span class="n">text</span> <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">filters</span><span class="p">}</span>
+
+    <span class="n">filtered_series_filelist</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="c">#For each series in the series_filelist (or, study):</span>
+    <span class="k">for</span> <span class="n">instance_filelist</span> <span class="ow">in</span> <span class="n">series_filelist</span><span class="p">:</span>
+        <span class="c">#Filter filenames within each series</span>
+        <span class="n">filtered_instance_filelist</span> <span class="o">=</span> <span class="p">[</span><span class="n">fn</span> <span class="k">for</span> <span class="n">fn</span> <span class="ow">in</span> <span class="n">instance_filelist</span>
+            <span class="k">if</span> <span class="n">isFiltered</span><span class="p">(</span>
+                <span class="n">dicom</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="n">stop_before_pixels</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span> <span class="n">filter_dict</span><span class="p">)]</span>
+        <span class="c">#Only add the series which are not empty</span>
+        <span class="k">if</span> <span class="n">filtered_instance_filelist</span><span class="p">:</span>
+            <span class="n">filtered_series_filelist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">filtered_instance_filelist</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">filtered_series_filelist</span>
+
+</div>
+<div class="viewcode-block" id="PluginData"><a class="viewcode-back" href="../../pyWAD.html#pyWAD.plugindata.PluginData">[docs]</a><span class="k">class</span> <span class="nc">PluginData</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Contain references to the dicom files available to the plugin and provide</span>
+<span class="sd">    various methods to convieniently access the corresponding pydicom Dataset</span>
+<span class="sd">    objects.</span>
+
+<span class="sd">    Every &#39;get...&#39; method can be called with keyword arguments which are passed</span>
+<span class="sd">    to the dicom.read_file() function calls. This is useful, for instance, when</span>
+<span class="sd">    only the headers of the files are needed by the plugin. E.g.:</span>
+<span class="sd">    &gt;&gt; data.getSeriesByDescription(&quot;Flat Field&quot;, stop_before_pixels=True)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series_filelist</span><span class="p">,</span> <span class="n">filters</span><span class="p">):</span>
+
+
+        <span class="k">if</span> <span class="n">filters</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series_filelist</span> <span class="o">=</span> <span class="n">applyFilters</span><span class="p">(</span><span class="n">series_filelist</span><span class="p">,</span> <span class="n">filters</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c">#If no filters are provided, keep all files. This would happen with</span>
+            <span class="c">#the applyFilters function aswell, but that would unnecessarily load</span>
+            <span class="c">#all dicom files.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">series_filelist</span> <span class="o">=</span> <span class="n">series_filelist</span>
+
+<div class="viewcode-block" id="PluginData.loadDicomFunction"><a class="viewcode-back" href="../../pyWAD.html#pyWAD.plugindata.PluginData.loadDicomFunction">[docs]</a>    <span class="k">def</span> <span class="nf">loadDicomFunction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="k">lambda</span> <span class="n">fn</span><span class="p">:</span> <span class="n">dicom</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="PluginData.getAllInstances"><a class="viewcode-back" href="../../pyWAD.html#pyWAD.plugindata.PluginData.getAllInstances">[docs]</a>    <span class="k">def</span> <span class="nf">getAllInstances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a flattened list of all pydicom Dataset objects obtained from</span>
+<span class="sd">        series_filelist</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="n">flatten</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">getAllSeries</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="PluginData.getAllSeries"><a class="viewcode-back" href="../../pyWAD.html#pyWAD.plugindata.PluginData.getAllSeries">[docs]</a>    <span class="k">def</span> <span class="nf">getAllSeries</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a nested list of all pydicom Dataset objects obtained from</span>
+<span class="sd">        series_filelist</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">func</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">loadDicomFunction</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[[</span><span class="n">func</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">filelist</span><span class="p">]</span> <span class="k">for</span> <span class="n">filelist</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">series_filelist</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="PluginData.getSeriesByDescription"><a class="viewcode-back" href="../../pyWAD.html#pyWAD.plugindata.PluginData.getSeriesByDescription">[docs]</a>    <span class="k">def</span> <span class="nf">getSeriesByDescription</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">description</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the series for which the SeriesDescription matches</span>
+<span class="sd">        `description` argument</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">func</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">loadDicomFunction</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[[</span><span class="n">func</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">filelist</span><span class="p">]</span> <span class="k">for</span> <span class="n">filelist</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">series_filelist</span>
+            <span class="k">if</span> <span class="n">description</span> <span class="o">==</span> <span class="n">dicom</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">filelist</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">SeriesDescription</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="PluginData.getInstanceByTags"><a class="viewcode-back" href="../../pyWAD.html#pyWAD.plugindata.PluginData.getInstanceByTags">[docs]</a>    <span class="k">def</span> <span class="nf">getInstanceByTags</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filters</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a list of dicom instances which satisfy the specified filters.</span>
+
+<span class="sd">        filters: dictionary where each key, value pair is a pydicom DataElement</span>
+<span class="sd">            name or tag number and the corresponding filter</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">        myfilter = {</span>
+<span class="sd">            &quot;ExposureTime&quot;: &quot;100&quot;,</span>
+<span class="sd">            &quot;PatientName&quot;: &quot;WAD&quot;,</span>
+<span class="sd">            (0x0018,0x1405): &quot;13&quot;</span>
+<span class="sd">        }</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">func</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">loadDicomFunction</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">instances</span> <span class="o">=</span> <span class="p">(</span><span class="n">func</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span> <span class="k">for</span> <span class="n">fn</span> <span class="ow">in</span> <span class="n">flatten</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">series_filelist</span><span class="p">))</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">ds</span> <span class="k">for</span> <span class="n">ds</span> <span class="ow">in</span> <span class="n">instances</span> <span class="k">if</span> <span class="n">isFiltered</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">filters</span><span class="p">)]</span>
+</pre></div></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,144 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Plugin_development.PET.PET_EARL.PET_EARL_SUV &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="../../../../index.html" />
+    <link rel="up" title="Module code" href="../../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for Plugin_development.PET.PET_EARL.PET_EARL_SUV</h1><div class="highlight"><pre>
+<span class="c"># PyWAD is an open-source set of plugins for the WAD-Software medical physics quality control software.</span>
+<span class="c"># This package includes plugins for the automated analysis of QC images for various imaging modalities.</span>
+<span class="c">#</span>
+<span class="c"># PyWAD has been originaly initiated by Dennis Dickerscheid (AZN) and Arnold Schilham (UMCU)</span>
+<span class="c">#</span>
+<span class="c">#</span>
+<span class="c"># Date: 21/05/2014</span>
+<span class="c"># Version: 0.1</span>
+<span class="c"># Authors: D. Dickerscheid</span>
+<span class="c"># Changelog:</span>
+<span class="c">#</span>
+<span class="c">#</span>
+<span class="c">#</span>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd"> This plugin receives the EARL SUV qc data and makes an entry in the </span>
+<span class="sd"> The EARL_SUV tool needs to be run to set the correct values.</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="kn">import</span> <span class="nn">sys</span><span class="o">,</span><span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">dicom</span><span class="o">,</span> <span class="nn">getopt</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">random</span> <span class="k">as</span> <span class="n">rnd</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="s">&#39;MPLCONFIGDIR&#39;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&#39;MPLCONFIGDIR&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&quot;/tmp/.matplotlib&quot;</span> <span class="c"># if this folder already exists it must be accessible by the owner of WAD_Processor </span>
+<span class="kn">import</span> <span class="nn">matplotlib</span>
+<span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s">&#39;Agg&#39;</span><span class="p">)</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+
+
+
+<div class="viewcode-block" id="earl_suv_main"><a class="viewcode-back" href="../../../../Plugin_development.PET.PET_EARL.html#Plugin_development.PET.PET_EARL.PET_EARL_SUV.earl_suv_main">[docs]</a><span class="k">def</span> <span class="nf">earl_suv_main</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="n">results</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+    <span class="n">results</span><span class="o">.</span><span class="n">addChar</span><span class="p">(</span><span class="s">&#39;status&#39;</span><span class="p">,</span><span class="s">&#39;unprocessed&#39;</span><span class="p">)</span>
+    
+ 
+    <span class="n">floatlist</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;procstat&#39;</span><span class="p">,</span><span class="s">&#39;volume&#39;</span><span class="p">,</span><span class="s">&#39;length&#39;</span><span class="p">,</span><span class="s">&#39;radius&#39;</span><span class="p">,</span><span class="s">&#39;activity&#39;</span><span class="p">,</span><span class="s">&#39;deltat0&#39;</span><span class="p">,</span><span class="s">&#39;remaindoer&#39;</span><span class="p">,</span><span class="s">&#39;deltatr&#39;</span><span class="p">,</span><span class="s">&#39;scanto&#39;</span><span class="p">,</span><span class="s">&#39;maxsuv&#39;</span><span class="p">,</span><span class="s">&#39;avgsuv&#39;</span><span class="p">,</span><span class="s">&#39;minsuv&#39;</span><span class="p">,</span> <span class="s">&#39;SUV slice -6&#39;</span><span class="p">,</span><span class="s">&#39;SUV slice -4&#39;</span><span class="p">,</span><span class="s">&#39;SUV slice 0&#39;</span><span class="p">,</span><span class="s">&#39;SUV slice 4&#39;</span><span class="p">,</span><span class="s">&#39;SUV slice 6&#39;</span><span class="p">,</span><span class="s">&#39;COV slice -6&#39;</span><span class="p">,</span><span class="s">&#39;COV slice -4&#39;</span><span class="p">,</span><span class="s">&#39;COV slice 0&#39;</span><span class="p">,</span><span class="s">&#39;COV slice 4&#39;</span><span class="p">,</span><span class="s">&#39;COV slice 6&#39;</span><span class="p">]</span>
+
+    <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="n">floatlist</span><span class="p">:</span>
+        <span class="n">results</span><span class="o">.</span><span class="n">addFloat</span><span class="p">(</span><span class="n">elem</span><span class="p">,</span><span class="s">&#39;0&#39;</span><span class="p">)</span>
+
+    <span class="n">imlist</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;zprofile&#39;</span><span class="p">,</span><span class="s">&#39;histogram&#39;</span><span class="p">,</span><span class="s">&#39;halfslice&#39;</span><span class="p">,</span><span class="s">&#39;suvcurve&#39;</span><span class="p">]</span>
+
+    <span class="k">for</span> <span class="n">im</span> <span class="ow">in</span> <span class="n">imlist</span><span class="p">:</span>
+         <span class="k">print</span> <span class="s">&quot;image&quot;</span><span class="p">,</span> <span class="n">im</span>
+         <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+         <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
+         <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">&quot;EARL </span><span class="si">%s</span><span class="s">&quot;</span><span class="o">%</span><span class="nb">str</span><span class="p">(</span><span class="n">im</span><span class="p">))</span>
+         <span class="n">img</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">128</span><span class="p">,</span><span class="mi">128</span><span class="p">))</span>
+         <span class="n">object_naam</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s">.png&#39;</span><span class="o">%</span><span class="nb">str</span><span class="p">(</span><span class="n">im</span><span class="p">)</span>
+         <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">object_naam</span><span class="p">)</span>
+         <span class="n">results</span><span class="o">.</span><span class="n">addObject</span><span class="p">(</span><span class="s">&#39;EARL </span><span class="si">%s</span><span class="s">&#39;</span><span class="o">%</span><span class="n">im</span><span class="p">,</span><span class="n">object_naam</span><span class="p">)</span>
+</pre></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

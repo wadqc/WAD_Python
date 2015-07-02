@@ -1,0 +1,361 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Plugins.NM.NM_NEMA_Uniformity.QCUnif_wadwrapper &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="../../../../index.html" />
+    <link rel="up" title="Module code" href="../../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for Plugins.NM.NM_NEMA_Uniformity.QCUnif_wadwrapper</h1><div class="highlight"><pre>
+<span class="c"># PyWAD is open-source software and consists of a set of plugins written in python for the WAD-Software medical physics quality control software. </span>
+<span class="c"># The WAD Software can be found on https://github.com/wadqc</span>
+<span class="c"># </span>
+<span class="c"># The pywad package includes plugins for the automated analysis of QC images for various imaging modalities. </span>
+<span class="c"># PyWAD has been originaly initiated by Dennis Dickerscheid (AZN), Arnold Schilham (UMCU), Rob van Rooij (UMCU) and Tim de Wit (AMC) </span>
+<span class="c">#</span>
+<span class="c">#</span>
+<span class="c"># Changelog:</span>
+<span class="c">#</span>
+<span class="c">#</span>
+<span class="c"># Description of this plugin:</span>
+<span class="c"># This plugin calculates the NEMA differential and integral uniformity of an image </span>
+<span class="c">#</span>
+
+
+<span class="n">__version__</span><span class="o">=</span><span class="s">&#39;01062015&#39;</span>
+<span class="n">__author__</span> <span class="o">=</span> <span class="s">&#39;DD, tdw&#39;</span>
+
+
+
+<span class="kn">import</span> <span class="nn">sys</span><span class="o">,</span><span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">dicom</span><span class="o">,</span> <span class="nn">getopt</span>
+<span class="kn">from</span> <span class="nn">dicom</span> <span class="kn">import</span> <span class="n">tag</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">random</span> <span class="k">as</span> <span class="n">rnd</span>
+
+<span class="kn">import</span> <span class="nn">tempfile</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&#39;MPLCONFIGDIR&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkdtemp</span><span class="p">()</span>
+
+<span class="kn">import</span> <span class="nn">matplotlib</span>
+<span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s">&#39;Agg&#39;</span><span class="p">)</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+
+<span class="kn">from</span> <span class="nn">pyWAD.plugindata</span> <span class="kn">import</span> <span class="n">PluginData</span>
+<span class="kn">from</span> <span class="nn">pyWAD.pluginresults</span> <span class="kn">import</span> <span class="n">PluginResults</span>
+<span class="kn">import</span> <span class="nn">NEMA_unif_lib</span> <span class="kn">as</span> <span class="nn">nemalib</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+
+
+<div class="viewcode-block" id="uniformity_nm"><a class="viewcode-back" href="../../../../Plugins.NM.NM_NEMA_Uniformity.html#Plugins.NM.NM_NEMA_Uniformity.QCUnif_wadwrapper.uniformity_nm">[docs]</a><span class="k">class</span> <span class="nc">uniformity_nm</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;params&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+
+        <span class="n">p</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">:</span>
+            <span class="n">p</span><span class="p">[</span><span class="n">param</span><span class="o">.</span><span class="n">tag</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">text</span><span class="p">,</span><span class="n">param</span><span class="o">.</span><span class="n">attrib</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">unif1</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;unif1&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unif2</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;unif2&#39;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dome_corr</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;perform_dome_correction&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dome_corr</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">dome_corr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dome_corr</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;yes&#39;</span><span class="p">,</span><span class="s">&#39;ja&#39;</span><span class="p">,</span><span class="s">&#39;1&#39;</span><span class="p">,</span><span class="s">&#39;true&#39;</span><span class="p">]</span>
+
+        <span class="k">print</span> <span class="s">&quot;Perform dome correction = &quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dome_corr</span>
+
+        <span class="k">print</span> <span class="s">&quot;unif and lin matching criteria:&quot;</span>
+        <span class="k">print</span> <span class="bp">self</span><span class="o">.</span><span class="n">unif1</span>
+        <span class="k">print</span> <span class="bp">self</span><span class="o">.</span><span class="n">unif2</span>
+
+
+        <span class="c"># data comes either as:</span>
+        <span class="c">#   - two series of each 1 instance (1 instance for each detector)</span>
+        <span class="c">#   - one series, one instance (multiframe: frame0=detector1, frame1=detector2)</span>
+        <span class="c">#   - one series, two instances (1 instance for each detector)</span>
+        <span class="c">#</span>
+        <span class="c"># FIXME: better handling of all three possibilities (incl naming of detector labels)</span>
+        <span class="n">serieslist</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">getAllSeries</span><span class="p">()</span>
+
+ 
+        <span class="k">for</span> <span class="n">series</span> <span class="ow">in</span> <span class="n">serieslist</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&quot;Current series: &quot;</span><span class="p">,</span> <span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">SeriesDescription</span>
+
+            <span class="c">#instances = series[1]</span>
+
+            <span class="k">for</span> <span class="n">instance</span> <span class="ow">in</span> <span class="n">series</span><span class="p">:</span>
+                <span class="k">print</span> <span class="n">instance</span><span class="o">.</span><span class="n">SeriesDescription</span>
+  
+                <span class="n">dicomobject</span> <span class="o">=</span> <span class="n">instance</span>
+                <span class="n">tmpseriesdescription</span> <span class="o">=</span>  <span class="n">dicomobject</span><span class="p">[</span><span class="n">tag</span><span class="o">.</span><span class="n">Tag</span><span class="p">(</span><span class="s">&quot;0008&quot;</span><span class="p">,</span><span class="s">&quot;103E&quot;</span><span class="p">)]</span><span class="o">.</span><span class="n">value</span>
+
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">unif1</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="s">&#39;seriesdescription&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">tmpseriesdescription</span><span class="p">:</span>
+                        <span class="k">print</span> <span class="s">&quot;UNIF1 series Match!&quot;</span>
+                        <span class="n">tmp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">unif1</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="s">&#39;instancetag&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">)</span> 
+                        <span class="n">tmpinstancetag</span> <span class="o">=</span> <span class="n">tag</span><span class="o">.</span><span class="n">Tag</span><span class="p">(</span><span class="n">tmp</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">tmp</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                        <span class="k">print</span> <span class="s">&quot;instance tag: &quot;</span><span class="p">,</span> <span class="n">tmp</span>
+                        <span class="k">print</span> <span class="s">&quot;instance tag val: &quot;</span><span class="p">,</span> <span class="n">dicomobject</span><span class="p">[</span><span class="n">tmpinstancetag</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+                        <span class="k">print</span> <span class="s">&#39;--&#39;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">unif1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">unif1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="nb">str</span><span class="p">(</span><span class="n">dicomobject</span><span class="p">[</span><span class="n">tmpinstancetag</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">):</span>
+                            <span class="k">print</span> <span class="s">&quot;UNIF1 instance Match!&quot;</span>
+
+                            <span class="k">try</span><span class="p">:</span>
+                                <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">dicomobject</span><span class="p">[</span><span class="n">tag</span><span class="o">.</span><span class="n">Tag</span><span class="p">(</span><span class="s">&quot;0028&quot;</span><span class="p">,</span><span class="s">&quot;0008&quot;</span><span class="p">)]</span><span class="o">.</span><span class="n">value</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                                    <span class="k">print</span> <span class="s">&quot;multiframe! &quot;</span>
+                
+                                    <span class="n">bits</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">dicomobject</span><span class="p">[</span><span class="n">tag</span><span class="o">.</span><span class="n">Tag</span><span class="p">(</span><span class="s">&quot;0028&quot;</span><span class="p">,</span><span class="s">&quot;0100&quot;</span><span class="p">)]</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+                                    <span class="n">frames</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">dicomobject</span><span class="p">[</span><span class="n">tag</span><span class="o">.</span><span class="n">Tag</span><span class="p">(</span><span class="s">&quot;0028&quot;</span><span class="p">,</span><span class="s">&quot;0008&quot;</span><span class="p">)]</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+                                    <span class="n">rows</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">dicomobject</span><span class="p">[</span><span class="n">tag</span><span class="o">.</span><span class="n">Tag</span><span class="p">(</span><span class="s">&quot;0028&quot;</span><span class="p">,</span><span class="s">&quot;0010&quot;</span><span class="p">)]</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+                                    <span class="n">columns</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">dicomobject</span><span class="p">[</span><span class="n">tag</span><span class="o">.</span><span class="n">Tag</span><span class="p">(</span><span class="s">&quot;0028&quot;</span><span class="p">,</span><span class="s">&quot;0011&quot;</span><span class="p">)]</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+
+                                    <span class="n">count</span> <span class="o">=</span> <span class="n">rows</span><span class="o">*</span><span class="n">columns</span><span class="o">*</span><span class="n">frames</span>
+
+                                    <span class="k">if</span> <span class="n">bits</span> <span class="o">==</span> <span class="mi">8</span><span class="p">:</span>
+                                        <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">uint8</span>
+                                    <span class="k">elif</span> <span class="n">bits</span> <span class="o">==</span> <span class="mi">16</span><span class="p">:</span>
+                                        <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">uint16</span>
+                                    <span class="k">elif</span> <span class="n">bits</span> <span class="o">==</span> <span class="mi">32</span><span class="p">:</span>
+                                        <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">uint32</span>
+
+                                    <span class="n">tmppixelmap</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">fromstring</span><span class="p">(</span><span class="n">dicomobject</span><span class="o">.</span><span class="n">PixelData</span><span class="p">,</span><span class="n">count</span><span class="o">=</span><span class="n">count</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">),(</span><span class="n">frames</span><span class="p">,</span><span class="n">rows</span><span class="p">,</span><span class="n">columns</span><span class="p">))</span>
+
+                                    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">frames</span><span class="p">):</span>
+                                        <span class="k">print</span> <span class="s">&quot;Frame: &quot;</span><span class="p">,</span> <span class="n">n</span>                                    
+                                        <span class="n">tmpresult</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Uniformity_main</span><span class="p">(</span><span class="n">tmppixelmap</span><span class="p">[</span><span class="n">n</span><span class="p">],</span><span class="n">results</span><span class="p">,</span><span class="s">&#39;det</span><span class="si">%s</span><span class="s">&#39;</span><span class="o">%</span><span class="nb">str</span><span class="p">(</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span><span class="bp">self</span><span class="o">.</span><span class="n">dome_corr</span><span class="p">)</span>
+
+                                <span class="k">else</span><span class="p">:</span>
+                                    <span class="n">frames</span> <span class="o">=</span> <span class="mi">1</span>
+                                    <span class="n">tmppixelmap</span> <span class="o">=</span> <span class="n">dicomobject</span><span class="o">.</span><span class="n">pixel_array</span>
+                                    <span class="n">tmpresult</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Uniformity_main</span><span class="p">(</span><span class="n">tmppixelmap</span><span class="p">,</span><span class="n">results</span><span class="p">,</span><span class="s">&#39;det1&#39;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">dome_corr</span><span class="p">)</span>
+
+                            <span class="k">except</span><span class="p">:</span>
+                                <span class="k">pass</span>
+
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="k">pass</span>
+
+                <span class="k">try</span><span class="p">:</span>   
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">unif2</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="s">&#39;seriesdescription&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">tmpseriesdescription</span><span class="p">:</span>
+                        <span class="k">print</span> <span class="s">&quot;UNIF2 series Match!&quot;</span>
+                        <span class="n">tmp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">unif2</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="s">&#39;instancetag&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">)</span>
+                        <span class="n">tmpinstancetag</span> <span class="o">=</span> <span class="n">tag</span><span class="o">.</span><span class="n">Tag</span><span class="p">(</span><span class="n">tmp</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">tmp</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">unif2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="nb">str</span><span class="p">(</span><span class="n">dicomobject</span><span class="p">[</span><span class="n">tmpinstancetag</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">):</span>
+                            <span class="k">print</span> <span class="s">&quot;UNIF2 instance Match!&quot;</span>
+
+                            <span class="k">try</span><span class="p">:</span>
+                                <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">dicomobject</span><span class="p">[</span><span class="n">tag</span><span class="o">.</span><span class="n">Tag</span><span class="p">(</span><span class="s">&quot;0028&quot;</span><span class="p">,</span><span class="s">&quot;0008&quot;</span><span class="p">)]</span><span class="o">.</span><span class="n">value</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                                    <span class="k">print</span> <span class="s">&quot;multiframe! &quot;</span>
+                
+                                    <span class="n">bits</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">dicomobject</span><span class="p">[</span><span class="n">tag</span><span class="o">.</span><span class="n">Tag</span><span class="p">(</span><span class="s">&quot;0028&quot;</span><span class="p">,</span><span class="s">&quot;0100&quot;</span><span class="p">)]</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+                                    <span class="n">frames</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">dicomobject</span><span class="p">[</span><span class="n">tag</span><span class="o">.</span><span class="n">Tag</span><span class="p">(</span><span class="s">&quot;0028&quot;</span><span class="p">,</span><span class="s">&quot;0008&quot;</span><span class="p">)]</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+                                    <span class="n">rows</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">dicomobject</span><span class="p">[</span><span class="n">tag</span><span class="o">.</span><span class="n">Tag</span><span class="p">(</span><span class="s">&quot;0028&quot;</span><span class="p">,</span><span class="s">&quot;0010&quot;</span><span class="p">)]</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+                                    <span class="n">columns</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">dicomobject</span><span class="p">[</span><span class="n">tag</span><span class="o">.</span><span class="n">Tag</span><span class="p">(</span><span class="s">&quot;0028&quot;</span><span class="p">,</span><span class="s">&quot;0011&quot;</span><span class="p">)]</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+
+                                    <span class="n">count</span> <span class="o">=</span> <span class="n">rows</span><span class="o">*</span><span class="n">columns</span><span class="o">*</span><span class="n">frames</span>
+
+                                    <span class="k">if</span> <span class="n">bits</span> <span class="o">==</span> <span class="mi">8</span><span class="p">:</span>
+                                        <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">uint8</span>
+                                    <span class="k">elif</span> <span class="n">bits</span> <span class="o">==</span> <span class="mi">16</span><span class="p">:</span>
+                                        <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">uint16</span>
+                                    <span class="k">elif</span> <span class="n">bits</span> <span class="o">==</span> <span class="mi">32</span><span class="p">:</span>
+                                        <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">uint32</span>
+
+                                    <span class="n">tmppixelmap</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">fromstring</span><span class="p">(</span><span class="n">dicomobject</span><span class="o">.</span><span class="n">PixelData</span><span class="p">,</span><span class="n">count</span><span class="o">=</span><span class="n">count</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">),(</span><span class="n">frames</span><span class="p">,</span><span class="n">rows</span><span class="p">,</span><span class="n">columns</span><span class="p">))</span>
+
+                                    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">frames</span><span class="p">):</span>
+                                        <span class="k">print</span> <span class="s">&quot;Frame: &quot;</span><span class="p">,</span> <span class="n">n</span>
+                                        <span class="n">tmpresult</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Uniformity_main</span><span class="p">(</span><span class="n">tmppixelmap</span><span class="p">[</span><span class="n">n</span><span class="p">],</span><span class="n">results</span><span class="p">,</span><span class="s">&#39;det</span><span class="si">%s</span><span class="s">&#39;</span><span class="o">%</span><span class="nb">str</span><span class="p">(</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span><span class="bp">self</span><span class="o">.</span><span class="n">dome_corr</span><span class="p">)</span>
+                                        <span class="c">#self.resultxml.append(tmpresult)</span>
+
+                                <span class="k">else</span><span class="p">:</span>
+                                    <span class="n">frames</span> <span class="o">=</span> <span class="mi">1</span>
+                                    <span class="n">tmppixelmap</span> <span class="o">=</span> <span class="n">dicomobject</span><span class="o">.</span><span class="n">pixel_array</span>
+                                    <span class="n">tmpresult</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Uniformity_main</span><span class="p">(</span><span class="n">tmppixelmap</span><span class="p">,</span><span class="n">results</span><span class="p">,</span><span class="s">&#39;det2&#39;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">dome_corr</span><span class="p">)</span>
+                                    <span class="c">#self.resultxml.append(tmpresult)</span>
+
+                            <span class="k">except</span><span class="p">:</span>
+                                <span class="k">pass</span>
+
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="k">pass</span>
+
+
+                <span class="k">print</span> <span class="s">&quot;End of class init&quot;</span>
+
+
+
+<div class="viewcode-block" id="uniformity_nm.check_dicomdict_studies"><a class="viewcode-back" href="../../../../Plugins.NM.NM_NEMA_Uniformity.html#Plugins.NM.NM_NEMA_Uniformity.QCUnif_wadwrapper.uniformity_nm.check_dicomdict_studies">[docs]</a>    <span class="k">def</span> <span class="nf">check_dicomdict_studies</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">dicomdict</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dicomdict</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&quot;dicomdict contains more than 1 study! aborting!&quot;</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">()</span>
+
+</div>
+<div class="viewcode-block" id="uniformity_nm.savewadfig"><a class="viewcode-back" href="../../../../Plugins.NM.NM_NEMA_Uniformity.html#Plugins.NM.NM_NEMA_Uniformity.QCUnif_wadwrapper.uniformity_nm.savewadfig">[docs]</a>    <span class="k">def</span> <span class="nf">savewadfig</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">impath</span><span class="p">,</span><span class="n">pixelmap</span><span class="p">):</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">imsave</span><span class="p">(</span><span class="n">impath</span><span class="p">,</span><span class="n">pixelmap</span><span class="p">)</span>
+
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&quot;could not save image&quot;</span>
+
+        <span class="k">return</span>
+
+</div>
+<div class="viewcode-block" id="uniformity_nm.Uniformity_main"><a class="viewcode-back" href="../../../../Plugins.NM.NM_NEMA_Uniformity.html#Plugins.NM.NM_NEMA_Uniformity.QCUnif_wadwrapper.uniformity_nm.Uniformity_main">[docs]</a>    <span class="k">def</span> <span class="nf">Uniformity_main</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pixelmap</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">dome_corr</span><span class="p">):</span>
+
+        <span class="k">print</span> <span class="s">&#39;Starting Uniformity_main&#39;</span>
+        <span class="n">detector</span> <span class="o">=</span> <span class="n">label</span>
+        <span class="k">print</span> <span class="s">&#39;Calculating results&#39;</span>
+        <span class="k">print</span> <span class="s">&#39;pixelmap size: &#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">pixelmap</span><span class="p">)</span>
+        
+        <span class="n">output</span> <span class="o">=</span> <span class="n">nemalib</span><span class="o">.</span><span class="n">calculate_nema_uniformity</span><span class="p">(</span><span class="n">pixelmap</span><span class="p">,</span> <span class="p">(</span><span class="mi">64</span><span class="p">,</span><span class="mi">64</span><span class="p">),</span> <span class="n">results</span><span class="p">,</span> <span class="n">dome_corr</span><span class="p">)</span>
+        
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">          output[0] = DUx in UFOV</span>
+<span class="sd">          output[1] = DUy in UFOV</span>
+<span class="sd">          output[2] = coordinates max(DUx) in UFOV</span>
+<span class="sd">          output[3] = coordinates max(DUy) in UFOV</span>
+
+<span class="sd">          output[4] = DUx in CFOV</span>
+<span class="sd">          output[5] = DUy in CFOV</span>
+<span class="sd">          output[6] = coordinates max(DUx) in CFOV</span>
+<span class="sd">          output[7] = coordinates max(DUy) in CFOV</span>
+
+<span class="sd">          output[8] = IU in UFOV</span>
+<span class="sd">          output[9] = IU in CFOV</span>
+<span class="sd">          output[10] = ufov pixelmap (numpy masked array)</span>
+<span class="sd">          output[11] = cfov pixelmap (numpy masked array)</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">results</span><span class="o">.</span><span class="n">addFloat</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s">_DU_x (UFOV)&#39;</span><span class="o">%</span><span class="n">detector</span><span class="p">,</span> <span class="n">output</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&#39;Differential Uniformity&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+        <span class="n">results</span><span class="o">.</span><span class="n">addFloat</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s">_DU_y (UFOV)&#39;</span><span class="o">%</span><span class="n">detector</span><span class="p">,</span> <span class="n">output</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&#39;Differential Uniformity&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+        <span class="n">results</span><span class="o">.</span><span class="n">addFloat</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s">_DU_x (CFOV)&#39;</span><span class="o">%</span><span class="n">detector</span><span class="p">,</span> <span class="n">output</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&#39;Differential Uniformity&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+        <span class="n">results</span><span class="o">.</span><span class="n">addFloat</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s">_DU_y (CFOV)&#39;</span><span class="o">%</span><span class="n">detector</span><span class="p">,</span> <span class="n">output</span><span class="p">[</span><span class="mi">5</span><span class="p">],</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&#39;Differential Uniformity&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+
+        <span class="n">results</span><span class="o">.</span><span class="n">addFloat</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s">_Integral Uniformity (UFOV)&#39;</span><span class="o">%</span><span class="n">detector</span><span class="p">,</span> <span class="n">output</span><span class="p">[</span><span class="mi">8</span><span class="p">],</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&#39;Integral Uniformity&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+        <span class="n">results</span><span class="o">.</span><span class="n">addFloat</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s">_Integral Uniformity (CFOV)&#39;</span><span class="o">%</span><span class="n">detector</span><span class="p">,</span> <span class="n">output</span><span class="p">[</span><span class="mi">9</span><span class="p">],</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&#39;Integral Uniformity&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+        
+        <span class="k">print</span> <span class="s">&quot;writing image results&quot;</span>
+
+        <span class="k">try</span><span class="p">:</span>
+           <span class="n">filename</span> <span class="o">=</span> <span class="s">&#39;ufov_</span><span class="si">%s</span><span class="s">.png&#39;</span><span class="o">%</span><span class="n">detector</span>
+           <span class="n">nemalib</span><span class="o">.</span><span class="n">save_imgmap</span><span class="p">(</span><span class="n">output</span><span class="p">[</span><span class="mi">10</span><span class="p">],</span><span class="n">output</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">output</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="n">filename</span><span class="p">)</span>
+           <span class="n">results</span><span class="o">.</span><span class="n">addObject</span><span class="p">(</span><span class="s">&#39;UFOV image </span><span class="si">%s</span><span class="s">&#39;</span><span class="o">%</span><span class="n">detector</span><span class="p">,</span><span class="n">filename</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+           <span class="k">print</span> <span class="s">&quot;Could not save </span><span class="si">%s</span><span class="s">&quot;</span><span class="o">%</span><span class="n">filename</span>
+
+        <span class="k">try</span><span class="p">:</span>
+           <span class="n">filename</span> <span class="o">=</span> <span class="s">&#39;cfov_</span><span class="si">%s</span><span class="s">.png&#39;</span><span class="o">%</span><span class="n">detector</span>
+           <span class="n">nemalib</span><span class="o">.</span><span class="n">save_imgmap</span><span class="p">(</span><span class="n">output</span><span class="p">[</span><span class="mi">11</span><span class="p">],</span><span class="n">output</span><span class="p">[</span><span class="mi">6</span><span class="p">],</span><span class="n">output</span><span class="p">[</span><span class="mi">7</span><span class="p">],</span><span class="n">filename</span><span class="p">)</span>
+           <span class="n">results</span><span class="o">.</span><span class="n">addObject</span><span class="p">(</span><span class="s">&#39;CFOV image </span><span class="si">%s</span><span class="s">&#39;</span><span class="o">%</span><span class="n">detector</span><span class="p">,</span><span class="n">filename</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+           <span class="k">print</span> <span class="s">&quot;Could not save </span><span class="si">%s</span><span class="s">&quot;</span><span class="o">%</span><span class="n">filename</span>
+
+    
+    
+    
+   
+
+</div></div>
+<div class="viewcode-block" id="nm_uniformity"><a class="viewcode-back" href="../../../../Plugins.NM.NM_NEMA_Uniformity.html#Plugins.NM.NM_NEMA_Uniformity.QCUnif_wadwrapper.nm_uniformity">[docs]</a><span class="k">def</span> <span class="nf">nm_uniformity</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+    <span class="k">print</span> <span class="s">&#39;--&#39;</span><span class="o">*</span><span class="mi">20</span>
+    <span class="k">print</span> <span class="s">&#39;nm_uniformity function&#39;</span>
+
+    <span class="n">uniformity_nm</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">print</span> <span class="s">&#39;done calculating uniformity&#39;</span>
+
+    <span class="k">print</span> <span class="s">&quot;</span><span class="se">\n\n</span><span class="s">&quot;</span>
+    <span class="k">print</span> <span class="s">&quot;----&gt;&quot;</span>
+    <span class="k">print</span> <span class="s">&quot;Results from processing module:&quot;</span>
+</pre></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

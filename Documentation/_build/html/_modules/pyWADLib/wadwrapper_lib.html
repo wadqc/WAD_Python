@@ -1,0 +1,808 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>pyWADLib.wadwrapper_lib &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for pyWADLib.wadwrapper_lib</h1><div class="highlight"><pre>
+<span class="c"># wadwrapper_lib.py</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This provides a number of DICOM handling and math routines</span>
+<span class="sd">which are often used in plugins developed at UMCU.</span>
+<span class="sd">This includes:</span>
+<span class="sd"> * reading a 2D image</span>
+<span class="sd"> * reading of a folder of 2D slices as a 3D image (excluding non-image files)</span>
+<span class="sd"> * reading an Enhanced DICOM object as a 3D image</span>
+<span class="sd"> * scaling data values accoriding to slope and offset tags</span>
+<span class="sd"> * accessing (nested) DICOM tags in 2D, 3D, and Enhanced DICOM</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="c"># Changelog:</span>
+<span class="c"># 20150420: Added scipy connectedComponents</span>
+<span class="c"># 20150203: Added docstrings; added raise exceptions; clean-up of code</span>
+
+<span class="kn">import</span> <span class="nn">dicom</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">pydicom_series</span> <span class="kn">as</span> <span class="nn">dcmseries</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">pyWADLib</span> <span class="kn">import</span> <span class="n">pydicom_series</span> <span class="k">as</span> <span class="n">dcmseries</span>
+    
+<span class="k">try</span><span class="p">:</span> <span class="c"># moved to errors in &#39;bleeding edge&#39; pydicom</span>
+    <span class="kn">import</span> <span class="nn">dicom.errors</span> <span class="kn">as</span> <span class="nn">dicomExceptions</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span> 
+    <span class="kn">import</span> <span class="nn">dicom.filereader</span> <span class="kn">as</span> <span class="nn">dicomExceptions</span>
+    
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">scipy.ndimage</span> <span class="kn">as</span> <span class="nn">scind</span>
+
+<span class="n">stMode2D</span> <span class="o">=</span> <span class="s">&quot;2D&quot;</span>
+<span class="n">stMode3D</span> <span class="o">=</span> <span class="s">&quot;3D&quot;</span>
+<span class="n">stModeEnhanced</span> <span class="o">=</span> <span class="s">&quot;Enhanced&quot;</span>
+<span class="n">stModeBTO</span> <span class="o">=</span> <span class="s">&quot;BTO&quot;</span>
+
+<span class="c">### DICOM</span>
+<span class="c"># Helper functions</span>
+<span class="k">def</span> <span class="nf">_readSingleImage</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="n">headers_only</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Internal function to read a single file as a DICOM image, optionally skipping pixel data.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">dcmInfile</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">dcmInfile</span> <span class="o">=</span> <span class="n">dicom</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">stop_before_pixels</span><span class="o">=</span><span class="n">headers_only</span><span class="p">)</span> <span class="c"># Read only header!</span>
+    <span class="k">except</span> <span class="n">dicomExceptions</span><span class="o">.</span><span class="n">InvalidDicomError</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">dcmInfile</span> <span class="o">=</span> <span class="n">dicom</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="n">force</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">stop_before_pixels</span><span class="o">=</span><span class="n">headers_only</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">pass</span>
+    <span class="k">return</span> <span class="n">dcmInfile</span>
+
+<div class="viewcode-block" id="getDICOMMode"><a class="viewcode-back" href="../../pyWADLib.html#pyWADLib.wadwrapper_lib.getDICOMMode">[docs]</a><span class="k">def</span> <span class="nf">getDICOMMode</span><span class="p">(</span><span class="n">dcmInfile</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Determine the structure of the DICOM image: 2D, 3D, Enhanced, BTO</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">dcmMode</span> <span class="o">=</span> <span class="n">stMode3D</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">num</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">dcmInfile</span><span class="o">.</span><span class="n">_datasets</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+        <span class="n">dcmMode</span> <span class="o">=</span> <span class="n">stMode2D</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">sopclass</span> <span class="o">=</span> <span class="n">dcmInfile</span><span class="o">.</span><span class="n">SOPClassUID</span>
+            <span class="k">if</span> <span class="n">sopclass</span> <span class="o">==</span> <span class="s">&#39;Enhanced MR Image Storage&#39;</span><span class="p">:</span> <span class="c">#&#39;1.2.840.10008.5.1.4.1.1.66&#39;</span>
+                <span class="n">dcmMode</span> <span class="o">=</span> <span class="n">stModeEnhanced</span>
+            <span class="k">elif</span> <span class="n">sopclass</span> <span class="o">==</span> <span class="s">&#39;Breast Tomosynthesis Image Storage&#39;</span> <span class="ow">or</span> <span class="n">sopclass</span> <span class="o">==</span> <span class="s">&#39;1.2.840.10008.5.1.4.1.1.13.1.3&#39;</span><span class="p">:</span>
+                <span class="n">dcmMode</span> <span class="o">=</span> <span class="n">stModeBTO</span>
+
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="k">pass</span>
+    <span class="k">return</span> <span class="n">dcmMode</span>
+</div>
+<div class="viewcode-block" id="testIfEnhancedDICOM"><a class="viewcode-back" href="../../pyWADLib.html#pyWADLib.wadwrapper_lib.testIfEnhancedDICOM">[docs]</a><span class="k">def</span> <span class="nf">testIfEnhancedDICOM</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Test if DICOM file to be read is an EnhancedDICOM object (but not BTO)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">dcmInfile</span> <span class="o">=</span> <span class="n">_readSingleImage</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="n">headers_only</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">dcmInfile</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="c"># Not a dicom file</span>
+        <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="c">#Skip the file if it is of SOPClassUID 1.2.840.10008.5.1.4.1.1.66</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">sopclass</span> <span class="o">=</span> <span class="n">dcmInfile</span><span class="o">.</span><span class="n">SOPClassUID</span>
+    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+        <span class="c"># some other kind of dicom file and no reason to exclude it</span>
+        <span class="k">return</span> <span class="bp">False</span>
+    <span class="k">if</span> <span class="n">sopclass</span> <span class="o">==</span> <span class="s">&#39;Enhanced MR Image Storage&#39;</span><span class="p">:</span> <span class="c">#&#39;1.2.840.10008.5.1.4.1.1.66&#39;</span>
+        <span class="k">print</span> <span class="s">&#39;Image is Enhanced MR&#39;</span>
+        <span class="k">return</span> <span class="bp">True</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">sopclass</span> <span class="o">==</span> <span class="s">&#39;Breast Tomosynthesis Image Storage&#39;</span> <span class="ow">or</span> <span class="n">sopclass</span> <span class="o">==</span> <span class="s">&#39;1.2.840.10008.5.1.4.1.1.13.1.3&#39;</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&#39;Image is BTO&#39;</span>
+        <span class="k">return</span> <span class="bp">False</span>
+</div>
+<span class="k">def</span> <span class="nf">_readGroupSequenceTag</span><span class="p">(</span><span class="n">sequencetags</span><span class="p">,</span><span class="n">keytag</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return value of tag in a sequence of tags of a EnhancedDICOM header object.</span>
+<span class="sd">    Sequence should be either a SharedFunctionalGroupsSequence or a PerFrameFunctionalGroupsSequence</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="k">for</span> <span class="n">seq</span> <span class="ow">in</span> <span class="n">sequencetags</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="n">subsetA</span> <span class="o">=</span> <span class="n">sequencetags</span><span class="p">[(</span><span class="n">seq</span><span class="o">.</span><span class="n">group</span><span class="p">,</span><span class="n">seq</span><span class="o">.</span><span class="n">elem</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="n">subsetA</span><span class="o">.</span><span class="n">VR</span> <span class="o">!=</span> <span class="s">&#39;SQ&#39;</span> <span class="ow">or</span> <span class="n">subsetA</span><span class="o">.</span><span class="n">VM</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">subsetA</span> <span class="o">=</span> <span class="n">sequencetags</span><span class="p">[(</span><span class="n">seq</span><span class="o">.</span><span class="n">group</span><span class="p">,</span><span class="n">seq</span><span class="o">.</span><span class="n">elem</span><span class="p">)][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">elemA</span> <span class="ow">in</span> <span class="n">subsetA</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">elemA</span><span class="o">.</span><span class="n">group</span><span class="p">,</span><span class="n">elemA</span><span class="o">.</span><span class="n">elem</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="n">keytag</span><span class="o">.</span><span class="n">group</span><span class="p">,</span> <span class="n">keytag</span><span class="o">.</span><span class="n">elem</span><span class="p">):</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">subsetA</span><span class="p">[(</span><span class="n">elemA</span><span class="o">.</span><span class="n">group</span><span class="p">,</span><span class="n">elemA</span><span class="o">.</span><span class="n">elem</span><span class="p">)]</span><span class="o">.</span><span class="n">value</span>
+    <span class="k">return</span> <span class="n">value</span>
+
+<div class="viewcode-block" id="readDICOMtag"><a class="viewcode-back" href="../../pyWADLib.html#pyWADLib.wadwrapper_lib.readDICOMtag">[docs]</a><span class="k">def</span> <span class="nf">readDICOMtag</span><span class="p">(</span><span class="n">key</span><span class="p">,</span><span class="n">dcmInfile</span><span class="p">,</span><span class="n">imslice</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span> <span class="c"># slice=2 is image 3</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returns the value of the dicomtag &#39;key&#39; for image slice &#39;imslice&#39;</span>
+<span class="sd">    imslice is ignored for 2D images.</span>
+<span class="sd">    A key is defined as e.g. &quot;0018,11A0&quot;, but could also be a nested tag &quot;0018,11A0,0008,1001&quot;</span>
+<span class="sd">    Returns empty string if tag is not defined in the dicomfile.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="c"># transcribe &quot;0018,11A0&quot; as a tag entry</span>
+    <span class="n">keytag</span> <span class="o">=</span> <span class="n">dicom</span><span class="o">.</span><span class="n">tag</span><span class="o">.</span><span class="n">Tag</span><span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span><span class="n">key</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">])</span>
+    
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">))</span><span class="o">&gt;</span><span class="mi">2</span><span class="p">:</span> <span class="c"># key has more than 2 groups of digits, so presumable a nested tag</span>
+        <span class="k">return</span> <span class="n">readNestedDICOMtag</span><span class="p">(</span><span class="n">key</span><span class="p">,</span><span class="n">dcmInfile</span><span class="p">,</span><span class="n">imslice</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">dicomMode</span> <span class="o">=</span> <span class="n">getDICOMMode</span><span class="p">(</span><span class="n">dcmInfile</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">dicomMode</span> <span class="o">==</span> <span class="n">stMode2D</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span>  <span class="n">dcmInfile</span><span class="p">[</span><span class="n">keytag</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+        <span class="k">elif</span> <span class="n">dicomMode</span> <span class="o">==</span> <span class="n">stMode3D</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span>  <span class="n">dcmInfile</span><span class="o">.</span><span class="n">_datasets</span><span class="p">[</span><span class="n">imslice</span><span class="p">][</span><span class="n">keytag</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+        <span class="k">else</span><span class="p">:</span> <span class="c"># EnhancedDicom or BTO</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">value</span> <span class="o">=</span>  <span class="n">dcmInfile</span><span class="p">[</span><span class="n">keytag</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+            
+            <span class="k">if</span> <span class="n">value</span> <span class="o">==</span> <span class="s">&#39;&#39;</span><span class="p">:</span> <span class="c"># not found, look for it in sharedtags</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">_readGroupSequenceTag</span><span class="p">(</span><span class="n">dcmInfile</span><span class="o">.</span><span class="n">SharedFunctionalGroupsSequence</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">keytag</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">value</span> <span class="o">==</span> <span class="s">&#39;&#39;</span><span class="p">:</span> <span class="c"># not found, look for it in perframetags</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">_readGroupSequenceTag</span><span class="p">(</span><span class="n">dcmInfile</span><span class="o">.</span><span class="n">PerFrameFunctionalGroupsSequence</span><span class="p">[</span><span class="n">imslice</span><span class="p">],</span><span class="n">keytag</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">value</span> <span class="o">==</span> <span class="s">&#39;&#39;</span><span class="p">:</span> <span class="c"># not found, look for it in perframetags</span>
+                <span class="k">print</span> <span class="s">&quot;[ww_readDICOMtag] key&quot;</span><span class="p">,</span><span class="n">key</span><span class="p">,</span><span class="s">&quot;not found&quot;</span>
+
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">&quot;[ww_readDICOMtag] Exception for key&quot;</span><span class="p">,</span><span class="n">key</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">value</span>
+</div>
+<div class="viewcode-block" id="readNestedDICOMtag"><a class="viewcode-back" href="../../pyWADLib.html#pyWADLib.wadwrapper_lib.readNestedDICOMtag">[docs]</a><span class="k">def</span> <span class="nf">readNestedDICOMtag</span><span class="p">(</span><span class="n">key</span><span class="p">,</span><span class="n">dcmInfile</span><span class="p">,</span><span class="n">imslice</span><span class="p">):</span> <span class="c"># slice=2 is image 3</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returns the value of the nested dicomtag &#39;key&#39; for image slice &#39;imslice&#39;</span>
+<span class="sd">    imslice is ignored for 2D images.</span>
+<span class="sd">    A nested tag is defined as e.g &quot;0018,11A0,0008,1001&quot; meaning tag &quot;0008,1001&quot; in subset tag &quot;0018,11A0&quot;</span>
+<span class="sd">    Returns empty string if tag is not defined in the dicomfile.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># transcribe &quot;0018,11A0&quot; as a tag entry</span>
+    <span class="n">lv0</span> <span class="o">=</span> <span class="n">dicom</span><span class="o">.</span><span class="n">tag</span><span class="o">.</span><span class="n">Tag</span><span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span><span class="n">key</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">lv1</span> <span class="o">=</span> <span class="n">dicom</span><span class="o">.</span><span class="n">tag</span><span class="o">.</span><span class="n">Tag</span><span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">)[</span><span class="mi">2</span><span class="p">],</span><span class="n">key</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">)[</span><span class="mi">3</span><span class="p">])</span>
+
+    <span class="n">dicomMode</span> <span class="o">=</span> <span class="n">getDICOMMode</span><span class="p">(</span><span class="n">dcmInfile</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">dicomMode</span> <span class="o">==</span> <span class="n">stMode2D</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span>  <span class="n">dcmInfile</span><span class="p">[</span><span class="n">lv0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">lv1</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+        <span class="k">elif</span> <span class="n">dicomMode</span> <span class="o">==</span> <span class="n">stMode3D</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span>  <span class="n">dcmInfile</span><span class="o">.</span><span class="n">_datasets</span><span class="p">[</span><span class="n">imslice</span><span class="p">][</span><span class="n">lv0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">lv1</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+        <span class="k">else</span><span class="p">:</span> <span class="c"># EnhancedDicom or BTO</span>
+            <span class="c">#sharedTags = dcmInfile.SharedFunctionalGroupsSequence[0]</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">value</span> <span class="o">=</span>  <span class="n">dcmInfile</span><span class="p">[</span><span class="n">lv0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">lv1</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+            <span class="k">if</span> <span class="n">value</span> <span class="o">==</span> <span class="s">&#39;&#39;</span><span class="p">:</span>
+                <span class="n">sharedTags</span> <span class="o">=</span> <span class="n">dcmInfile</span><span class="o">.</span><span class="n">SharedFunctionalGroupsSequence</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">seq</span> <span class="ow">in</span> <span class="n">sharedTags</span><span class="o">.</span><span class="n">dir</span><span class="p">():</span>
+                    <span class="n">subsetA</span> <span class="o">=</span> <span class="n">sharedTags</span><span class="o">.</span><span class="n">data_element</span><span class="p">(</span><span class="n">seq</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="k">for</span> <span class="n">elemA</span> <span class="ow">in</span> <span class="n">subsetA</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                        <span class="k">if</span> <span class="p">(</span><span class="n">elemA</span><span class="o">.</span><span class="n">group</span><span class="p">,</span><span class="n">elemA</span><span class="o">.</span><span class="n">elem</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="n">lv0</span><span class="o">.</span><span class="n">group</span><span class="p">,</span> <span class="n">lv0</span><span class="o">.</span><span class="n">elem</span><span class="p">):</span>
+                            <span class="n">subsetB</span> <span class="o">=</span> <span class="n">subsetA</span><span class="p">[(</span><span class="n">elemA</span><span class="o">.</span><span class="n">group</span><span class="p">,</span><span class="n">elemA</span><span class="o">.</span><span class="n">elem</span><span class="p">)]</span>
+                            <span class="k">if</span> <span class="n">subsetB</span><span class="o">.</span><span class="n">VM</span><span class="o">&gt;</span><span class="mi">0</span> <span class="ow">and</span> <span class="n">subsetB</span><span class="o">.</span><span class="n">VR</span> <span class="o">==</span> <span class="s">&#39;SQ&#39;</span><span class="p">:</span>
+                                <span class="k">for</span> <span class="n">elemB</span> <span class="ow">in</span> <span class="n">subsetB</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                                    <span class="k">if</span> <span class="p">(</span><span class="n">elemB</span><span class="o">.</span><span class="n">group</span><span class="p">,</span><span class="n">elemB</span><span class="o">.</span><span class="n">elem</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="n">lv1</span><span class="o">.</span><span class="n">group</span><span class="p">,</span> <span class="n">lv1</span><span class="o">.</span><span class="n">elem</span><span class="p">):</span>
+                                        <span class="n">value</span> <span class="o">=</span> <span class="n">elemB</span><span class="o">.</span><span class="n">value</span>
+
+
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">&quot;[ww_readNestedDICOMtag] Exception for key&quot;</span><span class="p">,</span><span class="n">key</span><span class="p">,</span><span class="n">dicomMode</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">value</span>
+</div>
+<div class="viewcode-block" id="removeBogusDICOMfiles"><a class="viewcode-back" href="../../pyWADLib.html#pyWADLib.wadwrapper_lib.removeBogusDICOMfiles">[docs]</a><span class="k">def</span> <span class="nf">removeBogusDICOMfiles</span><span class="p">(</span><span class="n">instancedict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    When a folder of files is offered, prepare a list of files that are valid DICOM image files;</span>
+<span class="sd">    this removes some report files that would break reading a folder of slices as a 3D image</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">fname</span> <span class="ow">in</span> <span class="n">instancedict</span><span class="p">:</span>
+        <span class="n">skipMe</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="n">dcmInfile</span> <span class="o">=</span> <span class="n">_readSingleImage</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span><span class="n">headers_only</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">dcmInfile</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="c"># Not a dicom file</span>
+            <span class="k">continue</span>
+
+        <span class="c">#AS: Skip the file if it is of SOPClassUID 1.2.840.10008.5.1.4.1.1.66</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">sopclass</span> <span class="o">=</span> <span class="n">dcmInfile</span><span class="o">.</span><span class="n">SOPClassUID</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="c"># some other kind of dicom file and no reason to exclude it</span>
+            <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="n">sopclass</span> <span class="o">==</span> <span class="s">&#39;Raw Data Storage&#39;</span><span class="p">:</span> <span class="c">#&#39;1.2.840.10008.5.1.4.1.1.66&#39;</span>
+            <span class="k">print</span> <span class="s">&#39;Skipping RAW file </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span><span class="n">fname</span>
+            <span class="k">continue</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">results</span>
+</div>
+<div class="viewcode-block" id="prepareEnhancedInput"><a class="viewcode-back" href="../../pyWADLib.html#pyWADLib.wadwrapper_lib.prepareEnhancedInput">[docs]</a><span class="k">def</span> <span class="nf">prepareEnhancedInput</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="n">headers_only</span><span class="p">,</span><span class="n">logTag</span><span class="o">=</span><span class="s">&quot;[prepareEnhancedInput] &quot;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Reads filename as an EnhancedDICOM object. If not headers_only , scaling the pixel values according to RescaleIntercept and RescaleIntercept of each frame</span>
+<span class="sd">    and transposing for pyqtgraph format.</span>
+<span class="sd">    Raises ValueError if file cannot be opened as a DICOM object</span>
+<span class="sd">    Returns raw dcmfile, scaled and transposed pixeldata (or None), type of DICOM object.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">dcmInfile</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">pixeldataIn</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="c"># Repair Mapping for MR; not correct for all scanner</span>
+    <span class="n">keymapping</span> <span class="o">=</span> <span class="p">[</span>
+                     <span class="p">(</span><span class="s">&quot;0040,9096,0040,9224&quot;</span><span class="p">,</span><span class="s">&quot;0028,1052&quot;</span><span class="p">),</span> <span class="c"># Real World Value Intercept -&gt; Rescale Intercept</span>
+                     <span class="p">(</span><span class="s">&quot;0040,9096,0040,9225&quot;</span><span class="p">,</span><span class="s">&quot;0028,1053&quot;</span><span class="p">),</span> <span class="c"># Real World Value Slope -&gt; Rescale Slope</span>
+    <span class="p">]</span>
+
+    <span class="n">dcmInfile</span> <span class="o">=</span> <span class="n">_readSingleImage</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="n">headers_only</span><span class="o">=</span><span class="n">headers_only</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">dcmInfile</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="c"># Not a dicom file</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;{} ERROR! {} is not a valid Enhanced DICOM object&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">logTag</span><span class="p">,</span> <span class="n">filename</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">headers_only</span><span class="p">:</span>
+        <span class="n">pixeldataIn</span> <span class="o">=</span> <span class="n">dcmInfile</span><span class="o">.</span><span class="n">pixel_array</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">perframe</span> <span class="o">=</span> <span class="n">dcmInfile</span><span class="o">.</span><span class="n">PerFrameFunctionalGroupsSequence</span> <span class="c"># Sequence of perframeTags</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">perframe</span><span class="p">)):</span>
+            <span class="n">intercept</span> <span class="o">=</span> <span class="n">perframe</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">PixelValueTransformationSequence</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">RescaleIntercept</span>
+            <span class="n">slope</span> <span class="o">=</span> <span class="n">perframe</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">PixelValueTransformationSequence</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">RescaleSlope</span>
+            <span class="n">pixeldataIn</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">intercept</span> <span class="o">+</span> <span class="n">slope</span><span class="o">*</span><span class="n">pixeldataIn</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">pixeldataIn</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">pixeldataIn</span><span class="p">,(</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">dcmInfile</span><span class="p">,</span><span class="n">pixeldataIn</span><span class="p">,</span><span class="n">getDICOMMode</span><span class="p">(</span><span class="n">dcmInfile</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="prepareInput"><a class="viewcode-back" href="../../pyWADLib.html#pyWADLib.wadwrapper_lib.prepareInput">[docs]</a><span class="k">def</span> <span class="nf">prepareInput</span><span class="p">(</span><span class="n">instancedict</span><span class="p">,</span><span class="n">headers_only</span><span class="p">,</span><span class="n">logTag</span><span class="o">=</span><span class="s">&quot;[prepareInput] &quot;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Reads inputfile as an EnhancedDICOM object; if an EnhancedDICOM object is detected, prepareEnhancedInput is called.</span>
+<span class="sd">    Checks if the input is as expected: number of slices etc.</span>
+<span class="sd">    If not headers_only, scaling the pixel values according to RescaleIntercept and RescaleIntercept of each frame</span>
+<span class="sd">    and transposing for pyqtgraph format.</span>
+<span class="sd">    Raises ValueError if file cannot be opened as a DICOM object</span>
+<span class="sd">    Returns raw dcmfile, scaled and transposed pixeldata (or None), type of DICOM object.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># compile a list of valid files to read</span>
+    <span class="n">instancedict</span> <span class="o">=</span> <span class="n">removeBogusDICOMfiles</span><span class="p">(</span><span class="n">instancedict</span><span class="p">)</span>
+
+    <span class="n">dcmInfile</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">pixeldataIn</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="c"># Repair Mapping for MR; not correct for all scanner</span>
+    <span class="n">keymapping</span> <span class="o">=</span> <span class="p">[</span>
+                     <span class="p">(</span><span class="s">&quot;0040,9096,0040,9224&quot;</span><span class="p">,</span><span class="s">&quot;0028,1052&quot;</span><span class="p">),</span> <span class="c"># Real World Value Intercept -&gt; Rescale Intercept</span>
+                     <span class="p">(</span><span class="s">&quot;0040,9096,0040,9225&quot;</span><span class="p">,</span><span class="s">&quot;0028,1053&quot;</span><span class="p">),</span> <span class="c"># Real World Value Slope -&gt; Rescale Slope</span>
+    <span class="p">]</span>
+
+    <span class="c"># Check if input data is as expected: MR needs 3D data</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">instancedict</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">ModeEnhanced</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="n">ModeEnhanced</span> <span class="o">=</span> <span class="n">testIfEnhancedDICOM</span><span class="p">(</span><span class="n">instancedict</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">ModeEnhanced</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">prepareEnhancedInput</span><span class="p">(</span><span class="n">instancedict</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">headers_only</span><span class="o">=</span><span class="n">headers_only</span><span class="p">)</span> <span class="c"># scaled and transposed</span>
+
+        <span class="k">if</span> <span class="n">dcmInfile</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">filename</span> <span class="o">=</span> <span class="n">instancedict</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">dcmInfile</span> <span class="o">=</span> <span class="n">_readSingleImage</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="n">headers_only</span><span class="o">=</span><span class="n">headers_only</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">dcmInfile</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="c"># Not a dicom file</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;{} ERROR! {} is not a valid non-Enhanced DICOM object&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">logTag</span><span class="p">,</span> <span class="n">filename</span><span class="p">))</span>
+
+            <span class="n">modality</span> <span class="o">=</span> <span class="n">dcmInfile</span><span class="o">.</span><span class="n">Modality</span>
+            
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">headers_only</span><span class="p">:</span>
+                <span class="c"># need scaling for single slice, already done for series in pydicom_series, but not for some MR files</span>
+                <span class="k">if</span> <span class="n">modality</span> <span class="o">==</span> <span class="s">&#39;CT&#39;</span> <span class="ow">or</span> <span class="n">modality</span> <span class="o">==</span> <span class="s">&#39;MR&#39;</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="s">&quot;RescaleIntercept&quot;</span> <span class="ow">in</span> <span class="n">dcmInfile</span><span class="p">:</span> <span class="c"># in wrong place define for some MR files</span>
+                        <span class="n">dcmInfile</span><span class="o">.</span><span class="n">RescaleIntercept</span> <span class="o">=</span> <span class="n">readDICOMtag</span><span class="p">(</span><span class="n">keymapping</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span><span class="n">dcmInfile</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+                        <span class="n">dcmInfile</span><span class="o">.</span><span class="n">RescaleSlope</span> <span class="o">=</span> <span class="n">readDICOMtag</span><span class="p">(</span><span class="n">keymapping</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span><span class="n">dcmInfile</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+
+                    <span class="n">pixeldataIn</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int16</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">dcmInfile</span><span class="o">.</span><span class="n">pixel_array</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">),(</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">)))</span>
+                    <span class="n">slope</span> <span class="o">=</span> <span class="n">dcmInfile</span><span class="o">.</span><span class="n">RescaleSlope</span>
+                    <span class="n">intercept</span> <span class="o">=</span> <span class="n">dcmInfile</span><span class="o">.</span><span class="n">RescaleIntercept</span>
+                    <span class="n">pixeldataIn</span> <span class="o">=</span> <span class="n">intercept</span> <span class="o">+</span> <span class="n">slope</span><span class="o">*</span><span class="n">pixeldataIn</span>
+                <span class="k">elif</span> <span class="n">modality</span> <span class="o">==</span> <span class="s">&#39;MG&#39;</span> <span class="ow">and</span> <span class="n">getDICOMMode</span><span class="p">(</span><span class="n">dcmInfile</span><span class="p">)</span> <span class="o">==</span> <span class="n">stModeBTO</span><span class="p">:</span>
+                    <span class="k">print</span> <span class="s">&#39;!WARNING! MG BTO dataset! DICOM info is NOT properly adjusted, no scaling applied yet!&#39;</span>
+                    <span class="n">pixeldataIn</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">dcmInfile</span><span class="o">.</span><span class="n">pixel_array</span><span class="p">,(</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>
+                <span class="k">elif</span> <span class="n">modality</span> <span class="o">==</span> <span class="s">&#39;MG&#39;</span> <span class="ow">or</span> <span class="n">modality</span> <span class="o">==</span> <span class="s">&#39;CR&#39;</span><span class="p">:</span>
+                    <span class="n">pixeldataIn</span> <span class="o">=</span> <span class="n">dcmInfile</span><span class="o">.</span><span class="n">pixel_array</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span>
+                <span class="k">elif</span> <span class="n">modality</span> <span class="o">==</span> <span class="s">&#39;RF&#39;</span><span class="p">:</span> <span class="c"># fixme! 2D and 3D</span>
+                    <span class="n">pixeldataIn</span> <span class="o">=</span> <span class="n">dcmInfile</span><span class="o">.</span><span class="n">pixel_array</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span>
+                <span class="k">elif</span> <span class="n">modality</span> <span class="o">==</span> <span class="s">&#39;US&#39;</span><span class="p">:</span>
+                    <span class="n">rgbmode</span> <span class="o">=</span> <span class="p">(</span><span class="n">dcmInfile</span><span class="o">.</span><span class="n">SamplesPerPixel</span> <span class="o">==</span> <span class="mi">3</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">rgbmode</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">dcmInfile</span><span class="o">.</span><span class="n">pixel_array</span><span class="p">))</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                            <span class="n">pixeldataIn</span> <span class="o">=</span> <span class="n">dcmInfile</span><span class="o">.</span><span class="n">pixel_array</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span>
+                        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">dcmInfile</span><span class="o">.</span><span class="n">pixel_array</span><span class="p">)):</span>
+                            <span class="n">pixeldataIn</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">dcmInfile</span><span class="o">.</span><span class="n">pixel_array</span><span class="p">,(</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>
+                            <span class="n">pixeldataIn</span> <span class="o">=</span> <span class="n">pixeldataIn</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="c"># AS: this fix is needed in pydicom &lt; 1.0; maybe solved in later versions?</span>
+                        <span class="k">try</span><span class="p">:</span>
+                            <span class="n">nofframes</span> <span class="o">=</span> <span class="n">dcmInfile</span><span class="o">.</span><span class="n">NumberOfFrames</span>
+                        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                            <span class="n">nofframes</span> <span class="o">=</span> <span class="mi">1</span>
+                        <span class="k">if</span> <span class="n">dcmInfile</span><span class="o">.</span><span class="n">PlanarConfiguration</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+                            <span class="n">pixel_array</span> <span class="o">=</span> <span class="n">dcmInfile</span><span class="o">.</span><span class="n">pixel_array</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">nofframes</span><span class="p">,</span> <span class="n">dcmInfile</span><span class="o">.</span><span class="n">Rows</span><span class="p">,</span> <span class="n">dcmInfile</span><span class="o">.</span><span class="n">Columns</span><span class="p">,</span> <span class="n">dcmInfile</span><span class="o">.</span><span class="n">SamplesPerPixel</span><span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">pixel_array</span> <span class="o">=</span> <span class="n">dcmInfile</span><span class="o">.</span><span class="n">pixel_array</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">dcmInfile</span><span class="o">.</span><span class="n">SamplesPerPixel</span><span class="p">,</span> <span class="n">nofframes</span><span class="p">,</span> <span class="n">dcmInfile</span><span class="o">.</span><span class="n">Rows</span><span class="p">,</span> <span class="n">dcmInfile</span><span class="o">.</span><span class="n">Columns</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">pixel_array</span><span class="p">))</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span> <span class="c">#2d rgb</span>
+                            <span class="n">pixeldataIn</span> <span class="o">=</span> <span class="n">pixel_array</span><span class="p">[:,:,</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span>
+                            <span class="n">pixeldataInR</span> <span class="o">=</span> <span class="p">(</span><span class="n">pixel_array</span><span class="p">[:,:,</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span>
+                            <span class="n">pixeldataInG</span> <span class="o">=</span> <span class="p">(</span><span class="n">pixel_array</span><span class="p">[:,:,</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span>
+                            <span class="n">pixeldataInB</span> <span class="o">=</span> <span class="p">(</span><span class="n">pixel_array</span><span class="p">[:,:,</span><span class="mi">2</span><span class="p">])</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span>
+                        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">pixel_array</span><span class="p">))</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span> <span class="c">#3d rgb</span>
+                            <span class="n">pixeldataIn</span> <span class="o">=</span> <span class="p">(</span><span class="n">pixel_array</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,:,:,</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span>
+                            <span class="n">pixeldataInR</span> <span class="o">=</span> <span class="p">(</span><span class="n">pixel_array</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,:,:,</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span>
+                            <span class="n">pixeldataInG</span> <span class="o">=</span> <span class="p">(</span><span class="n">pixel_array</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,:,:,</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span>
+                            <span class="n">pixeldataInB</span> <span class="o">=</span> <span class="p">(</span><span class="n">pixel_array</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,:,:,</span><span class="mi">2</span><span class="p">])</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span>
+                        <span class="c"># remove rgb info</span>
+                        <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">dcmInfile</span><span class="o">.</span><span class="n">Rows</span><span class="p">):</span>
+                            <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">dcmInfile</span><span class="o">.</span><span class="n">Columns</span><span class="p">):</span>
+                                <span class="n">r</span> <span class="o">=</span> <span class="n">pixeldataInR</span><span class="p">[</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">]</span>
+                                <span class="n">g</span> <span class="o">=</span> <span class="n">pixeldataInG</span><span class="p">[</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">]</span>
+                                <span class="n">b</span> <span class="o">=</span> <span class="n">pixeldataInB</span><span class="p">[</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">]</span>
+                                <span class="n">ma</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="n">g</span><span class="p">,</span><span class="n">b</span><span class="p">)</span>
+                                <span class="n">mi</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="n">g</span><span class="p">,</span><span class="n">b</span><span class="p">)</span>
+                                <span class="k">if</span> <span class="n">ma</span> <span class="o">!=</span> <span class="n">mi</span><span class="p">:</span>
+                                    <span class="n">pixeldataIn</span><span class="p">[</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">instancedict</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">ip</span> <span class="ow">in</span> <span class="n">instancedict</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">ip</span><span class="p">)</span> <span class="o">!=</span> <span class="n">path</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;{} ERROR! multiple would-be dicom files scattered over multiple dirs!&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">logTag</span><span class="p">))</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">dcmInfile</span> <span class="o">=</span> <span class="n">dcmseries</span><span class="o">.</span><span class="n">read_files</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="bp">True</span><span class="p">,</span> <span class="n">readPixelData</span><span class="o">=</span><span class="bp">False</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">headers_only</span><span class="p">:</span> <span class="c"># NOTE: Rescaling is already done pydicom_series, but maybe not for stupid MR</span>
+                <span class="n">pixeldataIn</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">dcmInfile</span><span class="o">.</span><span class="n">get_pixel_array</span><span class="p">(),(</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>
+
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;{} ERROR! {} is not a valid non-Enhanced DICOM series&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">logTag</span><span class="p">,</span> <span class="n">path</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">dcmInfile</span><span class="p">,</span><span class="n">pixeldataIn</span><span class="p">,</span><span class="n">getDICOMMode</span><span class="p">(</span><span class="n">dcmInfile</span><span class="p">)</span>
+
+
+<span class="c">### math</span></div>
+<div class="viewcode-block" id="connectedComponents"><a class="viewcode-back" href="../../pyWADLib.html#pyWADLib.wadwrapper_lib.connectedComponents">[docs]</a><span class="k">class</span> <span class="nc">connectedComponents</span><span class="p">():</span>
+    <span class="n">maskIn</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">cca</span>    <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">nb_labels</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">cluster_sizes</span> <span class="o">=</span> <span class="p">[]</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">maskIn</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cca</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nb_labels</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cluster_sizes</span> <span class="o">=</span> <span class="p">[]</span>
+
+<div class="viewcode-block" id="connectedComponents.run"><a class="viewcode-back" href="../../pyWADLib.html#pyWADLib.wadwrapper_lib.connectedComponents.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">pBool</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">maskIn</span> <span class="o">=</span> <span class="n">pBool</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cca</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">nb_labels</span> <span class="o">=</span> <span class="n">scind</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">maskIn</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cluster_sizes</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cca</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">nb_labels</span>
+    </div>
+<div class="viewcode-block" id="connectedComponents.removeSmallClusters"><a class="viewcode-back" href="../../pyWADLib.html#pyWADLib.wadwrapper_lib.connectedComponents.removeSmallClusters">[docs]</a>    <span class="k">def</span> <span class="nf">removeSmallClusters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">minsize</span><span class="p">):</span>
+        <span class="n">mask_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">clusterSizes</span><span class="p">()</span><span class="o">&lt;</span><span class="n">minsize</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cca</span><span class="p">[</span><span class="n">mask_size</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">cca</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="n">labels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cca</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nb_labels</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cca</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cca</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cluster_sizes</span> <span class="o">=</span> <span class="p">[]</span>
+        </div>
+<div class="viewcode-block" id="connectedComponents.clusterSizes"><a class="viewcode-back" href="../../pyWADLib.html#pyWADLib.wadwrapper_lib.connectedComponents.clusterSizes">[docs]</a>    <span class="k">def</span> <span class="nf">clusterSizes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cluster_sizes</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cluster_sizes</span> <span class="o">=</span> <span class="n">scind</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">maskIn</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cca</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nb_labels</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cluster_sizes</span>
+</div>
+<div class="viewcode-block" id="connectedComponents.indicesOfCluster"><a class="viewcode-back" href="../../pyWADLib.html#pyWADLib.wadwrapper_lib.connectedComponents.indicesOfCluster">[docs]</a>    <span class="k">def</span> <span class="nf">indicesOfCluster</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">val</span><span class="p">):</span>
+        <span class="n">clus</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cca</span> <span class="o">==</span> <span class="n">val</span><span class="p">)</span>
+        <span class="n">clus</span> <span class="o">=</span> <span class="p">[(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span><span class="p">,</span><span class="n">y</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">clus</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">clus</span><span class="p">[</span><span class="mi">1</span><span class="p">])]</span>
+        <span class="k">return</span> <span class="n">clus</span>
+
+<span class="c">### peak finding</span></div></div>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">NaN</span><span class="p">,</span> <span class="n">Inf</span><span class="p">,</span> <span class="n">arange</span><span class="p">,</span> <span class="n">isscalar</span><span class="p">,</span> <span class="n">asarray</span><span class="p">,</span> <span class="n">array</span>
+<div class="viewcode-block" id="peakdet"><a class="viewcode-back" href="../../pyWADLib.html#pyWADLib.wadwrapper_lib.peakdet">[docs]</a><span class="k">def</span> <span class="nf">peakdet</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">delta</span><span class="p">,</span> <span class="n">x</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Converted from MATLAB script at http://billauer.co.il/peakdet.html</span>
+<span class="sd">    </span>
+<span class="sd">    Returns two arrays</span>
+<span class="sd">    </span>
+<span class="sd">    function [maxtab, mintab]=peakdet(v, delta, x)</span>
+<span class="sd">    %PEAKDET Detect peaks in a vector</span>
+<span class="sd">    %        [MAXTAB, MINTAB] = PEAKDET(V, DELTA) finds the local</span>
+<span class="sd">    %        maxima and minima (&quot;peaks&quot;) in the vector V.</span>
+<span class="sd">    %        MAXTAB and MINTAB consists of two columns. Column 1</span>
+<span class="sd">    %        contains indices in V, and column 2 the found values.</span>
+<span class="sd">    %      </span>
+<span class="sd">    %        With [MAXTAB, MINTAB] = PEAKDET(V, DELTA, X) the indices</span>
+<span class="sd">    %        in MAXTAB and MINTAB are replaced with the corresponding</span>
+<span class="sd">    %        X-values.</span>
+<span class="sd">    %</span>
+<span class="sd">    %        A point is considered a maximum peak if it has the maximal</span>
+<span class="sd">    %        value, and was preceded (to the left) by a value lower by</span>
+<span class="sd">    %        DELTA.</span>
+<span class="sd">    </span>
+<span class="sd">    % Eli Billauer, 3.4.05 (Explicitly not copyrighted).</span>
+<span class="sd">    % This function is released to the public domain; Any use is allowed.</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">maxtab</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">mintab</span> <span class="o">=</span> <span class="p">[]</span>
+       
+    <span class="k">if</span> <span class="n">x</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">))</span>
+    
+    <span class="n">v</span> <span class="o">=</span> <span class="n">asarray</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="s">&#39;Input vectors v and x must have same length&#39;</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">isscalar</span><span class="p">(</span><span class="n">delta</span><span class="p">):</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="s">&#39;Input argument delta must be a scalar&#39;</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">delta</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="s">&#39;Input argument delta must be positive&#39;</span><span class="p">)</span>
+    
+    <span class="n">mn</span><span class="p">,</span> <span class="n">mx</span> <span class="o">=</span> <span class="n">Inf</span><span class="p">,</span> <span class="o">-</span><span class="n">Inf</span>
+    <span class="n">mnpos</span><span class="p">,</span> <span class="n">mxpos</span> <span class="o">=</span> <span class="n">NaN</span><span class="p">,</span> <span class="n">NaN</span>
+    
+    <span class="n">lookformax</span> <span class="o">=</span> <span class="bp">True</span>
+    
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)):</span>
+        <span class="n">this</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">this</span> <span class="o">&gt;</span> <span class="n">mx</span><span class="p">:</span>
+            <span class="n">mx</span> <span class="o">=</span> <span class="n">this</span>
+            <span class="n">mxpos</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">this</span> <span class="o">&lt;</span> <span class="n">mn</span><span class="p">:</span>
+            <span class="n">mn</span> <span class="o">=</span> <span class="n">this</span>
+            <span class="n">mnpos</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        
+        <span class="k">if</span> <span class="n">lookformax</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">this</span> <span class="o">&lt;</span> <span class="n">mx</span><span class="o">-</span><span class="n">delta</span><span class="p">:</span>
+                <span class="n">maxtab</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">mxpos</span><span class="p">,</span> <span class="n">mx</span><span class="p">))</span>
+                <span class="n">mn</span> <span class="o">=</span> <span class="n">this</span>
+                <span class="n">mnpos</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="n">lookformax</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">this</span> <span class="o">&gt;</span> <span class="n">mn</span><span class="o">+</span><span class="n">delta</span><span class="p">:</span>
+                <span class="n">mintab</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">mnpos</span><span class="p">,</span> <span class="n">mn</span><span class="p">))</span>
+                <span class="n">mx</span> <span class="o">=</span> <span class="n">this</span>
+                <span class="n">mxpos</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="n">lookformax</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="c">#return array(maxtab), array(mintab) 3 converts indices to float!</span>
+    <span class="k">return</span> <span class="n">maxtab</span><span class="p">,</span> <span class="n">mintab</span>
+
+<span class="c">### thresholding</span></div>
+<div class="viewcode-block" id="threshold_adaptive"><a class="viewcode-back" href="../../pyWADLib.html#pyWADLib.wadwrapper_lib.threshold_adaptive">[docs]</a><span class="k">def</span> <span class="nf">threshold_adaptive</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">block_size</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s">&#39;gaussian&#39;</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                       <span class="n">mode</span><span class="o">=</span><span class="s">&#39;reflect&#39;</span><span class="p">,</span> <span class="n">param</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    from skitimage 0.8</span>
+<span class="sd">    Applies an adaptive threshold to an array.</span>
+
+<span class="sd">    Also known as local or dynamic thresholding where the threshold value is</span>
+<span class="sd">    the weighted mean for the local neighborhood of a pixel subtracted by a</span>
+<span class="sd">    constant. Alternatively the threshold can be determined dynamically by a a</span>
+<span class="sd">    given function using the &#39;generic&#39; method.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ==========</span>
+<span class="sd">    image : (N, M) ndarray</span>
+<span class="sd">        Input image.</span>
+<span class="sd">    block_size : int</span>
+<span class="sd">        Uneven size of pixel neighborhood which is used to calculate the</span>
+<span class="sd">        threshold value (e.g. 3, 5, 7, ..., 21, ...).</span>
+<span class="sd">    method : {&#39;generic&#39;, &#39;gaussian&#39;, &#39;mean&#39;, &#39;median&#39;}, optional</span>
+<span class="sd">        Method used to determine adaptive threshold for local neighbourhood in</span>
+<span class="sd">        weighted mean image.</span>
+
+<span class="sd">        * &#39;generic&#39;: use custom function (see `param` parameter)</span>
+<span class="sd">        * &#39;gaussian&#39;: apply gaussian filter (see `param` parameter for custom\</span>
+<span class="sd">                      sigma value)</span>
+<span class="sd">        * &#39;mean&#39;: apply arithmetic mean filter</span>
+<span class="sd">        * &#39;median&#39;: apply median rank filter</span>
+
+<span class="sd">        By default the &#39;gaussian&#39; method is used.</span>
+<span class="sd">    offset : float, optional</span>
+<span class="sd">        Constant subtracted from weighted mean of neighborhood to calculate</span>
+<span class="sd">        the local threshold value. Default offset is 0.</span>
+<span class="sd">    mode : {&#39;reflect&#39;, &#39;constant&#39;, &#39;nearest&#39;, &#39;mirror&#39;, &#39;wrap&#39;}, optional</span>
+<span class="sd">        The mode parameter determines how the array borders are handled, where</span>
+<span class="sd">        cval is the value when mode is equal to &#39;constant&#39;.</span>
+<span class="sd">        Default is &#39;reflect&#39;.</span>
+<span class="sd">    param : {int, function}, optional</span>
+<span class="sd">        Either specify sigma for &#39;gaussian&#39; method or function object for</span>
+<span class="sd">        &#39;generic&#39; method. This functions takes the flat array of local</span>
+<span class="sd">        neighbourhood as a single argument and returns the calculated</span>
+<span class="sd">        threshold for the centre pixel.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    =======</span>
+<span class="sd">    threshold : (N, M) ndarray</span>
+<span class="sd">        Thresholded binary image</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ==========</span>
+<span class="sd">    .. [1] http://docs.opencv.org/modules/imgproc/doc/miscellaneous_transformations.html?highlight=threshold#adaptivethreshold</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; from skimage.data import camera</span>
+<span class="sd">    &gt;&gt;&gt; image = camera()</span>
+<span class="sd">    &gt;&gt;&gt; binary_image1 = threshold_adaptive(image, 15, &#39;mean&#39;)</span>
+<span class="sd">    &gt;&gt;&gt; func = lambda arr: arr.mean()</span>
+<span class="sd">    &gt;&gt;&gt; binary_image2 = threshold_adaptive(image, 15, &#39;generic&#39;, param=func)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">thresh_image</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="s">&#39;double&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s">&#39;generic&#39;</span><span class="p">:</span>
+        <span class="n">scind</span><span class="o">.</span><span class="n">generic_filter</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">block_size</span><span class="p">,</span>
+                             <span class="n">output</span><span class="o">=</span><span class="n">thresh_image</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s">&#39;gaussian&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">param</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="c"># automatically determine sigma which covers &gt; 99% of distribution</span>
+            <span class="n">sigma</span> <span class="o">=</span> <span class="p">(</span><span class="n">block_size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mf">6.0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">sigma</span> <span class="o">=</span> <span class="n">param</span>
+        <span class="n">scind</span><span class="o">.</span><span class="n">gaussian_filter</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="n">thresh_image</span><span class="p">,</span>
+                              <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s">&#39;mean&#39;</span><span class="p">:</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="mf">1.</span> <span class="o">/</span> <span class="n">block_size</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">block_size</span><span class="p">,))</span>
+        <span class="c"># separation of filters to speedup convolution</span>
+        <span class="n">scind</span><span class="o">.</span><span class="n">convolve1d</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="n">thresh_image</span><span class="p">,</span>
+                         <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">)</span>
+        <span class="n">scind</span><span class="o">.</span><span class="n">convolve1d</span><span class="p">(</span><span class="n">thresh_image</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                         <span class="n">output</span><span class="o">=</span><span class="n">thresh_image</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s">&#39;median&#39;</span><span class="p">:</span>
+        <span class="n">scind</span><span class="o">.</span><span class="n">median_filter</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">block_size</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="n">thresh_image</span><span class="p">,</span>
+                            <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">image</span> <span class="o">&gt;</span> <span class="p">(</span><span class="n">thresh_image</span> <span class="o">-</span> <span class="n">offset</span><span class="p">)</span>
+</div>
+<span class="k">def</span> <span class="nf">__IJIsoData</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This is the original ImageJ IsoData implementation</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">count0</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c"># set to zero so erased areas aren&#39;t included</span>
+    <span class="n">countMax</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">data</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="n">maxValue</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="o">-</span> <span class="mi">1</span>
+    <span class="n">amin</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="n">data</span><span class="p">[</span><span class="n">amin</span><span class="p">]</span><span class="o">==</span><span class="mi">0</span> <span class="ow">and</span> <span class="n">amin</span><span class="o">&lt;</span><span class="n">maxValue</span><span class="p">:</span>
+        <span class="n">amin</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="n">amax</span> <span class="o">=</span> <span class="n">maxValue</span>
+    <span class="k">while</span> <span class="n">data</span><span class="p">[</span><span class="n">amax</span><span class="p">]</span><span class="o">==</span><span class="mi">0</span> <span class="ow">and</span> <span class="n">amax</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+        <span class="n">amax</span> <span class="o">-=</span> <span class="mi">1</span>
+    <span class="k">if</span> <span class="n">amin</span><span class="o">&gt;=</span><span class="n">amax</span><span class="p">:</span>
+        <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>        <span class="o">=</span> <span class="n">count0</span>
+        <span class="n">data</span><span class="p">[</span><span class="n">maxValue</span><span class="p">]</span> <span class="o">=</span> <span class="n">countMax</span><span class="p">;</span>
+        <span class="n">level</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span>
+        <span class="k">return</span> <span class="n">level</span>
+
+    <span class="n">movingIndex</span> <span class="o">=</span> <span class="n">amin</span>
+    <span class="n">cond</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="k">while</span> <span class="n">cond</span><span class="p">:</span>
+        <span class="n">sum1</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="n">sum2</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="n">sum3</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="n">sum4</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">amin</span><span class="p">,</span><span class="n">movingIndex</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+            <span class="n">sum1</span> <span class="o">+=</span> <span class="n">i</span><span class="o">*</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">sum2</span> <span class="o">+=</span> <span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">movingIndex</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">amax</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+            <span class="n">sum3</span> <span class="o">+=</span> <span class="n">i</span><span class="o">*</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">sum4</span> <span class="o">+=</span> <span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="p">(</span><span class="n">sum1</span><span class="o">/</span><span class="n">sum2</span> <span class="o">+</span> <span class="n">sum3</span><span class="o">/</span><span class="n">sum4</span><span class="p">)</span><span class="o">/</span><span class="mf">2.0</span>
+        <span class="n">movingIndex</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">cond</span> <span class="o">=</span> <span class="p">((</span><span class="n">movingIndex</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">&lt;=</span><span class="n">result</span> <span class="ow">and</span> <span class="n">movingIndex</span><span class="o">&lt;</span><span class="n">amax</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>        <span class="o">=</span> <span class="n">count0</span>
+    <span class="n">data</span><span class="p">[</span><span class="n">maxValue</span><span class="p">]</span> <span class="o">=</span> <span class="n">countMax</span><span class="p">;</span>
+    <span class="n">level</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">result</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">level</span>
+    
+<div class="viewcode-block" id="threshold_isodata2"><a class="viewcode-back" href="../../pyWADLib.html#pyWADLib.wadwrapper_lib.threshold_isodata2">[docs]</a><span class="k">def</span> <span class="nf">threshold_isodata2</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Ripped from ImageJ &quot;defaultIsoData&quot;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">maxCount</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="n">mode</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+    <span class="n">data2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="n">maxCount2</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">data2</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">v</span><span class="o">&gt;</span><span class="n">maxCount2</span> <span class="ow">and</span> <span class="n">i</span> <span class="o">!=</span> <span class="n">mode</span><span class="p">:</span>
+            <span class="n">maxCount2</span> <span class="o">=</span> <span class="n">v</span>
+
+    <span class="k">if</span> <span class="n">maxCount</span><span class="o">&gt;</span><span class="n">maxCount2</span><span class="o">*</span><span class="mi">2</span> <span class="ow">and</span> <span class="n">maxCount2</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">data2</span><span class="p">[</span><span class="n">mode</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">maxCount2</span> <span class="o">*</span> <span class="mf">1.5</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">__IJIsoData</span><span class="p">(</span><span class="n">data2</span><span class="p">)</span>
+    
+<span class="c">###</span></div>
+<div class="viewcode-block" id="extract"><a class="viewcode-back" href="../../pyWADLib.html#pyWADLib.wadwrapper_lib.extract">[docs]</a><span class="k">def</span> <span class="nf">extract</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">position</span><span class="p">,</span> <span class="n">fill</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">NaN</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Extract a sub-array from Z using given shape and centered on position.</span>
+<span class="sd">      If some part of the sub-array is out of Z bounds, result is padded</span>
+<span class="sd">         with fill value.</span>
+
+<span class="sd">         **Parameters**</span>
+<span class="sd">             `Z` : array_like</span>
+<span class="sd">                Input array.</span>
+
+<span class="sd">            `shape` : tuple</span>
+<span class="sd">                Shape of the output array</span>
+
+<span class="sd">            `position` : tuple</span>
+<span class="sd">                Position within Z</span>
+
+<span class="sd">            `fill` : scalar</span>
+<span class="sd">                Fill value</span>
+
+<span class="sd">         **Returns**</span>
+<span class="sd">             `out` : array_like</span>
+<span class="sd">                 Z slice with given shape and center</span>
+
+<span class="sd">         **Examples**</span>
+
+<span class="sd">         &gt;&gt;&gt; Z = numpy.arange(0,16).reshape((4,4))</span>
+<span class="sd">         &gt;&gt;&gt; extract(Z, shape=(3,3), position=(0,0))</span>
+<span class="sd">         [[ NaN  NaN  NaN]</span>
+<span class="sd">          [ NaN   0.   1.]</span>
+<span class="sd">          [ NaN   4.   5.]]</span>
+
+<span class="sd">         Schema::</span>
+
+<span class="sd">         </span>
+<span class="sd">              +-----------+</span>
+<span class="sd">              | 0   0   0 |  =  extract (Z, shape=(3,3), position=(0,0))</span>
+<span class="sd">              |   +-------|---------+  </span>
+<span class="sd">              | 0 | 0   1 | 2   3   |  =  Z</span>
+<span class="sd">              |   |       |         |</span>
+<span class="sd">              | 0 | 4   5 | 6   7   |</span>
+<span class="sd">              +-----------+         |</span>
+<span class="sd">                  | 8    9   10  11 |</span>
+<span class="sd">                  |                 |</span>
+<span class="sd">                  | 12   13  14  15 |</span>
+<span class="sd">                  +-----------------+</span>
+<span class="sd">             </span>
+
+<span class="sd">         &gt;&gt;&gt; Z = numpy.arange(0,16).reshape((4,4))</span>
+<span class="sd">         &gt;&gt;&gt; extract(Z, shape=(3,3), position=(3,3))</span>
+<span class="sd">         [[ 10.  11.  NaN]</span>
+<span class="sd">          [ 14.  15.  NaN]</span>
+<span class="sd">          [ NaN  NaN  NaN]]</span>
+
+<span class="sd">         Schema::</span>
+
+<span class="sd">             +---------------+</span>
+<span class="sd">             | 0   1   2   3 | = Z</span>
+<span class="sd">             |               |</span>
+<span class="sd">             | 4   5   6   7 |</span>
+<span class="sd">             |       +-----------+</span>
+<span class="sd">             | 8   9 |10  11 | 0 | = extract (Z, shape=(3,3),position=(3,3))</span>
+<span class="sd">             |       |       |   |</span>
+<span class="sd">             | 12 13 |14  15 | 0 |</span>
+<span class="sd">             +---------------+   |</span>
+<span class="sd">                     | 0   0   0 |</span>
+<span class="sd">                     +-----------+</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c">#    assert(len(position) == len(Z.shape))</span>
+    <span class="c">#    if len(shape) &lt; len(Z.shape):</span>
+    <span class="c">#        shape = shape + Z.shape[len(Z.shape)-len(shape):]</span>
+
+    <span class="n">R</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">Z</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span><span class="o">*</span><span class="n">fill</span>
+    <span class="n">P</span>  <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">position</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    <span class="n">Rs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">R</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    <span class="n">Zs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">Z</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+    <span class="n">R_start</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">shape</span><span class="p">),))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    <span class="n">R_stop</span>  <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">shape</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    <span class="n">Z_start</span> <span class="o">=</span> <span class="p">(</span><span class="n">P</span><span class="o">-</span><span class="n">Rs</span><span class="o">//</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">Z_stop</span>  <span class="o">=</span> <span class="p">(</span><span class="n">P</span><span class="o">+</span><span class="n">Rs</span><span class="o">//</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="n">Rs</span><span class="o">%</span><span class="mi">2</span>
+
+    <span class="n">R_start</span> <span class="o">=</span> <span class="p">(</span><span class="n">R_start</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">Z_start</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="n">Z_start</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">Z_start</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="n">R_stop</span> <span class="o">=</span> <span class="p">(</span><span class="n">R_stop</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">Z_stop</span><span class="o">-</span><span class="n">Zs</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="n">Z_stop</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">Z_stop</span><span class="p">,</span><span class="n">Zs</span><span class="p">))</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+
+    <span class="n">r</span> <span class="o">=</span> <span class="p">[</span><span class="nb">slice</span><span class="p">(</span><span class="n">start</span><span class="p">,</span><span class="n">stop</span><span class="p">)</span> <span class="k">for</span> <span class="n">start</span><span class="p">,</span><span class="n">stop</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">R_start</span><span class="p">,</span><span class="n">R_stop</span><span class="p">)]</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="p">[</span><span class="nb">slice</span><span class="p">(</span><span class="n">start</span><span class="p">,</span><span class="n">stop</span><span class="p">)</span> <span class="k">for</span> <span class="n">start</span><span class="p">,</span><span class="n">stop</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">Z_start</span><span class="p">,</span><span class="n">Z_stop</span><span class="p">)]</span>
+
+    <span class="n">R</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="o">=</span> <span class="n">Z</span><span class="p">[</span><span class="n">z</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">R</span>
+</pre></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

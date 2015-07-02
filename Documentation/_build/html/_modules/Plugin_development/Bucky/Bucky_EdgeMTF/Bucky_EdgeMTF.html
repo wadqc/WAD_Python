@@ -1,0 +1,243 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Plugin_development.Bucky.Bucky_EdgeMTF.Bucky_EdgeMTF &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="../../../../index.html" />
+    <link rel="up" title="Module code" href="../../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for Plugin_development.Bucky.Bucky_EdgeMTF.Bucky_EdgeMTF</h1><div class="highlight"><pre>
+<span class="c"># PyWAD is an open-source set of plugins for the WAD-Software medical physics quality control software. </span>
+<span class="c"># The WAD Software can be found on https://github.com/wadqc</span>
+<span class="c"># </span>
+<span class="c"># The pywad package includes plugins for the automated analysis of QC images for various imaging modalities. </span>
+<span class="c"># PyWAD has been originaly initiated by Dennis Dickerscheid (AZN), Arnold Schilham (UMCU), Rob van Rooij (UMCU) and Tim de Wit (AMC) </span>
+<span class="c">#</span>
+<span class="c">#</span>
+<span class="c"># Date: 01062015</span>
+<span class="c"># Version: 1.0</span>
+<span class="c"># Authors: DD</span>
+<span class="c"># Changelog:</span>
+<span class="c">#</span>
+<span class="c">#</span>
+<span class="c"># Description of this plugin:</span>
+<span class="c"># </span>
+<span class="c">#</span>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">A very crude and simple implementation to estimate the MTF of an Edge phantom.</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+
+<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span><span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">scipy</span> 
+
+<span class="kn">import</span> <span class="nn">dicom</span>
+<span class="kn">import</span> <span class="nn">pylab</span> <span class="kn">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">ndimage</span>
+<span class="kn">from</span> <span class="nn">skimage</span> <span class="kn">import</span> <span class="nb">filter</span>
+<span class="kn">from</span> <span class="nn">skimage.feature</span> <span class="kn">import</span> <span class="n">corner_harris</span><span class="p">,</span> <span class="n">corner_peaks</span>
+<span class="kn">from</span> <span class="nn">skimage</span> <span class="kn">import</span> <span class="n">measure</span>
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">izip</span><span class="p">,</span> <span class="n">tee</span>
+
+
+
+<div class="viewcode-block" id="filter_min_diff"><a class="viewcode-back" href="../../../../Plugin_development.Bucky.Bucky_EdgeMTF.html#Plugin_development.Bucky.Bucky_EdgeMTF.Bucky_EdgeMTF.filter_min_diff">[docs]</a><span class="k">def</span> <span class="nf">filter_min_diff</span><span class="p">(</span><span class="n">inlist</span><span class="p">):</span>
+    <span class="n">x_min_diff</span> <span class="o">=</span> <span class="mi">10</span>
+    <span class="n">outlist</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">inlist</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">outlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">inlist</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>    
+    <span class="k">return</span> <span class="n">outlist</span>
+</div>
+<div class="viewcode-block" id="diff_list"><a class="viewcode-back" href="../../../../Plugin_development.Bucky.Bucky_EdgeMTF.html#Plugin_development.Bucky.Bucky_EdgeMTF.Bucky_EdgeMTF.diff_list">[docs]</a><span class="k">def</span> <span class="nf">diff_list</span><span class="p">(</span><span class="n">rowlist</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">rowlist</span><span class="p">)</span>
+
+
+
+</div>
+<div class="viewcode-block" id="MTF_main"><a class="viewcode-back" href="../../../../Plugin_development.Bucky.Bucky_EdgeMTF.html#Plugin_development.Bucky.Bucky_EdgeMTF.Bucky_EdgeMTF.MTF_main">[docs]</a><span class="k">def</span> <span class="nf">MTF_main</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Function estimates MTF from an exposure of an edge phantom.</span>
+<span class="sd">    Workflow:</span>
+<span class="sd">    1. From data object obtain first instance</span>
+<span class="sd">    2. Remove an arbitrarily chosen offset, which is hardcoded (20 pixels). This needs improvement.</span>
+<span class="sd">    3. Define what the minimal stepsize between adjacent pixels is</span>
+<span class="sd">    4. For each row (hardcoded range!, needs improvement) determine where the step is located</span>
+<span class="sd">    5. Sum the edge curves and finally take the Fourier transform to calculate the MTF</span>
+<span class="sd">    &#39;&#39;&#39;</span>    
+    
+    <span class="n">relevantfile</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">getAllInstances</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">print</span> <span class="s">&quot;relevantfile:&quot;</span><span class="p">,</span> <span class="n">relevantfile</span>
+
+    <span class="n">dicomobject</span> <span class="o">=</span> <span class="n">relevantfile</span>
+    <span class="n">pixel_map</span> <span class="o">=</span> <span class="n">dicomobject</span><span class="o">.</span><span class="n">pixel_array</span>
+
+    <span class="n">xdim</span><span class="p">,</span><span class="n">ydim</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">pixel_map</span><span class="p">)</span>
+    
+    <span class="n">offset</span> <span class="o">=</span> <span class="mi">20</span>
+    <span class="n">fmin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">pixel_map</span><span class="p">[</span><span class="n">offset</span><span class="p">:</span><span class="n">xdim</span> <span class="o">-</span> <span class="n">offset</span><span class="p">,</span><span class="n">offset</span><span class="p">:</span><span class="n">ydim</span><span class="o">-</span><span class="n">offset</span><span class="p">])</span>
+    <span class="n">fmax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">pixel_map</span><span class="p">[</span><span class="n">offset</span><span class="p">:</span><span class="n">xdim</span> <span class="o">-</span> <span class="n">offset</span><span class="p">,</span><span class="n">offset</span><span class="p">:</span><span class="n">ydim</span><span class="o">-</span><span class="n">offset</span><span class="p">])</span>
+
+    <span class="n">min_stepsize</span> <span class="o">=</span> <span class="nb">float</span><span class="p">((</span><span class="n">fmax</span> <span class="o">-</span> <span class="n">fmin</span><span class="p">)</span><span class="o">/</span><span class="mf">8.0</span><span class="p">)</span>
+    <span class="n">nr_edge_px</span> <span class="o">=</span> <span class="mi">10</span>
+    <span class="n">edge_loc</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="n">testline</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">pixel_map</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">offset</span><span class="p">)</span>
+    
+    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1400</span><span class="p">,</span><span class="mi">2400</span><span class="p">):</span><span class="c">#ydim):</span>
+       <span class="n">curr_row</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pixel_map</span><span class="p">[</span><span class="n">offset</span><span class="p">:</span><span class="n">xdim</span><span class="o">-</span><span class="n">offset</span> <span class="p">,</span><span class="n">row</span><span class="p">],</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+       <span class="n">tmpdiff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">curr_row</span><span class="p">)</span>
+
+
+       <span class="c">## we determine the x and y coordinates of the steps</span>
+       <span class="n">tmp_edge_loc</span> <span class="o">=</span> <span class="p">[</span> <span class="p">[</span><span class="n">n</span><span class="p">,</span><span class="n">row</span><span class="p">]</span> <span class="k">for</span> <span class="n">n</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">tmpdiff</span><span class="p">)</span> <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">min_stepsize</span><span class="p">]</span>
+
+       <span class="c">## there could be multiple steps in a row and we only want the first ones</span>
+       <span class="n">tmp_edge_loc</span> <span class="o">=</span> <span class="n">filter_min_diff</span><span class="p">(</span><span class="n">tmp_edge_loc</span><span class="p">)</span>
+
+       <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="n">tmp_edge_loc</span><span class="p">:</span>
+           <span class="n">edge_loc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">elem</span><span class="p">)</span>
+
+       <span class="n">testline</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">testline</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">curr_row</span><span class="p">))</span>
+
+        
+    <span class="n">sum_edge_curves</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">nr_edge_px</span> <span class="o">-</span> <span class="mi">2</span><span class="p">)</span>
+    
+    <span class="n">norm</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">for</span> <span class="n">edge</span> <span class="ow">in</span> <span class="n">edge_loc</span><span class="p">:</span>
+        <span class="n">norm</span><span class="o">+=</span><span class="mi">1</span>
+        <span class="n">tmplist</span> <span class="o">=</span>  <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">nr_edge_px</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">nr_edge_px</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">tmplist</span><span class="p">[</span><span class="n">m</span><span class="p">]</span> <span class="o">=</span> <span class="n">pixel_map</span><span class="p">[</span><span class="n">edge</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">offset</span> <span class="o">-</span> <span class="n">nr_edge_px</span> <span class="o">+</span> <span class="n">m</span><span class="p">,</span><span class="n">edge</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+        
+        <span class="n">diff_tmplist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">tmplist</span><span class="p">)</span>
+        <span class="n">sum_edge_curves</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">sum_edge_curves</span><span class="p">,</span> <span class="n">diff_tmplist</span><span class="p">)</span>
+            
+        
+
+    <span class="n">sum_edge_curves</span> <span class="o">=</span> <span class="n">sum_edge_curves</span><span class="o">/</span><span class="n">norm</span>
+    <span class="n">sum_edge_curves_fft</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fft</span><span class="p">(</span><span class="n">sum_edge_curves</span><span class="p">)</span>
+    <span class="n">sum_edge_curves_fft</span> <span class="o">=</span> <span class="n">sum_edge_curves_fft</span><span class="p">[</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sum_edge_curves</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">)]</span><span class="o">/</span><span class="n">sum_edge_curves_fft</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">frq</span> <span class="o">=</span> <span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">nr_edge_px</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sum_edge_curves</span><span class="p">))</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">sum_edge_curves</span><span class="p">)</span> <span class="c"># two sides frequency range</span>
+    <span class="n">frq</span> <span class="o">=</span> <span class="n">frq</span><span class="p">[</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sum_edge_curves</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">)]</span> <span class="c"># one side frequency range</span>
+
+    <span class="n">object_naam</span> <span class="o">=</span> <span class="s">&#39;MTFim.png&#39;</span>
+    <span class="n">img</span> <span class="o">=</span> <span class="n">pixel_map</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">object_naam_pad</span><span class="p">,</span><span class="n">img</span><span class="p">)</span>
+    <span class="n">results</span><span class="o">.</span><span class="n">addObject</span><span class="p">(</span><span class="s">&#39;MTF image&#39;</span><span class="p">,</span><span class="n">object_naam</span><span class="p">,</span><span class="n">level</span><span class="o">=</span><span class="s">&#39;1&#39;</span><span class="p">)</span>
+
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">&quot;MTF&quot;</span><span class="p">)</span>
+    <span class="k">print</span> <span class="s">&quot;plot abs(sum edge curves)&quot;</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">frq</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">sum_edge_curves_fft</span><span class="p">))</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s">&#39;lp/mm&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s">&#39;Normalized modulation factor&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">10</span><span class="p">])</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">()</span>
+    
+    <span class="n">object_naam</span> <span class="o">=</span> <span class="s">&#39;MTFcurve.png&#39;</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">object_naam</span><span class="p">,</span><span class="n">bbox_inches</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">results</span><span class="o">.</span><span class="n">addObject</span><span class="p">(</span>    <span class="s">&#39;MTF curve&#39;</span><span class="p">,</span><span class="n">object_naam</span><span class="p">,</span><span class="n">level</span><span class="o">=</span><span class="s">&#39;1&#39;</span><span class="p">)</span>
+
+
+
+
+    <span class="k">return</span> <span class="n">resultxml</span>
+
+    
+
+
+
+
+
+
+
+
+</div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>
