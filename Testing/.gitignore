@@ -4,3 +4,4 @@ test*.jpg
 
 # no dicom images
 dicom_*
+*.dcm
