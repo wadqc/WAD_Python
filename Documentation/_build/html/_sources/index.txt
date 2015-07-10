@@ -26,22 +26,70 @@ Configuration files
 -------------------
 
 A plugin is a piece of code that performs a specific action on a data class object. To use a specific plugin to analyse a given data object a configuration file has to be specified and uploaded in the WAD QC software. 
-A configuration file defines one or multiple actions to be executed. Each action is defined by specifying a plugin and the function to be executed from that plugin. Also a default_level page on which the results of the analysis will be published has to be specified.
+A configuration file defines one or multiple actions to be executed. Each action is defined by specifying a plugin and the function to be executed from that plugin. Also a default_level page on which the results of the analysis will be published has to be specified. The simplest possible configuration file looks like:
 
-Optionally, the following tags can be specified:
+.. code-block:: xml
 
+   <config>
+      <action>
+           <plugin>Plugins.SomePluginFolder.myplugin</plugin>
+	   <function>SomeFunction</function>
+           <default_level>1</default_level>
+      </action>
+   </config>
 
- * filters - specify specific dicom tag (names) and values that should be used to filter the data before analysis
- * limits - specify limits for specific parameters to be determined
- * params - all tags in the params block will be passed on to the defined plugin and the information contained can be used by the plugin.
+This code block could be saved in a file "myconfigfile.xml" and uploaded.
+Optionally, the following tags can be specified within an action block:
+   * filters - specify specific dicom tag (names) and values that should be used to filter the data before analysis
+   * limits - specify limits for specific parameters to be determined
+   * params - all tags in the params block will be passed on to the defined plugin and the information contained can be used by the plugin.
+The filter block can be used to select specific instances from a dicom study that fit
+the filter criteria:
 
-The pywad package comes with a simple test plugin and corresponding configuration file:
+.. code-block:: xml
 
-.. code-block:: rest 
+   <filters>
+      <tag name="SeriesDescription">SomeName</tag> 
+      <tag name="0x008,0x1030">SomeDescription</tag> 
+   </filters>
+
+The limits block specify the limits for results obtained from the analysis.
+For float values one can specify acceptable and critical higher and lower limits 
+to be specified. In the case of character values a <criterium> tag needs to be specified:
+
+.. code-block:: xml
+
+   <limits>
+      <result description="myFloatParameter">
+          <acc_low>100</acc_low>
+          <acc_high>500</acc_high>
+          <crit_low>0</crit_low>
+          <crit_high>1000</crit_high>
+      </result>
+      <result description="myTagDescription">
+          <criterium>SomeValue</criterium>
+      </result>
+   </limits>
+
+Finally, it is possible to pass along any xml tag block to a specified function through the <params> block:
+
+.. code-block:: xml
+
+   <params>
+      <some_parameter SomeAttribute="Some attribute text">This is some parameter!</some_parameter>
+      <parent NumberOfKids="2">
+          <child>This is child 1</child>
+          <child>This is child 2</child>
+      </parent>
+   </params>
+
+As a complete example, the pywad package comes with a simple test plugin and corresponding configuration file:
+
+.. code:: xml 
    :linenos:
 
     <config>
-    <action>
+      <action>
         <plugin>Plugin_development.TestPlugin.myplugin</plugin>
         <function>testFunction</function>
         <default_level>1</default_level>
@@ -86,16 +134,35 @@ The pywad package comes with a simple test plugin and corresponding configuratio
                 <child>This is child 2</child>
             </parent>
         </params>
-        
+  
     </action>
-</config>
+    </config>
 
 
 Testing plugins
 ---------------
 
-Tools
------
+To test a plugin you need to supply a relevant data set and have a configuration file
+for that plugin. The script PluginTester.py in the Tools folder can be used to 
+run automated tests of the plugins in the package. The script can be run by 
+executing the command:
+
+``python PluginTester.py``
+
+If no arguments are specified the script will run a test for each config file specified in the Testing folder. 
+The directory structure of the Testing directory is identical to the Plugin folder. 
+The only difference is that the configuration xml file itself has to be placed inside a folder named "study", "series", or 
+"instance" to define the level the data needs to be processed at. The data that is needed
+to run the test has to be placed in a folder tree that has the same name as the plugin folder
+tree.
+
+Additionally, a custom .ini file can be specified in which only specific plugins are specified.
+This can be done by invoking the command:
+
+``python PluginTester.py myconfig.ini``
+
+The PluginTester script checks if the pywad package can succesfully process the data and 
+writes the resulting result.xml file into the TestingOutput folder. 
 
 
 Contents
@@ -105,7 +172,6 @@ Contents
      :caption: Table of Contents
      :numbered: 1
      :maxdepth: 6
-     :glob:
    pywad2
 
 Credits

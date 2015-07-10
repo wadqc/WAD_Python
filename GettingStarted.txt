@@ -1,0 +1,6 @@
+ Congratulations, if you read this you succeeded in opening pywad's documentation. It is assumed you have installed the necessary python packages and an up and running WAD QC framework.
+The tools are located in the Tools folder. To use the plugins in the WAD QC framework one has to upload the pywadplugin.py.zip file as a new plugin with the
+WAD software. If no pywadplugin.py.zip file exists it can be created using
+the following command from the root folder of the package:
+
+``python Tools/pywad2zip.py zip``

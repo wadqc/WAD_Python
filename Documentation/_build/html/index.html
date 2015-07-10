@@ -67,8 +67,18 @@ the following command from the root folder of the package:</p>
 <div class="section" id="configuration-files">
 <h2>Configuration files<a class="headerlink" href="#configuration-files" title="Permalink to this headline">¶</a></h2>
 <p>A plugin is a piece of code that performs a specific action on a data class object. To use a specific plugin to analyse a given data object a configuration file has to be specified and uploaded in the WAD QC software.
-A configuration file defines one or multiple actions to be executed. Each action is defined by specifying a plugin and the function to be executed from that plugin. Also a default_level page on which the results of the analysis will be published has to be specified.</p>
-<p>Optionally, the following tags can be specified:</p>
+A configuration file defines one or multiple actions to be executed. Each action is defined by specifying a plugin and the function to be executed from that plugin. Also a default_level page on which the results of the analysis will be published has to be specified. The simplest possible configuration file looks like:</p>
+<div class="highlight-xml"><div class="highlight"><pre><span class="nt">&lt;config&gt;</span>
+   <span class="nt">&lt;action&gt;</span>
+        <span class="nt">&lt;plugin&gt;</span>Plugins.SomePluginFolder.myplugin<span class="nt">&lt;/plugin&gt;</span>
+        <span class="nt">&lt;function&gt;</span>SomeFunction<span class="nt">&lt;/function&gt;</span>
+        <span class="nt">&lt;default_level&gt;</span>1<span class="nt">&lt;/default_level&gt;</span>
+   <span class="nt">&lt;/action&gt;</span>
+<span class="nt">&lt;/config&gt;</span>
+</pre></div>
+</div>
+<p>This code block could be saved in a file &#8220;myconfigfile.xml&#8221; and uploaded.
+Optionally, the following tags can be specified within an action block:</p>
 <blockquote>
 <div><ul class="simple">
 <li>filters - specify specific dicom tag (names) and values that should be used to filter the data before analysis</li>
@@ -76,111 +86,60 @@ A configuration file defines one or multiple actions to be executed. Each action
 <li>params - all tags in the params block will be passed on to the defined plugin and the information contained can be used by the plugin.</li>
 </ul>
 </div></blockquote>
-<p>The pywad package comes with a simple test plugin and corresponding configuration file:</p>
-<div class="highlight-rest"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
- 2
- 3
- 4
- 5
- 6
- 7
- 8
- 9
-10
-11
-12
-13
-14
-15
-16
-17
-18
-19
-20
-21
-22
-23
-24
-25
-26
-27
-28
-29
-30
-31
-32
-33
-34
-35
-36
-37
-38
-39
-40
-41
-42
-43
-44
-45
-46
-47
-48</pre></div></td><td class="code"><div class="highlight"><pre> &lt;config&gt;
- &lt;action&gt;
-     &lt;plugin&gt;Plugin_development.TestPlugin.myplugin&lt;/plugin&gt;
-     &lt;function&gt;testFunction&lt;/function&gt;
-     &lt;default_level&gt;1&lt;/default_level&gt;
-
-     &lt;filters&gt;
-         &lt;tag name=&quot;SeriesDescription&quot;&gt;Flat Field&lt;/tag&gt; &lt;!-- Typical format --&gt;
-         &lt;tag name=&quot;0x008,0x1030&quot;&gt;Weekly QC&lt;/tag&gt; &lt;!-- Test DICOM hexadecimal tuple --&gt;
-         &lt;tag name=&quot;ExposureTime&quot;&gt;650&lt;/tag&gt; &lt;!-- Test dicom.valuerep.IS --&gt;
-         &lt;tag name=&quot;HalfValueLayer&quot;&gt;0.351&lt;/tag&gt; &lt;!-- Test dicom.valuerep.DSfloat --&gt;
-         &lt;tag name=&quot;Rows&quot;&gt;4096&lt;/tag&gt; &lt;!-- Test integer value --&gt;
-     &lt;/filters&gt;
-
-
-
-     &lt;limits&gt;
-         &lt;result description=&quot;Study date&quot;&gt;
-             &lt;acc_low&gt;100&lt;/acc_low&gt;
-             &lt;acc_high&gt;500&lt;/acc_high&gt;
-             &lt;crit_low&gt;0&lt;/crit_low&gt;
-             &lt;crit_high&gt;1000&lt;/crit_high&gt;
-         &lt;/result&gt;
-         &lt;result description=&quot;StudyDescription&quot;&gt;
-             &lt;criterium&gt;Weekly QC&lt;/criterium&gt;
-         &lt;/result&gt;
-     &lt;/limits&gt;
- &lt;/action&gt;
-
- &lt;action&gt;
-     &lt;plugin&gt;Plugin_development.TestPlugin.myplugin&lt;/plugin&gt;
-     &lt;function&gt;anotherFunction&lt;/function&gt;
-
-     &lt;limits&gt;
-         &lt;result description=&quot;Some bool&quot;&gt;
-              &lt;criterium&gt;1&lt;/criterium&gt;
-          &lt;/result&gt;
-     &lt;/limits&gt;
-
-    &lt;params&gt;
-         &lt;some_parameter SomeAttribute=&quot;Some attribute text&quot;&gt;This is some parameter!&lt;/some_parameter&gt;
-         &lt;parent NumberOfKids=&quot;2&quot;&gt;
-             &lt;child&gt;This is child 1&lt;/child&gt;
-             &lt;child&gt;This is child 2&lt;/child&gt;
-         &lt;/parent&gt;
-     &lt;/params&gt;
-
- &lt;/action&gt;
+<p>The filter block can be used to select specific instances from a dicom study that fit
+the filter criteria:</p>
+<div class="highlight-xml"><div class="highlight"><pre><span class="nt">&lt;filters&gt;</span>
+   <span class="nt">&lt;tag</span> <span class="na">name=</span><span class="s">&quot;SeriesDescription&quot;</span><span class="nt">&gt;</span>SomeName<span class="nt">&lt;/tag&gt;</span>
+   <span class="nt">&lt;tag</span> <span class="na">name=</span><span class="s">&quot;0x008,0x1030&quot;</span><span class="nt">&gt;</span>SomeDescription<span class="nt">&lt;/tag&gt;</span>
+<span class="nt">&lt;/filters&gt;</span>
 </pre></div>
-</td></tr></table></div>
-<p>&lt;/config&gt;</p>
+</div>
+<p>The limits block specify the limits for results obtained from the analysis.
+For float values one can specify acceptable and critical higher and lower limits
+to be specified. In the case of character values a &lt;criterium&gt; tag needs to be specified:</p>
+<div class="highlight-xml"><div class="highlight"><pre><span class="nt">&lt;limits&gt;</span>
+   <span class="nt">&lt;result</span> <span class="na">description=</span><span class="s">&quot;myFloatParameter&quot;</span><span class="nt">&gt;</span>
+       <span class="nt">&lt;acc_low&gt;</span>100<span class="nt">&lt;/acc_low&gt;</span>
+       <span class="nt">&lt;acc_high&gt;</span>500<span class="nt">&lt;/acc_high&gt;</span>
+       <span class="nt">&lt;crit_low&gt;</span>0<span class="nt">&lt;/crit_low&gt;</span>
+       <span class="nt">&lt;crit_high&gt;</span>1000<span class="nt">&lt;/crit_high&gt;</span>
+   <span class="nt">&lt;/result&gt;</span>
+   <span class="nt">&lt;result</span> <span class="na">description=</span><span class="s">&quot;myTagDescription&quot;</span><span class="nt">&gt;</span>
+       <span class="nt">&lt;criterium&gt;</span>SomeValue<span class="nt">&lt;/criterium&gt;</span>
+   <span class="nt">&lt;/result&gt;</span>
+<span class="nt">&lt;/limits&gt;</span>
+</pre></div>
+</div>
+<p>Finally, it is possible to pass along any xml tag block to a specified function through the &lt;params&gt; block:</p>
+<div class="highlight-xml"><div class="highlight"><pre><span class="nt">&lt;params&gt;</span>
+   <span class="nt">&lt;some_parameter</span> <span class="na">SomeAttribute=</span><span class="s">&quot;Some attribute text&quot;</span><span class="nt">&gt;</span>This is some parameter!<span class="nt">&lt;/some_parameter&gt;</span>
+   <span class="nt">&lt;parent</span> <span class="na">NumberOfKids=</span><span class="s">&quot;2&quot;</span><span class="nt">&gt;</span>
+       <span class="nt">&lt;child&gt;</span>This is child 1<span class="nt">&lt;/child&gt;</span>
+       <span class="nt">&lt;child&gt;</span>This is child 2<span class="nt">&lt;/child&gt;</span>
+   <span class="nt">&lt;/parent&gt;</span>
+<span class="nt">&lt;/params&gt;</span>
+</pre></div>
+</div>
+<p>As a complete example, the pywad package comes with a simple test plugin and corresponding configuration file:</p>
 </div>
 <div class="section" id="testing-plugins">
 <h2>Testing plugins<a class="headerlink" href="#testing-plugins" title="Permalink to this headline">¶</a></h2>
-</div>
-<div class="section" id="tools">
-<h2>Tools<a class="headerlink" href="#tools" title="Permalink to this headline">¶</a></h2>
+<p>To test a plugin you need to supply a relevant data set and have a configuration file
+for that plugin. The script PluginTester.py in the Tools folder can be used to
+run automated tests of the plugins in the package. The script can be run by
+executing the command:</p>
+<p><tt class="docutils literal"><span class="pre">python</span> <span class="pre">PluginTester.py</span></tt></p>
+<p>If no arguments are specified the script will run a test for each config file specified in the Testing folder.
+The directory structure of the Testing directory is identical to the Plugin folder.
+The only difference is that the configuration xml file itself has to be placed inside a folder named &#8220;study&#8221;, &#8220;series&#8221;, or
+&#8220;instance&#8221; to define the level the data needs to be processed at. The data that is needed
+to run the test has to be placed in a folder tree that has the same name as the plugin folder
+tree.</p>
+<p>Additionally, a custom .ini file can be specified in which only specific plugins are specified.
+This can be done by invoking the command:</p>
+<p><tt class="docutils literal"><span class="pre">python</span> <span class="pre">PluginTester.py</span> <span class="pre">myconfig.ini</span></tt></p>
+<p>The PluginTester script checks if the pywad package can succesfully process the data and
+writes the resulting result.xml file into the TestingOutput folder.</p>
 </div>
 </div>
 <div class="section" id="contents">
@@ -502,7 +461,6 @@ A configuration file defines one or multiple actions to be executed. Each action
 <li><a class="reference internal" href="#getting-started">Getting Started</a></li>
 <li><a class="reference internal" href="#configuration-files">Configuration files</a></li>
 <li><a class="reference internal" href="#testing-plugins">Testing plugins</a></li>
-<li><a class="reference internal" href="#tools">Tools</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#contents">Contents</a></li>
