@@ -1,0 +1,281 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Tools.Barco.UID &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for Tools.Barco.UID</h1><div class="highlight"><pre>
+<span class="c"># UID.py</span>
+<span class="sd">&quot;&quot;&quot;Dicom Unique identifiers&quot;&quot;&quot;</span>
+<span class="c"># Copyright (c) 2008 Darcy Mason</span>
+<span class="c"># This file is part of pydicom, released under a modified MIT license.</span>
+<span class="c">#    See the file license.txt included with this distribution, also</span>
+<span class="c">#    available at http://pydicom.googlecode.com</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">uuid</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">from</span> <span class="nn">math</span> <span class="kn">import</span> <span class="n">fabs</span>
+
+<span class="kn">from</span> <span class="nn">_UID_dict</span> <span class="kn">import</span> <span class="n">UID_dictionary</span>
+
+
+<div class="viewcode-block" id="InvalidUID"><a class="viewcode-back" href="../../../Tools.Barco.html#Tools.Barco.UID.InvalidUID">[docs]</a><span class="k">class</span> <span class="nc">InvalidUID</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Throw when DICOM UID is invalid</span>
+
+<span class="sd">    Example of invalid UID::</span>
+
+<span class="sd">        &gt;&gt;&gt; uid = &#39;1.2.123.&#39;</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="UID"><a class="viewcode-back" href="../../../Tools.Barco.html#Tools.Barco.UID.UID">[docs]</a><span class="k">class</span> <span class="nc">UID</span><span class="p">(</span><span class="nb">str</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Subclass python string so have human-friendly UIDs</span>
+
+<span class="sd">    Use like:</span>
+<span class="sd">        uid = UID(&#39;1.2.840.10008.1.2.4.50&#39;)</span>
+<span class="sd">    then</span>
+<span class="sd">        uid.name, uid.type, uid.info, and uid.is_retired all return</span>
+<span class="sd">           values from the UID_dictionary</span>
+
+<span class="sd">    String representation (__str__) will be the name,</span>
+<span class="sd">    __repr__ will be the full 1.2.840....</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__new__</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set up new instance of the class&quot;&quot;&quot;</span>
+        <span class="c"># Don&#39;t repeat if already a UID class -- then may get the name</span>
+        <span class="c">#     that str(uid) gives rather than the dotted number</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">UID</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">val</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">basestring</span><span class="p">):</span>
+                <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">UID</span><span class="p">,</span> <span class="n">cls</span><span class="p">)</span><span class="o">.</span><span class="n">__new__</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">val</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&quot;UID must be a string&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initialize the UID properties</span>
+
+<span class="sd">        Sets name, type, info, is_retired, and is_transfer_syntax.</span>
+<span class="sd">        If UID is a transfer syntax, also sets is_little_endian,</span>
+<span class="sd">            is_implicit_VR, and is_deflated boolean values.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># Note normally use __new__ on subclassing an immutable, but here we</span>
+        <span class="c">#   just want to do some pre-processing against the UID dictionary.</span>
+        <span class="c">#   &quot;My&quot; string can never change (it is a python immutable), so is safe</span>
+        <span class="k">if</span> <span class="bp">self</span> <span class="ow">in</span> <span class="n">UID_dictionary</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="p">,</span> <span class="n">retired</span> <span class="o">=</span> <span class="n">UID_dictionary</span><span class="p">[</span><span class="bp">self</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">is_retired</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">retired</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="nb">str</span><span class="o">.</span><span class="n">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_retired</span> <span class="o">=</span> <span class="p">(</span><span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+
+        <span class="c"># If the UID represents a transfer syntax, store info about that syntax</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_transfer_syntax</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s">&quot;Transfer Syntax&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_transfer_syntax</span><span class="p">:</span>
+            <span class="c"># Assume a transfer syntax, correct it as necessary</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">is_implicit_VR</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">is_little_endian</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">is_deflated</span> <span class="o">=</span> <span class="bp">False</span>
+
+            <span class="k">if</span> <span class="n">val</span> <span class="o">==</span> <span class="s">&#39;1.2.840.10008.1.2&#39;</span><span class="p">:</span>  <span class="c"># implicit VR little endian</span>
+                <span class="k">pass</span>
+            <span class="k">elif</span> <span class="n">val</span> <span class="o">==</span> <span class="s">&#39;1.2.840.10008.1.2.1&#39;</span><span class="p">:</span>  <span class="c"># ExplicitVRLittleEndian</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">is_implicit_VR</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="k">elif</span> <span class="n">val</span> <span class="o">==</span> <span class="s">&#39;1.2.840.10008.1.2.2&#39;</span><span class="p">:</span>  <span class="c"># ExplicitVRBigEndian</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">is_implicit_VR</span> <span class="o">=</span> <span class="bp">False</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">is_little_endian</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="k">elif</span> <span class="n">val</span> <span class="o">==</span> <span class="s">&#39;1.2.840.10008.1.2.1.99&#39;</span><span class="p">:</span>  <span class="c"># DeflatedExplicitVRLittleEndian:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">is_deflated</span> <span class="o">=</span> <span class="bp">True</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">is_implicit_VR</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c"># Any other syntax should be Explicit VR Little Endian,</span>
+                <span class="c">#   e.g. all Encapsulated (JPEG etc) are ExplVR-LE by Standard PS 3.5-2008 A.4 (p63)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">is_implicit_VR</span> <span class="o">=</span> <span class="bp">False</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the human-friendly name for this UID&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Override string equality so either name or UID number match passes&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">str</span><span class="o">.</span><span class="n">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">)</span> <span class="ow">is</span> <span class="bp">True</span><span class="p">:</span>  <span class="c"># &#39;is True&#39; needed (issue 96)</span>
+            <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">if</span> <span class="nb">str</span><span class="o">.</span><span class="n">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">other</span><span class="p">)</span> <span class="ow">is</span> <span class="bp">True</span><span class="p">:</span>  <span class="c"># &#39;is True&#39; needed (issue 96)</span>
+            <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">return</span> <span class="bp">False</span>
+
+<div class="viewcode-block" id="UID.is_valid"><a class="viewcode-back" href="../../../Tools.Barco.html#Tools.Barco.UID.UID.is_valid">[docs]</a>    <span class="k">def</span> <span class="nf">is_valid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Raise an exception is the UID is invalid</span>
+
+<span class="sd">        Usage example::</span>
+
+<span class="sd">            &gt;&gt;&gt; invalid_uid = dicom.UID.UID(&#39;1.2.345.&#39;)</span>
+<span class="sd">            &gt;&gt;&gt; invalid_uid.is_valid(invalid_uid)</span>
+<span class="sd">            InvalidUID: &#39;Trailing dot at the end of the UID&#39;</span>
+<span class="sd">            &gt;&gt;&gt; valid_uid = dicom.UID.UID(&#39;1.2.123&#39;)</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;.&#39;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InvalidUID</span><span class="p">(</span><span class="s">&#39;Trailing dot at the end of the UID&#39;</span><span class="p">)</span>
+
+    <span class="c"># For python 3, any override of __cmp__ or __eq__ immutable requires</span>
+    <span class="c">#   explicit redirect of hash function to the parent class</span>
+    <span class="c">#   See http://docs.python.org/dev/3.0/reference/datamodel.html#object.__hash__</span>
+</div>
+    <span class="k">def</span> <span class="nf">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">UID</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__hash__</span><span class="p">()</span>
+</div>
+<span class="n">ExplicitVRLittleEndian</span> <span class="o">=</span> <span class="n">UID</span><span class="p">(</span><span class="s">&#39;1.2.840.10008.1.2.1&#39;</span><span class="p">)</span>
+<span class="n">ImplicitVRLittleEndian</span> <span class="o">=</span> <span class="n">UID</span><span class="p">(</span><span class="s">&#39;1.2.840.10008.1.2&#39;</span><span class="p">)</span>
+<span class="n">DeflatedExplicitVRLittleEndian</span> <span class="o">=</span> <span class="n">UID</span><span class="p">(</span><span class="s">&#39;1.2.840.10008.1.2.1.99&#39;</span><span class="p">)</span>
+<span class="n">ExplicitVRBigEndian</span> <span class="o">=</span> <span class="n">UID</span><span class="p">(</span><span class="s">&#39;1.2.840.10008.1.2.2&#39;</span><span class="p">)</span>
+
+<span class="n">NotCompressedPixelTransferSyntaxes</span> <span class="o">=</span> <span class="p">[</span><span class="n">ExplicitVRLittleEndian</span><span class="p">,</span>
+                                      <span class="n">ImplicitVRLittleEndian</span><span class="p">,</span>
+                                      <span class="n">DeflatedExplicitVRLittleEndian</span><span class="p">,</span>
+                                      <span class="n">ExplicitVRBigEndian</span><span class="p">]</span>
+
+<span class="c"># Many thanks to the Medical Connections for offering free valid UIDs (http://www.medicalconnections.co.uk/FreeUID.html)</span>
+<span class="c"># Their service was used to obtain the following root UID for pydicom:</span>
+<span class="n">pydicom_root_UID</span> <span class="o">=</span> <span class="s">&#39;1.2.826.0.1.3680043.8.498.&#39;</span>
+<span class="n">pydicom_UIDs</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">pydicom_root_UID</span> <span class="o">+</span> <span class="s">&#39;1&#39;</span><span class="p">:</span> <span class="s">&#39;ImplementationClassUID&#39;</span><span class="p">,</span>
+<span class="p">}</span>
+
+
+<div class="viewcode-block" id="generate_uid"><a class="viewcode-back" href="../../../Tools.Barco.html#Tools.Barco.UID.generate_uid">[docs]</a><span class="k">def</span> <span class="nf">generate_uid</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="n">pydicom_root_UID</span><span class="p">,</span> <span class="n">truncate</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Generate a dicom unique identifier based on host id, process id and current</span>
+<span class="sd">    time. The max lenght of the generated UID is 64 caracters.</span>
+
+<span class="sd">    If the given prefix is ``None``, the UID is generated following the method</span>
+<span class="sd">    described on `David Clunie website</span>
+<span class="sd">    &lt;http://www.dclunie.com/medical-image-faq/html/part2.html#UID&gt;`_</span>
+
+<span class="sd">    Usage example::</span>
+
+<span class="sd">        &gt;&gt;&gt; dicom.UID.generate_uid()</span>
+<span class="sd">        1.2.826.0.1.3680043.8.498.2913212949509824014974371514</span>
+<span class="sd">        &gt;&gt;&gt; dicom.UID.generate_uid(None)</span>
+<span class="sd">        2.25.31215762025423160614120088028604965760</span>
+
+<span class="sd">    This method is inspired from the work of `DCMTK</span>
+<span class="sd">    &lt;http://dicom.offis.de/dcmtk.php.en&gt;`_.</span>
+
+<span class="sd">    :param prefix: The site root UID. Default to pydicom root UID.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">max_uid_len</span> <span class="o">=</span> <span class="mi">64</span>
+
+    <span class="k">if</span> <span class="n">prefix</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">dicom_uid</span> <span class="o">=</span> <span class="s">&#39;2.25.{0}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid1</span><span class="p">()</span><span class="o">.</span><span class="n">int</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">uid_info</span> <span class="o">=</span> <span class="p">[</span><span class="n">uuid</span><span class="o">.</span><span class="n">getnode</span><span class="p">(),</span>
+                    <span class="n">fabs</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">()),</span>
+                    <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">today</span><span class="p">()</span><span class="o">.</span><span class="n">second</span><span class="p">,</span>
+                    <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">today</span><span class="p">()</span><span class="o">.</span><span class="n">microsecond</span><span class="p">]</span>  <span class="c"># nopep8</span>
+
+        <span class="n">suffix</span> <span class="o">=</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="nb">long</span><span class="p">(</span><span class="n">x</span><span class="p">))</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">uid_info</span><span class="p">])</span>
+        <span class="n">dicom_uid</span> <span class="o">=</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">prefix</span><span class="p">,</span> <span class="n">suffix</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="n">truncate</span><span class="p">:</span>
+        <span class="n">dicom_uid</span> <span class="o">=</span> <span class="n">dicom_uid</span><span class="p">[:</span><span class="n">max_uid_len</span><span class="p">]</span>
+
+    <span class="n">dicom_uid</span> <span class="o">=</span> <span class="n">UID</span><span class="p">(</span><span class="n">dicom_uid</span><span class="p">)</span>
+
+    <span class="c"># This will raise an exception if the UID is invalid</span>
+    <span class="n">dicom_uid</span><span class="o">.</span><span class="n">is_valid</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">dicom_uid</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

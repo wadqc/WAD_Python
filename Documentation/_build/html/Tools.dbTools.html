@@ -1,0 +1,1180 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Tools.dbTools package &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">..  documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="tools-dbtools-package">
+<h1>Tools.dbTools package<a class="headerlink" href="#tools-dbtools-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-Tools.dbTools.dbTool">
+<span id="tools-dbtools-dbtool-module"></span><h2>Tools.dbTools.dbTool module<a class="headerlink" href="#module-Tools.dbTools.dbTool" title="Permalink to this headline">¶</a></h2>
+<p>Changelog:
+20150617: Fix crash on empty value; SeekAndDestroy (SrcAET) added; restructured SeekAndDestroy for SrcAET,Modality,StationName
+20150413: SeekAndDestroy (modality)
+20150407: SeekAndDestroy (selector); fix empty stationname
+20150317: Fix crash on empty value; added SrcAET info
+20150305: Fix for empty selectors crash (EPIStab)
+20150210: Fix for crash on trying to add a None to qctable
+20141010: Fix remove all traces of one StationName; added remove all traces of one GewensteID; addAnatomy voor CT2
+20141008: Add option to remove all traces of one StationName
+20140627: added MIR excerpt
+20140618: scaling between -1 and 1
+20140617: Added Current Status Report
+20140616: Allow &#8220;None&#8221; for station_name or modality; stacked graphs; critical lines
+20140613: distinguishable colors in report; sorting on date in report
+20140611: reportgenerator added
+20140610: ability to select items to show/hide in report
+20140606: added FilterName to description of MG studies
+20140603: added reporting
+20140528: added &#8216;purge&#8217; option to Database to delete XML files
+20140521: initial version</p>
+<dl class="docutils">
+<dt>TODO:</dt>
+<dd>o Herschrijf onSeekandDestroyStation net als onSeekandDestroyGewenst
+o Bouw optie om data te corrigeren (wrong or no stationname, etc)</dd>
+</dl>
+<dl class="class">
+<dt id="Tools.dbTools.dbTool.DateAxis">
+<em class="property">class </em><tt class="descclassname">Tools.dbTools.dbTool.</tt><tt class="descname">DateAxis</tt><big>(</big><em>orientation</em>, <em>pen=None</em>, <em>linkView=None</em>, <em>parent=None</em>, <em>maxTickLength=-5</em>, <em>showValues=True</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#DateAxis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.DateAxis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">pyqtgraph.graphicsItems.AxisItem.AxisItem</span></tt></p>
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.DateAxis.tickStrings">
+<tt class="descname">tickStrings</tt><big>(</big><em>values</em>, <em>scale</em>, <em>spacing</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#DateAxis.tickStrings"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.DateAxis.tickStrings" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="Tools.dbTools.dbTool.datetime2seconds">
+<tt class="descclassname">Tools.dbTools.dbTool.</tt><tt class="descname">datetime2seconds</tt><big>(</big><em>dt</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#datetime2seconds"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.datetime2seconds" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="Tools.dbTools.dbTool.dbTool">
+<em class="property">class </em><tt class="descclassname">Tools.dbTools.dbTool.</tt><tt class="descname">dbTool</tt><big>(</big><em>parent=None</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">PyQt4.QtGui.QMainWindow</span></tt></p>
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.dbTool.addFilterNames">
+<tt class="descname">addFilterNames</tt><big>(</big><em>entries</em>, <em>doubleid=False</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool.addFilterNames"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.addFilterNames" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.dbTool.addToReport">
+<tt class="descname">addToReport</tt><big>(</big><em>machine=''</em>, <em>selectors=</em>, <span class="optional">[</span><span class="optional">]</span><em>scaleddata={}</em>, <em>errors={}</em>, <em>verwacht=0</em>, <em>counts={}</em>, <em>bads={}</em>, <em>retakes={}</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool.addToReport"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.addToReport" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.dbTool.checkResults">
+<tt class="descname">checkResults</tt><big>(</big><em>entries</em>, <em>selectors=None</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool.checkResults"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.checkResults" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check all results of given entries, identified by gewensteprocessen_id.
+If any of the tables resultaten_char, resultaten_floating is outside specs, put in report</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.dbTool.clearLayout">
+<tt class="descname">clearLayout</tt><big>(</big><em>layout</em>, <em>layoutOnly=False</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool.clearLayout"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.clearLayout" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.dbTool.closedb">
+<tt class="descname">closedb</tt><big>(</big><em>con</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool.closedb"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.closedb" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.dbTool.configError">
+<tt class="descname">configError</tt><big>(</big><em>ininame</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool.configError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.configError" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.dbTool.configRead">
+<tt class="descname">configRead</tt><big>(</big><em>ininame</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool.configRead"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.configRead" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.dbTool.connectdb">
+<tt class="descname">connectdb</tt><big>(</big><em>host=None</em>, <em>user=None</em>, <em>pswd=None</em>, <em>db=None</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool.connectdb"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.connectdb" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.dbTool.currentStatus">
+<tt class="descname">currentStatus</tt><big>(</big><em>mode='selector+description'</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool.currentStatus"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.currentStatus" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shows the date and outcome of the last run of each selector
+Flowchart:
+1. Get list of all selectors
+2. For each selector find last run
+3. Of each last run, determine result if NOT status == error
+:return:</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.dbTool.databaseTruncate">
+<tt class="descname">databaseTruncate</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool.databaseTruncate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.databaseTruncate" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.dbTool.databaseTruncatePopUp">
+<tt class="descname">databaseTruncatePopUp</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool.databaseTruncatePopUp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.databaseTruncatePopUp" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.dbTool.destroySelected">
+<tt class="descname">destroySelected</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool.destroySelected"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.destroySelected" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.destroylist">
+<tt class="descname">destroylist</tt><em class="property"> = []</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.destroylist" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.dbTool.determineReportPeriod">
+<tt class="descname">determineReportPeriod</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool.determineReportPeriod"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.determineReportPeriod" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Workflow:</dt>
+<dd><ol class="first last arabic simple">
+<li>Find number of days/weeks/months is reporting period</li>
+</ol>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.dbTool.finishReport">
+<tt class="descname">finishReport</tt><big>(</big><em>reportfile</em>, <em>machine=''</em>, <em>verwacht=0</em>, <em>count=0</em>, <em>bads=0</em>, <em>retakes=0</em>, <em>errors=0</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool.finishReport"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.finishReport" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.dbTool.getSubSelection">
+<tt class="descname">getSubSelection</tt><big>(</big><em>entries</em>, <em>subselection</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool.getSubSelection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.getSubSelection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check all results of given entries, identified by gewensteprocessen_id.
+If any of the tables resultaten_char, resultaten_floating is outside specs, put in report</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.dbTool.graphResults">
+<tt class="descname">graphResults</tt><big>(</big><em>scaleddata</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool.graphResults"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.graphResults" title="Permalink to this definition">¶</a></dt>
+<dd><p>Expected input: dictionary of all correctly processed entries for one stationname
+For each selector, make a graph of all scaled values if limits given</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.host">
+<tt class="descname">host</tt><em class="property"> = None</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.host" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.iqcdb">
+<tt class="descname">iqcdb</tt><em class="property"> = 'iqc'</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.iqcdb" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.dbTool.mysqlDeleteRows">
+<tt class="descname">mysqlDeleteRows</tt><big>(</big><em>table</em>, <em>value_list</em>, <em>key='pk'</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool.mysqlDeleteRows"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.mysqlDeleteRows" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.dbTool.onActivatedGewenstProces">
+<tt class="descname">onActivatedGewenstProces</tt><big>(</big><em>text</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool.onActivatedGewenstProces"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.onActivatedGewenstProces" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.dbTool.onActivatedProcessorChanged">
+<tt class="descname">onActivatedProcessorChanged</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool.onActivatedProcessorChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.onActivatedProcessorChanged" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.dbTool.onActivatedProcessorModality">
+<tt class="descname">onActivatedProcessorModality</tt><big>(</big><em>text</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool.onActivatedProcessorModality"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.onActivatedProcessorModality" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.dbTool.onActivatedProcessorSelector">
+<tt class="descname">onActivatedProcessorSelector</tt><big>(</big><em>text</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool.onActivatedProcessorSelector"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.onActivatedProcessorSelector" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.dbTool.onActivatedProcessorSrcAET">
+<tt class="descname">onActivatedProcessorSrcAET</tt><big>(</big><em>text</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool.onActivatedProcessorSrcAET"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.onActivatedProcessorSrcAET" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.dbTool.onActivatedProcessorStation">
+<tt class="descname">onActivatedProcessorStation</tt><big>(</big><em>text</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool.onActivatedProcessorStation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.onActivatedProcessorStation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.dbTool.onActivatedProcessorStatus">
+<tt class="descname">onActivatedProcessorStatus</tt><big>(</big><em>text</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool.onActivatedProcessorStatus"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.onActivatedProcessorStatus" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.dbTool.onActivatedReportChanged">
+<tt class="descname">onActivatedReportChanged</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool.onActivatedReportChanged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.onActivatedReportChanged" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Workflow:</dt>
+<dd><ol class="first last arabic simple" start="2">
+<li>Find processes of correct modality, stationname, selector and in given reporting period</li>
+<li>Determine expected number of processes</li>
+</ol>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.dbTool.onActivatedReportPeriod">
+<tt class="descname">onActivatedReportPeriod</tt><big>(</big><em>text</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool.onActivatedReportPeriod"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.onActivatedReportPeriod" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.dbTool.onActivatedReportQCPeriodicity">
+<tt class="descname">onActivatedReportQCPeriodicity</tt><big>(</big><em>text</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool.onActivatedReportQCPeriodicity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.onActivatedReportQCPeriodicity" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.dbTool.onSeekAndDestroyGewenst">
+<tt class="descname">onSeekAndDestroyGewenst</tt><big>(</big><em>act=None</em>, <em>selector=None</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool.onSeekAndDestroyGewenst"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.onSeekAndDestroyGewenst" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.dbTool.onSeekAndDestroySelector">
+<tt class="descname">onSeekAndDestroySelector</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool.onSeekAndDestroySelector"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.onSeekAndDestroySelector" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.dbTool.onSeekAndDestroyStation">
+<tt class="descname">onSeekAndDestroyStation</tt><big>(</big><em>act=None</em>, <em>mode='StationName'</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool.onSeekAndDestroyStation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.onSeekAndDestroyStation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.dbTool.pathXMLInputOutput">
+<tt class="descname">pathXMLInputOutput</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool.pathXMLInputOutput"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.pathXMLInputOutput" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.dbTool.periodicStatus">
+<tt class="descname">periodicStatus</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool.periodicStatus"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.periodicStatus" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.dbTool.popupPurge">
+<tt class="descname">popupPurge</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool.popupPurge"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.popupPurge" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.dbTool.processorReset">
+<tt class="descname">processorReset</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool.processorReset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.processorReset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.dbTool.processorShowSelected">
+<tt class="descname">processorShowSelected</tt><big>(</big><em>selected</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool.processorShowSelected"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.processorShowSelected" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.pswd">
+<tt class="descname">pswd</tt><em class="property"> = None</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.pswd" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.dbTool.pswdFromDialog">
+<tt class="descname">pswdFromDialog</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool.pswdFromDialog"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.pswdFromDialog" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.qcgraph">
+<tt class="descname">qcgraph</tt><em class="property"> = None</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.qcgraph" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.qcgroupbox">
+<tt class="descname">qcgroupbox</tt><em class="property"> = None</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.qcgroupbox" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.qcplots">
+<tt class="descname">qcplots</tt><em class="property"> = None</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.qcplots" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.qctable">
+<tt class="descname">qctable</tt><em class="property"> = None</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.qctable" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.qctext">
+<tt class="descname">qctext</tt><em class="property"> = None</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.qctext" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.qcversion">
+<tt class="descname">qcversion</tt><em class="property"> = 20150617</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.qcversion" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.dbTool.reportDemo">
+<tt class="descname">reportDemo</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool.reportDemo"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.reportDemo" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.dbTool.reportMIRBucky">
+<tt class="descname">reportMIRBucky</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool.reportMIRBucky"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.reportMIRBucky" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Idee: Voor iedere bucky de volgende waardes dumpen:</dt>
+<dd>Exposure_ms, DOP, MTF_Area5, Sensitivity</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.reportentries">
+<tt class="descname">reportentries</tt><em class="property"> = {}</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.reportentries" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.reporter">
+<tt class="descname">reporter</tt><em class="property"> = None</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.reporter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.dbTool.resetListedProcessor">
+<tt class="descname">resetListedProcessor</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool.resetListedProcessor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.resetListedProcessor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.rootxml">
+<tt class="descname">rootxml</tt><em class="property"> = None</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.rootxml" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.runmode">
+<tt class="descname">runmode</tt><em class="property"> = None</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.runmode" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.dbTool.seekandDestroy">
+<tt class="descname">seekandDestroy</tt><big>(</big><em>mode</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool.seekandDestroy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.seekandDestroy" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.selectedGewenst">
+<tt class="descname">selectedGewenst</tt><em class="property"> = None</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.selectedGewenst" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.selectedModality">
+<tt class="descname">selectedModality</tt><em class="property"> = None</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.selectedModality" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.selectedReportDateTimestart">
+<tt class="descname">selectedReportDateTimestart</tt><em class="property"> = None</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.selectedReportDateTimestart" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.selectedReportDateTimeuntil">
+<tt class="descname">selectedReportDateTimeuntil</tt><em class="property"> = None</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.selectedReportDateTimeuntil" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.selectedReportPeriod">
+<tt class="descname">selectedReportPeriod</tt><em class="property"> = None</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.selectedReportPeriod" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.selectedReportQCPeriodicity">
+<tt class="descname">selectedReportQCPeriodicity</tt><em class="property"> = None</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.selectedReportQCPeriodicity" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.selectedSelector">
+<tt class="descname">selectedSelector</tt><em class="property"> = None</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.selectedSelector" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.selectedStation">
+<tt class="descname">selectedStation</tt><em class="property"> = None</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.selectedStation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.selectedStatus">
+<tt class="descname">selectedStatus</tt><em class="property"> = None</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.selectedStatus" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.selector_id_text">
+<tt class="descname">selector_id_text</tt><em class="property"> = {}</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.selector_id_text" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.stModeDestroy">
+<tt class="descname">stModeDestroy</tt><em class="property"> = 'destroy'</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.stModeDestroy" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.stModeProcessor">
+<tt class="descname">stModeProcessor</tt><em class="property"> = 'processor'</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.stModeProcessor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.stModeReport">
+<tt class="descname">stModeReport</tt><em class="property"> = 'report'</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.stModeReport" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.stNone">
+<tt class="descname">stNone</tt><em class="property"> = 'NONE'</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.stNone" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.stResultError">
+<tt class="descname">stResultError</tt><em class="property"> = 'Error'</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.stResultError" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.stResultNoRanges">
+<tt class="descname">stResultNoRanges</tt><em class="property"> = 'No limits'</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.stResultNoRanges" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.stResultOK">
+<tt class="descname">stResultOK</tt><em class="property"> = 'Ok'</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.stResultOK" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.stResultOutOfRange">
+<tt class="descname">stResultOutOfRange</tt><em class="property"> = 'Out of Range'</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.stResultOutOfRange" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.statusLabel">
+<tt class="descname">statusLabel</tt><em class="property"> = None</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.statusLabel" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.status_id_text">
+<tt class="descname">status_id_text</tt><em class="property"> = {}</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.status_id_text" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.status_reset">
+<tt class="descname">status_reset</tt><em class="property"> = 0</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.status_reset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.table_analyseinput">
+<tt class="descname">table_analyseinput</tt><em class="property"> = 'analysemodule_input'</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.table_analyseinput" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.table_analyseoutput">
+<tt class="descname">table_analyseoutput</tt><em class="property"> = 'analysemodule_output'</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.table_analyseoutput" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.table_bool">
+<tt class="descname">table_bool</tt><em class="property"> = 'resultaten_boolean'</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.table_bool" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.table_char">
+<tt class="descname">table_char</tt><em class="property"> = 'resultaten_char'</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.table_char" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.table_collectorstatusseries">
+<tt class="descname">table_collectorstatusseries</tt><em class="property"> = 'collector_series_status'</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.table_collectorstatusseries" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.table_collectorstatusstudies">
+<tt class="descname">table_collectorstatusstudies</tt><em class="property"> = 'collector_study_status'</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.table_collectorstatusstudies" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.table_files">
+<tt class="descname">table_files</tt><em class="property"> = 'files'</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.table_files" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.table_float">
+<tt class="descname">table_float</tt><em class="property"> = 'resultaten_floating'</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.table_float" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.table_gewenste_processen">
+<tt class="descname">table_gewenste_processen</tt><em class="property"> = 'gewenste_processen'</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.table_gewenste_processen" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.table_instances">
+<tt class="descname">table_instances</tt><em class="property"> = 'instance'</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.table_instances" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.table_object">
+<tt class="descname">table_object</tt><em class="property"> = 'resultaten_object'</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.table_object" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.table_patient">
+<tt class="descname">table_patient</tt><em class="property"> = 'patient'</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.table_patient" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.table_selector">
+<tt class="descname">table_selector</tt><em class="property"> = 'selector'</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.table_selector" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.table_series">
+<tt class="descname">table_series</tt><em class="property"> = 'series'</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.table_series" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.table_status">
+<tt class="descname">table_status</tt><em class="property"> = 'resultaten_status'</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.table_status" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.table_status_omschrijving">
+<tt class="descname">table_status_omschrijving</tt><em class="property"> = 'status_omschrijving'</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.table_status_omschrijving" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.table_studies">
+<tt class="descname">table_studies</tt><em class="property"> = 'study'</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.table_studies" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.dbTool.togglePlot">
+<tt class="descname">togglePlot</tt><big>(</big><em>name</em>, <em>state</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool.togglePlot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.togglePlot" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.truncate_tables">
+<tt class="descname">truncate_tables</tt><em class="property"> = ['analysemodule_input', 'analysemodule_output', 'collector_series_status', 'collector_study_status', 'files', 'gewenste_processen', 'instance', 'patient', 'resultaten_boolean', 'resultaten_char', 'resultaten_floating', 'resultaten_object', 'resultaten_status', 'series', 'study']</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.truncate_tables" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.dbTool.uniqifyList">
+<tt class="descname">uniqifyList</tt><big>(</big><em>multilist</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool.uniqifyList"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.uniqifyList" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.user">
+<tt class="descname">user</tt><em class="property"> = None</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.user" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.dbTool.verbose">
+<tt class="descname">verbose</tt><em class="property"> = False</em><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.verbose" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbTool.dbTool.xmlDeleteFandF">
+<tt class="descname">xmlDeleteFandF</tt><big>(</big><em>dalist</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#dbTool.xmlDeleteFandF"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.dbTool.xmlDeleteFandF" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="Tools.dbTools.dbTool.ignore">
+<em class="property">class </em><tt class="descclassname">Tools.dbTools.dbTool.</tt><tt class="descname">ignore</tt><big>(</big><em>option_strings</em>, <em>dest</em>, <em>nargs=None</em>, <em>const=None</em>, <em>default=None</em>, <em>type=None</em>, <em>choices=None</em>, <em>required=False</em>, <em>help=None</em>, <em>metavar=None</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#ignore"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.ignore" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">argparse.Action</span></tt></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Tools.dbTools.dbTool.process_args">
+<tt class="descclassname">Tools.dbTools.dbTool.</tt><tt class="descname">process_args</tt><big>(</big><em>argv</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#process_args"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.process_args" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="Tools.dbTools.dbTool.reportentry">
+<em class="property">class </em><tt class="descclassname">Tools.dbTools.dbTool.</tt><tt class="descname">reportentry</tt><big>(</big><em>gpid=None</em>, <em>stationname=None</em>, <em>modality=None</em>, <em>date=None</em>, <em>selector=None</em>, <em>status=None</em>, <em>description=None</em>, <em>seriesid=None</em>, <em>analysisresult=None</em>, <em>analysisdate=None</em>, <em>srcaet=None</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbTool.html#reportentry"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbTool.reportentry" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="Tools.dbTools.dbTool.reportentry.analysisdate">
+<tt class="descname">analysisdate</tt><em class="property"> = None</em><a class="headerlink" href="#Tools.dbTools.dbTool.reportentry.analysisdate" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.reportentry.analysisresult">
+<tt class="descname">analysisresult</tt><em class="property"> = None</em><a class="headerlink" href="#Tools.dbTools.dbTool.reportentry.analysisresult" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.reportentry.date">
+<tt class="descname">date</tt><em class="property"> = None</em><a class="headerlink" href="#Tools.dbTools.dbTool.reportentry.date" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.reportentry.description">
+<tt class="descname">description</tt><em class="property"> = None</em><a class="headerlink" href="#Tools.dbTools.dbTool.reportentry.description" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.reportentry.gpid">
+<tt class="descname">gpid</tt><em class="property"> = None</em><a class="headerlink" href="#Tools.dbTools.dbTool.reportentry.gpid" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.reportentry.modality">
+<tt class="descname">modality</tt><em class="property"> = None</em><a class="headerlink" href="#Tools.dbTools.dbTool.reportentry.modality" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.reportentry.selector">
+<tt class="descname">selector</tt><em class="property"> = None</em><a class="headerlink" href="#Tools.dbTools.dbTool.reportentry.selector" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.reportentry.seriesid">
+<tt class="descname">seriesid</tt><em class="property"> = None</em><a class="headerlink" href="#Tools.dbTools.dbTool.reportentry.seriesid" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.reportentry.srcaet">
+<tt class="descname">srcaet</tt><em class="property"> = None</em><a class="headerlink" href="#Tools.dbTools.dbTool.reportentry.srcaet" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.reportentry.stationname">
+<tt class="descname">stationname</tt><em class="property"> = None</em><a class="headerlink" href="#Tools.dbTools.dbTool.reportentry.stationname" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbTool.reportentry.status">
+<tt class="descname">status</tt><em class="property"> = None</em><a class="headerlink" href="#Tools.dbTools.dbTool.reportentry.status" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-Tools.dbTools.dbtools">
+<span id="tools-dbtools-dbtools-module"></span><h2>Tools.dbTools.dbtools module<a class="headerlink" href="#module-Tools.dbTools.dbtools" title="Permalink to this headline">¶</a></h2>
+<p>Module for query/maintenance of the dcm4chee and icq databases.</p>
+<p>Changelog:
+20150617: Fixed crash on empty value
+20150408: Status string clean up
+20150401: Ignore pps_start, always prefer series_date; option to ignore pps_start, which makes a difference for MR
+20150320: Added num_expected to .period
+20150318: Added status query (now same functionality as in dbTools.py)</p>
+<p>TODO:</p>
+<dl class="class">
+<dt id="Tools.dbTools.dbtools.DBIO">
+<em class="property">class </em><tt class="descclassname">Tools.dbTools.dbtools.</tt><tt class="descname">DBIO</tt><big>(</big><em>host</em>, <em>user</em>, <em>pswd</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbtools.html#DBIO"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbtools.DBIO" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class with all lower level sql actions</p>
+<dl class="method">
+<dt id="Tools.dbTools.dbtools.DBIO.addDateTimeToEntries">
+<tt class="descname">addDateTimeToEntries</tt><big>(</big><em>db</em>, <em>entries</em>, <em>fromgp=False</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbtools.html#DBIO.addDateTimeToEntries"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbtools.DBIO.addDateTimeToEntries" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add Time to entries from series of gp</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbtools.DBIO.addLabelToSeries">
+<tt class="descname">addLabelToSeries</tt><big>(</big><em>db</em>, <em>entries</em>, <em>gp_label</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbtools.html#DBIO.addLabelToSeries"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbtools.DBIO.addLabelToSeries" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbtools.DBIO.closedb">
+<tt class="descname">closedb</tt><big>(</big><em>con</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbtools.html#DBIO.closedb"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbtools.DBIO.closedb" title="Permalink to this definition">¶</a></dt>
+<dd><p>Porperly close db connection</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbtools.DBIO.connectdb">
+<tt class="descname">connectdb</tt><big>(</big><em>db</em>, <em>host=None</em>, <em>user=None</em>, <em>pswd=None</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbtools.html#DBIO.connectdb"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbtools.DBIO.connectdb" title="Permalink to this definition">¶</a></dt>
+<dd><p>open a connection to given database db</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbtools.DBIO.ignorePPS">
+<tt class="descname">ignorePPS</tt><big>(</big><em>val</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbtools.html#DBIO.ignorePPS"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbtools.DBIO.ignorePPS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbtools.DBIO.last_day_of_month">
+<tt class="descname">last_day_of_month</tt><big>(</big><em>any_day</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbtools.html#DBIO.last_day_of_month"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbtools.DBIO.last_day_of_month" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbtools.DBIO.latestTestMachine">
+<tt class="descname">latestTestMachine</tt><big>(</big><em>machine</em>, <em>ininame</em>, <em>gp_lab=None</em>, <em>db='iqc'</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbtools.html#DBIO.latestTestMachine"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbtools.DBIO.latestTestMachine" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbtools.DBIO.qcStatusEntry">
+<tt class="descname">qcStatusEntry</tt><big>(</big><em>db</em>, <em>entries</em>, <em>qcIgnores</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbtools.html#DBIO.qcStatusEntry"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbtools.DBIO.qcStatusEntry" title="Permalink to this definition">¶</a></dt>
+<dd><p>For entries as a dictionary</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbtools.DBIO.readGewenst">
+<tt class="descname">readGewenst</tt><big>(</big><em>db</em>, <em>note=None</em>, <em>selector=None</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbtools.html#DBIO.readGewenst"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbtools.DBIO.readGewenst" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make a list of entries of series in given db</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbtools.DBIO.readModalitySpecs">
+<tt class="descname">readModalitySpecs</tt><big>(</big><em>db</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbtools.html#DBIO.readModalitySpecs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbtools.DBIO.readModalitySpecs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbtools.DBIO.readSelectors">
+<tt class="descname">readSelectors</tt><big>(</big><em>db</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbtools.html#DBIO.readSelectors"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbtools.DBIO.readSelectors" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make a dictionary of selectornames to ids</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbtools.DBIO.readSeries">
+<tt class="descname">readSeries</tt><big>(</big><em>db</em>, <em>note=None</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbtools.html#DBIO.readSeries"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbtools.DBIO.readSeries" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make a list of entries of series in given db</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbtools.DBIO.splitOnLabels">
+<tt class="descname">splitOnLabels</tt><big>(</big><em>entries</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbtools.html#DBIO.splitOnLabels"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbtools.DBIO.splitOnLabels" title="Permalink to this definition">¶</a></dt>
+<dd><p>If entries have labels, split in dictionary</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="Tools.dbTools.dbtools.Entry">
+<em class="property">class </em><tt class="descclassname">Tools.dbTools.dbtools.</tt><tt class="descname">Entry</tt><big>(</big><em>seriesid=None</em>, <em>studyid=None</em>, <em>stationname=None</em>, <em>srcaet=None</em>, <em>modality=None</em>, <em>date=None</em>, <em>description=None</em>, <em>gpid=None</em>, <em>status=None</em>, <em>note=None</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbtools.html#Entry"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbtools.Entry" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class for entries in the iqc and dcm4chee database</p>
+<dl class="method">
+<dt id="Tools.dbTools.dbtools.Entry.getHeaders">
+<tt class="descname">getHeaders</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbtools.html#Entry.getHeaders"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbtools.Entry.getHeaders" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of names of entries and corresponding attribute</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="Tools.dbTools.dbtools.Lit">
+<em class="property">class </em><tt class="descclassname">Tools.dbTools.dbtools.</tt><tt class="descname">Lit</tt><a class="reference internal" href="_modules/Tools/dbTools/dbtools.html#Lit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbtools.Lit" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="Tools.dbTools.dbtools.Lit.db_iqc">
+<tt class="descname">db_iqc</tt><em class="property"> = 'iqc'</em><a class="headerlink" href="#Tools.dbTools.dbtools.Lit.db_iqc" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbtools.Lit.stNone">
+<tt class="descname">stNone</tt><em class="property"> = 'NONE'</em><a class="headerlink" href="#Tools.dbTools.dbtools.Lit.stNone" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbtools.Lit.stResultERROR">
+<tt class="descname">stResultERROR</tt><em class="property"> = 'ERROR!'</em><a class="headerlink" href="#Tools.dbTools.dbtools.Lit.stResultERROR" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbtools.Lit.stResultLATE">
+<tt class="descname">stResultLATE</tt><em class="property"> = 'LATE'</em><a class="headerlink" href="#Tools.dbTools.dbtools.Lit.stResultLATE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbtools.Lit.stResultOK">
+<tt class="descname">stResultOK</tt><em class="property"> = 'OK'</em><a class="headerlink" href="#Tools.dbTools.dbtools.Lit.stResultOK" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbtools.Lit.stResultWARNING">
+<tt class="descname">stResultWARNING</tt><em class="property"> = 'WARNING!'</em><a class="headerlink" href="#Tools.dbTools.dbtools.Lit.stResultWARNING" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbtools.Lit.table_analyseinput">
+<tt class="descname">table_analyseinput</tt><em class="property"> = 'analysemodule_input'</em><a class="headerlink" href="#Tools.dbTools.dbtools.Lit.table_analyseinput" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbtools.Lit.table_analyseoutput">
+<tt class="descname">table_analyseoutput</tt><em class="property"> = 'analysemodule_output'</em><a class="headerlink" href="#Tools.dbTools.dbtools.Lit.table_analyseoutput" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbtools.Lit.table_bool">
+<tt class="descname">table_bool</tt><em class="property"> = 'resultaten_boolean'</em><a class="headerlink" href="#Tools.dbTools.dbtools.Lit.table_bool" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbtools.Lit.table_char">
+<tt class="descname">table_char</tt><em class="property"> = 'resultaten_char'</em><a class="headerlink" href="#Tools.dbTools.dbtools.Lit.table_char" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbtools.Lit.table_collectorstatusseries">
+<tt class="descname">table_collectorstatusseries</tt><em class="property"> = 'collector_series_status'</em><a class="headerlink" href="#Tools.dbTools.dbtools.Lit.table_collectorstatusseries" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbtools.Lit.table_collectorstatusstudies">
+<tt class="descname">table_collectorstatusstudies</tt><em class="property"> = 'collector_study_status'</em><a class="headerlink" href="#Tools.dbTools.dbtools.Lit.table_collectorstatusstudies" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbtools.Lit.table_files">
+<tt class="descname">table_files</tt><em class="property"> = 'files'</em><a class="headerlink" href="#Tools.dbTools.dbtools.Lit.table_files" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbtools.Lit.table_float">
+<tt class="descname">table_float</tt><em class="property"> = 'resultaten_floating'</em><a class="headerlink" href="#Tools.dbTools.dbtools.Lit.table_float" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbtools.Lit.table_gewenste_processen">
+<tt class="descname">table_gewenste_processen</tt><em class="property"> = 'gewenste_processen'</em><a class="headerlink" href="#Tools.dbTools.dbtools.Lit.table_gewenste_processen" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbtools.Lit.table_instances">
+<tt class="descname">table_instances</tt><em class="property"> = 'instance'</em><a class="headerlink" href="#Tools.dbTools.dbtools.Lit.table_instances" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbtools.Lit.table_object">
+<tt class="descname">table_object</tt><em class="property"> = 'resultaten_object'</em><a class="headerlink" href="#Tools.dbTools.dbtools.Lit.table_object" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbtools.Lit.table_patient">
+<tt class="descname">table_patient</tt><em class="property"> = 'patient'</em><a class="headerlink" href="#Tools.dbTools.dbtools.Lit.table_patient" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbtools.Lit.table_selector">
+<tt class="descname">table_selector</tt><em class="property"> = 'selector'</em><a class="headerlink" href="#Tools.dbTools.dbtools.Lit.table_selector" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbtools.Lit.table_series">
+<tt class="descname">table_series</tt><em class="property"> = 'series'</em><a class="headerlink" href="#Tools.dbTools.dbtools.Lit.table_series" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbtools.Lit.table_status">
+<tt class="descname">table_status</tt><em class="property"> = 'resultaten_status'</em><a class="headerlink" href="#Tools.dbTools.dbtools.Lit.table_status" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbtools.Lit.table_status_omschrijving">
+<tt class="descname">table_status_omschrijving</tt><em class="property"> = 'status_omschrijving'</em><a class="headerlink" href="#Tools.dbTools.dbtools.Lit.table_status_omschrijving" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.dbtools.Lit.table_studies">
+<tt class="descname">table_studies</tt><em class="property"> = 'study'</em><a class="headerlink" href="#Tools.dbTools.dbtools.Lit.table_studies" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="Tools.dbTools.dbtools.QCStatus">
+<em class="property">class </em><tt class="descclassname">Tools.dbTools.dbtools.</tt><tt class="descname">QCStatus</tt><big>(</big><em>machine</em>, <em>ininame=None</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbtools.html#QCStatus"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbtools.QCStatus" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class for qcstatus of a machine</p>
+<dl class="method">
+<dt id="Tools.dbTools.dbtools.QCStatus.configError">
+<tt class="descname">configError</tt><big>(</big><em>ininame</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbtools.html#QCStatus.configError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbtools.QCStatus.configError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Displays an error reading the given config file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbtools.QCStatus.configRead">
+<tt class="descname">configRead</tt><big>(</big><em>ininame</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbtools.html#QCStatus.configRead"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbtools.QCStatus.configRead" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads given config</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.dbtools.QCStatus.getHeaders">
+<tt class="descname">getHeaders</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/dbtools.html#QCStatus.getHeaders"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.dbtools.QCStatus.getHeaders" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of names of entries and corresponding attribute</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-Tools.dbTools.reporter">
+<span id="tools-dbtools-reporter-module"></span><h2>Tools.dbTools.reporter module<a class="headerlink" href="#module-Tools.dbTools.reporter" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference external" href="http://www.protocolostomy.com/2008/10/22/generating-reports-with-charts-using-python-reportlab/">http://www.protocolostomy.com/2008/10/22/generating-reports-with-charts-using-python-reportlab/</a>
+<a class="reference external" href="http://www.reportlab.com/software/documentation/">http://www.reportlab.com/software/documentation/</a></p>
+<dl class="docutils">
+<dt>TODO:</dt>
+<dd><ul class="first last simple">
+<li>kleuren aanpassen (lichtgeel onzichtbaar)</li>
+<li>critmin/max dikke lijnen erin</li>
+</ul>
+</dd>
+</dl>
+<dl class="class">
+<dt id="Tools.dbTools.reporter.NumberedCanvas">
+<em class="property">class </em><tt class="descclassname">Tools.dbTools.reporter.</tt><tt class="descname">NumberedCanvas</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/reporter.html#NumberedCanvas"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.reporter.NumberedCanvas" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">reportlab.pdfgen.canvas.Canvas</span></tt></p>
+<dl class="method">
+<dt id="Tools.dbTools.reporter.NumberedCanvas.draw_page_number">
+<tt class="descname">draw_page_number</tt><big>(</big><em>page_count</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/reporter.html#NumberedCanvas.draw_page_number"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.reporter.NumberedCanvas.draw_page_number" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.reporter.NumberedCanvas.save">
+<tt class="descname">save</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/reporter.html#NumberedCanvas.save"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.reporter.NumberedCanvas.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>add page info to each page (page x of y)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.reporter.NumberedCanvas.showPage">
+<tt class="descname">showPage</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/reporter.html#NumberedCanvas.showPage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.reporter.NumberedCanvas.showPage" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="Tools.dbTools.reporter.Reporter">
+<em class="property">class </em><tt class="descclassname">Tools.dbTools.reporter.</tt><tt class="descname">Reporter</tt><big>(</big><em>title='Sample report'</em>, <em>author='Q.C. Wad'</em>, <em>url='http://localhost:8080'</em>, <em>abstract='This is a sample report'</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/reporter.html#Reporter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.reporter.Reporter" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="Tools.dbTools.reporter.Reporter.Elements">
+<tt class="descname">Elements</tt><em class="property"> = None</em><a class="headerlink" href="#Tools.dbTools.reporter.Reporter.Elements" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.reporter.Reporter.HeaderStyle">
+<tt class="descname">HeaderStyle</tt><em class="property"> = None</em><a class="headerlink" href="#Tools.dbTools.reporter.Reporter.HeaderStyle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.reporter.Reporter.PAGE_HEIGHT">
+<tt class="descname">PAGE_HEIGHT</tt><em class="property"> = None</em><a class="headerlink" href="#Tools.dbTools.reporter.Reporter.PAGE_HEIGHT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.reporter.Reporter.ParaStyle">
+<tt class="descname">ParaStyle</tt><em class="property"> = None</em><a class="headerlink" href="#Tools.dbTools.reporter.Reporter.ParaStyle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.reporter.Reporter.PreStyle">
+<tt class="descname">PreStyle</tt><em class="property"> = None</em><a class="headerlink" href="#Tools.dbTools.reporter.Reporter.PreStyle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.reporter.Reporter.addAutoLegend">
+<tt class="descname">addAutoLegend</tt><big>(</big><em>chart</em>, <em>offset</em>, <em>num</em>, <em>side='bottom'</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/reporter.html#Reporter.addAutoLegend"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.reporter.Reporter.addAutoLegend" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.reporter.Reporter.addLabels">
+<tt class="descname">addLabels</tt><big>(</big><em>drawing</em>, <em>title=None</em>, <em>xlabel=None</em>, <em>ylabel=None</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/reporter.html#Reporter.addLabels"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.reporter.Reporter.addLabels" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.reporter.Reporter.addsection">
+<tt class="descname">addsection</tt><big>(</big><em>sectionlist</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/reporter.html#Reporter.addsection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.reporter.Reporter.addsection" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.reporter.Reporter.addtitlepage">
+<tt class="descname">addtitlepage</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/reporter.html#Reporter.addtitlepage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.reporter.Reporter.addtitlepage" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.reporter.Reporter.addtitlepagewithtable">
+<tt class="descname">addtitlepagewithtable</tt><big>(</big><em>tabledata</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/reporter.html#Reporter.addtitlepagewithtable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.reporter.Reporter.addtitlepagewithtable" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.reporter.Reporter.colorRangeStatic">
+<tt class="descname">colorRangeStatic</tt><big>(</big><em>colorcount</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/reporter.html#Reporter.colorRangeStatic"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.reporter.Reporter.colorRangeStatic" title="Permalink to this definition">¶</a></dt>
+<dd><p>source: <a class="reference external" href="http://stackoverflow.com/questions/2328339/how-to-generate-n-different-colors-for-any-natural-number-n">http://stackoverflow.com/questions/2328339/how-to-generate-n-different-colors-for-any-natural-number-n</a>
+:param colorcount: Number of distinguishable colors to generate. Only pick first colorcount of 128, cycling
+:return: nothing</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.reporter.Reporter.colorTest">
+<tt class="descname">colorTest</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/reporter.html#Reporter.colorTest"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.reporter.Reporter.colorTest" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.reporter.Reporter.colors">
+<tt class="descname">colors</tt><em class="property"> = []</em><a class="headerlink" href="#Tools.dbTools.reporter.Reporter.colors" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.reporter.Reporter.dategraph">
+<tt class="descname">dategraph</tt><big>(</big><em>lxydata</em>, <em>tmin=None</em>, <em>tmax=None</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/reporter.html#Reporter.dategraph"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.reporter.Reporter.dategraph" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.reporter.Reporter.defaultPageSize">
+<tt class="descname">defaultPageSize</tt><em class="property"> = None</em><a class="headerlink" href="#Tools.dbTools.reporter.Reporter.defaultPageSize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.reporter.Reporter.defaultstyle">
+<tt class="descname">defaultstyle</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/reporter.html#Reporter.defaultstyle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.reporter.Reporter.defaultstyle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.reporter.Reporter.header">
+<tt class="descname">header</tt><big>(</big><em>txt</em>, <em>style=None</em>, <em>klass=&lt;class reportlab.platypus.paragraph.Paragraph at 0x2afbeca29ae0&gt;</em>, <em>sep=0.3</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/reporter.html#Reporter.header"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.reporter.Reporter.header" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.reporter.Reporter.header2">
+<tt class="descname">header2</tt><big>(</big><em>txt</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/reporter.html#Reporter.header2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.reporter.Reporter.header2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.reporter.Reporter.maxnumgraphsinchart">
+<tt class="descname">maxnumgraphsinchart</tt><em class="property"> = 9</em><a class="headerlink" href="#Tools.dbTools.reporter.Reporter.maxnumgraphsinchart" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.reporter.Reporter.paragraph">
+<tt class="descname">paragraph</tt><big>(</big><em>txt</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/reporter.html#Reporter.paragraph"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.reporter.Reporter.paragraph" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.reporter.Reporter.preblock">
+<tt class="descname">preblock</tt><big>(</big><em>txt</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/reporter.html#Reporter.preblock"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.reporter.Reporter.preblock" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.reporter.Reporter.render">
+<tt class="descname">render</tt><big>(</big><em>outputname='gfe.pdf'</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/reporter.html#Reporter.render"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.reporter.Reporter.render" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.reporter.Reporter.stackedGraphs">
+<tt class="descname">stackedGraphs</tt><big>(</big><em>lxydata</em>, <em>tmin=None</em>, <em>tmax=None</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/reporter.html#Reporter.stackedGraphs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.reporter.Reporter.stackedGraphs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Tools.dbTools.reporter.Reporter.styles">
+<tt class="descname">styles</tt><em class="property"> = None</em><a class="headerlink" href="#Tools.dbTools.reporter.Reporter.styles" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.dbTools.reporter.Reporter.table">
+<tt class="descname">table</tt><big>(</big><em>data</em>, <em>lines=True</em>, <em>align='CENTER'</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/reporter.html#Reporter.table"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.reporter.Reporter.table" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="Tools.dbTools.reporter.dateformatter">
+<tt class="descclassname">Tools.dbTools.reporter.</tt><tt class="descname">dateformatter</tt><big>(</big><em>val</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/reporter.html#dateformatter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.reporter.dateformatter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="Tools.dbTools.reporter.emptyformatter">
+<tt class="descclassname">Tools.dbTools.reporter.</tt><tt class="descname">emptyformatter</tt><big>(</big><em>val</em><big>)</big><a class="reference internal" href="_modules/Tools/dbTools/reporter.html#emptyformatter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.dbTools.reporter.emptyformatter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-Tools.dbTools">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-Tools.dbTools" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Tools.dbTools package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-Tools.dbTools.dbTool">Tools.dbTools.dbTool module</a></li>
+<li><a class="reference internal" href="#module-Tools.dbTools.dbtools">Tools.dbTools.dbtools module</a></li>
+<li><a class="reference internal" href="#module-Tools.dbTools.reporter">Tools.dbTools.reporter module</a></li>
+<li><a class="reference internal" href="#module-Tools.dbTools">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/Tools.dbTools.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">..  documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

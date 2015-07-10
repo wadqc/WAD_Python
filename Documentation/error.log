@@ -1,0 +1,836 @@
+07/09/2015 21:26:39 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 21:27:19 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 21:33:16 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 21:35:32 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 21:37:52 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 21:42:48 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 21:47:39 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 21:49:42 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 21:51:08 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 21:55:52 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 21:57:54 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 21:59:00 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 22:00:30 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 22:00:55 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 22:03:49 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 22:05:31 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 22:07:21 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 22:08:14 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 22:10:00 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 22:11:41 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 22:13:06 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 22:13:54 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 22:14:48 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 22:22:41 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 22:23:05 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 22:24:42 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 22:25:16 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 22:26:26 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 22:27:58 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 22:29:20 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 22:30:53 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 22:31:16 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 22:38:02 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 22:43:17 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 22:43:40 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 22:44:11 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 22:47:36 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 22:49:17 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 22:50:49 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 22:51:59 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 22:58:37 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 23:00:03 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 23:01:47 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 23:03:15 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 23:03:57 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 23:04:39 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 23:23:45 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 23:25:34 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 23:28:37 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 23:31:14 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 23:32:01 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 23:33:03 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 23:34:07 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 23:34:41 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 23:35:27 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 23:36:29 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 23:38:26 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 23:41:36 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 23:42:46 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 23:43:50 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 23:49:05 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/09/2015 23:52:29 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/10/2015 00:03:46 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/10/2015 00:04:47 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/10/2015 06:58:44 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/10/2015 06:59:48 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/10/2015 07:02:08 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/10/2015 07:29:21 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/10/2015 07:32:01 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/10/2015 07:34:46 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/10/2015 07:36:54 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/10/2015 07:37:23 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/10/2015 07:39:39 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/10/2015 07:50:28 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/10/2015 07:51:57 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'
+07/10/2015 07:53:39 Exception on main handler:
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/base.py", line 25, in pluginWrapper
+    wadinput = parseInput(input_filename)
+  File "/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/pyWAD/xml_parser.py", line 45, in parseInput
+    xmlroot = ET.parse(inputfile).getroot()
+  File "<string>", line 62, in parse
+  File "<string>", line 26, in parse
+IOError: [Errno 2] No such file or directory: '-b'

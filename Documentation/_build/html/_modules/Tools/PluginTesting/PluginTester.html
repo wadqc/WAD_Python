@@ -1,0 +1,502 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Tools.PluginTesting.PluginTester &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for Tools.PluginTesting.PluginTester</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/env python</span>
+<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span><span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">ConfigParser</span>
+<span class="kn">import</span> <span class="nn">dicom</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">loaddicom</span> <span class="kn">import</span> <span class="n">LoadDicom</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">xml.etree.cElementTree</span> <span class="kn">as</span> <span class="nn">ET</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">xml.etree.ElementTree</span> <span class="kn">as</span> <span class="nn">ET</span>
+<span class="kn">import</span> <span class="nn">argparse</span>
+<span class="kn">import</span> <span class="nn">math</span>
+
+
+<span class="c"># CHANGELOG:</span>
+<span class="c">#  20150626: added sanity check; fixed instance level</span>
+
+<div class="viewcode-block" id="instancexml"><a class="viewcode-back" href="../../../Tools.PluginTesting.html#Tools.PluginTesting.PluginTester.instancexml">[docs]</a><span class="k">def</span> <span class="nf">instancexml</span><span class="p">(</span><span class="n">number</span><span class="p">,</span><span class="n">filename</span><span class="p">):</span>
+    <span class="c"># returns a xml-like string containing an series object</span>
+    <span class="k">return</span> <span class="s">&quot; &lt;instance&gt;&lt;number&gt;</span><span class="si">%s</span><span class="s">&lt;/number&gt;&lt;filename&gt;</span><span class="si">%s</span><span class="s">&lt;/filename&gt;&lt;/instance&gt;&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">number</span><span class="p">,</span><span class="n">filename</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="seriesxml"><a class="viewcode-back" href="../../../Tools.PluginTesting.html#Tools.PluginTesting.PluginTester.seriesxml">[docs]</a><span class="k">def</span> <span class="nf">seriesxml</span><span class="p">(</span><span class="n">number</span><span class="p">,</span><span class="n">description</span><span class="p">,</span><span class="n">instance</span><span class="p">):</span>
+    <span class="c"># returns a xml-like string containing an series object</span>
+    <span class="n">desc</span> <span class="o">=</span> <span class="n">description</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;&lt;&#39;</span><span class="p">,</span><span class="s">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;&gt;&#39;</span><span class="p">,</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="s">&quot;&lt;series&gt;&lt;number&gt;</span><span class="si">%s</span><span class="s">&lt;/number&gt;&lt;description&gt;</span><span class="si">%s</span><span class="s">&lt;/description&gt;</span><span class="si">%s</span><span class="s">&lt;/series&gt;&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">number</span><span class="p">,</span><span class="n">desc</span><span class="p">,</span><span class="n">instance</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="inputxml"><a class="viewcode-back" href="../../../Tools.PluginTesting.html#Tools.PluginTesting.PluginTester.inputxml">[docs]</a><span class="k">def</span> <span class="nf">inputxml</span><span class="p">(</span><span class="n">configpath</span><span class="p">,</span><span class="n">outputpath</span><span class="p">,</span><span class="n">idpar</span><span class="p">,</span><span class="n">name</span><span class="p">,</span><span class="n">uid</span><span class="p">,</span><span class="n">series</span><span class="p">,</span><span class="n">level</span><span class="o">=</span><span class="s">&#39;series&#39;</span><span class="p">):</span>
+    <span class="c"># returns a input.xml skeleton as a xml-like string</span>
+    <span class="n">xml</span> <span class="o">=</span> <span class="s">&#39;&#39;&#39;&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;&lt;WAD&gt;</span>
+<span class="s">           &lt;version&gt;</span>
+<span class="s">           &lt;/version&gt;</span>
+<span class="s">           &lt;analysemodule_cfg&gt;</span><span class="si">%s</span><span class="s">&lt;/analysemodule_cfg&gt;</span>
+<span class="s">           &lt;analysemodule_output&gt;</span><span class="si">%s</span><span class="s">&lt;/analysemodule_output&gt;</span>
+<span class="s">           &lt;analyselevel&gt;</span><span class="si">%s</span><span class="s">&lt;/analyselevel&gt;</span>
+<span class="s">           &lt;patient&gt;</span>
+<span class="s">              &lt;id&gt;</span><span class="si">%s</span><span class="s">&lt;/id&gt;</span>
+<span class="s">              &lt;name&gt;</span><span class="si">%s</span><span class="s">&lt;/name&gt;</span>
+<span class="s">              &lt;study&gt;</span>
+<span class="s">                 &lt;uid&gt;</span><span class="si">%s</span><span class="s">&lt;/uid&gt;</span>
+<span class="s">                 &lt;description&gt;</span>
+<span class="s">                 &lt;/description&gt;</span>
+<span class="s">                   </span><span class="si">%s</span><span class="s"></span>
+<span class="s">              &lt;/study&gt;</span>
+<span class="s">           &lt;/patient&gt;</span>
+<span class="s">        &lt;/WAD&gt;</span>
+<span class="s">        &#39;&#39;&#39;</span><span class="o">%</span><span class="p">(</span><span class="n">configpath</span><span class="p">,</span><span class="n">outputpath</span><span class="p">,</span><span class="n">level</span><span class="p">,</span><span class="n">idpar</span><span class="p">,</span><span class="n">name</span><span class="p">,</span><span class="n">uid</span><span class="p">,</span><span class="n">series</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">xml</span>
+
+</div>
+<div class="viewcode-block" id="createInputXML"><a class="viewcode-back" href="../../../Tools.PluginTesting.html#Tools.PluginTesting.PluginTester.createInputXML">[docs]</a><span class="k">def</span> <span class="nf">createInputXML</span><span class="p">(</span><span class="n">configxml</span><span class="p">,</span><span class="n">datapath</span><span class="p">,</span><span class="n">outputdir</span><span class="p">,</span><span class="n">level</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    From a study hierarchy an inputXML file is created. This file can be used directly to test the pywad framework using</span>
+<span class="sd">    python pywadplugin.py &lt;inputXML&gt;.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+
+    <span class="n">tmpoutputdir</span> <span class="o">=</span> <span class="n">outputdir</span>
+
+    <span class="n">serieslst</span> <span class="o">=</span> <span class="n">LoadDicom</span><span class="p">(</span><span class="n">datapath</span><span class="p">)</span>
+    <span class="n">inputxmllst</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">if</span> <span class="n">level</span><span class="o">==</span><span class="s">&#39;study&#39;</span><span class="p">:</span>
+        <span class="n">seriesxmllst</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">serieslst</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">tmpseries</span> <span class="o">=</span> <span class="n">serieslst</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="n">tmpinstance</span> <span class="o">=</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">instancexml</span><span class="p">(</span><span class="o">*</span><span class="n">instance</span><span class="p">)</span> <span class="k">for</span> <span class="n">instance</span> <span class="ow">in</span> <span class="n">tmpseries</span><span class="p">[</span><span class="s">&#39;filelst&#39;</span><span class="p">]])</span>
+            <span class="n">seriesxmllst</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">seriesxml</span><span class="p">(</span><span class="s">&#39;1&#39;</span><span class="p">,</span><span class="n">key</span><span class="p">,</span><span class="n">tmpinstance</span><span class="p">))</span> <span class="c">#to do add correct seriesnumber</span>
+        <span class="n">_seriesxml</span> <span class="o">=</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">seriesxmllst</span><span class="p">)</span>
+            
+        <span class="n">inputxmllst</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">inputxml</span><span class="p">(</span><span class="n">configxml</span><span class="p">,</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tmpoutputdir</span><span class="p">,</span><span class="s">&#39;result.xml&#39;</span><span class="p">),</span><span class="s">&#39;idpar&#39;</span><span class="p">,</span><span class="s">&#39;name&#39;</span><span class="p">,</span><span class="s">&#39;uid&#39;</span><span class="p">,</span><span class="n">_seriesxml</span><span class="p">,</span><span class="n">level</span><span class="o">=</span><span class="n">level</span><span class="p">))</span>
+
+    <span class="k">elif</span> <span class="n">level</span><span class="o">==</span><span class="s">&#39;series&#39;</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">serieslst</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">tmpseries</span> <span class="o">=</span> <span class="n">serieslst</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="n">tmpinstance</span> <span class="o">=</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">instancexml</span><span class="p">(</span><span class="o">*</span><span class="n">instance</span><span class="p">)</span> <span class="k">for</span> <span class="n">instance</span> <span class="ow">in</span> <span class="n">tmpseries</span><span class="p">[</span><span class="s">&#39;filelst&#39;</span><span class="p">]])</span>
+            <span class="n">tmpseriesxml</span> <span class="o">=</span>  <span class="n">seriesxml</span><span class="p">(</span><span class="s">&#39;1&#39;</span><span class="p">,</span><span class="n">key</span><span class="p">,</span><span class="n">tmpinstance</span><span class="p">)</span> <span class="c">#to do add correct seriesnumber</span>
+            <span class="n">inputxmllst</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">inputxml</span><span class="p">(</span><span class="n">configxml</span><span class="p">,</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tmpoutputdir</span><span class="p">,</span><span class="s">&#39;result.xml&#39;</span><span class="p">),</span><span class="s">&#39;idpar&#39;</span><span class="p">,</span><span class="s">&#39;name&#39;</span><span class="p">,</span><span class="s">&#39;uid&#39;</span><span class="p">,</span><span class="n">tmpseriesxml</span><span class="p">,</span><span class="n">level</span><span class="o">=</span><span class="n">level</span><span class="p">))</span>
+        
+    <span class="k">elif</span> <span class="n">level</span><span class="o">==</span><span class="s">&#39;instance&#39;</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">serieslst</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">tmpseries</span> <span class="o">=</span> <span class="n">serieslst</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">instance</span> <span class="ow">in</span> <span class="n">tmpseries</span><span class="p">[</span><span class="s">&#39;filelst&#39;</span><span class="p">]:</span>
+                <span class="n">tmpseriesxml</span> <span class="o">=</span>  <span class="n">seriesxml</span><span class="p">(</span><span class="s">&#39;1&#39;</span><span class="p">,</span><span class="n">key</span><span class="p">,</span><span class="n">instancexml</span><span class="p">(</span><span class="o">*</span><span class="n">instance</span><span class="p">))</span> <span class="c">#to do add correct seriesnumber</span>
+                <span class="n">inputxmllst</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">inputxml</span><span class="p">(</span><span class="n">configxml</span><span class="p">,</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tmpoutputdir</span><span class="p">,</span><span class="s">&#39;result.xml&#39;</span><span class="p">),</span><span class="s">&#39;idpar&#39;</span><span class="p">,</span><span class="s">&#39;name&#39;</span><span class="p">,</span><span class="s">&#39;uid&#39;</span><span class="p">,</span><span class="n">tmpseriesxml</span><span class="p">,</span><span class="n">level</span><span class="o">=</span><span class="n">level</span><span class="p">))</span>
+        
+    <span class="k">return</span> <span class="n">inputxmllst</span>
+
+</div>
+<span class="k">def</span> <span class="nf">_determinelevel</span><span class="p">(</span><span class="n">configfile</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    determine analysis_level from location of configfile:</span>
+<span class="sd">    if it is in a subfolder &#39;series&#39; or &#39;study&#39; or &#39;instance&#39;, then that is the </span>
+<span class="sd">    analysis_level. Else, assume it is &#39;series&#39;</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="c"># /some/folder/series/config_x.xml</span>
+    <span class="n">levelfolder</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">configfile</span><span class="p">)[</span><span class="mi">0</span><span class="p">])[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">level</span> <span class="o">=</span> <span class="s">&#39;series&#39;</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">levelfolder</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;study&#39;</span><span class="p">,</span><span class="s">&#39;instance&#39;</span><span class="p">]</span> <span class="k">else</span> <span class="n">levelfolder</span>
+    <span class="k">return</span> <span class="n">level</span>
+
+<span class="k">def</span> <span class="nf">_testlist_personal</span><span class="p">(</span><span class="n">pywadpath</span><span class="p">,</span><span class="n">dataroot</span><span class="p">,</span><span class="n">configdict</span><span class="p">):</span>
+    <span class="c"># returns a list of user tests, based on defined plugins</span>
+
+    <span class="n">errorlist</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;udata&#39;</span><span class="p">:[],</span><span class="s">&#39;uconfig&#39;</span><span class="p">:[],</span><span class="s">&#39;uinput&#39;</span><span class="p">:[]}</span>
+    <span class="n">testlist</span> <span class="o">=</span> <span class="p">{}</span> <span class="c"># { plugin: {id: {input:[], config:[], data:[]} } }</span>
+    <span class="k">print</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">Building list of user tests...&#39;</span>
+    <span class="k">for</span> <span class="n">plugin</span><span class="p">,</span><span class="n">settings</span> <span class="ow">in</span> <span class="n">configdict</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">plugin</span> <span class="o">==</span> <span class="s">&#39;INIT&#39;</span><span class="p">:</span>
+            <span class="k">continue</span>
+
+        <span class="c"># /some/folder/series/config_x.xml</span>
+        <span class="n">level</span> <span class="o">=</span> <span class="n">settings</span><span class="p">[</span><span class="s">&#39;level&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s">&#39;level&#39;</span> <span class="ow">in</span> <span class="n">settings</span> <span class="k">else</span> <span class="n">_determinelevel</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s">&#39;config&#39;</span><span class="p">])</span>
+            
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">level</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;study&#39;</span><span class="p">,</span><span class="s">&#39;instance&#39;</span><span class="p">,</span><span class="s">&#39;series&#39;</span><span class="p">]:</span>
+            <span class="n">errorlist</span><span class="p">[</span><span class="s">&#39;ulevel&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s"> cannot determine analysis_level&#39;</span><span class="o">%</span><span class="n">levelfolder</span><span class="p">)</span>
+            <span class="k">print</span> <span class="s">&#39;ERROR&#39;</span><span class="p">,</span><span class="n">errorlist</span><span class="p">[</span><span class="s">&#39;udata&#39;</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">continue</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s">&#39;data&#39;</span><span class="p">])):</span>
+            <span class="n">errorlist</span><span class="p">[</span><span class="s">&#39;udata&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s"> does not exist&#39;</span><span class="o">%</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s">&#39;data&#39;</span><span class="p">]))</span>
+            <span class="k">print</span> <span class="s">&#39;ERROR&#39;</span><span class="p">,</span><span class="n">errorlist</span><span class="p">[</span><span class="s">&#39;udata&#39;</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">continue</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s">&#39;config&#39;</span><span class="p">])):</span>
+            <span class="n">errorlist</span><span class="p">[</span><span class="s">&#39;uconfig&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s"> does not exist&#39;</span><span class="o">%</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s">&#39;config&#39;</span><span class="p">]))</span>
+            <span class="k">print</span> <span class="s">&#39;ERROR&#39;</span><span class="p">,</span><span class="n">errorlist</span><span class="p">[</span><span class="s">&#39;uconfig&#39;</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">continue</span>
+
+        <span class="n">testid</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s">&#39;config&#39;</span><span class="p">])[</span><span class="mi">1</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">plugin</span> <span class="ow">in</span> <span class="n">testlist</span><span class="p">:</span>
+            <span class="n">testlist</span><span class="p">[</span><span class="n">plugin</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">testid</span> <span class="ow">in</span> <span class="n">testlist</span><span class="p">[</span><span class="n">plugin</span><span class="p">]:</span>
+            <span class="n">testlist</span><span class="p">[</span><span class="n">plugin</span><span class="p">][</span><span class="n">testid</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;config&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s">&#39;data&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s">&#39;level&#39;</span><span class="p">:[]}</span>
+
+        <span class="n">testlist</span><span class="p">[</span><span class="n">plugin</span><span class="p">][</span><span class="n">testid</span><span class="p">][</span><span class="s">&#39;config&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s">&#39;config&#39;</span><span class="p">])</span>
+        <span class="n">testlist</span><span class="p">[</span><span class="n">plugin</span><span class="p">][</span><span class="n">testid</span><span class="p">][</span><span class="s">&#39;level&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">level</span><span class="p">)</span>
+        <span class="n">testlist</span><span class="p">[</span><span class="n">plugin</span><span class="p">][</span><span class="n">testid</span><span class="p">][</span><span class="s">&#39;data&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">settings</span><span class="p">[</span><span class="s">&#39;data&#39;</span><span class="p">])</span>
+        
+    <span class="k">return</span> <span class="n">testlist</span><span class="p">,</span><span class="n">errorlist</span>
+    
+<span class="k">def</span> <span class="nf">_testlist_default</span><span class="p">(</span><span class="n">pywadpath</span><span class="p">,</span><span class="n">dataroot</span><span class="p">,</span><span class="n">pluginroot</span><span class="o">=</span><span class="s">&#39;Plugins&#39;</span><span class="p">):</span>
+    <span class="c"># returns a list of tests to perform for default plugins</span>
+
+    <span class="k">print</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">Building list of </span><span class="si">%s</span><span class="s"> tests...&#39;</span><span class="o">%</span><span class="n">pluginroot</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">pluginroot</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">):</span> <span class="n">pluginroot</span> <span class="o">+=</span> <span class="s">&#39;/&#39;</span>
+    <span class="n">plugindir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">pywadpath</span><span class="p">,</span><span class="n">pluginroot</span><span class="p">)</span> <span class="c"># note the trailing &#39;/&#39;</span>
+    <span class="c"># traverse root directory, and list directories as dirs and files as files</span>
+    <span class="n">plugins</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">root</span><span class="p">,</span> <span class="n">dirs</span><span class="p">,</span> <span class="n">files</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="n">plugindir</span><span class="p">):</span>
+        <span class="n">subdir</span> <span class="o">=</span> <span class="n">root</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">plugindir</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="c">#print (len(path) - 1) *&#39;---&#39; , os.path.basename(root)       </span>
+        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">&#39;.py&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">f</span> <span class="o">!=</span> <span class="s">&#39;__init__.py&#39;</span><span class="p">:</span>
+                <span class="c">#print subdir, f ,os.path.join(plugindir,subdir)</span>
+                <span class="n">plugins</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">subdir</span><span class="p">)</span>
+    <span class="n">plugins</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">plugins</span><span class="p">))</span>
+
+    <span class="c"># check if Testing folder structure is in accordance with plugins:</span>
+    <span class="k">print</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">Checking folder consistency of Testing and Plugins for </span><span class="si">%s</span><span class="s">...&#39;</span><span class="o">%</span><span class="n">pluginroot</span>
+    <span class="n">testingdir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">pywadpath</span><span class="p">,</span><span class="s">&#39;Testing&#39;</span><span class="p">)</span> 
+    <span class="n">errorlist</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;testing&#39;</span><span class="p">:[]}</span>
+    <span class="n">testlist</span> <span class="o">=</span> <span class="p">{}</span> <span class="c"># { plugin: {id: {config:[], data:[], &#39;level&#39;:[]} } }</span>
+    <span class="k">for</span> <span class="n">plugin</span> <span class="ow">in</span> <span class="n">plugins</span><span class="p">:</span>
+        <span class="n">testpath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">testingdir</span><span class="p">,</span><span class="n">plugin</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">testpath</span><span class="p">):</span>
+            <span class="n">errorlist</span><span class="p">[</span><span class="s">&#39;testing&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s"> does not exist&#39;</span><span class="o">%</span><span class="n">testpath</span><span class="p">)</span>
+            <span class="k">continue</span>
+        <span class="n">checkpaths</span> <span class="o">=</span> <span class="p">[</span><span class="n">testpath</span><span class="p">,</span>
+                      <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">testpath</span><span class="p">,</span><span class="s">&#39;series&#39;</span><span class="p">),</span>
+                      <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">testpath</span><span class="p">,</span><span class="s">&#39;study&#39;</span><span class="p">),</span>
+                      <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">testpath</span><span class="p">,</span><span class="s">&#39;instance&#39;</span><span class="p">),</span>
+                      <span class="p">]</span>
+        <span class="k">for</span> <span class="n">cp</span> <span class="ow">in</span> <span class="n">checkpaths</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">cp</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">cp</span><span class="p">)):</span>
+                    <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">&#39;.xml&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">f</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;config_&#39;</span><span class="p">):</span>
+                        <span class="n">testid</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;.xml&#39;</span><span class="p">,</span><span class="s">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;config_&#39;</span><span class="p">,</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="ow">not</span> <span class="n">plugin</span> <span class="ow">in</span> <span class="n">testlist</span><span class="p">:</span>
+                            <span class="n">testlist</span><span class="p">[</span><span class="n">plugin</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+                        <span class="k">if</span> <span class="ow">not</span> <span class="n">testid</span> <span class="ow">in</span> <span class="n">testlist</span><span class="p">[</span><span class="n">plugin</span><span class="p">]:</span>
+                            <span class="n">testlist</span><span class="p">[</span><span class="n">plugin</span><span class="p">][</span><span class="n">testid</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;config&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s">&#39;data&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s">&#39;level&#39;</span><span class="p">:[]}</span>
+        
+                        <span class="n">testlist</span><span class="p">[</span><span class="n">plugin</span><span class="p">][</span><span class="n">testid</span><span class="p">][</span><span class="s">&#39;config&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cp</span><span class="p">,</span><span class="n">f</span><span class="p">))</span>
+                        <span class="n">testlist</span><span class="p">[</span><span class="n">plugin</span><span class="p">][</span><span class="n">testid</span><span class="p">][</span><span class="s">&#39;level&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_determinelevel</span><span class="p">(</span><span class="n">testlist</span><span class="p">[</span><span class="n">plugin</span><span class="p">][</span><span class="n">testid</span><span class="p">][</span><span class="s">&#39;config&#39;</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">plugin</span> <span class="ow">in</span> <span class="n">testlist</span><span class="p">:</span>
+            <span class="n">errorlist</span><span class="p">[</span><span class="s">&#39;testing&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s"> has no corresponding config_.xml files&#39;</span><span class="o">%</span><span class="p">(</span><span class="n">testpath</span><span class="p">))</span>
+                
+    <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">errorlist</span><span class="p">[</span><span class="s">&#39;testing&#39;</span><span class="p">]:</span>
+        <span class="k">print</span> <span class="s">&#39;ERROR&#39;</span><span class="p">,</span><span class="n">e</span>
+        
+    <span class="k">print</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">Checking folder consistency of Testing and Data for </span><span class="si">%s</span><span class="s">...&#39;</span><span class="o">%</span><span class="n">pluginroot</span>
+    <span class="n">errorlist</span><span class="p">[</span><span class="s">&#39;data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="c"># check data folder structure</span>
+    <span class="n">droplist</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">plugin</span><span class="p">,</span><span class="n">testdict</span> <span class="ow">in</span> <span class="n">testlist</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">test</span><span class="p">,</span><span class="n">bla</span> <span class="ow">in</span> <span class="n">testdict</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+            <span class="n">testpath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dataroot</span><span class="p">,</span><span class="n">plugin</span><span class="p">),</span><span class="s">&#39;dicom_</span><span class="si">%s</span><span class="s">&#39;</span><span class="o">%</span><span class="n">test</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">testpath</span><span class="p">):</span>
+                <span class="n">errorlist</span><span class="p">[</span><span class="s">&#39;data&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s"> does not exist&#39;</span><span class="o">%</span><span class="n">testpath</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">testpath</span><span class="p">))</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">errorlist</span><span class="p">[</span><span class="s">&#39;data&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s"> is empty&#39;</span><span class="o">%</span><span class="n">testpath</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">testlist</span><span class="p">[</span><span class="n">plugin</span><span class="p">][</span><span class="n">test</span><span class="p">][</span><span class="s">&#39;data&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">testpath</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">testlist</span><span class="p">[</span><span class="n">plugin</span><span class="p">][</span><span class="n">test</span><span class="p">][</span><span class="s">&#39;data&#39;</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">del</span> <span class="n">testlist</span><span class="p">[</span><span class="n">plugin</span><span class="p">][</span><span class="n">test</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">testlist</span><span class="p">[</span><span class="n">plugin</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">droplist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">plugin</span><span class="p">)</span>
+
+    <span class="n">testlist</span> <span class="o">=</span> <span class="p">{</span> <span class="n">k</span> <span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">testlist</span><span class="o">.</span><span class="n">iteritems</span><span class="p">())</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">droplist</span> <span class="p">}</span>
+
+    <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">errorlist</span><span class="p">[</span><span class="s">&#39;data&#39;</span><span class="p">]:</span>
+        <span class="k">print</span> <span class="s">&#39;ERROR&#39;</span><span class="p">,</span><span class="n">e</span>
+
+            
+    <span class="k">return</span> <span class="n">testlist</span><span class="p">,</span><span class="n">errorlist</span>
+
+<div class="viewcode-block" id="sanitycheck"><a class="viewcode-back" href="../../../Tools.PluginTesting.html#Tools.PluginTesting.PluginTester.sanitycheck">[docs]</a><span class="k">def</span> <span class="nf">sanitycheck</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    reguires a folder structure </span>
+<span class="sd">       &lt;root&gt;/Plugins/&lt;some path&gt;/&lt;plugin name&gt;</span>
+<span class="sd">       &lt;root&gt;/Testing/&lt;some path&gt;/&lt;plugin name&gt;</span>
+<span class="sd">    The Testing plugin folder should at least one of:</span>
+<span class="sd">       series/config_&lt;id&gt;.xml (plugin configuration file)</span>
+<span class="sd">       instance/config_&lt;id&gt;.xml (plugin configuration file)</span>
+<span class="sd">       study/config_&lt;id&gt;.xml (plugin configuration file)</span>
+<span class="sd">    In addition there needs to be a &lt;testdata&gt; folder with a folder dicom_&lt;id&gt;, in which test data is present for this plugin.</span>
+
+<span class="sd">    Example: </span>
+<span class="sd">      plugin: &lt;root&gt;/Plugins/CT/CT_Philips_QuickIQ</span>
+<span class="sd">      plugin files: ....</span>
+<span class="sd">      testing: &lt;root&gt;/Testing/CT/CT_Philips_QuickIQ</span>
+<span class="sd">      testing files: series/config_body.xml,series/config_head.xml</span>
+<span class="sd">      testdata: &lt;dataroot&gt;/CT/CT_Philips_QuickIQ/dicom_head/ and &lt;dataroot&gt;/CT/CT_Philips_QuickIQ/dicom_body/</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="c">#Read config</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">ConfigParser</span><span class="o">.</span><span class="n">ConfigParser</span><span class="p">()</span>
+    <span class="n">config</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">inifile</span><span class="p">)</span>
+
+    <span class="n">sections</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">sections</span><span class="p">()</span>
+    <span class="n">configdict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">section</span> <span class="ow">in</span> <span class="n">sections</span><span class="p">:</span>
+        <span class="n">options</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">options</span><span class="p">(</span><span class="n">section</span><span class="p">)</span>
+        <span class="n">configdict</span><span class="p">[</span><span class="n">section</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">([(</span><span class="n">option</span><span class="p">,</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">section</span><span class="p">,</span><span class="n">option</span><span class="p">))</span> <span class="k">for</span> <span class="n">option</span> <span class="ow">in</span> <span class="n">options</span><span class="p">])</span>
+    
+    <span class="n">pywadpath</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">packagedir</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">packagedir</span> <span class="ow">is</span> <span class="bp">None</span> <span class="k">else</span> <span class="n">configdict</span><span class="p">[</span><span class="s">&#39;INIT&#39;</span><span class="p">][</span><span class="s">&#39;packagedir&#39;</span><span class="p">]</span>
+    <span class="n">exename</span> <span class="o">=</span> <span class="n">configdict</span><span class="p">[</span><span class="s">&#39;INIT&#39;</span><span class="p">][</span><span class="s">&#39;exe&#39;</span><span class="p">]</span>
+    <span class="n">dataroot</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">dataroot</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">dataroot</span> <span class="ow">is</span> <span class="bp">None</span> <span class="k">else</span> <span class="n">configdict</span><span class="p">[</span><span class="s">&#39;INIT&#39;</span><span class="p">][</span><span class="s">&#39;dataroot&#39;</span><span class="p">]</span>
+    <span class="n">skipdefault</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">getboolean</span><span class="p">(</span><span class="s">&#39;INIT&#39;</span><span class="p">,</span><span class="s">&#39;skipdefault&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">has_option</span><span class="p">(</span><span class="s">&#39;INIT&#39;</span><span class="p">,</span><span class="s">&#39;skipdefault&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="bp">False</span>
+    <span class="n">add_development</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">getboolean</span><span class="p">(</span><span class="s">&#39;INIT&#39;</span><span class="p">,</span><span class="s">&#39;adddevelopment&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">has_option</span><span class="p">(</span><span class="s">&#39;INIT&#39;</span><span class="p">,</span><span class="s">&#39;adddevelopment&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="bp">False</span>
+
+    <span class="n">testlist</span><span class="p">,</span><span class="n">errorlist</span> <span class="o">=</span> <span class="p">{},{}</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">skipdefault</span><span class="p">:</span>
+        <span class="n">testlist_default</span><span class="p">,</span><span class="n">errorlist_default</span> <span class="o">=</span> <span class="n">_testlist_default</span><span class="p">(</span><span class="n">pywadpath</span><span class="p">,</span> <span class="n">dataroot</span><span class="p">,</span><span class="s">&#39;Plugins&#39;</span><span class="p">)</span>
+        <span class="n">testlist</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">testlist</span><span class="p">,</span><span class="o">**</span><span class="n">testlist_default</span><span class="p">)</span>
+        <span class="n">errorlist</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">errorlist</span><span class="p">,</span><span class="o">**</span><span class="n">errorlist_default</span><span class="p">)</span>
+        
+    <span class="k">if</span> <span class="n">add_development</span><span class="p">:</span>
+        <span class="n">testlist_default</span><span class="p">,</span><span class="n">errorlist_default</span> <span class="o">=</span> <span class="n">_testlist_default</span><span class="p">(</span><span class="n">pywadpath</span><span class="p">,</span> <span class="n">dataroot</span><span class="p">,</span><span class="s">&#39;Plugin_development&#39;</span><span class="p">)</span>
+        <span class="n">testlist</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">testlist</span><span class="p">,</span><span class="o">**</span><span class="n">testlist_default</span><span class="p">)</span>
+        <span class="n">errorlist</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">errorlist</span><span class="p">,</span><span class="o">**</span><span class="n">errorlist_default</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sections</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">testlist_user</span><span class="p">,</span><span class="n">errorlist_user</span> <span class="o">=</span> <span class="n">_testlist_personal</span><span class="p">(</span><span class="n">pywadpath</span><span class="p">,</span><span class="n">dataroot</span><span class="p">,</span><span class="n">configdict</span><span class="p">)</span>
+        <span class="n">testlist</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">testlist</span><span class="p">,</span><span class="o">**</span><span class="n">testlist_user</span><span class="p">)</span>
+        <span class="n">errorlist</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">errorlist</span><span class="p">,</span><span class="o">**</span><span class="n">errorlist_user</span><span class="p">)</span>
+        
+    <span class="c"># create an output folder with as a name the current date</span>
+    <span class="n">outputdir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">configdict</span><span class="p">[</span><span class="s">&#39;INIT&#39;</span><span class="p">][</span><span class="s">&#39;outputdir&#39;</span><span class="p">],</span><span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">())))</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">outputdir</span><span class="p">):</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">outputdir</span><span class="p">)</span>
+
+    <span class="n">numplug</span><span class="p">,</span><span class="n">numtests</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span><span class="mi">0</span>
+    <span class="k">for</span> <span class="n">plugin</span><span class="p">,</span><span class="n">testdict</span> <span class="ow">in</span> <span class="n">testlist</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+        <span class="n">numplug</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">numtests</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">testdict</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+            
+    <span class="k">print</span> <span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">Attempting to run </span><span class="si">%d</span><span class="s"> plugins, with </span><span class="si">%d</span><span class="s"> tests...&#39;</span><span class="o">%</span><span class="p">(</span><span class="n">numplug</span><span class="p">,</span><span class="n">numtests</span><span class="p">))</span>
+
+    <span class="c">#generate a batch of inputfiles</span>
+    <span class="n">results</span><span class="p">,</span><span class="n">errorlist</span><span class="p">[</span><span class="s">&#39;xml&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">batchtest</span><span class="p">(</span><span class="n">exename</span><span class="p">,</span><span class="n">pywadpath</span><span class="p">,</span> <span class="n">testlist</span><span class="p">,</span> <span class="n">outputdir</span><span class="p">)</span>
+    
+    <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">errorlist</span><span class="p">[</span><span class="s">&#39;xml&#39;</span><span class="p">]:</span>
+        <span class="k">print</span> <span class="s">&#39;ERROR&#39;</span><span class="p">,</span><span class="n">e</span>
+    
+    
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">outputdir</span><span class="p">,</span><span class="s">&#39;codetest.csv&#39;</span><span class="p">),</span><span class="s">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;input,returncode,message</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s">,</span><span class="si">%d</span><span class="s">,&quot;</span><span class="si">%s</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">%</span><span class="p">(</span><span class="n">elem</span><span class="p">[</span><span class="s">&#39;input&#39;</span><span class="p">],</span><span class="n">elem</span><span class="p">[</span><span class="s">&#39;returncode&#39;</span><span class="p">],</span><span class="nb">str</span><span class="p">(</span><span class="n">elem</span><span class="p">[</span><span class="s">&#39;err&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;&quot;&#39;</span><span class="p">,</span><span class="s">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">,</span> <span class="s">&#39; &#39;</span><span class="p">)))</span>
+
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">ERROR,type</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span><span class="n">errors</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">errorlist</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()):</span>
+            <span class="k">for</span> <span class="n">error</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">errors</span><span class="p">):</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;&quot;</span><span class="si">%s</span><span class="s">&quot;,&quot;</span><span class="si">%s</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">%</span><span class="p">(</span><span class="n">error</span><span class="p">,</span><span class="n">key</span><span class="p">))</span>
+            
+    <span class="k">print</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">output in &#39;</span><span class="p">,</span><span class="n">outputdir</span>
+    
+    </div>
+<div class="viewcode-block" id="batchtest"><a class="viewcode-back" href="../../../Tools.PluginTesting.html#Tools.PluginTesting.PluginTester.batchtest">[docs]</a><span class="k">def</span> <span class="nf">batchtest</span><span class="p">(</span><span class="n">exe</span><span class="p">,</span> <span class="n">exepath</span><span class="p">,</span> <span class="n">testlist</span><span class="p">,</span> <span class="n">outputdir</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Tries to make proper input files for all tests specified in testlist,</span>
+<span class="sd">    tries to run the exe on each created input file</span>
+<span class="sd">    returns results,errorlist</span>
+<span class="sd">     exe = &#39;pywadplugin&#39; # name of exe</span>
+<span class="sd">     exepath = &#39;/folder/pywad2&#39; # path to folder with exe</span>
+<span class="sd">     testlist = {} # { plugin: {id: {input:[], config:[], data:[]} } }</span>
+<span class="sd">     results = [] # list of results for each test</span>
+<span class="sd">     errorlist = [] # list of errors creating XML</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">batchlist</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">errorlist</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">plugin</span><span class="p">,</span><span class="n">testdict</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">testlist</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()):</span>
+        <span class="k">for</span> <span class="n">test</span><span class="p">,</span><span class="n">bla</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">testdict</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()):</span>
+            <span class="k">for</span> <span class="n">conf</span><span class="p">,</span><span class="n">dat</span><span class="p">,</span><span class="n">level</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">bla</span><span class="p">[</span><span class="s">&#39;config&#39;</span><span class="p">],</span><span class="n">bla</span><span class="p">[</span><span class="s">&#39;data&#39;</span><span class="p">],</span><span class="n">bla</span><span class="p">[</span><span class="s">&#39;level&#39;</span><span class="p">]):</span>
+                <span class="n">tmpinpxml</span><span class="o">=</span> <span class="n">createInputXML</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">conf</span><span class="p">),</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">dat</span><span class="p">),</span><span class="s">&#39;replace_me_dummy&#39;</span><span class="p">,</span><span class="n">level</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tmpinpxml</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">errorlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;no valid data for creation of input file for </span><span class="si">%s</span><span class="s">/</span><span class="si">%s</span><span class="s">&#39;</span><span class="o">%</span><span class="p">(</span><span class="n">plugin</span><span class="p">,</span><span class="n">test</span><span class="p">))</span>
+                    <span class="k">continue</span>
+                
+                <span class="k">for</span> <span class="n">ix</span><span class="p">,</span><span class="n">elem</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">tmpinpxml</span><span class="p">):</span>
+                    <span class="n">xmldir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">outputdir</span><span class="p">,</span><span class="n">plugin</span><span class="p">,</span><span class="n">level</span><span class="p">,</span><span class="s">&#39;</span><span class="si">%s</span><span class="s">.</span><span class="si">%s</span><span class="s">&#39;</span><span class="o">%</span><span class="p">(</span><span class="n">test</span><span class="p">,(</span><span class="s">&#39;</span><span class="si">%d</span><span class="s">&#39;</span><span class="o">%</span><span class="n">ix</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">3</span><span class="p">)))</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">xmldir</span><span class="p">):</span>
+                        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">xmldir</span><span class="p">)</span>
+                    <span class="n">elem</span> <span class="o">=</span> <span class="n">elem</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;replace_me_dummy&#39;</span><span class="p">,</span><span class="n">xmldir</span><span class="p">)</span>
+                    <span class="n">xmlout</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">xmldir</span><span class="p">,</span><span class="s">&#39;input.xml&#39;</span><span class="p">)</span>
+                    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">xmlout</span><span class="p">,</span><span class="s">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">elem</span><span class="p">)</span>
+                        <span class="n">batchlist</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s">&#39;plugin&#39;</span><span class="p">:</span><span class="n">plugin</span><span class="p">,</span> 
+                                          <span class="s">&#39;test&#39;</span><span class="p">:</span><span class="n">test</span><span class="p">,</span> 
+                                          <span class="s">&#39;config&#39;</span><span class="p">:</span><span class="n">conf</span><span class="p">,</span> 
+                                          <span class="s">&#39;level&#39;</span><span class="p">:</span><span class="n">level</span><span class="p">,</span> 
+                                          <span class="s">&#39;input&#39;</span><span class="p">:</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">xmlout</span><span class="p">)})</span>
+    
+
+    <span class="c"># now run the plugin for each created input file</span>
+    <span class="n">numprocs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">batchlist</span><span class="p">)</span>
+    <span class="n">digits</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">numprocs</span><span class="o">&lt;</span><span class="mi">10</span> <span class="k">else</span> <span class="nb">int</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">numprocs</span><span class="p">,</span><span class="mi">10</span><span class="p">)</span><span class="o">+.</span><span class="mi">5</span><span class="p">))</span>
+    
+    <span class="k">print</span> <span class="p">(</span><span class="s">&#39;Using </span><span class="si">%d</span><span class="s"> datasets for testing...&#39;</span><span class="o">%</span><span class="n">numprocs</span><span class="p">)</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">ix</span><span class="p">,</span><span class="n">proc</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">batchlist</span><span class="p">):</span>
+        <span class="k">print</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s">/</span><span class="si">%d</span><span class="s"> </span><span class="si">%s</span><span class="s">: </span><span class="si">%s</span><span class="s"> (</span><span class="si">%s</span><span class="s">)&#39;</span><span class="o">%</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ix</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="n">digits</span><span class="p">),</span><span class="n">numprocs</span><span class="p">,</span><span class="n">proc</span><span class="p">[</span><span class="s">&#39;plugin&#39;</span><span class="p">],</span><span class="n">proc</span><span class="p">[</span><span class="s">&#39;test&#39;</span><span class="p">],</span><span class="n">proc</span><span class="p">[</span><span class="s">&#39;level&#39;</span><span class="p">]),</span>
+        <span class="n">out</span><span class="p">,</span><span class="n">err</span><span class="p">,</span><span class="n">returncode</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span><span class="bp">None</span><span class="p">,</span><span class="mi">1</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">([</span><span class="s">&#39;python&#39;</span><span class="p">,</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">exepath</span><span class="p">,</span><span class="n">exe</span><span class="p">)),</span><span class="n">proc</span><span class="p">[</span><span class="s">&#39;input&#39;</span><span class="p">]],</span>
+                             <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span><span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span><span class="n">cwd</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">exepath</span><span class="p">))</span>
+
+        <span class="n">out</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span>  <span class="n">p</span><span class="o">.</span><span class="n">communicate</span><span class="p">()</span>
+        <span class="n">returncode</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">returncode</span>
+        <span class="k">if</span> <span class="n">returncode</span><span class="o">==</span><span class="mi">0</span> <span class="ow">and</span> <span class="n">err</span><span class="p">:</span> <span class="c"># force runtimewarnings and other stderr output to result in errors!</span>
+            <span class="n">returncode</span> <span class="o">=</span> <span class="mi">999</span>
+
+        <span class="k">if</span> <span class="n">returncode</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&#39;OK&#39;</span>
+        <span class="k">elif</span> <span class="n">returncode</span> <span class="o">==</span> <span class="mi">999</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&#39;WARNING: &#39;</span><span class="p">,</span><span class="n">err</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&#39;ERROR: &#39;</span><span class="p">,</span><span class="n">err</span>
+
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+            <span class="k">print</span> <span class="n">out</span>
+            
+        <span class="n">output</span> <span class="o">=</span> <span class="n">proc</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="c">#output[&#39;out&#39;] = out # to be added later for more ingenious checks</span>
+
+        <span class="n">output</span><span class="p">[</span><span class="s">&#39;err&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">err</span>
+        <span class="n">output</span><span class="p">[</span><span class="s">&#39;returncode&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">returncode</span>
+        <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">results</span><span class="p">,</span><span class="n">errorlist</span>
+   </div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">current_uid</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getuid</span><span class="p">()</span>
+    <span class="n">wanted_user</span> <span class="o">=</span> <span class="s">&#39;www-data&#39;</span>
+        
+    <span class="n">_inifile</span> <span class="o">=</span> <span class="s">&#39;testconfig_default.ini&#39;</span>
+    <span class="n">_dataroot</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">_packagedir</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s">&#39;Tester for pyWAD2 modules&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;-i&#39;</span><span class="p">,</span><span class="s">&#39;--inifile&#39;</span><span class="p">,</span>
+                        <span class="n">default</span><span class="o">=</span><span class="n">_inifile</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s">&#39;the configuration file to be used [</span><span class="si">%s</span><span class="s">]&#39;</span><span class="o">%</span><span class="n">_inifile</span><span class="p">,</span><span class="n">dest</span><span class="o">=</span><span class="s">&#39;inifile&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;-d&#39;</span><span class="p">,</span><span class="s">&#39;--data&#39;</span><span class="p">,</span>
+                        <span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s">&#39;replace the dataroot in the inifile value with this folder [</span><span class="si">%s</span><span class="s">]&#39;</span><span class="o">%</span><span class="nb">str</span><span class="p">(</span><span class="n">_dataroot</span><span class="p">),</span><span class="n">dest</span><span class="o">=</span><span class="s">&#39;dataroot&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;-p&#39;</span><span class="p">,</span><span class="s">&#39;--package&#39;</span><span class="p">,</span>
+                        <span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s">&#39;replace the pywad2 packagedir in the inifile value with this folder [</span><span class="si">%s</span><span class="s">]&#39;</span><span class="o">%</span><span class="nb">str</span><span class="p">(</span><span class="n">_packagedir</span><span class="p">),</span><span class="n">dest</span><span class="o">=</span><span class="s">&#39;packagedir&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;-v&#39;</span><span class="p">,</span><span class="s">&#39;--verbose&#39;</span><span class="p">,</span>
+                        <span class="n">default</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="nb">bool</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s">&#39;Verbose&#39;</span><span class="p">)</span>   
+
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+    <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="s">&quot;For proper testing, this python script should be run as user </span><span class="si">%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="o">%</span><span class="n">wanted_user</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="s">&quot;and the output folder defined in the inifile </span><span class="si">%s</span><span class="s"> should be writable by user </span><span class="si">%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">inifile</span><span class="p">,</span><span class="n">wanted_user</span><span class="p">)</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="s">&quot;  sudo chown -R www-data TestingOutput</span><span class="se">\n</span><span class="s">&quot;</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="s">&quot;  sudo -u </span><span class="si">%s</span><span class="s"> python PluginTester.py</span><span class="se">\n</span><span class="s">&quot;</span><span class="o">%</span><span class="n">wanted_user</span>
+        <span class="kn">import</span> <span class="nn">pwd</span>
+        <span class="k">if</span> <span class="n">pwd</span><span class="o">.</span><span class="n">getpwnam</span><span class="p">(</span><span class="n">wanted_user</span><span class="p">)</span><span class="o">.</span><span class="n">pw_uid</span> <span class="o">==</span> <span class="n">current_uid</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39;Good! Running as </span><span class="si">%s</span><span class="s">&#39;</span><span class="o">%</span><span class="n">wanted_user</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="s">&#39;However, user </span><span class="si">%s</span><span class="s"> does not exist on this system...</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">%</span><span class="n">wanted_user</span>
+
+    <span class="k">print</span> <span class="n">msg</span>
+ 
+    <span class="n">sanitycheck</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,27 @@
+
+The pywad package consists of a set of tools and plugins
+that are designed to be used with the WAD QC software framework for the automated analysis of quality control images in medicine.
+
+
+To create a plugin version of the package that can be used with the WAD Software framework:
+
+python Tools/pywad2zip.py zip
+
+and upload the resulting pywadplugin.py.zip file
+
+To test if the package 'works':
+python pywadplugin.py Testing/TestPlugin/input.xml
+
+Config files
+------------
+
+
+Config files are 
+
+
+Testing a plugin 
+----------------
+
+
+
+

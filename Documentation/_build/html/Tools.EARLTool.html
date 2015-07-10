@@ -1,0 +1,375 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Tools.EARLTool package &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">..  documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="tools-earltool-package">
+<h1>Tools.EARLTool package<a class="headerlink" href="#tools-earltool-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="tools-earltool-earltool-module">
+<h2>Tools.EARLTool.EARLtool module<a class="headerlink" href="#tools-earltool-earltool-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-Tools.EARLTool.NEMAIQ">
+<span id="tools-earltool-nemaiq-module"></span><h2>Tools.EARLTool.NEMAIQ module<a class="headerlink" href="#module-Tools.EARLTool.NEMAIQ" title="Permalink to this headline">¶</a></h2>
+<p>Dit script analyseert automatisch opnames gemaakt met het NemaIQ fantoom in het kader van de EARL registratie.</p>
+<p>De output is een dicom-file met resultaten die naar de DCM4CHEE database wordt gegenereerd.</p>
+<p>Het script parsenemaiq.py vertaalt de resultaten naar de waddb</p>
+<p>Er is een simple_nema_phantom class die de daadwerkelijke data en een model van het nema fantoom registreert en vervolgens per bol statistische informatie, contrasten met bgrois en recovery coefficienten berekend.</p>
+<p>Vanaf de command-line wordt de code als volgt gerund:</p>
+<p>python NemaIQ.py -f ../NemaIQtool/Voorbeelddata/EARLIQ -m max  -ord zxy -ort acw -spa 10 -bga 1</p>
+<p>Hierbij zijn:</p>
+<p>m - gaat het om hotspots = max of coldspots = min
+ord - de volgorde van de assen
+ort - de volgorde van de bollen, tegen de klok in acw of met de klok mee cw
+spa - de activiteitsconcentratie in de bollen
+bga - de activiteitsconcentratie in de achtergrond</p>
+<p>DCM4CHEE - locatie DCM4CHEE server</p>
+<p>TO DO:</p>
+<ul class="simple">
+<li>partiele voxels meenemen om een correcter volume mee te nemen.</li>
+<li>testen op andere datasets</li>
+</ul>
+<p>2013 DD</p>
+<dl class="function">
+<dt id="Tools.EARLTool.NEMAIQ.compare_coordsets">
+<tt class="descclassname">Tools.EARLTool.NEMAIQ.</tt><tt class="descname">compare_coordsets</tt><big>(</big><em>a</em>, <em>b</em><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAIQ.html#compare_coordsets"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAIQ.compare_coordsets" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="Tools.EARLTool.NEMAIQ.loaddata">
+<tt class="descclassname">Tools.EARLTool.NEMAIQ.</tt><tt class="descname">loaddata</tt><big>(</big><em>dicomdata</em><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAIQ.html#loaddata"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAIQ.loaddata" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="Tools.EARLTool.NEMAIQ.loaddata_old">
+<tt class="descclassname">Tools.EARLTool.NEMAIQ.</tt><tt class="descname">loaddata_old</tt><big>(</big><em>dicomdata</em><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAIQ.html#loaddata_old"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAIQ.loaddata_old" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="Tools.EARLTool.NEMAIQ.main">
+<tt class="descclassname">Tools.EARLTool.NEMAIQ.</tt><tt class="descname">main</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAIQ.html#main"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAIQ.main" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="Tools.EARLTool.NEMAIQ.plot_rclist">
+<tt class="descclassname">Tools.EARLTool.NEMAIQ.</tt><tt class="descname">plot_rclist</tt><big>(</big><em>rclist</em>, <em>order='az'</em>, <em>showfig=False</em><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAIQ.html#plot_rclist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAIQ.plot_rclist" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="Tools.EARLTool.NEMAIQ.progressBar">
+<em class="property">class </em><tt class="descclassname">Tools.EARLTool.NEMAIQ.</tt><tt class="descname">progressBar</tt><big>(</big><em>minValue=0</em>, <em>maxValue=100</em>, <em>totalWidth=75</em><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAIQ.html#progressBar"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAIQ.progressBar" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="Tools.EARLTool.NEMAIQ.progressBar.appendAmount">
+<tt class="descname">appendAmount</tt><big>(</big><em>append</em><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAIQ.html#progressBar.appendAmount"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAIQ.progressBar.appendAmount" title="Permalink to this definition">¶</a></dt>
+<dd><p>Increases the current amount of the value of append and 
+updates the progress bar to new ammount.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Tools.EARLTool.NEMAIQ.progressBar.draw">
+<tt class="descname">draw</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAIQ.html#progressBar.draw"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAIQ.progressBar.draw" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draws the progress bar if it has changed from it&#8217;s previous value.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Tools.EARLTool.NEMAIQ.progressBar.updateAmount">
+<tt class="descname">updateAmount</tt><big>(</big><em>newAmount=0</em><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAIQ.html#progressBar.updateAmount"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAIQ.progressBar.updateAmount" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the progress bar with the new amount (with min and max
+values set at initialization; if it is over or under, it takes the
+min or max value as a default.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Tools.EARLTool.NEMAIQ.progressBar.updatePercentage">
+<tt class="descname">updatePercentage</tt><big>(</big><em>newPercentage</em><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAIQ.html#progressBar.updatePercentage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAIQ.progressBar.updatePercentage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates the progress bar to the new percentage.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="Tools.EARLTool.NEMAIQ.simple_nema_phantom">
+<em class="property">class </em><tt class="descclassname">Tools.EARLTool.NEMAIQ.</tt><tt class="descname">simple_nema_phantom</tt><big>(</big><em>data, mode, order=['x', 'y', 'z'], orientation='cw'</em><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAIQ.html#simple_nema_phantom"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAIQ.simple_nema_phantom" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="Tools.EARLTool.NEMAIQ.simple_nema_phantom.check_overlap">
+<tt class="descname">check_overlap</tt><big>(</big><em>newsphere</em><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAIQ.html#simple_nema_phantom.check_overlap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAIQ.simple_nema_phantom.check_overlap" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.EARLTool.NEMAIQ.simple_nema_phantom.data_com">
+<tt class="descname">data_com</tt><big>(</big><em>z</em><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAIQ.html#simple_nema_phantom.data_com"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAIQ.simple_nema_phantom.data_com" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.EARLTool.NEMAIQ.simple_nema_phantom.find_angle">
+<tt class="descname">find_angle</tt><big>(</big><em>cor=None</em><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAIQ.html#simple_nema_phantom.find_angle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAIQ.simple_nema_phantom.find_angle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.EARLTool.NEMAIQ.simple_nema_phantom.get_bg_stats">
+<tt class="descname">get_bg_stats</tt><big>(</big><em>data=None</em><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAIQ.html#simple_nema_phantom.get_bg_stats"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAIQ.simple_nema_phantom.get_bg_stats" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.EARLTool.NEMAIQ.simple_nema_phantom.get_stats">
+<tt class="descname">get_stats</tt><big>(</big><em>data=None</em><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAIQ.html#simple_nema_phantom.get_stats"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAIQ.simple_nema_phantom.get_stats" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.EARLTool.NEMAIQ.simple_nema_phantom.guess_point">
+<tt class="descname">guess_point</tt><big>(</big><em>profile</em><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAIQ.html#simple_nema_phantom.guess_point"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAIQ.simple_nema_phantom.guess_point" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.EARLTool.NEMAIQ.simple_nema_phantom.nema_coords">
+<tt class="descname">nema_coords</tt><big>(</big><em>pixel_size, rotation=0, com=[0, 0], orientation='cw'</em><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAIQ.html#simple_nema_phantom.nema_coords"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAIQ.simple_nema_phantom.nema_coords" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.EARLTool.NEMAIQ.simple_nema_phantom.plot_bgspheres">
+<tt class="descname">plot_bgspheres</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAIQ.html#simple_nema_phantom.plot_bgspheres"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAIQ.simple_nema_phantom.plot_bgspheres" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.EARLTool.NEMAIQ.simple_nema_phantom.plot_dataspheres">
+<tt class="descname">plot_dataspheres</tt><big>(</big><em>sliceid</em>, <em>data=None</em>, <em>showfig=False</em><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAIQ.html#simple_nema_phantom.plot_dataspheres"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAIQ.simple_nema_phantom.plot_dataspheres" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.EARLTool.NEMAIQ.simple_nema_phantom.plot_spheres">
+<tt class="descname">plot_spheres</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAIQ.html#simple_nema_phantom.plot_spheres"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAIQ.simple_nema_phantom.plot_spheres" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.EARLTool.NEMAIQ.simple_nema_phantom.rad_sphere">
+<tt class="descname">rad_sphere</tt><big>(</big><em>index</em><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAIQ.html#simple_nema_phantom.rad_sphere"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAIQ.simple_nema_phantom.rad_sphere" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.EARLTool.NEMAIQ.simple_nema_phantom.register_phantom">
+<tt class="descname">register_phantom</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAIQ.html#simple_nema_phantom.register_phantom"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAIQ.simple_nema_phantom.register_phantom" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.EARLTool.NEMAIQ.simple_nema_phantom.rot_profile">
+<tt class="descname">rot_profile</tt><big>(</big><em>cor=None</em><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAIQ.html#simple_nema_phantom.rot_profile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAIQ.simple_nema_phantom.rot_profile" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.EARLTool.NEMAIQ.simple_nema_phantom.rotate_bg_spheres">
+<tt class="descname">rotate_bg_spheres</tt><big>(</big><em>angle</em>, <em>rotp</em><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAIQ.html#simple_nema_phantom.rotate_bg_spheres"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAIQ.simple_nema_phantom.rotate_bg_spheres" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.EARLTool.NEMAIQ.simple_nema_phantom.rotate_spheres">
+<tt class="descname">rotate_spheres</tt><big>(</big><em>angle</em>, <em>rotp</em><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAIQ.html#simple_nema_phantom.rotate_spheres"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAIQ.simple_nema_phantom.rotate_spheres" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.EARLTool.NEMAIQ.simple_nema_phantom.set_bg_spheres">
+<tt class="descname">set_bg_spheres</tt><big>(</big><em>nrangles=25</em>, <em>radlength=62.5</em><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAIQ.html#simple_nema_phantom.set_bg_spheres"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAIQ.simple_nema_phantom.set_bg_spheres" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.EARLTool.NEMAIQ.simple_nema_phantom.translate_bgspheres">
+<tt class="descname">translate_bgspheres</tt><big>(</big><em>vec</em><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAIQ.html#simple_nema_phantom.translate_bgspheres"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAIQ.simple_nema_phantom.translate_bgspheres" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.EARLTool.NEMAIQ.simple_nema_phantom.translate_spheres">
+<tt class="descname">translate_spheres</tt><big>(</big><em>vec</em><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAIQ.html#simple_nema_phantom.translate_spheres"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAIQ.simple_nema_phantom.translate_spheres" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.EARLTool.NEMAIQ.simple_nema_phantom.z_init">
+<tt class="descname">z_init</tt><big>(</big><em>mode='min'</em><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAIQ.html#simple_nema_phantom.z_init"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAIQ.simple_nema_phantom.z_init" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.EARLTool.NEMAIQ.simple_nema_phantom.z_slice">
+<tt class="descname">z_slice</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAIQ.html#simple_nema_phantom.z_slice"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAIQ.simple_nema_phantom.z_slice" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="Tools.EARLTool.NEMAIQ.sphere">
+<em class="property">class </em><tt class="descclassname">Tools.EARLTool.NEMAIQ.</tt><tt class="descname">sphere</tt><big>(</big><em>datsize</em>, <em>spherecom</em><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAIQ.html#sphere"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAIQ.sphere" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="Tools.EARLTool.NEMAIQ.sphere.distance">
+<tt class="descname">distance</tt><big>(</big><em>voxel</em><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAIQ.html#sphere.distance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAIQ.sphere.distance" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.EARLTool.NEMAIQ.sphere.get_weight">
+<tt class="descname">get_weight</tt><big>(</big><em>voxel</em><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAIQ.html#sphere.get_weight"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAIQ.sphere.get_weight" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.EARLTool.NEMAIQ.sphere.inorout">
+<tt class="descname">inorout</tt><big>(</big><em>voxel</em><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAIQ.html#sphere.inorout"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAIQ.sphere.inorout" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.EARLTool.NEMAIQ.sphere.rotate_point">
+<tt class="descname">rotate_point</tt><big>(</big><em>point</em>, <em>angle</em>, <em>rcntr</em><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAIQ.html#sphere.rotate_point"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAIQ.sphere.rotate_point" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.EARLTool.NEMAIQ.sphere.rotate_volume">
+<tt class="descname">rotate_volume</tt><big>(</big><em>angle</em>, <em>rcntr</em><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAIQ.html#sphere.rotate_volume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAIQ.sphere.rotate_volume" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.EARLTool.NEMAIQ.sphere.sphere_mask">
+<tt class="descname">sphere_mask</tt><big>(</big><em>data</em><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAIQ.html#sphere.sphere_mask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAIQ.sphere.sphere_mask" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.EARLTool.NEMAIQ.sphere.translate_volume">
+<tt class="descname">translate_volume</tt><big>(</big><em>vec</em><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAIQ.html#sphere.translate_volume"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAIQ.sphere.translate_volume" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.EARLTool.NEMAIQ.sphere.vol2array">
+<tt class="descname">vol2array</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAIQ.html#sphere.vol2array"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAIQ.sphere.vol2array" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Tools.EARLTool.NEMAIQ.sphere.volume_init">
+<tt class="descname">volume_init</tt><big>(</big><em>subpixlevel=1</em><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAIQ.html#sphere.volume_init"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAIQ.sphere.volume_init" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function returns a weighted list of pixels that make up the volume
+of the sphere. (0,0,0) is the center of the sphere from which distances are measured.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="Tools.EARLTool.NEMAIQ.update_wad">
+<tt class="descclassname">Tools.EARLTool.NEMAIQ.</tt><tt class="descname">update_wad</tt><big>(</big><em>filename</em>, <em>mode</em>, <em>axorder</em>, <em>sporder</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAIQ.html#update_wad"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAIQ.update_wad" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="tools-earltool-nemasuv-module">
+<h2>Tools.EARLTool.NEMASUV module<a class="headerlink" href="#tools-earltool-nemasuv-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-Tools.EARLTool.NEMAlib">
+<span id="tools-earltool-nemalib-module"></span><h2>Tools.EARLTool.NEMAlib module<a class="headerlink" href="#module-Tools.EARLTool.NEMAlib" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="Tools.EARLTool.NEMAlib.calc_act_con">
+<tt class="descclassname">Tools.EARLTool.NEMAlib.</tt><tt class="descname">calc_act_con</tt><big>(</big><em>volume</em>, <em>activity</em>, <em>deltat0</em>, <em>remainder</em>, <em>deltatr</em>, <em>th=119</em><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAlib.html#calc_act_con"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAlib.calc_act_con" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="Tools.EARLTool.NEMAlib.decay">
+<tt class="descclassname">Tools.EARLTool.NEMAlib.</tt><tt class="descname">decay</tt><big>(</big><em>A0</em>, <em>t</em>, <em>th</em><big>)</big><a class="reference internal" href="_modules/Tools/EARLTool/NEMAlib.html#decay"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.EARLTool.NEMAlib.decay" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-Tools.EARLTool">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-Tools.EARLTool" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Tools.EARLTool package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#tools-earltool-earltool-module">Tools.EARLTool.EARLtool module</a></li>
+<li><a class="reference internal" href="#module-Tools.EARLTool.NEMAIQ">Tools.EARLTool.NEMAIQ module</a></li>
+<li><a class="reference internal" href="#tools-earltool-nemasuv-module">Tools.EARLTool.NEMASUV module</a></li>
+<li><a class="reference internal" href="#module-Tools.EARLTool.NEMAlib">Tools.EARLTool.NEMAlib module</a></li>
+<li><a class="reference internal" href="#module-Tools.EARLTool">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/Tools.EARLTool.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">..  documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,186 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Tools.PET_Siemens_send2wad.source.storescu &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="../../../../index.html" />
+    <link rel="up" title="Module code" href="../../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for Tools.PET_Siemens_send2wad.source.storescu</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/python</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Storage SCU example.</span>
+
+<span class="sd">This demonstrates a simple application entity that support the RT Plan</span>
+<span class="sd">Storage SOP Class as SCU. For this example to work, there must be an</span>
+<span class="sd">SCP listening on the specified host and port.</span>
+
+<span class="sd">For help on usage, </span>
+<span class="sd">python storescu.py -h </span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">argparse</span>
+<span class="kn">from</span> <span class="nn">netdicom</span> <span class="kn">import</span> <span class="n">AE</span><span class="p">,</span> <span class="n">StorageSOPClass</span><span class="p">,</span> <span class="n">VerificationSOPClass</span>
+<span class="kn">from</span> <span class="nn">dicom.UID</span> <span class="kn">import</span> <span class="n">ExplicitVRLittleEndian</span><span class="p">,</span> <span class="n">ImplicitVRLittleEndian</span><span class="p">,</span> <span class="n">ExplicitVRBigEndian</span>
+<span class="kn">from</span> <span class="nn">dicom</span> <span class="kn">import</span> <span class="n">read_file</span>
+
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd"># parse commandline</span>
+<span class="sd">parser = argparse.ArgumentParser(description=&#39;storage SCU example&#39;)</span>
+<span class="sd">parser.add_argument(&#39;remotehost&#39;)</span>
+<span class="sd">parser.add_argument(&#39;remoteport&#39;, type=int)</span>
+<span class="sd">parser.add_argument(&#39;file&#39;, nargs=&#39;+&#39; )</span>
+<span class="sd">parser.add_argument(&#39;-aet&#39;, help=&#39;calling AE title&#39;, default=&#39;PYNETDICOM&#39;)</span>
+<span class="sd">parser.add_argument(&#39;-aec&#39;, help=&#39;called AE title&#39;, default=&#39;REMOTESCU&#39;)</span>
+<span class="sd">parser.add_argument(&#39;-implicit&#39;, action=&#39;store_true&#39;, help=&#39;negociate implicit transfer syntax only&#39;, default=False)</span>
+<span class="sd">parser.add_argument(&#39;-explicit&#39;, action=&#39;store_true&#39;, help=&#39;negociate explicit transfer syntax only&#39;, default=False)</span>
+
+<span class="sd">args = parser.parse_args()</span>
+
+<span class="sd">if args.implicit:</span>
+<span class="sd">    ts = [ImplicitVRLittleEndian]</span>
+<span class="sd">elif args.explicit:</span>
+<span class="sd">    ts = [ExplicitVRLittleEndian]</span>
+<span class="sd">else:</span>
+<span class="sd">    ts = [</span>
+<span class="sd">        ExplicitVRLittleEndian, </span>
+<span class="sd">        ImplicitVRLittleEndian, </span>
+<span class="sd">        ExplicitVRBigEndian</span>
+<span class="sd">        ]</span>
+
+<span class="sd"># call back</span>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="n">ts</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">ExplicitVRLittleEndian</span><span class="p">,</span> 
+        <span class="n">ImplicitVRLittleEndian</span><span class="p">,</span> 
+        <span class="n">ExplicitVRBigEndian</span>
+        <span class="p">]</span>
+
+
+<div class="viewcode-block" id="OnAssociateResponse"><a class="viewcode-back" href="../../../../Tools.PET_Siemens_send2wad.source.html#Tools.PET_Siemens_send2wad.source.storescu.OnAssociateResponse">[docs]</a><span class="k">def</span> <span class="nf">OnAssociateResponse</span><span class="p">(</span><span class="n">association</span><span class="p">):</span>
+    <span class="k">print</span> <span class="s">&quot;Association response received&quot;</span>
+
+</div>
+<div class="viewcode-block" id="StoreSCU"><a class="viewcode-back" href="../../../../Tools.PET_Siemens_send2wad.source.html#Tools.PET_Siemens_send2wad.source.storescu.StoreSCU">[docs]</a><span class="k">def</span> <span class="nf">StoreSCU</span><span class="p">(</span><span class="n">aec</span><span class="p">,</span><span class="n">remotehost</span><span class="p">,</span><span class="n">remoteport</span><span class="p">,</span><span class="n">dicomfile</span><span class="p">,</span><span class="n">aet</span><span class="o">=</span><span class="s">&#39;PYNETDICOM&#39;</span><span class="p">):</span>
+
+    <span class="c"># create application entity</span>
+    <span class="n">MyAE</span> <span class="o">=</span> <span class="n">AE</span><span class="p">(</span><span class="n">aet</span><span class="p">,</span> <span class="mi">9999</span><span class="p">,</span> <span class="p">[</span><span class="n">StorageSOPClass</span><span class="p">,</span>  <span class="n">VerificationSOPClass</span><span class="p">],</span> <span class="p">[]</span> <span class="p">,</span> <span class="n">ts</span><span class="p">)</span>
+
+    <span class="n">MyAE</span><span class="o">.</span><span class="n">OnAssociateResponse</span> <span class="o">=</span> <span class="n">OnAssociateResponse</span>
+
+
+    <span class="c"># remote application entity</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">remotehost</span><span class="p">,</span><span class="n">remoteport</span><span class="p">,</span><span class="n">aec</span><span class="p">)</span>
+    <span class="n">RemoteAE</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">Address</span><span class="o">=</span><span class="n">remotehost</span><span class="p">,</span> <span class="n">Port</span><span class="o">=</span><span class="n">remoteport</span><span class="p">,</span> <span class="n">AET</span><span class="o">=</span><span class="n">aec</span><span class="p">)</span>
+
+
+    <span class="c"># create association with remote AE</span>
+    <span class="k">print</span> <span class="s">&quot;Request association&quot;</span>
+    <span class="n">assoc</span> <span class="o">=</span> <span class="n">MyAE</span><span class="o">.</span><span class="n">RequestAssociation</span><span class="p">(</span><span class="n">RemoteAE</span><span class="p">)</span>
+
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">assoc</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">&quot;Could not establish association&quot;</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c"># perform a DICOM ECHO, just to make sure remote AE is listening</span>
+    <span class="k">print</span> <span class="s">&quot;DICOM Echo ... &quot;</span><span class="p">,</span>
+    <span class="n">st</span> <span class="o">=</span> <span class="n">assoc</span><span class="o">.</span><span class="n">VerificationSOPClass</span><span class="o">.</span><span class="n">SCU</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">print</span> <span class="s">&#39;done with status &quot;</span><span class="si">%s</span><span class="s">&quot;&#39;</span> <span class="o">%</span> <span class="n">st</span>
+
+    <span class="c"># create some dataset</span>
+    <span class="k">print</span> <span class="s">&quot;DICOM StoreSCU ... &quot;</span><span class="p">,</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">st</span> <span class="o">=</span> <span class="n">assoc</span><span class="o">.</span><span class="n">SCU</span><span class="p">(</span><span class="n">dicomfile</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">print</span> <span class="s">&#39;done with status &quot;</span><span class="si">%s</span><span class="s">&quot;&#39;</span> <span class="o">%</span> <span class="n">st</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">&quot;problem&quot;</span><span class="p">,</span> <span class="n">dicomfile</span><span class="o">.</span><span class="n">SOPClassUID</span>
+    <span class="k">print</span> <span class="s">&quot;Release association&quot;</span>
+    <span class="n">assoc</span><span class="o">.</span><span class="n">Release</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="c"># done</span>
+    <span class="n">MyAE</span><span class="o">.</span><span class="n">Quit</span><span class="p">()</span>
+</pre></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

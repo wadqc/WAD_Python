@@ -1,0 +1,1070 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Tools.EARLTool.NEMAIQ &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for Tools.EARLTool.NEMAIQ</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Dit script analyseert automatisch opnames gemaakt met het NemaIQ fantoom in het kader van de EARL registratie.</span>
+
+<span class="sd">De output is een dicom-file met resultaten die naar de DCM4CHEE database wordt gegenereerd.</span>
+
+<span class="sd">Het script parsenemaiq.py vertaalt de resultaten naar de waddb</span>
+
+<span class="sd">Er is een simple_nema_phantom class die de daadwerkelijke data en een model van het nema fantoom registreert en vervolgens per bol statistische informatie, contrasten met bgrois en recovery coefficienten berekend.</span>
+
+<span class="sd">Vanaf de command-line wordt de code als volgt gerund:</span>
+
+<span class="sd">python NemaIQ.py -f ../NemaIQtool/Voorbeelddata/EARLIQ -m max  -ord zxy -ort acw -spa 10 -bga 1</span>
+
+<span class="sd">Hierbij zijn:</span>
+
+<span class="sd">m - gaat het om hotspots = max of coldspots = min</span>
+<span class="sd">ord - de volgorde van de assen</span>
+<span class="sd">ort - de volgorde van de bollen, tegen de klok in acw of met de klok mee cw</span>
+<span class="sd">spa - de activiteitsconcentratie in de bollen</span>
+<span class="sd">bga - de activiteitsconcentratie in de achtergrond</span>
+
+<span class="sd">DCM4CHEE - locatie DCM4CHEE server</span>
+
+<span class="sd">TO DO:</span>
+
+<span class="sd">- partiele voxels meenemen om een correcter volume mee te nemen.</span>
+
+<span class="sd">- testen op andere datasets</span>
+
+<span class="sd">2013 DD</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pylab</span> <span class="kn">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">ndimage</span>
+<span class="kn">from</span> <span class="nn">operator</span> <span class="kn">import</span> <span class="n">itemgetter</span>
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">ma</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">argparse</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+
+
+
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">import</span> <span class="nn">NEMAlib</span> <span class="kn">as</span> <span class="nn">niqlib</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;../../&quot;</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">pyWADLib</span> <span class="kn">import</span> <span class="n">pydicom_series</span>
+
+
+
+<div class="viewcode-block" id="plot_rclist"><a class="viewcode-back" href="../../../Tools.EARLTool.html#Tools.EARLTool.NEMAIQ.plot_rclist">[docs]</a><span class="k">def</span> <span class="nf">plot_rclist</span><span class="p">(</span><span class="n">rclist</span><span class="p">,</span><span class="n">order</span><span class="o">=</span><span class="s">&#39;az&#39;</span><span class="p">,</span><span class="n">showfig</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="n">RCspecsA50</span> <span class="o">=</span> <span class="p">[[</span><span class="mf">0.71</span><span class="p">,</span> <span class="mf">0.83</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.67</span><span class="p">,</span> <span class="mf">0.79</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.59</span><span class="p">,</span> <span class="mf">0.73</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.53</span><span class="p">,</span> <span class="mf">0.68</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.38</span><span class="p">,</span> <span class="mf">0.52</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.35</span><span class="p">]]</span>
+    <span class="n">RCspecsMax</span> <span class="o">=</span> <span class="p">[[</span><span class="mf">0.88</span><span class="p">,</span> <span class="mf">1.08</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.85</span><span class="p">,</span> <span class="mf">1.05</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.77</span><span class="p">,</span> <span class="mf">1.01</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.75</span><span class="p">,</span> <span class="mf">0.94</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.51</span><span class="p">,</span> <span class="mf">0.74</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.29</span><span class="p">,</span> <span class="mf">0.46</span><span class="p">]]</span>
+
+    <span class="n">data</span> <span class="o">=</span> <span class="p">[(</span><span class="n">key</span><span class="p">,</span><span class="n">rclist</span><span class="p">[</span><span class="n">key</span><span class="p">])</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">rclist</span><span class="o">.</span><span class="n">keys</span><span class="p">()]</span>
+    <span class="n">X</span><span class="p">,</span><span class="n">Y</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">data</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">order</span> <span class="o">==</span> <span class="s">&#39;za&#39;</span><span class="p">:</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">reverse</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+
+    <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">RCspecsA50</span><span class="p">)):</span>
+        <span class="n">l</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">elem</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">ymin</span><span class="o">=</span><span class="n">RCspecsA50</span><span class="p">[</span><span class="n">elem</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">ymax</span><span class="o">=</span> <span class="n">RCspecsA50</span><span class="p">[</span><span class="n">elem</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s">&#39;r&#39;</span><span class="p">)</span>
+
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+    <span class="n">ax1</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span> <span class="n">X</span> <span class="p">,</span> <span class="n">Y</span> <span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xtitle</span> <span class="o">=</span> <span class="s">&quot;Sphere index&quot;</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ytitle</span> <span class="o">=</span> <span class="s">&quot;RC coefficient&quot;</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="bp">True</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">showfig</span><span class="o">==</span><span class="bp">True</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">fig</span>
+
+</div>
+<div class="viewcode-block" id="loaddata_old"><a class="viewcode-back" href="../../../Tools.EARLTool.html#Tools.EARLTool.NEMAIQ.loaddata_old">[docs]</a><span class="k">def</span> <span class="nf">loaddata_old</span><span class="p">(</span><span class="n">dicomdata</span><span class="p">):</span>
+    <span class="n">indata</span> <span class="o">=</span> <span class="n">pydicom_series</span><span class="o">.</span><span class="n">read_files</span><span class="p">(</span><span class="n">dicomdata</span><span class="p">,</span><span class="n">showProgress</span><span class="o">=</span><span class="bp">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>  
+
+
+    <span class="n">pixelsize</span> <span class="o">=</span>  <span class="nb">float</span><span class="p">(</span><span class="n">indata</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s">&quot;0028&quot;</span><span class="p">,</span><span class="s">&quot;0030&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="n">array</span> <span class="o">=</span> <span class="n">indata</span><span class="o">.</span><span class="n">get_pixel_array</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">pixelsize</span><span class="p">,</span> <span class="n">array</span><span class="p">,</span> <span class="n">indata</span>
+
+</div>
+<div class="viewcode-block" id="loaddata"><a class="viewcode-back" href="../../../Tools.EARLTool.html#Tools.EARLTool.NEMAIQ.loaddata">[docs]</a><span class="k">def</span> <span class="nf">loaddata</span><span class="p">(</span><span class="n">dicomdata</span><span class="p">):</span>
+    <span class="n">indata</span> <span class="o">=</span> <span class="n">pydicom_series</span><span class="o">.</span><span class="n">read_files</span><span class="p">(</span><span class="n">dicomdata</span><span class="p">,</span><span class="n">showProgress</span><span class="o">=</span><span class="bp">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>  
+
+
+    <span class="n">pixelsize</span> <span class="o">=</span>  <span class="nb">float</span><span class="p">(</span><span class="n">indata</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s">&quot;0028&quot;</span><span class="p">,</span><span class="s">&quot;0030&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    
+    <span class="n">rows</span> <span class="o">=</span> <span class="n">indata</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s">&quot;0028&quot;</span><span class="p">,</span><span class="s">&quot;0010&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+    <span class="n">cols</span> <span class="o">=</span> <span class="n">indata</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s">&quot;0028&quot;</span><span class="p">,</span><span class="s">&quot;0011&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+
+    <span class="n">newshape</span> <span class="o">=</span> <span class="p">(</span><span class="n">rows</span><span class="p">,</span><span class="n">cols</span><span class="p">)</span>
+    <span class="k">print</span> <span class="s">&quot;shape of dataslices: &quot;</span><span class="p">,</span> <span class="n">newshape</span>
+    
+    <span class="n">bitdepth</span> <span class="o">=</span> <span class="n">indata</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s">&quot;0028&quot;</span><span class="p">,</span><span class="s">&quot;0100&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="c">#bits allocated</span>
+    <span class="k">if</span> <span class="n">bitdepth</span> <span class="o">==</span> <span class="mi">16</span><span class="p">:</span>
+        <span class="n">bv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int16</span>
+    <span class="k">elif</span> <span class="n">bitdepth</span> <span class="o">==</span> <span class="mi">8</span><span class="p">:</span>
+        <span class="n">bv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int8</span>    
+    <span class="k">elif</span> <span class="n">bitdepth</span> <span class="o">==</span> <span class="mi">32</span><span class="p">:</span>
+        <span class="n">bv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span>
+    <span class="k">elif</span> <span class="n">bitdepth</span> <span class="o">==</span> <span class="mi">64</span><span class="p">:</span>
+        <span class="n">bv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span>
+    
+    
+    <span class="n">datlist</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="n">sequence</span> <span class="o">=</span> <span class="n">indata</span><span class="o">.</span><span class="n">__dict__</span><span class="p">[</span><span class="s">&#39;_datasets&#39;</span><span class="p">]</span>
+    
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sequence</span><span class="p">)):</span>
+       <span class="n">tmpkeys</span> <span class="o">=</span> <span class="n">sequence</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>      
+       <span class="n">datlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">fromstring</span><span class="p">(</span><span class="n">sequence</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">dicom</span><span class="o">.</span><span class="n">tag</span><span class="o">.</span><span class="n">Tag</span><span class="p">(</span><span class="s">&quot;7fe0&quot;</span><span class="p">,</span><span class="s">&quot;0010&quot;</span><span class="p">)]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="n">bv</span><span class="p">),</span><span class="n">newshape</span><span class="p">))</span>
+       
+
+    <span class="n">array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">datlist</span><span class="p">)</span>
+    <span class="k">print</span> <span class="s">&quot;loaddata complete&quot;</span>
+    
+    <span class="k">return</span> <span class="n">pixelsize</span><span class="p">,</span> <span class="n">array</span><span class="p">,</span> <span class="n">indata</span>
+
+</div>
+<div class="viewcode-block" id="compare_coordsets"><a class="viewcode-back" href="../../../Tools.EARLTool.html#Tools.EARLTool.NEMAIQ.compare_coordsets">[docs]</a><span class="k">def</span> <span class="nf">compare_coordsets</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">):</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">a</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="ow">in</span> <span class="n">b</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">True</span>
+        <span class="n">i</span><span class="o">+=</span><span class="mi">1</span>
+    <span class="k">return</span> <span class="bp">False</span>
+</div>
+<div class="viewcode-block" id="progressBar"><a class="viewcode-back" href="../../../Tools.EARLTool.html#Tools.EARLTool.NEMAIQ.progressBar">[docs]</a><span class="k">class</span> <span class="nc">progressBar</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">minValue</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">maxValue</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="n">totalWidth</span><span class="o">=</span><span class="mi">75</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Initializes the progress bar. &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">progBar</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>   <span class="c"># This holds the progress bar string</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">oldprogBar</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">min</span> <span class="o">=</span> <span class="n">minValue</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max</span> <span class="o">=</span> <span class="n">maxValue</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">span</span> <span class="o">=</span> <span class="n">maxValue</span> <span class="o">-</span> <span class="n">minValue</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">width</span> <span class="o">=</span> <span class="n">totalWidth</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">amount</span> <span class="o">=</span> <span class="mi">0</span>       <span class="c"># When amount == max, we are 100% done </span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateAmount</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>  <span class="c"># Build progress bar string</span>
+
+<div class="viewcode-block" id="progressBar.appendAmount"><a class="viewcode-back" href="../../../Tools.EARLTool.html#Tools.EARLTool.NEMAIQ.progressBar.appendAmount">[docs]</a>    <span class="k">def</span> <span class="nf">appendAmount</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">append</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Increases the current amount of the value of append and </span>
+<span class="sd">        updates the progress bar to new ammount. &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">updateAmount</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">amount</span> <span class="o">+</span> <span class="n">append</span><span class="p">)</span>
+    </div>
+<div class="viewcode-block" id="progressBar.updatePercentage"><a class="viewcode-back" href="../../../Tools.EARLTool.html#Tools.EARLTool.NEMAIQ.progressBar.updatePercentage">[docs]</a>    <span class="k">def</span> <span class="nf">updatePercentage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">newPercentage</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot; Updates the progress bar to the new percentage. &quot;&quot;&quot;</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">updateAmount</span><span class="p">((</span><span class="n">newPercentage</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max</span><span class="p">))</span> <span class="o">/</span> <span class="mf">100.0</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="progressBar.updateAmount"><a class="viewcode-back" href="../../../Tools.EARLTool.html#Tools.EARLTool.NEMAIQ.progressBar.updateAmount">[docs]</a>    <span class="k">def</span> <span class="nf">updateAmount</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">newAmount</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Update the progress bar with the new amount (with min and max</span>
+<span class="sd">        values set at initialization; if it is over or under, it takes the</span>
+<span class="sd">        min or max value as a default. &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">newAmount</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">min</span><span class="p">:</span> <span class="n">newAmount</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">min</span>
+        <span class="k">if</span> <span class="n">newAmount</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max</span><span class="p">:</span> <span class="n">newAmount</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">amount</span> <span class="o">=</span> <span class="n">newAmount</span>
+
+        <span class="c"># Figure out the new percent done, round to an integer</span>
+        <span class="n">diffFromMin</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">amount</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">min</span><span class="p">)</span>
+        <span class="n">percentDone</span> <span class="o">=</span> <span class="p">(</span><span class="n">diffFromMin</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">span</span><span class="p">))</span> <span class="o">*</span> <span class="mf">100.0</span>
+        <span class="n">percentDone</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">percentDone</span><span class="p">))</span>
+
+        <span class="c"># Figure out how many hash bars the percentage should be</span>
+        <span class="n">allFull</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">width</span> <span class="o">-</span> <span class="mi">2</span>
+        <span class="n">numHashes</span> <span class="o">=</span> <span class="p">(</span><span class="n">percentDone</span> <span class="o">/</span> <span class="mf">100.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">allFull</span>
+        <span class="n">numHashes</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">numHashes</span><span class="p">))</span>
+
+        <span class="c"># Build a progress bar with an arrow of equal signs; special cases for</span>
+        <span class="c"># empty and full</span>
+        <span class="k">if</span> <span class="n">numHashes</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">progBar</span> <span class="o">=</span> <span class="s">&quot;[&gt;</span><span class="si">%s</span><span class="s">]&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="s">&#39; &#39;</span><span class="o">*</span><span class="p">(</span><span class="n">allFull</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">numHashes</span> <span class="o">==</span> <span class="n">allFull</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">progBar</span> <span class="o">=</span> <span class="s">&quot;[</span><span class="si">%s</span><span class="s">]&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="s">&#39;=&#39;</span><span class="o">*</span><span class="n">allFull</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">progBar</span> <span class="o">=</span> <span class="s">&quot;[</span><span class="si">%s</span><span class="s">&gt;</span><span class="si">%s</span><span class="s">]&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="s">&#39;=&#39;</span><span class="o">*</span><span class="p">(</span><span class="n">numHashes</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="s">&#39; &#39;</span><span class="o">*</span><span class="p">(</span><span class="n">allFull</span><span class="o">-</span><span class="n">numHashes</span><span class="p">))</span>
+
+        <span class="c"># figure out where to put the percentage, roughly centered</span>
+        <span class="n">percentPlace</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">progBar</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">percentDone</span><span class="p">))</span>
+        <span class="n">percentString</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">percentDone</span><span class="p">)</span> <span class="o">+</span> <span class="s">&quot;%&quot;</span>
+
+        <span class="c"># slice the percentage into the bar</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">progBar</span> <span class="o">=</span> <span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">progBar</span><span class="p">,</span> <span class="n">percentString</span><span class="p">])</span>
+    </div>
+<div class="viewcode-block" id="progressBar.draw"><a class="viewcode-back" href="../../../Tools.EARLTool.html#Tools.EARLTool.NEMAIQ.progressBar.draw">[docs]</a>    <span class="k">def</span> <span class="nf">draw</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Draws the progress bar if it has changed from it&#39;s previous value.  &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">progBar</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">oldprogBar</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">oldprogBar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">progBar</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">progBar</span> <span class="o">+</span> <span class="s">&#39;</span><span class="se">\r</span><span class="s">&#39;</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>      <span class="c"># force updating of screen</span>
+</div>
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Returns the current progress bar. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">progBar</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="sphere"><a class="viewcode-back" href="../../../Tools.EARLTool.html#Tools.EARLTool.NEMAIQ.sphere">[docs]</a><span class="k">class</span> <span class="nc">sphere</span><span class="p">():</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">datsize</span><span class="p">,</span><span class="n">spherecom</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">com_coord</span> <span class="o">=</span> <span class="p">(</span><span class="n">spherecom</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">spherecom</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">z</span> <span class="o">=</span> <span class="n">spherecom</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">radius</span> <span class="o">=</span> <span class="n">spherecom</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rcntr</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">substeps</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">volume_init</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">matsize</span> <span class="o">=</span> <span class="n">datsize</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">angle</span> <span class="o">=</span> <span class="mi">0</span>
+
+<div class="viewcode-block" id="sphere.rotate_point"><a class="viewcode-back" href="../../../Tools.EARLTool.html#Tools.EARLTool.NEMAIQ.sphere.rotate_point">[docs]</a>    <span class="k">def</span> <span class="nf">rotate_point</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">point</span><span class="p">,</span><span class="n">angle</span><span class="p">,</span><span class="n">rcntr</span><span class="p">):</span>
+ 
+        
+        <span class="n">tmppoint</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">subtract</span><span class="p">([</span><span class="n">point</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">point</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span><span class="n">rcntr</span><span class="p">)</span>
+        <span class="n">rotpoint</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">angle</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">angle</span><span class="p">)</span><span class="o">*</span><span class="n">tmppoint</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">angle</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">angle</span><span class="p">)</span><span class="o">*</span><span class="n">tmppoint</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">angle</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">angle</span><span class="p">)</span><span class="o">*</span><span class="n">tmppoint</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">angle</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">angle</span><span class="p">)</span><span class="o">*</span><span class="n">tmppoint</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">angle</span><span class="o">=</span><span class="n">angle</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">rcntr</span><span class="p">,</span><span class="n">rotpoint</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="sphere.rotate_volume"><a class="viewcode-back" href="../../../Tools.EARLTool.html#Tools.EARLTool.NEMAIQ.sphere.rotate_volume">[docs]</a>    <span class="k">def</span> <span class="nf">rotate_volume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">angle</span><span class="p">,</span><span class="n">rcntr</span><span class="p">):</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">com_coord</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rotate_point</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">com_coord</span><span class="p">,</span><span class="n">angle</span><span class="p">,</span><span class="n">rcntr</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">volume_init</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="sphere.translate_volume"><a class="viewcode-back" href="../../../Tools.EARLTool.html#Tools.EARLTool.NEMAIQ.sphere.translate_volume">[docs]</a>    <span class="k">def</span> <span class="nf">translate_volume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">vec</span><span class="p">):</span>
+        <span class="n">tmpvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">com_coord</span><span class="p">),</span><span class="n">vec</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">com_coord</span> <span class="o">=</span> <span class="n">tmpvec</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">volume_init</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="sphere.distance"><a class="viewcode-back" href="../../../Tools.EARLTool.html#Tools.EARLTool.NEMAIQ.sphere.distance">[docs]</a>    <span class="k">def</span> <span class="nf">distance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">voxel</span><span class="p">):</span>
+        <span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">z</span> <span class="o">=</span> <span class="n">voxel</span>
+
+        <span class="n">dist2</span> <span class="o">=</span> <span class="n">x</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">y</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">z</span><span class="o">**</span><span class="mi">2</span>
+
+        <span class="k">return</span> <span class="n">dist2</span>
+</div>
+<div class="viewcode-block" id="sphere.inorout"><a class="viewcode-back" href="../../../Tools.EARLTool.html#Tools.EARLTool.NEMAIQ.sphere.inorout">[docs]</a>    <span class="k">def</span> <span class="nf">inorout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">voxel</span><span class="p">):</span>
+
+        <span class="n">dist2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">distance</span><span class="p">(</span><span class="n">voxel</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">dist2</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">radius</span><span class="o">**</span><span class="mi">2</span><span class="p">:</span>
+            <span class="n">flag</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">flag</span> <span class="o">=</span> <span class="mi">0</span>
+        
+        <span class="k">return</span> <span class="n">flag</span>
+</div>
+<div class="viewcode-block" id="sphere.get_weight"><a class="viewcode-back" href="../../../Tools.EARLTool.html#Tools.EARLTool.NEMAIQ.sphere.get_weight">[docs]</a>    <span class="k">def</span> <span class="nf">get_weight</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">voxel</span><span class="p">):</span>
+        
+        <span class="n">out</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">z</span> <span class="o">=</span> <span class="n">voxel</span>
+        <span class="n">dist2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">distance</span><span class="p">(</span><span class="n">voxel</span><span class="p">)</span>
+          
+        <span class="k">if</span> <span class="n">dist2</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">radius</span><span class="o">**</span><span class="mi">2</span><span class="p">:</span>
+            <span class="n">weight</span> <span class="o">=</span> <span class="mf">1.</span>
+        <span class="k">elif</span> <span class="n">dist2</span> <span class="o">&gt;</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">radius</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">:</span>
+            <span class="n">weight</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">weight</span><span class="o">=</span><span class="mi">0</span>
+            <span class="n">step</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">substeps</span><span class="p">))</span>
+            <span class="c">#print &quot;Voxel substeps: &quot;, self.substeps, step</span>
+
+            <span class="n">xsub</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">x</span><span class="o">-.</span><span class="mi">5</span><span class="p">,</span><span class="n">x</span><span class="o">+.</span><span class="mi">5</span><span class="p">,</span><span class="n">step</span><span class="p">)</span>
+            <span class="n">ysub</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">y</span><span class="o">-.</span><span class="mi">5</span><span class="p">,</span><span class="n">y</span><span class="o">+.</span><span class="mi">5</span><span class="p">,</span><span class="n">step</span><span class="p">)</span>
+            <span class="n">zsub</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">z</span><span class="o">-.</span><span class="mi">5</span><span class="p">,</span><span class="n">z</span><span class="o">+.</span><span class="mi">5</span><span class="p">,</span><span class="n">step</span><span class="p">)</span>
+            
+            <span class="n">subvoxels</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="n">xsub</span><span class="p">,</span><span class="n">ysub</span><span class="p">,</span><span class="n">zsub</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="n">subvoxels</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">distance</span><span class="p">(</span><span class="n">elem</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">radius</span><span class="o">**</span><span class="mi">2</span><span class="p">:</span>
+                    <span class="n">weight</span> <span class="o">+=</span> <span class="mf">1.0</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">substeps</span><span class="p">))</span>
+
+
+        <span class="k">return</span> <span class="p">[</span><span class="n">x</span><span class="o">+</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">com_coord</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span><span class="n">y</span><span class="o">+</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">com_coord</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="n">z</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">z</span><span class="p">,</span><span class="n">weight</span><span class="p">]</span>
+
+</div>
+<div class="viewcode-block" id="sphere.volume_init"><a class="viewcode-back" href="../../../Tools.EARLTool.html#Tools.EARLTool.NEMAIQ.sphere.volume_init">[docs]</a>    <span class="k">def</span> <span class="nf">volume_init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">subpixlevel</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        This function returns a weighted list of pixels that make up the volume</span>
+<span class="sd">        of the sphere. (0,0,0) is the center of the sphere from which distances are measured.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">out</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">surein</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">radius</span> <span class="o">-</span> <span class="mi">1</span> <span class="c"># alle pixels die geheel binnen de cirkel liggen (straal cirkel - verste hoek van midden van pixel</span>
+        <span class="n">sureout</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">radius</span> <span class="o">+</span> <span class="mi">1</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">radius</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">radius</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">radius</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">radius</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">radius</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">radius</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+
+                    <span class="n">tmpvoxel</span> <span class="o">=</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">)</span>
+                    <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_weight</span><span class="p">(</span><span class="n">tmpvoxel</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">out</span>
+</div>
+<div class="viewcode-block" id="sphere.vol2array"><a class="viewcode-back" href="../../../Tools.EARLTool.html#Tools.EARLTool.NEMAIQ.sphere.vol2array">[docs]</a>    <span class="k">def</span> <span class="nf">vol2array</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">outarray</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">matsize</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">volume</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">outarray</span><span class="p">[</span><span class="n">elem</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">elem</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">elem</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">print</span> <span class="s">&quot;warning, point not in volume&quot;</span>
+                <span class="k">pass</span>
+        <span class="k">return</span> <span class="n">outarray</span>
+</div>
+<div class="viewcode-block" id="sphere.sphere_mask"><a class="viewcode-back" href="../../../Tools.EARLTool.html#Tools.EARLTool.NEMAIQ.sphere.sphere_mask">[docs]</a>    <span class="k">def</span> <span class="nf">sphere_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">data</span><span class="p">):</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">volume</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">elem</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">*</span><span class="n">data</span><span class="p">[</span><span class="n">elem</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">elem</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">elem</span><span class="p">[</span><span class="mi">1</span><span class="p">]])</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">print</span> <span class="s">&quot;requested datapoint outside volume&quot;</span>
+                <span class="k">pass</span>
+        <span class="k">return</span> <span class="n">out</span>
+            
+
+</div></div>
+<div class="viewcode-block" id="simple_nema_phantom"><a class="viewcode-back" href="../../../Tools.EARLTool.html#Tools.EARLTool.NEMAIQ.simple_nema_phantom">[docs]</a><span class="k">class</span> <span class="nc">simple_nema_phantom</span><span class="p">():</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">data</span><span class="p">,</span><span class="n">mode</span><span class="p">,</span><span class="n">order</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;x&#39;</span><span class="p">,</span><span class="s">&#39;y&#39;</span><span class="p">,</span><span class="s">&#39;z&#39;</span><span class="p">],</span><span class="n">orientation</span><span class="o">=</span><span class="s">&#39;cw&#39;</span><span class="p">):</span>
+     
+        <span class="k">print</span> <span class="n">order</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xind</span> <span class="o">=</span> <span class="n">order</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s">&#39;x&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">yind</span> <span class="o">=</span> <span class="n">order</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s">&#39;y&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zind</span> <span class="o">=</span> <span class="n">order</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s">&#39;z&#39;</span><span class="p">)</span>
+        
+        <span class="n">axes</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">xind</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">yind</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">zind</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">spheres</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bgspheres</span> <span class="o">=</span> <span class="p">{}</span>
+
+
+
+        <span class="k">print</span> <span class="n">data</span>
+        <span class="n">pixelsize</span><span class="p">,</span><span class="n">array</span><span class="p">,</span><span class="n">info</span> <span class="o">=</span> <span class="n">loaddata_old</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pixel_size</span> <span class="o">=</span> <span class="n">pixelsize</span>
+        <span class="k">print</span> <span class="s">&quot;pixelsize: &quot;</span><span class="p">,</span> <span class="n">pixelsize</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">bgradius</span> <span class="o">=</span> <span class="mi">37</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">pixel_size</span><span class="o">/</span><span class="mf">2.0</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">array</span> 
+    
+
+        <span class="n">tmpshape</span>  <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ddimz</span> <span class="o">=</span> <span class="n">tmpshape</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">zind</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ddimy</span> <span class="o">=</span> <span class="n">tmpshape</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">xind</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ddimx</span> <span class="o">=</span> <span class="n">tmpshape</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">yind</span><span class="p">]</span>
+
+        
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">maxdata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+    
+        <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">=</span> <span class="n">mode</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">z_init</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mode</span><span class="p">)</span>
+        
+
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">thrdata</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">lowind</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">thrdata</span> <span class="o">&lt;</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">thrdata</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">z</span><span class="p">,:,:])</span><span class="o">*</span><span class="mf">0.2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">thrdata</span><span class="p">[</span><span class="n">lowind</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="n">highind</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">thrdata</span> <span class="o">&gt;=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">thrdata</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">z</span><span class="p">,:,:])</span><span class="o">*</span><span class="mf">0.2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">thrdata</span><span class="p">[</span><span class="n">highind</span><span class="p">]</span> <span class="o">=</span> <span class="mi">10</span>
+
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">bgdata</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+<span class="c">#        bgthrp = (self.bgdata &gt; np.max(self.data)/10.0)</span>
+<span class="c">#        self.bgdata[bgthrp] = 1.0</span>
+        <span class="n">bgthrm</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bgdata</span> <span class="o">&lt;=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span><span class="o">/</span><span class="mf">20.0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bgdata</span><span class="p">[</span><span class="n">bgthrm</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">angle</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">searchrange</span> <span class="o">=</span> <span class="mi">5</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cor</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ddimx</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">ddimy</span><span class="o">/</span><span class="mi">2</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">roughcom</span> <span class="o">=</span> <span class="n">ndimage</span><span class="o">.</span><span class="n">measurements</span><span class="o">.</span><span class="n">center_of_mass</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">z</span><span class="p">,:,:])</span>
+
+        <span class="k">print</span> <span class="s">&quot;rough com location:&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">roughcom</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">sphror</span> <span class="o">=</span> <span class="n">orientation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sphere_com</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nema_coords</span><span class="p">(</span><span class="n">pixelsize</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">cor</span><span class="p">,</span><span class="n">orientation</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sphror</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">orientation</span><span class="o">==</span><span class="s">&#39;cw&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">maxkey</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">elif</span> <span class="n">orientation</span><span class="o">==</span><span class="s">&#39;acw&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">maxkey</span> <span class="o">=</span> <span class="mi">6</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">7</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">spheres</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">sphere</span><span class="p">(</span><span class="n">tmpshape</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">sphere_com</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+
+
+<div class="viewcode-block" id="simple_nema_phantom.check_overlap"><a class="viewcode-back" href="../../../Tools.EARLTool.html#Tools.EARLTool.NEMAIQ.simple_nema_phantom.check_overlap">[docs]</a>    <span class="k">def</span> <span class="nf">check_overlap</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">newsphere</span><span class="p">):</span>
+        
+        <span class="n">a</span> <span class="o">=</span> <span class="n">newsphere</span><span class="o">.</span><span class="n">volume</span>
+        
+
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">spheres</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">b</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spheres</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">volume</span>
+            <span class="k">if</span> <span class="n">compare_coordsets</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">)</span> <span class="o">==</span> <span class="bp">True</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">None</span>
+
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bgspheres</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">b</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bgspheres</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">volume</span>
+            <span class="k">if</span> <span class="n">compare_coordsets</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">)</span> <span class="o">==</span> <span class="bp">True</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">None</span>
+
+        <span class="k">return</span> <span class="n">newsphere</span>
+
+</div>
+<div class="viewcode-block" id="simple_nema_phantom.set_bg_spheres"><a class="viewcode-back" href="../../../Tools.EARLTool.html#Tools.EARLTool.NEMAIQ.simple_nema_phantom.set_bg_spheres">[docs]</a>    <span class="k">def</span> <span class="nf">set_bg_spheres</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">nrangles</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span><span class="n">radlength</span><span class="o">=</span><span class="mi">250</span><span class="o">/</span><span class="mf">4.0</span><span class="p">):</span>
+        
+
+        <span class="n">tmpshape</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="n">mag</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">x</span><span class="o">.</span><span class="n">T</span><span class="p">))</span>
+
+        <span class="n">vec</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">radlength</span><span class="p">)</span>
+        <span class="n">steps</span> <span class="o">=</span> <span class="mi">100</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">bgid</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">for</span> <span class="n">alpha</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nrangles</span><span class="p">):</span>
+            <span class="n">tmpangle</span> <span class="o">=</span> <span class="n">alpha</span><span class="o">*</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="n">nrangles</span> 
+            <span class="n">tmpvec</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">tmpangle</span><span class="p">)</span><span class="o">*</span><span class="n">vec</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">tmpangle</span><span class="p">)</span><span class="o">*</span><span class="n">vec</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="n">steps</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">tmpangle</span><span class="p">)</span><span class="o">*</span><span class="n">vec</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">tmpangle</span><span class="p">)</span><span class="o">*</span><span class="n">vec</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="n">steps</span><span class="p">)</span>
+
+            <span class="n">tmpprofile</span> <span class="o">=</span> <span class="p">[]</span>
+
+
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">steps</span><span class="p">):</span>
+                
+                <span class="n">tmppoint</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cor</span><span class="p">,(</span><span class="n">tmpvec</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">i</span><span class="p">,</span><span class="n">tmpvec</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">i</span><span class="p">))</span>
+                
+
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">tmpprofile</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">bgdata</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">z</span><span class="p">,</span><span class="nb">int</span><span class="p">(</span><span class="n">tmppoint</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span><span class="nb">int</span><span class="p">(</span><span class="n">tmppoint</span><span class="p">[</span><span class="mi">1</span><span class="p">])],</span><span class="nb">int</span><span class="p">(</span><span class="n">tmppoint</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span><span class="nb">int</span><span class="p">(</span><span class="n">tmppoint</span><span class="p">[</span><span class="mi">0</span><span class="p">])])</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="k">print</span> <span class="s">&quot;error!&quot;</span>
+                    <span class="k">print</span> <span class="s">&quot;tmppoint&quot;</span><span class="p">,</span> <span class="n">tmppoint</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">z</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bgdata</span><span class="p">)</span>                    
+ 
+            <span class="n">newpoint</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">guess_point</span><span class="p">(</span><span class="n">tmpprofile</span><span class="p">)</span>
+            <span class="n">tmpcoords</span> <span class="o">=</span> <span class="n">tmpprofile</span><span class="p">[</span><span class="n">newpoint</span><span class="p">]</span>
+<span class="c">#            print alpha,newpoint, tmpcoords</span>
+            <span class="n">tmpx</span> <span class="o">=</span> <span class="n">tmpcoords</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+            <span class="n">tmpy</span> <span class="o">=</span> <span class="n">tmpcoords</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">X</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tmpx</span><span class="p">)</span>
+            <span class="n">Y</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tmpy</span><span class="p">)</span>
+
+            <span class="n">tmpcom</span> <span class="o">=</span> <span class="p">[</span><span class="n">tmpx</span><span class="p">,</span><span class="n">tmpy</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">z</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">bgradius</span><span class="p">]</span>
+            <span class="n">tmpbgsphere</span> <span class="o">=</span> <span class="n">sphere</span><span class="p">(</span><span class="n">tmpshape</span><span class="p">,</span><span class="n">tmpcom</span><span class="p">)</span>
+            
+            
+            <span class="n">addsphere</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_overlap</span><span class="p">(</span><span class="n">tmpbgsphere</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">addsphere</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">bgspheres</span><span class="p">[</span><span class="n">bgid</span><span class="p">]</span> <span class="o">=</span> <span class="n">tmpbgsphere</span>
+                <span class="n">bgid</span><span class="o">+=</span><span class="mi">1</span>
+
+</div>
+<div class="viewcode-block" id="simple_nema_phantom.guess_point"><a class="viewcode-back" href="../../../Tools.EARLTool.html#Tools.EARLTool.NEMAIQ.simple_nema_phantom.guess_point">[docs]</a>    <span class="k">def</span> <span class="nf">guess_point</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">profile</span><span class="p">):</span>
+        <span class="n">status</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="n">j</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">profile</span><span class="p">)</span>
+        <span class="k">while</span> <span class="n">status</span> <span class="o">==</span> <span class="bp">True</span> <span class="ow">and</span> <span class="n">j</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+            <span class="n">j</span><span class="o">-=</span><span class="mi">1</span>
+            <span class="k">if</span> <span class="n">profile</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">status</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="n">epsilon</span> <span class="o">=</span> <span class="mi">3</span>
+        <span class="n">radius</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bgradius</span>
+        <span class="n">offset</span> <span class="o">=</span> <span class="n">radius</span> <span class="o">+</span> <span class="n">epsilon</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">j</span> <span class="o">-</span> <span class="n">offset</span><span class="p">)</span>
+
+
+       
+</div>
+<div class="viewcode-block" id="simple_nema_phantom.z_slice"><a class="viewcode-back" href="../../../Tools.EARLTool.html#Tools.EARLTool.NEMAIQ.simple_nema_phantom.z_slice">[docs]</a>    <span class="k">def</span> <span class="nf">z_slice</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ddimz</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">zind</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">,:,:]))</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">zind</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[:,</span><span class="n">i</span><span class="p">,:]))</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">zind</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[:,:,</span><span class="n">i</span><span class="p">]))</span>
+        <span class="k">return</span> <span class="n">out</span>
+</div>
+<div class="viewcode-block" id="simple_nema_phantom.z_init"><a class="viewcode-back" href="../../../Tools.EARLTool.html#Tools.EARLTool.NEMAIQ.simple_nema_phantom.z_init">[docs]</a>    <span class="k">def</span> <span class="nf">z_init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">mode</span><span class="o">=</span><span class="s">&#39;min&#39;</span><span class="p">):</span>
+        
+        <span class="n">tmpY</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">z_slice</span><span class="p">()</span>
+        <span class="n">tmpX</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">tmpY</span><span class="p">))</span>
+
+        <span class="n">av</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">average</span><span class="p">(</span><span class="n">tmpX</span><span class="p">,</span><span class="n">weights</span><span class="o">=</span><span class="n">tmpY</span><span class="p">))</span>
+        <span class="n">width</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tmpX</span><span class="p">)</span><span class="o">/</span><span class="mi">4</span><span class="p">)</span>
+        
+        
+
+        <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s">&#39;min&#39;</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">tmpY</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">tmpY</span><span class="p">[</span><span class="n">av</span><span class="o">-</span><span class="n">width</span><span class="p">:</span><span class="n">av</span><span class="o">+</span><span class="n">width</span><span class="p">]))</span>
+        <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s">&#39;max&#39;</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">tmpY</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">tmpY</span><span class="p">[</span><span class="n">av</span><span class="o">-</span><span class="n">width</span><span class="p">:</span><span class="n">av</span><span class="o">+</span><span class="n">width</span><span class="p">]))</span>
+        <span class="k">return</span> <span class="n">out</span>
+            </div>
+<div class="viewcode-block" id="simple_nema_phantom.nema_coords"><a class="viewcode-back" href="../../../Tools.EARLTool.html#Tools.EARLTool.NEMAIQ.simple_nema_phantom.nema_coords">[docs]</a>    <span class="k">def</span> <span class="nf">nema_coords</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">pixel_size</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">com</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span><span class="n">orientation</span><span class="o">=</span><span class="s">&#39;cw&#39;</span><span class="p">):</span>
+
+        <span class="n">angle</span> <span class="o">=</span> <span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mf">6.0</span>
+        <span class="n">longradius</span> <span class="o">=</span> <span class="p">(</span><span class="mf">114.4</span><span class="o">/</span><span class="mf">2.0</span><span class="p">)</span><span class="o">/</span><span class="n">pixel_size</span> <span class="c">#  (114.4/2.0)/pixel_size #in pixels</span>
+
+        <span class="n">vec</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">longradius</span><span class="p">)</span> 
+
+        <span class="n">coords</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">bgcoords</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">7</span><span class="p">):</span>
+
+            <span class="n">tmpangle</span> <span class="o">=</span> <span class="p">(</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">angle</span> <span class="o">+</span> <span class="n">rotation</span>
+            <span class="n">tmpvec</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">tmpangle</span><span class="p">)</span><span class="o">*</span><span class="n">vec</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">tmpangle</span><span class="p">)</span><span class="o">*</span><span class="n">vec</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">tmpangle</span><span class="p">)</span><span class="o">*</span><span class="n">vec</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">tmpangle</span><span class="p">)</span><span class="o">*</span><span class="n">vec</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+
+            <span class="k">if</span> <span class="n">orientation</span> <span class="o">==</span> <span class="s">&#39;cw&#39;</span><span class="p">:</span>
+                <span class="n">coords</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">com</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">tmpvec</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">com</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">tmpvec</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">z</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">rad_sphere</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">/</span><span class="n">pixel_size</span><span class="p">]</span>    <span class="c">#in pixels not mm</span>
+            <span class="k">elif</span> <span class="n">orientation</span> <span class="o">==</span> <span class="s">&#39;acw&#39;</span><span class="p">:</span>
+                <span class="n">coords</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">com</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">tmpvec</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">com</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">tmpvec</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">z</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">rad_sphere</span><span class="p">(</span><span class="mi">7</span><span class="o">-</span><span class="n">i</span><span class="p">)</span><span class="o">/</span><span class="n">pixel_size</span><span class="p">]</span>    <span class="c">#in pixels not mm</span>
+
+
+
+        <span class="k">return</span> <span class="n">coords</span>
+
+
+
+
+
+
+
+</div>
+<div class="viewcode-block" id="simple_nema_phantom.rad_sphere"><a class="viewcode-back" href="../../../Tools.EARLTool.html#Tools.EARLTool.NEMAIQ.simple_nema_phantom.rad_sphere">[docs]</a>    <span class="k">def</span> <span class="nf">rad_sphere</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">index</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">index</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="mi">37</span>
+        <span class="k">elif</span> <span class="n">index</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="mi">28</span>
+        <span class="k">elif</span> <span class="n">index</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="mi">22</span>
+        <span class="k">elif</span> <span class="n">index</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="mi">17</span>
+        <span class="k">elif</span> <span class="n">index</span> <span class="o">==</span> <span class="mi">5</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="mi">13</span>
+        <span class="k">elif</span> <span class="n">index</span> <span class="o">==</span> <span class="mi">6</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="mi">10</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="k">return</span> <span class="n">out</span><span class="o">/</span><span class="mf">2.0</span>
+
+
+</div>
+<div class="viewcode-block" id="simple_nema_phantom.register_phantom"><a class="viewcode-back" href="../../../Tools.EARLTool.html#Tools.EARLTool.NEMAIQ.simple_nema_phantom.register_phantom">[docs]</a>    <span class="k">def</span> <span class="nf">register_phantom</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s">&#39;min&#39;</span><span class="p">:</span>            
+            <span class="n">initval</span> <span class="o">=</span> <span class="mi">100000000</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s">&#39;max&#39;</span><span class="p">:</span>
+            <span class="n">initval</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="n">regpar</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">regval</span> <span class="o">=</span> <span class="n">initval</span>
+
+        
+        <span class="n">prog</span> <span class="o">=</span> <span class="n">progressBar</span><span class="p">(</span><span class="n">maxValue</span> <span class="o">=</span> <span class="mi">4</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">searchrange</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">searchrange</span><span class="p">)</span>
+
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">roughcom</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">searchrange</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">roughcom</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">searchrange</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">roughcom</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">searchrange</span><span class="p">,</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">roughcom</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">searchrange</span><span class="p">):</span>
+
+                <span class="n">prog</span><span class="o">.</span><span class="n">appendAmount</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">prog</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+
+                
+
+                <span class="n">tmpcor</span> <span class="o">=</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">translate_spheres</span><span class="p">(</span><span class="n">tmpcor</span><span class="p">)</span>
+
+                <span class="n">tmpangle</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_angle</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">rotate_spheres</span><span class="p">(</span><span class="n">tmpangle</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">cor</span><span class="p">)</span>
+
+                <span class="n">tmpval</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_stats</span><span class="p">()</span>
+
+                <span class="n">summedval</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">tmpval</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                    <span class="n">summedval</span><span class="o">+=</span><span class="n">tmpval</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="s">&#39;avg&#39;</span><span class="p">]</span>
+
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s">&#39;min&#39;</span><span class="p">:</span>
+                   <span class="k">if</span>  <span class="n">summedval</span> <span class="o">&lt;</span> <span class="n">regval</span><span class="p">:</span>
+                       <span class="n">regval</span> <span class="o">=</span> <span class="n">summedval</span>
+                       <span class="n">regpars</span> <span class="o">=</span> <span class="p">[</span><span class="n">tmpcor</span><span class="p">,</span><span class="n">tmpangle</span><span class="p">,</span><span class="n">tmpval</span><span class="p">]</span>
+
+                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s">&#39;max&#39;</span><span class="p">:</span>
+                   <span class="k">if</span>  <span class="n">summedval</span> <span class="o">&gt;</span> <span class="n">regval</span><span class="p">:</span>
+                       <span class="n">regval</span> <span class="o">=</span> <span class="n">summedval</span>
+                       <span class="n">regpars</span> <span class="o">=</span> <span class="p">[</span><span class="n">tmpcor</span><span class="p">,</span><span class="n">tmpangle</span><span class="p">,</span><span class="n">tmpval</span><span class="p">]</span>
+
+                       
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_bg_spheres</span><span class="p">()</span>
+                
+        <span class="bp">self</span><span class="o">.</span><span class="n">translate_spheres</span><span class="p">(</span><span class="n">regpars</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rotate_spheres</span><span class="p">(</span><span class="n">regpars</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">cor</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">regpars</span>
+        
+</div>
+<div class="viewcode-block" id="simple_nema_phantom.data_com"><a class="viewcode-back" href="../../../Tools.EARLTool.html#Tools.EARLTool.NEMAIQ.simple_nema_phantom.data_com">[docs]</a>    <span class="k">def</span> <span class="nf">data_com</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">z</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">ndimage</span><span class="o">.</span><span class="n">measurements</span><span class="o">.</span><span class="n">center_of_mass</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">z</span><span class="p">,:,:])</span>
+</div>
+<div class="viewcode-block" id="simple_nema_phantom.rotate_spheres"><a class="viewcode-back" href="../../../Tools.EARLTool.html#Tools.EARLTool.NEMAIQ.simple_nema_phantom.rotate_spheres">[docs]</a>    <span class="k">def</span> <span class="nf">rotate_spheres</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">angle</span><span class="p">,</span><span class="n">rotp</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">angle</span> <span class="o">=</span> <span class="n">angle</span>
+        
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">spheres</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">spheres</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">rotate_volume</span><span class="p">(</span><span class="n">angle</span><span class="p">,</span><span class="n">rotp</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="simple_nema_phantom.rotate_bg_spheres"><a class="viewcode-back" href="../../../Tools.EARLTool.html#Tools.EARLTool.NEMAIQ.simple_nema_phantom.rotate_bg_spheres">[docs]</a>    <span class="k">def</span> <span class="nf">rotate_bg_spheres</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">angle</span><span class="p">,</span><span class="n">rotp</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">angle</span> <span class="o">=</span> <span class="n">angle</span>
+        
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bgspheres</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">bgspheres</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">rotate_volume</span><span class="p">(</span><span class="n">angle</span><span class="p">,</span><span class="n">rotp</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="simple_nema_phantom.translate_spheres"><a class="viewcode-back" href="../../../Tools.EARLTool.html#Tools.EARLTool.NEMAIQ.simple_nema_phantom.translate_spheres">[docs]</a>    <span class="k">def</span> <span class="nf">translate_spheres</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">vec</span><span class="p">):</span>
+
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">spheres</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">tmpcom</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spheres</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">com_coord</span>            
+            <span class="n">tmpdiff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cor</span><span class="p">,</span><span class="n">vec</span><span class="p">)</span>
+            <span class="n">tmpdiff</span> <span class="o">=</span> <span class="o">-</span><span class="n">tmpdiff</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">spheres</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">translate_volume</span><span class="p">(</span><span class="n">tmpdiff</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cor</span> <span class="o">=</span> <span class="n">vec</span>
+
+</div>
+<div class="viewcode-block" id="simple_nema_phantom.translate_bgspheres"><a class="viewcode-back" href="../../../Tools.EARLTool.html#Tools.EARLTool.NEMAIQ.simple_nema_phantom.translate_bgspheres">[docs]</a>    <span class="k">def</span> <span class="nf">translate_bgspheres</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">vec</span><span class="p">):</span>
+
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bgspheres</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">tmpcom</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bgspheres</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">com_coord</span>            
+            <span class="n">tmpdiff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cor</span><span class="p">,</span><span class="n">vec</span><span class="p">)</span>
+            <span class="n">tmpdiff</span> <span class="o">=</span> <span class="o">-</span><span class="n">tmpdiff</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">bgspheres</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">translate_volume</span><span class="p">(</span><span class="n">tmpdiff</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cor</span> <span class="o">=</span> <span class="n">vec</span>
+
+</div>
+<div class="viewcode-block" id="simple_nema_phantom.get_stats"><a class="viewcode-back" href="../../../Tools.EARLTool.html#Tools.EARLTool.NEMAIQ.simple_nema_phantom.get_stats">[docs]</a>    <span class="k">def</span> <span class="nf">get_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">data</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">data</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">spheres</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">tmpdat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spheres</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">sphere_mask</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="n">out</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;volume&#39;</span><span class="p">:</span><span class="nb">len</span><span class="p">(</span><span class="n">tmpdat</span><span class="p">),</span><span class="s">&#39;sum&#39;</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">tmpdat</span><span class="p">),</span><span class="s">&#39;mean&#39;</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">tmpdat</span><span class="p">),</span><span class="s">&#39;std&#39;</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">tmpdat</span><span class="p">),</span><span class="s">&#39;min&#39;</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">tmpdat</span><span class="p">),</span><span class="s">&#39;max&#39;</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">tmpdat</span><span class="p">),</span><span class="s">&#39;avg&#39;</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">average</span><span class="p">(</span><span class="n">tmpdat</span><span class="p">)}</span>
+
+        <span class="k">return</span> <span class="n">out</span>
+</div>
+<div class="viewcode-block" id="simple_nema_phantom.get_bg_stats"><a class="viewcode-back" href="../../../Tools.EARLTool.html#Tools.EARLTool.NEMAIQ.simple_nema_phantom.get_bg_stats">[docs]</a>    <span class="k">def</span> <span class="nf">get_bg_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">data</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">data</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
+
+        <span class="n">bgout</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bgspheres</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">tmpdat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bgspheres</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">sphere_mask</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="n">bgout</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;volume&#39;</span><span class="p">:</span><span class="nb">len</span><span class="p">(</span><span class="n">tmpdat</span><span class="p">),</span><span class="s">&#39;sum&#39;</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">tmpdat</span><span class="p">),</span><span class="s">&#39;mean&#39;</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">tmpdat</span><span class="p">),</span><span class="s">&#39;std&#39;</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">tmpdat</span><span class="p">),</span><span class="s">&#39;min&#39;</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">tmpdat</span><span class="p">),</span><span class="s">&#39;max&#39;</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">tmpdat</span><span class="p">),</span><span class="s">&#39;avg&#39;</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">average</span><span class="p">(</span><span class="n">tmpdat</span><span class="p">)}</span>
+        <span class="k">return</span> <span class="n">bgout</span>
+</div>
+<div class="viewcode-block" id="simple_nema_phantom.plot_spheres"><a class="viewcode-back" href="../../../Tools.EARLTool.html#Tools.EARLTool.NEMAIQ.simple_nema_phantom.plot_spheres">[docs]</a>    <span class="k">def</span> <span class="nf">plot_spheres</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">outarray</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">ddimx</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">ddimy</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">7</span><span class="p">):</span>
+            <span class="n">tmpsphere</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spheres</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="n">tmpsphere</span><span class="o">.</span><span class="n">volume</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">outarray</span><span class="p">[</span><span class="n">elem</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">elem</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">elem</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="k">print</span> <span class="s">&quot;warning, point not in volume&quot;</span>
+                    <span class="k">pass</span>
+
+        <span class="k">return</span> <span class="n">outarray</span>
+</div>
+<div class="viewcode-block" id="simple_nema_phantom.plot_bgspheres"><a class="viewcode-back" href="../../../Tools.EARLTool.html#Tools.EARLTool.NEMAIQ.simple_nema_phantom.plot_bgspheres">[docs]</a>    <span class="k">def</span> <span class="nf">plot_bgspheres</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">outarray</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">ddimx</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">ddimy</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bgspheres</span><span class="o">.</span><span class="n">keys</span><span class="p">())):</span>
+            <span class="n">tmpsphere</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bgspheres</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="n">tmpsphere</span><span class="o">.</span><span class="n">volume</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">outarray</span><span class="p">[</span><span class="n">elem</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">elem</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">elem</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="k">print</span> <span class="s">&quot;warning, point not in volume&quot;</span>
+                    <span class="k">pass</span>
+        <span class="k">return</span> <span class="n">outarray</span>
+
+</div>
+<div class="viewcode-block" id="simple_nema_phantom.plot_dataspheres"><a class="viewcode-back" href="../../../Tools.EARLTool.html#Tools.EARLTool.NEMAIQ.simple_nema_phantom.plot_dataspheres">[docs]</a>    <span class="k">def</span> <span class="nf">plot_dataspheres</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">sliceid</span><span class="p">,</span><span class="n">data</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">showfig</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">data</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
+
+        <span class="n">tmpdat</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">sliceid</span><span class="p">,:,:]</span>
+        <span class="n">tmpsph</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot_spheres</span><span class="p">()</span>
+        <span class="n">tmpbg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot_bgspheres</span><span class="p">()</span>
+        
+
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+        <span class="n">ax1</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
+        <span class="n">ax1</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">tmpdat</span><span class="p">)</span>
+        <span class="n">ax1</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">tmpsph</span><span class="p">,</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.4</span><span class="p">)</span>
+        <span class="n">ax1</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">tmpbg</span><span class="p">,</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.4</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">showfig</span> <span class="o">==</span> <span class="bp">True</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">fig</span>
+
+</div>
+<div class="viewcode-block" id="simple_nema_phantom.rot_profile"><a class="viewcode-back" href="../../../Tools.EARLTool.html#Tools.EARLTool.NEMAIQ.simple_nema_phantom.rot_profile">[docs]</a>    <span class="k">def</span> <span class="nf">rot_profile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cor</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span><span class="mf">0.05</span><span class="p">)</span> <span class="c">#absolute angles</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">cor</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">cor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cor</span>
+        <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">X</span><span class="p">:</span>
+            
+            <span class="bp">self</span><span class="o">.</span><span class="n">rotate_spheres</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">cor</span><span class="p">)</span>
+            <span class="n">tmpdat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_stats</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">thrdata</span><span class="p">)</span>
+            
+            <span class="n">summed_mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">([</span><span class="n">tmpdat</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="s">&#39;sum&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">tmpdat</span><span class="o">.</span><span class="n">keys</span><span class="p">()])</span>
+            
+            <span class="n">Y</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">summed_mean</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">X</span><span class="p">,</span><span class="n">Y</span>
+
+</div>
+<div class="viewcode-block" id="simple_nema_phantom.find_angle"><a class="viewcode-back" href="../../../Tools.EARLTool.html#Tools.EARLTool.NEMAIQ.simple_nema_phantom.find_angle">[docs]</a>    <span class="k">def</span> <span class="nf">find_angle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cor</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">cor</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">cor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cor</span>
+        <span class="n">tmpX</span><span class="p">,</span><span class="n">tmpY</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rot_profile</span><span class="p">(</span><span class="n">cor</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s">&#39;min&#39;</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">tmpX</span><span class="p">[</span><span class="n">tmpY</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">tmpY</span><span class="p">))]</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s">&#39;max&#39;</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">tmpX</span><span class="p">[</span><span class="n">tmpY</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">tmpY</span><span class="p">))]</span>
+        <span class="k">return</span> <span class="n">out</span>
+
+</div></div>
+<div class="viewcode-block" id="update_wad"><a class="viewcode-back" href="../../../Tools.EARLTool.html#Tools.EARLTool.NEMAIQ.update_wad">[docs]</a><span class="k">def</span> <span class="nf">update_wad</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">axorder</span><span class="p">,</span> <span class="n">sporder</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+    <span class="c">#sphereac = 999, ctimespac = &#39;120000&#39;, bgac = 999, bgactime = &#39;120000&#39;, spremac = 999, spremactime = &#39;120000&#39;, bgremac = 999, bgremactime = &#39;120000&#39;,scantime=&#39;120000&#39;</span>
+
+
+
+    <span class="n">output</span> <span class="o">=</span> <span class="p">{}</span>
+
+
+    <span class="c">#Float values</span>
+
+    <span class="n">fmt</span> <span class="o">=</span> <span class="s">&#39;%H%M%S&#39;</span> <span class="c">#assumed format for all times</span>
+
+
+
+    <span class="n">output</span><span class="p">[</span><span class="s">&#39;Sphere activity&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;sphereac&#39;</span><span class="p">]</span>
+    <span class="n">output</span><span class="p">[</span><span class="s">&#39;Calibration time sphere&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;ctimespac&#39;</span><span class="p">]</span>
+
+
+
+    <span class="n">output</span><span class="p">[</span><span class="s">&#39;Background activity&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;bgac&#39;</span><span class="p">]</span>
+    <span class="n">output</span><span class="p">[</span><span class="s">&#39;Background act time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;bgactime&#39;</span><span class="p">]</span>
+
+
+
+    <span class="n">output</span><span class="p">[</span><span class="s">&#39;Sphere rem act&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;spremac&#39;</span><span class="p">]</span>
+    <span class="n">output</span><span class="p">[</span><span class="s">&#39;Sphere rem act time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;spremactime&#39;</span><span class="p">]</span>
+
+
+
+    <span class="n">output</span><span class="p">[</span><span class="s">&#39;Bg rem act&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;bgremac&#39;</span><span class="p">]</span>
+    <span class="n">output</span><span class="p">[</span><span class="s">&#39;Bg rem act time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;bgremactime&#39;</span><span class="p">]</span>
+
+
+
+
+    <span class="sd">&#39;&#39;&#39; With all the activities known we can simply calculate</span>
+<span class="sd">the activity concentration of the spheres @ scantime and the activity concentration of the background @ scantime</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">th</span> <span class="o">=</span> <span class="n">niqlib</span><span class="o">.</span><span class="n">thf18</span>
+
+    <span class="c"># convert all &#39;string&#39; times to datetime format so we can calculate something</span>
+
+    <span class="n">scantime</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;scantime&#39;</span><span class="p">],</span><span class="n">fmt</span><span class="p">)</span>
+    <span class="n">ctimespac</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;ctimespac&#39;</span><span class="p">],</span><span class="n">fmt</span><span class="p">)</span> 
+    <span class="n">bgactime</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;bgactime&#39;</span><span class="p">],</span><span class="n">fmt</span><span class="p">)</span> 
+    <span class="n">spremactime</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;spremactime&#39;</span><span class="p">],</span><span class="n">fmt</span><span class="p">)</span> 
+    <span class="n">bgremactime</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;bgremactime&#39;</span><span class="p">],</span><span class="n">fmt</span><span class="p">)</span> 
+
+
+
+    <span class="n">actspsctime</span> <span class="o">=</span> <span class="n">niqlib</span><span class="o">.</span><span class="n">decay</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;sphereac&#39;</span><span class="p">]),</span><span class="nb">float</span><span class="p">((</span><span class="n">scantime</span> <span class="o">-</span> <span class="n">ctimespac</span><span class="p">)</span><span class="o">.</span><span class="n">seconds</span><span class="o">/</span><span class="mf">60.</span><span class="p">),</span><span class="n">th</span><span class="p">)</span> <span class="o">-</span> <span class="n">niqlib</span><span class="o">.</span><span class="n">decay</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;spremac&#39;</span><span class="p">]),</span><span class="nb">float</span><span class="p">((</span><span class="n">scantime</span> <span class="o">-</span> <span class="n">spremactime</span><span class="p">)</span><span class="o">.</span><span class="n">seconds</span><span class="o">/</span><span class="mf">60.</span><span class="p">),</span><span class="n">th</span><span class="p">)</span> 
+
+    <span class="n">actbgsctime</span> <span class="o">=</span> <span class="n">niqlib</span><span class="o">.</span><span class="n">decay</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;bgac&#39;</span><span class="p">]),</span><span class="nb">float</span><span class="p">((</span><span class="n">scantime</span> <span class="o">-</span> <span class="n">bgactime</span><span class="p">)</span><span class="o">.</span><span class="n">seconds</span><span class="o">/</span><span class="mf">60.</span><span class="p">),</span><span class="n">th</span><span class="p">)</span> <span class="o">-</span> <span class="n">niqlib</span><span class="o">.</span><span class="n">decay</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;bgremac&#39;</span><span class="p">]),</span><span class="nb">float</span><span class="p">((</span><span class="n">scantime</span> <span class="o">-</span> <span class="n">bgremactime</span><span class="p">)</span><span class="o">.</span><span class="n">seconds</span><span class="o">/</span><span class="mf">60.</span><span class="p">),</span><span class="n">th</span><span class="p">)</span> 
+
+    <span class="n">output</span><span class="p">[</span><span class="s">&#39;Act Spheres (scantime)&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">actspsctime</span>
+    <span class="n">output</span><span class="p">[</span><span class="s">&#39;Act BG (scantime)&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">actbgsctime</span>
+
+
+    <span class="n">output</span><span class="p">[</span><span class="s">&#39;Scantime&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">scantime</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+    <span class="k">print</span> <span class="n">axorder</span> 
+
+    <span class="k">print</span> <span class="s">&quot;1 - loading data&quot;</span>
+    <span class="n">iqphantom</span> <span class="o">=</span> <span class="n">simple_nema_phantom</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">filename</span><span class="p">,</span><span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span><span class="n">order</span><span class="o">=</span><span class="n">axorder</span><span class="p">,</span><span class="n">orientation</span><span class="o">=</span><span class="n">sporder</span><span class="p">)</span>
+
+    <span class="k">print</span> <span class="s">&quot;z_slice bollen: &quot;</span><span class="p">,</span><span class="n">iqphantom</span><span class="o">.</span><span class="n">z</span>
+
+    <span class="n">zslicefig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+    <span class="n">ax1</span> <span class="o">=</span> <span class="n">zslicefig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">xtitle</span> <span class="o">=</span> <span class="s">&quot;Z slice&quot;</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ytitle</span> <span class="o">=</span> <span class="s">&quot;Counts in slice&quot;</span>
+    <span class="c">#plt.plot(iqphantom.z_slice())</span>
+    <span class="c">#plt.show()</span>
+
+
+    <span class="c"># images</span>
+
+    <span class="n">output</span><span class="p">[</span><span class="s">&#39;EARL z_slice&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">iqphantom</span><span class="o">.</span><span class="n">z</span>
+    <span class="n">output</span><span class="p">[</span><span class="s">&#39;EARL zprofile&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">zslicefig</span>
+
+
+
+    <span class="k">print</span> <span class="s">&quot;2 - registering data&quot;</span>
+
+    <span class="k">print</span> <span class="s">&quot;COR and angle before registration:&quot;</span><span class="p">,</span> <span class="n">iqphantom</span><span class="o">.</span><span class="n">cor</span><span class="p">,</span> <span class="n">iqphantom</span><span class="o">.</span><span class="n">angle</span>
+
+    <span class="c">#regpars = iqphantom.register_phantom()</span>
+    <span class="c">#print &quot;registration pars:&quot;, regpars[0], regpars[1]</span>
+   <span class="c"># output[&#39;regpars&#39;] = regpars</span>
+
+    <span class="k">print</span> <span class="s">&quot;COR and angle after registration:&quot;</span><span class="p">,</span> <span class="n">iqphantom</span><span class="o">.</span><span class="n">cor</span><span class="p">,</span> <span class="n">iqphantom</span><span class="o">.</span><span class="n">angle</span>
+
+    <span class="n">output</span><span class="p">[</span><span class="s">&#39;cor&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">iqphantom</span><span class="o">.</span><span class="n">cor</span>
+    <span class="n">output</span><span class="p">[</span><span class="s">&#39;angle&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">iqphantom</span><span class="o">.</span><span class="n">angle</span>
+
+    <span class="k">print</span> <span class="s">&quot;3 - show result: &quot;</span>
+    <span class="k">print</span> <span class="s">&quot;zslice&quot;</span><span class="p">,</span> <span class="n">iqphantom</span><span class="o">.</span><span class="n">z</span>
+
+    <span class="n">output</span><span class="p">[</span><span class="s">&#39;EARL halfslice&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">iqphantom</span><span class="o">.</span><span class="n">plot_dataspheres</span><span class="p">(</span><span class="n">iqphantom</span><span class="o">.</span><span class="n">z</span><span class="p">)</span>
+
+    
+
+    <span class="k">print</span> <span class="s">&quot;4 - sphere statistics: &quot;</span>
+    <span class="n">results</span>  <span class="o">=</span> <span class="n">iqphantom</span><span class="o">.</span><span class="n">get_stats</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">results</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="k">print</span> <span class="s">&quot;Sphere: &quot;</span><span class="p">,</span> <span class="n">key</span> 
+        <span class="n">tmpresult</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">subkey</span> <span class="ow">in</span> <span class="n">tmpresult</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">print</span> <span class="s">&#39;</span><span class="se">\t</span><span class="s">&#39;</span><span class="p">,</span> <span class="n">subkey</span><span class="p">,</span> <span class="n">tmpresult</span><span class="p">[</span><span class="n">subkey</span><span class="p">]</span>
+    <span class="n">bgresults</span>  <span class="o">=</span> <span class="n">iqphantom</span><span class="o">.</span><span class="n">get_bg_stats</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">bgresults</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="k">print</span> <span class="s">&quot;BG Sphere: &quot;</span><span class="p">,</span> <span class="n">key</span> 
+        <span class="n">tmpresult</span> <span class="o">=</span> <span class="n">bgresults</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">subkey</span> <span class="ow">in</span> <span class="n">tmpresult</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">print</span> <span class="s">&#39;</span><span class="se">\t</span><span class="s">&#39;</span><span class="p">,</span> <span class="n">subkey</span><span class="p">,</span> <span class="n">tmpresult</span><span class="p">[</span><span class="n">subkey</span><span class="p">]</span>
+        
+
+    <span class="n">bgaverage</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">average</span><span class="p">([</span><span class="n">bgresults</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="s">&#39;avg&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">bgresults</span><span class="o">.</span><span class="n">keys</span><span class="p">()])</span>
+    <span class="k">print</span> <span class="n">bgaverage</span>
+
+    <span class="n">meancontrastlist</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">maxcontrastlist</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">results</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="n">meancontrastlist</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="s">&#39;avg&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">bgaverage</span><span class="p">)</span><span class="o">/</span><span class="n">bgaverage</span>
+        <span class="n">maxcontrastlist</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="s">&#39;max&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">bgaverage</span><span class="p">)</span><span class="o">/</span><span class="n">bgaverage</span>
+
+    <span class="n">output</span><span class="p">[</span><span class="s">&#39;maxcontrast&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">maxcontrastlist</span>
+    <span class="n">output</span><span class="p">[</span><span class="s">&#39;meancontrast&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">meancontrastlist</span>
+
+
+    <span class="k">print</span> <span class="s">&quot;5 - contrasts: &quot;</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">meancontrastlist</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="k">print</span> <span class="s">&quot;mean:&quot;</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">meancontrastlist</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="k">print</span> <span class="s">&quot;max:&quot;</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">maxcontrastlist</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+
+
+    <span class="k">print</span> <span class="s">&quot;6 - rc list: &quot;</span>
+    
+    <span class="n">inputcontrast</span> <span class="o">=</span> <span class="p">(</span><span class="n">actspsctime</span> <span class="o">-</span> <span class="n">actbgsctime</span><span class="p">)</span><span class="o">/</span> <span class="n">actbgsctime</span>
+    <span class="n">meanrclist</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">maxrclist</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">results</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="n">meanrclist</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">meancontrastlist</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">/</span><span class="n">inputcontrast</span>
+        <span class="n">maxrclist</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">maxcontrastlist</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">/</span><span class="n">inputcontrast</span>
+
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">meanrclist</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="k">print</span> <span class="s">&quot;mean: &quot;</span><span class="p">,</span><span class="n">key</span><span class="p">,</span> <span class="n">meanrclist</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="k">print</span> <span class="s">&quot;max: &quot;</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">maxrclist</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+
+    <span class="n">output</span><span class="p">[</span><span class="s">&#39;maxrc&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">maxrclist</span>
+    <span class="n">output</span><span class="p">[</span><span class="s">&#39;meanrc&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">meanrclist</span>
+
+
+    <span class="n">output</span><span class="p">[</span><span class="s">&#39;RC-1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">meanrclist</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">output</span><span class="p">[</span><span class="s">&#39;RC-2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">meanrclist</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">output</span><span class="p">[</span><span class="s">&#39;RC-3&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">meanrclist</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+    <span class="n">output</span><span class="p">[</span><span class="s">&#39;RC-4&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">meanrclist</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+    <span class="n">output</span><span class="p">[</span><span class="s">&#39;RC-5&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">meanrclist</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span>
+    <span class="n">output</span><span class="p">[</span><span class="s">&#39;RC-6&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">meanrclist</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span>
+
+    <span class="n">output</span><span class="p">[</span><span class="s">&#39;EARL rc mean curve&#39;</span><span class="p">]</span> <span class="o">=</span>  <span class="n">plot_rclist</span><span class="p">(</span><span class="n">meanrclist</span><span class="p">,</span><span class="s">&#39;za&#39;</span><span class="p">)</span>
+    <span class="n">output</span><span class="p">[</span><span class="s">&#39;EARL rc max curve&#39;</span><span class="p">]</span> <span class="o">=</span>  <span class="n">plot_rclist</span><span class="p">(</span><span class="n">maxrclist</span><span class="p">,</span><span class="s">&#39;za&#39;</span><span class="p">)</span>
+
+
+    <span class="n">output</span><span class="p">[</span><span class="s">&#39;status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;processed&#39;</span>
+
+    <span class="k">print</span> <span class="s">&quot;Writing results to wadserver&quot;</span> 
+
+
+
+    <span class="k">return</span> <span class="n">output</span>
+    
+   
+
+
+</div>
+<div class="viewcode-block" id="main"><a class="viewcode-back" href="../../../Tools.EARLTool.html#Tools.EARLTool.NEMAIQ.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s">&#39;Commandline arguments to run reconstructor&#39;</span><span class="p">)</span>
+  
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;-f&#39;</span><span class="p">,</span><span class="n">metavar</span><span class="o">=</span><span class="s">&#39;file&#39;</span><span class="p">,</span><span class="n">nargs</span><span class="o">=</span><span class="s">&#39;?&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;-m&#39;</span><span class="p">,</span><span class="n">metavar</span><span class="o">=</span><span class="s">&#39;mode&#39;</span><span class="p">,</span><span class="n">nargs</span><span class="o">=</span><span class="s">&#39;?&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;-ord&#39;</span><span class="p">,</span><span class="n">metavar</span><span class="o">=</span><span class="s">&#39;order&#39;</span><span class="p">,</span><span class="n">nargs</span><span class="o">=</span><span class="s">&#39;?&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;-ort&#39;</span><span class="p">,</span><span class="n">metavar</span><span class="o">=</span><span class="s">&#39;orientation&#39;</span><span class="p">,</span><span class="n">nargs</span><span class="o">=</span><span class="s">&#39;?&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;-bga&#39;</span><span class="p">,</span><span class="n">metavar</span><span class="o">=</span><span class="s">&#39;bg activity&#39;</span><span class="p">,</span><span class="n">nargs</span><span class="o">=</span><span class="s">&#39;?&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;-spa&#39;</span><span class="p">,</span><span class="n">metavar</span><span class="o">=</span><span class="s">&#39;sphere activity&#39;</span><span class="p">,</span><span class="n">nargs</span><span class="o">=</span><span class="s">&#39;?&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;-Tbga&#39;</span><span class="p">,</span><span class="n">metavar</span><span class="o">=</span><span class="s">&#39;Cal time bg activity&#39;</span><span class="p">,</span><span class="n">nargs</span><span class="o">=</span><span class="s">&#39;?&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;-Tspa&#39;</span><span class="p">,</span><span class="n">metavar</span><span class="o">=</span><span class="s">&#39;Cal time sphere activity&#39;</span><span class="p">,</span><span class="n">nargs</span><span class="o">=</span><span class="s">&#39;?&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;-s&#39;</span><span class="p">,</span><span class="n">metavar</span><span class="o">=</span><span class="s">&#39;slice&#39;</span><span class="p">,</span><span class="n">nargs</span><span class="o">=</span><span class="s">&#39;?&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+
+
+    <span class="n">args</span> <span class="o">=</span> <span class="nb">vars</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">())</span>
+    <span class="n">filename</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="s">&#39;f&#39;</span><span class="p">]</span> <span class="c">#dicom directory</span>
+
+    <span class="n">m</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="s">&#39;m&#39;</span><span class="p">]</span> <span class="c">#mode can be max or min</span>
+    <span class="n">order</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="s">&#39;ord&#39;</span><span class="p">]</span>
+    <span class="n">ort</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="s">&#39;ort&#39;</span><span class="p">]</span>
+    <span class="n">bga</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="s">&#39;bga&#39;</span><span class="p">]</span> <span class="c">#background activity</span>
+    <span class="n">spa</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="s">&#39;spa&#39;</span><span class="p">]</span> <span class="c">#sphere activity</span>
+
+    <span class="n">order</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="s">&#39;ord&#39;</span><span class="p">]</span>
+    <span class="n">sid</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="s">&#39;s&#39;</span><span class="p">]</span>
+
+    <span class="c">#activity = args[&#39;A&#39;]</span>
+    <span class="c">#caltime = args[&#39;Ta&#39;]</span>
+    <span class="c">#remainder = args[&#39;Ar&#39;]</span>
+    <span class="c">#remtime = args[&#39;Tr&#39;]</span>
+
+    <span class="c">#length = args[&#39;len&#39;]</span>
+    <span class="c">#rad = args[&#39;rad&#39;]</span>
+    <span class="c">#volume = args[&#39;V&#39;]</span>
+
+    <span class="c">#dimensions = [length,rad]</span>
+    <span class="c">#print dimensions</span>
+
+
+
+
+    <span class="n">update_wad</span><span class="p">(</span><span class="n">filename</span> <span class="o">=</span> <span class="n">filename</span><span class="p">,</span> <span class="n">mode</span> <span class="o">=</span> <span class="n">m</span><span class="p">,</span> <span class="n">axorder</span> <span class="o">=</span> <span class="n">order</span><span class="p">,</span> <span class="n">sporder</span> <span class="o">=</span> <span class="n">ort</span><span class="p">,</span><span class="n">bgac</span> <span class="o">=</span> <span class="n">bga</span><span class="p">,</span> <span class="n">sphereac</span> <span class="o">=</span> <span class="n">spa</span><span class="p">,</span> <span class="n">ctimespac</span> <span class="o">=</span> <span class="s">&#39;120000&#39;</span><span class="p">,</span> <span class="n">bgactime</span> <span class="o">=</span> <span class="s">&#39;120000&#39;</span><span class="p">,</span> <span class="n">spremac</span> <span class="o">=</span> <span class="mi">999</span><span class="p">,</span> <span class="n">spremactime</span> <span class="o">=</span> <span class="s">&#39;120000&#39;</span><span class="p">,</span> <span class="n">bgremac</span> <span class="o">=</span> <span class="mi">999</span><span class="p">,</span> <span class="n">bgremactime</span> <span class="o">=</span> <span class="s">&#39;120000&#39;</span><span class="p">,</span><span class="n">scantime</span><span class="o">=</span><span class="s">&#39;120000&#39;</span><span class="p">)</span>
+
+</div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">series_lst</span> <span class="o">=</span> <span class="p">[[</span><span class="s">&#39;./dicom.dcm&#39;</span><span class="p">]]</span>
+    <span class="n">plugin_data</span> <span class="o">=</span> <span class="n">PluginData</span><span class="p">(</span><span class="n">series_lst</span><span class="p">)</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

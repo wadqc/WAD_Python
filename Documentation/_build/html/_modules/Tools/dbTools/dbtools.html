@@ -1,0 +1,768 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Tools.dbTools.dbtools &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for Tools.dbTools.dbtools</h1><div class="highlight"><pre>
+<span class="c">#dbtools.py</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Module for query/maintenance of the dcm4chee and icq databases.</span>
+
+<span class="sd">Changelog:</span>
+<span class="sd">20150617: Fixed crash on empty value</span>
+<span class="sd">20150408: Status string clean up</span>
+<span class="sd">20150401: Ignore pps_start, always prefer series_date; option to ignore pps_start, which makes a difference for MR</span>
+<span class="sd">20150320: Added num_expected to .period</span>
+<span class="sd">20150318: Added status query (now same functionality as in dbTools.py)</span>
+
+<span class="sd">TODO:</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">dateutil.relativedelta</span> <span class="kn">import</span> <span class="n">relativedelta</span>
+<span class="kn">import</span> <span class="nn">MySQLdb</span> <span class="kn">as</span> <span class="nn">mdb</span>
+<span class="kn">from</span> <span class="nn">operator</span> <span class="kn">import</span> <span class="n">attrgetter</span>
+<span class="kn">from</span> <span class="nn">ConfigParser</span> <span class="kn">import</span> <span class="n">SafeConfigParser</span>
+
+<span class="n">qcversion</span> <span class="o">=</span> <span class="mi">20150617</span>
+
+<div class="viewcode-block" id="Lit"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.dbtools.Lit">[docs]</a><span class="k">class</span> <span class="nc">Lit</span><span class="p">:</span>
+    <span class="n">stNone</span> <span class="o">=</span> <span class="s">&#39;NONE&#39;</span>
+    <span class="n">stResultOK</span> <span class="o">=</span> <span class="s">&#39;OK&#39;</span>
+    <span class="n">stResultERROR</span> <span class="o">=</span> <span class="s">&#39;ERROR!&#39;</span>
+    <span class="n">stResultWARNING</span> <span class="o">=</span> <span class="s">&#39;WARNING!&#39;</span>
+    <span class="n">stResultLATE</span> <span class="o">=</span> <span class="s">&#39;LATE&#39;</span>
+    
+    <span class="n">db_iqc</span> <span class="o">=</span> <span class="s">&#39;iqc&#39;</span>
+
+    <span class="n">table_gewenste_processen</span> <span class="o">=</span> <span class="s">&#39;gewenste_processen&#39;</span>
+    <span class="n">table_studies</span> <span class="o">=</span> <span class="s">&#39;study&#39;</span>
+    <span class="n">table_series</span> <span class="o">=</span> <span class="s">&#39;series&#39;</span>
+    <span class="n">table_instances</span> <span class="o">=</span> <span class="s">&#39;instance&#39;</span>
+    <span class="n">table_patient</span> <span class="o">=</span> <span class="s">&#39;patient&#39;</span>
+    <span class="n">table_files</span> <span class="o">=</span> <span class="s">&#39;files&#39;</span>
+    <span class="n">table_selector</span> <span class="o">=</span> <span class="s">&#39;selector&#39;</span>
+    <span class="n">table_status_omschrijving</span> <span class="o">=</span> <span class="s">&#39;status_omschrijving&#39;</span>
+    
+    <span class="n">table_char</span> <span class="o">=</span> <span class="s">&#39;resultaten_char&#39;</span>
+    <span class="n">table_float</span> <span class="o">=</span> <span class="s">&#39;resultaten_floating&#39;</span>
+    <span class="n">table_object</span> <span class="o">=</span> <span class="s">&#39;resultaten_object&#39;</span>
+    <span class="n">table_bool</span> <span class="o">=</span> <span class="s">&#39;resultaten_boolean&#39;</span>
+    <span class="n">table_status</span> <span class="o">=</span> <span class="s">&#39;resultaten_status&#39;</span>
+    
+    <span class="n">table_analyseinput</span> <span class="o">=</span> <span class="s">&#39;analysemodule_input&#39;</span>
+    <span class="n">table_analyseoutput</span> <span class="o">=</span> <span class="s">&#39;analysemodule_output&#39;</span>
+    <span class="n">table_collectorstatusseries</span>  <span class="o">=</span> <span class="s">&#39;collector_series_status&#39;</span>
+    <span class="n">table_collectorstatusstudies</span> <span class="o">=</span> <span class="s">&#39;collector_study_status&#39;</span>
+</div>
+<div class="viewcode-block" id="QCStatus"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.dbtools.QCStatus">[docs]</a><span class="k">class</span> <span class="nc">QCStatus</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class for qcstatus of a machine</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">machine</span><span class="p">,</span><span class="n">ininame</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">machine</span> <span class="o">=</span> <span class="n">machine</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">selectors</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">qcIgnores</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">modality</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frequency</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">status_short</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">status_full</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">date</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">period</span> <span class="o">=</span> <span class="bp">None</span> <span class="c"># (&#39;frequency&#39;,oldestdate,num_done,num_expected)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">overdue</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">production</span> <span class="o">=</span> <span class="mf">0.</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ininame</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">configRead</span><span class="p">(</span><span class="n">ininame</span><span class="p">)</span>
+        
+<div class="viewcode-block" id="QCStatus.getHeaders"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.dbtools.QCStatus.getHeaders">[docs]</a>    <span class="k">def</span> <span class="nf">getHeaders</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a list of names of entries and corresponding attribute</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">headers</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span><span class="s">&#39;Machine&#39;</span><span class="p">,</span><span class="s">&#39;machine&#39;</span><span class="p">),</span>
+            <span class="p">(</span><span class="s">&#39;Modality&#39;</span><span class="p">,</span><span class="s">&#39;modality&#39;</span><span class="p">),</span>
+            <span class="p">(</span><span class="s">&#39;DateTime&#39;</span><span class="p">,</span><span class="s">&#39;date&#39;</span><span class="p">),</span>
+            <span class="p">(</span><span class="s">&#39;ShortStatus&#39;</span><span class="p">,</span><span class="s">&#39;status_short&#39;</span><span class="p">),</span>
+            <span class="p">(</span><span class="s">&#39;Overdue&#39;</span><span class="p">,</span><span class="s">&#39;overdue&#39;</span><span class="p">),</span>
+            <span class="p">(</span><span class="s">&#39;Frequency&#39;</span><span class="p">,</span><span class="s">&#39;frequency&#39;</span><span class="p">),</span>
+            <span class="p">(</span><span class="s">&#39;Production%&#39;</span><span class="p">,</span><span class="s">&#39;production&#39;</span><span class="p">)</span>
+        <span class="p">]</span>
+        <span class="k">return</span> <span class="n">headers</span>
+</div>
+<div class="viewcode-block" id="QCStatus.configError"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.dbtools.QCStatus.configError">[docs]</a>    <span class="k">def</span> <span class="nf">configError</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">ininame</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Displays an error reading the given config file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">error</span> <span class="o">=</span> <span class="s">&quot;ERROR: configfile </span><span class="si">%s</span><span class="s"> corrupt or entry non-existent. Should look like:</span><span class="se">\n</span><span class="s">[</span><span class="si">%s</span><span class="s">]</span><span class="se">\n</span><span class="s">Modality = CT</span><span class="se">\n</span><span class="s">&quot;</span> \
+              <span class="s">&quot;Selectors = Selector1|Selector2</span><span class="se">\n</span><span class="s">Frequency=bi-weekly</span><span class="se">\n</span><span class="s">IgnoreDescriptions=name1|name2</span><span class="se">\n\n</span><span class="s">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">ininame</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">machine</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;[configRead] Error: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">error</span><span class="p">))</span>
+    </div>
+<div class="viewcode-block" id="QCStatus.configRead"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.dbtools.QCStatus.configRead">[docs]</a>    <span class="k">def</span> <span class="nf">configRead</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">ininame</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Reads given config &quot;&quot;&quot;</span>
+        <span class="n">parser</span> <span class="o">=</span> <span class="n">SafeConfigParser</span><span class="p">()</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">ininame</span><span class="p">)</span>
+        
+        <span class="c"># check if machine is defined in config</span>
+        <span class="n">section</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">machine</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">parser</span><span class="o">.</span><span class="n">has_section</span><span class="p">(</span><span class="n">section</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">configError</span><span class="p">(</span><span class="n">ininame</span><span class="p">)</span>
+
+        <span class="n">now</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+        <span class="n">frequencies</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span><span class="s">&#39;weekly&#39;</span><span class="p">,</span> <span class="n">now</span><span class="o">-</span><span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">7</span><span class="p">)),</span>
+            <span class="p">(</span><span class="s">&#39;bi-weekly&#39;</span><span class="p">,</span><span class="n">now</span><span class="o">-</span><span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">14</span><span class="p">)),</span>
+            <span class="p">(</span><span class="s">&#39;daily&#39;</span><span class="p">,</span><span class="n">now</span><span class="o">-</span><span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">1</span><span class="p">)),</span>
+            <span class="p">(</span><span class="s">&#39;monthly&#39;</span><span class="p">,</span><span class="n">now</span><span class="o">-</span><span class="n">relativedelta</span><span class="p">(</span><span class="n">months</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+        <span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">period</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;semi-anual&#39;</span><span class="p">,</span><span class="n">now</span><span class="o">-</span><span class="n">relativedelta</span><span class="p">(</span><span class="n">months</span><span class="o">=</span><span class="mi">6</span><span class="p">))</span>
+        
+        <span class="c"># check if all info of this machine is available</span>
+        <span class="n">candidates</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;Modality&#39;</span><span class="p">,</span><span class="s">&#39;Selectors&#39;</span><span class="p">,</span><span class="s">&#39;Frequency&#39;</span><span class="p">,</span><span class="s">&#39;IgnoreDescriptions&#39;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">can</span> <span class="ow">in</span> <span class="n">candidates</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">parser</span><span class="o">.</span><span class="n">has_option</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">machine</span><span class="p">,</span><span class="n">can</span><span class="p">):</span>
+                <span class="n">configError</span><span class="p">(</span><span class="n">ininame</span><span class="p">)</span>
+
+        <span class="c"># build the list of selectors</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">selectors</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">machine</span><span class="p">,</span><span class="s">&#39;Selectors&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;|&#39;</span><span class="p">)</span>
+
+        <span class="c"># read the modality</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">modality</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">machine</span><span class="p">,</span><span class="s">&#39;Modality&#39;</span><span class="p">)</span>
+
+        <span class="c"># build the list of ignores</span>
+        <span class="n">qcIgnores</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">machine</span><span class="p">,</span><span class="s">&#39;IgnoreDescriptions&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;|&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">qcIgnores</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">qcIgnores</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;&#39;</span><span class="p">:</span>
+            <span class="n">qcIgnores</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c"># read the frequency of testing</span>
+        <span class="n">freq</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">machine</span><span class="p">,</span><span class="s">&#39;Frequency&#39;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">lf</span> <span class="o">=</span> <span class="n">freq</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            <span class="n">found</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="k">for</span> <span class="n">ff</span> <span class="ow">in</span> <span class="n">frequencies</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">lf</span> <span class="o">==</span> <span class="n">ff</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">frequency</span> <span class="o">=</span> <span class="n">ff</span>
+                    <span class="n">found</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">found</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;[configRead] Error: frequency </span><span class="si">%s</span><span class="s"> not recognized&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">freq</span><span class="p">))</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">,</span><span class="n">e</span><span class="p">:</span>
+            <span class="k">print</span> <span class="n">e</span>
+</div></div>
+<div class="viewcode-block" id="Entry"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.dbtools.Entry">[docs]</a><span class="k">class</span> <span class="nc">Entry</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class for entries in the iqc and dcm4chee database</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">seriesid</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">studyid</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">stationname</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">srcaet</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">modality</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">date</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">description</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">gpid</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">status</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">note</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gpid</span> <span class="o">=</span> <span class="n">gpid</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stationname</span> <span class="o">=</span> <span class="n">stationname</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">modality</span> <span class="o">=</span> <span class="n">modality</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">date</span> <span class="o">=</span> <span class="n">date</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seriesid</span> <span class="o">=</span> <span class="n">seriesid</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">studyid</span> <span class="o">=</span> <span class="n">studyid</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">srcaet</span> <span class="o">=</span> <span class="n">srcaet</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="n">description</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="bp">None</span> <span class="c"># identifier for _head or _table or _...</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">status</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">qcstatus</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">note</span> <span class="o">=</span> <span class="n">note</span>
+
+<div class="viewcode-block" id="Entry.getHeaders"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.dbtools.Entry.getHeaders">[docs]</a>    <span class="k">def</span> <span class="nf">getHeaders</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a list of names of entries and corresponding attribute</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">headers</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span><span class="s">&#39;SeriesId&#39;</span><span class="p">,</span><span class="s">&#39;seriesid&#39;</span><span class="p">),</span>
+            <span class="p">(</span><span class="s">&#39;StudyId&#39;</span><span class="p">,</span><span class="s">&#39;studyid&#39;</span><span class="p">),</span>
+            <span class="p">(</span><span class="s">&#39;DateTime&#39;</span><span class="p">,</span><span class="s">&#39;date&#39;</span><span class="p">),</span>
+            <span class="p">(</span><span class="s">&#39;Modality&#39;</span><span class="p">,</span><span class="s">&#39;modality&#39;</span><span class="p">),</span>
+            <span class="p">(</span><span class="s">&#39;StationName&#39;</span><span class="p">,</span><span class="s">&#39;stationname&#39;</span><span class="p">),</span>
+            <span class="p">(</span><span class="s">&#39;SrcAET&#39;</span><span class="p">,</span><span class="s">&#39;srcaet&#39;</span><span class="p">),</span>
+            <span class="p">(</span><span class="s">&#39;Description&#39;</span><span class="p">,</span><span class="s">&#39;description&#39;</span><span class="p">),</span>
+            <span class="p">(</span><span class="s">&#39;Label&#39;</span><span class="p">,</span><span class="s">&#39;label&#39;</span><span class="p">),</span>
+            <span class="p">(</span><span class="s">&#39;GewensteProcesId&#39;</span><span class="p">,</span><span class="s">&#39;gpid&#39;</span><span class="p">),</span>
+            <span class="p">(</span><span class="s">&#39;Status&#39;</span><span class="p">,</span><span class="s">&#39;status&#39;</span><span class="p">),</span>
+            <span class="p">(</span><span class="s">&#39;QCStatus&#39;</span><span class="p">,</span><span class="s">&#39;qcstatus&#39;</span><span class="p">),</span>
+            <span class="p">(</span><span class="s">&#39;Note&#39;</span><span class="p">,</span><span class="s">&#39;note&#39;</span><span class="p">),</span>
+        <span class="p">]</span>
+        <span class="k">return</span> <span class="n">headers</span>
+</div></div>
+<div class="viewcode-block" id="DBIO"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.dbtools.DBIO">[docs]</a><span class="k">class</span> <span class="nc">DBIO</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class with all lower level sql actions</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">host</span><span class="p">,</span><span class="n">user</span><span class="p">,</span><span class="n">pswd</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Needs hostname, username and pswd of the mysql database to be used later</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">host</span> <span class="o">=</span> <span class="n">host</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">user</span> <span class="o">=</span> <span class="n">user</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pswd</span> <span class="o">=</span> <span class="n">pswd</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ignore_pps_start</span> <span class="o">=</span> <span class="bp">False</span>
+
+<div class="viewcode-block" id="DBIO.ignorePPS"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.dbtools.DBIO.ignorePPS">[docs]</a>    <span class="k">def</span> <span class="nf">ignorePPS</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">val</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ignore_pps_start</span> <span class="o">=</span> <span class="n">val</span>
+</div>
+<div class="viewcode-block" id="DBIO.connectdb"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.dbtools.DBIO.connectdb">[docs]</a>    <span class="k">def</span> <span class="nf">connectdb</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">db</span><span class="p">,</span><span class="n">host</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">user</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">pswd</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        open a connection to given database db</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">host</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">host</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">host</span>
+        <span class="k">if</span> <span class="n">user</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">user</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">user</span>
+        <span class="k">if</span> <span class="n">pswd</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">pswd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pswd</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">con</span> <span class="o">=</span> <span class="n">mdb</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">host</span><span class="p">,</span><span class="n">user</span><span class="p">,</span><span class="n">pswd</span><span class="p">,</span><span class="n">db</span><span class="p">)</span> <span class="c"># host, username, pswd, db</span>
+            <span class="n">cur</span> <span class="o">=</span> <span class="n">con</span><span class="o">.</span><span class="n">cursor</span><span class="p">(</span><span class="n">mdb</span><span class="o">.</span><span class="n">cursors</span><span class="o">.</span><span class="n">DictCursor</span><span class="p">)</span> <span class="c"># dictionary format, i.e. access by column name</span>
+            <span class="n">dbversion</span><span class="o">=</span><span class="s">&#39;0&#39;</span>
+            <span class="k">if</span> <span class="n">db</span> <span class="o">==</span> <span class="n">Lit</span><span class="o">.</span><span class="n">db_iqc</span><span class="p">:</span>
+                <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s">&quot;select * from config&quot;</span><span class="p">)</span>
+                <span class="n">rows</span> <span class="o">=</span> <span class="n">cur</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+                <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">row</span><span class="p">[</span><span class="s">&#39;property&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s">&quot;Version_Database&quot;</span><span class="p">:</span>
+                        <span class="n">dbversion</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s">&#39;value&#39;</span><span class="p">])</span>
+        <span class="k">except</span> <span class="n">mdb</span><span class="o">.</span><span class="n">Error</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;[connectdb] Error </span><span class="si">%d</span><span class="s">: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+
+        <span class="k">return</span> <span class="n">con</span><span class="p">,</span><span class="n">cur</span><span class="p">,</span><span class="n">dbversion</span>
+</div>
+<div class="viewcode-block" id="DBIO.closedb"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.dbtools.DBIO.closedb">[docs]</a>    <span class="k">def</span> <span class="nf">closedb</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">con</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Porperly close db connection</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">con</span><span class="p">:</span>
+            <span class="n">con</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</div>
+    <span class="k">def</span> <span class="nf">_labelsFromGP</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">db</span><span class="p">):</span>
+        <span class="n">gp_label</span> <span class="o">=</span><span class="p">{}</span>
+
+        <span class="c">###1 open db iqc</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">con</span><span class="p">,</span><span class="n">cur</span><span class="p">,</span><span class="n">dbversion</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">connectdb</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">,</span><span class="n">db</span><span class="o">=</span><span class="n">db</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">,</span><span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;[_labelsFromGP] Error: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+
+        <span class="n">labeldescriptions</span> <span class="o">=</span> <span class="p">[</span> <span class="s">&#39;Anatomy&#39;</span><span class="p">,</span> <span class="s">&#39;stand_&#39;</span><span class="p">,</span> <span class="s">&#39;FilterMaterialLT&#39;</span><span class="p">]</span>
+        <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s">&quot;SELECT * FROM </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">Lit</span><span class="o">.</span><span class="n">table_char</span><span class="p">))</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="n">cur</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
+            <span class="n">gpid</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s">&#39;gewenste_processen_fk&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">gp_label</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="n">gpid</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="n">oms</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s">&#39;omschrijving&#39;</span><span class="p">]</span>
+            <span class="n">ix</span> <span class="o">=</span> <span class="p">[</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">elem</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">labeldescriptions</span><span class="p">)</span> <span class="k">if</span> <span class="n">elem</span> <span class="ow">in</span> <span class="n">oms</span> <span class="p">]</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ix</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+                <span class="n">gp_label</span><span class="p">[</span><span class="n">gpid</span><span class="p">]</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s">&#39;waarde&#39;</span><span class="p">]</span>
+
+        <span class="c">### close db</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">closedb</span><span class="p">(</span><span class="n">con</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">gp_label</span>
+
+        
+<div class="viewcode-block" id="DBIO.addLabelToSeries"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.dbtools.DBIO.addLabelToSeries">[docs]</a>    <span class="k">def</span> <span class="nf">addLabelToSeries</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">db</span><span class="p">,</span><span class="n">entries</span><span class="p">,</span><span class="n">gp_label</span><span class="p">):</span>
+        <span class="c"># If an extra identifier (like Filter or Antomy) is given use that as a label</span>
+
+        <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">entries</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">gp_label</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">gpid</span><span class="p">):</span>
+                <span class="n">entry</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="n">gp_label</span><span class="p">[</span><span class="n">entry</span><span class="o">.</span><span class="n">gpid</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">entries</span>
+    </div>
+<div class="viewcode-block" id="DBIO.splitOnLabels"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.dbtools.DBIO.splitOnLabels">[docs]</a>    <span class="k">def</span> <span class="nf">splitOnLabels</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">entries</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        If entries have labels, split in dictionary</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">entries</span><span class="p">:</span>
+            <span class="n">lab</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">label</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">entry</span><span class="o">.</span><span class="n">label</span> <span class="ow">is</span> <span class="bp">None</span> <span class="k">else</span> <span class="n">Lit</span><span class="o">.</span><span class="n">stNone</span>
+            <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="n">lab</span><span class="p">):</span>
+                <span class="n">result</span><span class="p">[</span><span class="n">lab</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">result</span><span class="p">[</span><span class="n">lab</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">entry</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">result</span>
+        </div>
+<div class="viewcode-block" id="DBIO.addDateTimeToEntries"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.dbtools.DBIO.addDateTimeToEntries">[docs]</a>    <span class="k">def</span> <span class="nf">addDateTimeToEntries</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">db</span><span class="p">,</span><span class="n">entries</span><span class="p">,</span><span class="n">fromgp</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add Time to entries from series of gp</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># connect to db</span>
+        <span class="c">###1 open db iqc</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">con</span><span class="p">,</span><span class="n">cur</span><span class="p">,</span><span class="n">dbversion</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">connectdb</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">,</span><span class="n">db</span><span class="o">=</span><span class="n">db</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">,</span><span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;[addDateTimeToEntries] Error: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+
+        <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">entries</span><span class="p">:</span>
+            <span class="c"># add datetime</span>
+            <span class="k">if</span> <span class="n">fromgp</span><span class="p">:</span> <span class="c"># the original list is from gewenste_processen, so first fill datetime with series</span>
+                <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s">&quot;SELECT * FROM </span><span class="si">%s</span><span class="s"> WHERE pk=</span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">Lit</span><span class="o">.</span><span class="n">table_series</span><span class="p">,</span><span class="n">entry</span><span class="o">.</span><span class="n">seriesid</span><span class="p">))</span>
+                <span class="n">row</span> <span class="o">=</span> <span class="n">cur</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">row</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="n">entry</span><span class="o">.</span><span class="n">date</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s">&#39;pps_start&#39;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ignore_pps_start</span><span class="p">:</span>
+                    <span class="n">entry</span><span class="o">.</span><span class="n">date</span> <span class="o">=</span> <span class="bp">None</span>
+                <span class="n">entry</span><span class="o">.</span><span class="n">studyid</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s">&#39;study_fk&#39;</span><span class="p">]</span>
+                <span class="n">entry</span><span class="o">.</span><span class="n">stationname</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s">&#39;station_name&#39;</span><span class="p">]</span>
+                <span class="n">entry</span><span class="o">.</span><span class="n">srcaet</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s">&#39;src_aet&#39;</span><span class="p">]</span>
+                <span class="n">entry</span><span class="o">.</span><span class="n">modality</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s">&#39;modality&#39;</span><span class="p">]</span>
+                <span class="n">entry</span><span class="o">.</span><span class="n">description</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s">&#39;series_desc&#39;</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">date</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s">&quot;SELECT content_datetime FROM </span><span class="si">%s</span><span class="s"> WHERE series_fk=</span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">Lit</span><span class="o">.</span><span class="n">table_instances</span><span class="p">,</span><span class="n">entry</span><span class="o">.</span><span class="n">seriesid</span><span class="p">))</span>
+                <span class="n">instance_rows</span> <span class="o">=</span> <span class="n">cur</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+                <span class="n">seriesdate</span> <span class="o">=</span> <span class="nb">min</span> <span class="p">(</span> <span class="p">[</span> <span class="n">row</span><span class="p">[</span><span class="s">&#39;content_datetime&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">instance_rows</span><span class="p">]</span> <span class="p">)</span>
+                <span class="n">entry</span><span class="o">.</span><span class="n">date</span> <span class="o">=</span> <span class="n">seriesdate</span>
+            <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">date</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s">&quot;SELECT study_datetime FROM </span><span class="si">%s</span><span class="s"> WHERE pk=</span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">Lit</span><span class="o">.</span><span class="n">table_studies</span><span class="p">,</span><span class="n">entry</span><span class="o">.</span><span class="n">studyid</span><span class="p">))</span>
+                <span class="n">row</span> <span class="o">=</span> <span class="n">cur</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
+                <span class="n">entry</span><span class="o">.</span><span class="n">date</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s">&#39;study_datetime&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">description</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s">&quot;SELECT study_desc FROM </span><span class="si">%s</span><span class="s"> WHERE pk=</span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">Lit</span><span class="o">.</span><span class="n">table_studies</span><span class="p">,</span><span class="n">entry</span><span class="o">.</span><span class="n">studyid</span><span class="p">))</span>
+                <span class="n">row</span> <span class="o">=</span> <span class="n">cur</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
+                <span class="n">entry</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s">&#39;study_desc&#39;</span><span class="p">]</span>
+
+        <span class="c">### close db</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">closedb</span><span class="p">(</span><span class="n">con</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">entries</span>
+        </div>
+<div class="viewcode-block" id="DBIO.readSeries"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.dbtools.DBIO.readSeries">[docs]</a>    <span class="k">def</span> <span class="nf">readSeries</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">db</span><span class="p">,</span><span class="n">note</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Make a list of entries of series in given db</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># connect to db</span>
+        <span class="c">###1 open db iqc</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">con</span><span class="p">,</span><span class="n">cur</span><span class="p">,</span><span class="n">dbversion</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">connectdb</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">,</span><span class="n">db</span><span class="o">=</span><span class="n">db</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">,</span><span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;[readSeries] Error: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+
+        <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s">&quot;SELECT * FROM </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span><span class="n">Lit</span><span class="o">.</span><span class="n">table_series</span><span class="p">)</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="n">cur</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">[</span> <span class="n">Entry</span><span class="p">(</span><span class="n">seriesid</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s">&#39;pk&#39;</span><span class="p">],</span> <span class="n">studyid</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s">&#39;study_fk&#39;</span><span class="p">],</span> <span class="n">stationname</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s">&#39;station_name&#39;</span><span class="p">],</span> 
+                         <span class="n">srcaet</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s">&#39;src_aet&#39;</span><span class="p">],</span> <span class="n">modality</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s">&#39;modality&#39;</span><span class="p">],</span><span class="n">description</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s">&#39;series_desc&#39;</span><span class="p">],</span>
+                         <span class="n">date</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s">&#39;pps_start&#39;</span><span class="p">],</span> <span class="n">gpid</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">note</span><span class="o">=</span><span class="n">note</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span> <span class="p">]</span>
+        <span class="c">### close db</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">closedb</span><span class="p">(</span><span class="n">con</span><span class="p">)</span>
+
+        <span class="c"># add missing info</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">addDateTimeToEntries</span><span class="p">(</span><span class="n">db</span><span class="p">,</span><span class="n">results</span><span class="p">,</span><span class="n">fromgp</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>        
+        
+        <span class="k">return</span> <span class="n">results</span>
+</div>
+<div class="viewcode-block" id="DBIO.readGewenst"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.dbtools.DBIO.readGewenst">[docs]</a>    <span class="k">def</span> <span class="nf">readGewenst</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">db</span><span class="p">,</span><span class="n">note</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">selector</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Make a list of entries of series in given db</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># connect to db</span>
+        <span class="c">###1 open db iqc</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">con</span><span class="p">,</span><span class="n">cur</span><span class="p">,</span><span class="n">dbversion</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">connectdb</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">,</span><span class="n">db</span><span class="o">=</span><span class="n">db</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">,</span><span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;[readGewenst] Error: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+
+        <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">selector</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s">&quot;SELECT * FROM </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span><span class="n">Lit</span><span class="o">.</span><span class="n">table_gewenste_processen</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s">&quot;SELECT * FROM </span><span class="si">%s</span><span class="s"> WHERE selector_fk=</span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span><span class="p">(</span><span class="n">Lit</span><span class="o">.</span><span class="n">table_gewenste_processen</span><span class="p">,</span><span class="n">selector</span><span class="p">))</span>
+
+        <span class="n">rows</span> <span class="o">=</span> <span class="n">cur</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">[</span> <span class="n">Entry</span><span class="p">(</span><span class="n">seriesid</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s">&#39;series_fk&#39;</span><span class="p">],</span> <span class="n">studyid</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s">&#39;study_fk&#39;</span><span class="p">],</span><span class="n">date</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s">&#39;creation_time&#39;</span><span class="p">],</span> <span class="n">gpid</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s">&#39;pk&#39;</span><span class="p">],</span><span class="n">status</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s">&#39;status&#39;</span><span class="p">],</span><span class="n">note</span><span class="o">=</span><span class="n">note</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span> <span class="p">]</span> 
+
+        <span class="c">### close db</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">closedb</span><span class="p">(</span><span class="n">con</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">results</span>
+</div>
+<div class="viewcode-block" id="DBIO.readSelectors"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.dbtools.DBIO.readSelectors">[docs]</a>    <span class="k">def</span> <span class="nf">readSelectors</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">db</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Make a dictionary of selectornames to ids</span>
+<span class="sd">       &quot;&quot;&quot;</span>
+        <span class="c"># connect to db</span>
+        <span class="c">###1 open db iqc</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">con</span><span class="p">,</span><span class="n">cur</span><span class="p">,</span><span class="n">dbversion</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">connectdb</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">,</span><span class="n">db</span><span class="o">=</span><span class="n">db</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">,</span><span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;[readGewenst] Error: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+
+        <span class="n">results</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s">&quot;SELECT * FROM </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="s">&#39;selector&#39;</span><span class="p">)</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="n">cur</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
+            <span class="n">results</span><span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s">&#39;pk&#39;</span><span class="p">]</span>
+
+        <span class="c">### close db</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">closedb</span><span class="p">(</span><span class="n">con</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">results</span>
+</div>
+<div class="viewcode-block" id="DBIO.readModalitySpecs"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.dbtools.DBIO.readModalitySpecs">[docs]</a>    <span class="k">def</span> <span class="nf">readModalitySpecs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">db</span><span class="p">):</span>
+        <span class="c"># read list of unique modalities in iqc.selector_series</span>
+        <span class="c">###1 open db iqc</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">con</span><span class="p">,</span><span class="n">cur</span><span class="p">,</span><span class="n">dbversion</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">connectdb</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">,</span><span class="n">db</span><span class="o">=</span><span class="n">db</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">,</span><span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;[readModalitySpecs] Error: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+
+        <span class="n">modalities</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">descriptions</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">aets</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">stationnames</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s">&quot;SELECT * FROM </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="s">&#39;selector_series&#39;</span><span class="p">)</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="n">cur</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
+            <span class="n">mo</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s">&#39;modality&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">mo</span> <span class="ow">in</span> <span class="n">modalities</span><span class="p">:</span>
+                <span class="n">modalities</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mo</span><span class="p">)</span>
+                <span class="n">descriptions</span><span class="p">[</span><span class="n">mo</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">aets</span><span class="p">[</span><span class="n">mo</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">stationnames</span><span class="p">[</span><span class="n">mo</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    
+            <span class="n">desc</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s">&#39;series_desc&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">desc</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">desc</span> <span class="o">=</span> <span class="n">Lit</span><span class="o">.</span><span class="n">stNone</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">desc</span> <span class="ow">in</span> <span class="n">descriptions</span><span class="p">[</span><span class="n">mo</span><span class="p">]:</span>
+                <span class="n">descriptions</span><span class="p">[</span><span class="n">mo</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">desc</span><span class="p">)</span>
+    
+            <span class="n">desc</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s">&#39;station_name&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">desc</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">desc</span> <span class="o">=</span> <span class="n">Lit</span><span class="o">.</span><span class="n">stNone</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">desc</span> <span class="ow">in</span> <span class="n">stationnames</span><span class="p">[</span><span class="n">mo</span><span class="p">]:</span>
+                <span class="n">stationnames</span><span class="p">[</span><span class="n">mo</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">desc</span><span class="p">)</span>
+        
+            <span class="n">desc</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s">&#39;src_aet&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">desc</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">desc</span> <span class="o">=</span> <span class="n">Lit</span><span class="o">.</span><span class="n">stNone</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">desc</span> <span class="ow">in</span> <span class="n">aets</span><span class="p">[</span><span class="n">mo</span><span class="p">]:</span>
+                <span class="n">aets</span><span class="p">[</span><span class="n">mo</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">desc</span><span class="p">)</span>
+                
+        <span class="c">### close db</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">closedb</span><span class="p">(</span><span class="n">con</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">modalities</span><span class="p">,</span> <span class="n">descriptions</span><span class="p">,</span><span class="n">aets</span><span class="p">,</span><span class="n">stationnames</span>
+    </div>
+<div class="viewcode-block" id="DBIO.qcStatusEntry"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.dbtools.DBIO.qcStatusEntry">[docs]</a>    <span class="k">def</span> <span class="nf">qcStatusEntry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">db</span><span class="p">,</span><span class="n">entries</span><span class="p">,</span><span class="n">qcIgnores</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        For entries as a dictionary</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c">###1 open db iqc</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">con</span><span class="p">,</span><span class="n">cur</span><span class="p">,</span><span class="n">dbversion</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">connectdb</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">,</span><span class="n">db</span><span class="o">=</span><span class="n">db</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">,</span><span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;[readModalitySpecs] Error: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span><span class="n">entry</span> <span class="ow">in</span> <span class="n">entries</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+            <span class="c"># check status of analysis; only look for results if there are any</span>
+            <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">status</span> <span class="o">&lt;</span><span class="mi">5</span> <span class="p">:</span>
+                <span class="c"># report &quot;Waiting for analysis....&quot;</span>
+                <span class="n">entry</span><span class="o">.</span><span class="n">qcstatus</span> <span class="o">=</span> <span class="s">&#39;waiting for analysis...&#39;</span>
+                <span class="k">continue</span>
+
+            <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="mi">10</span> <span class="p">:</span>
+                <span class="c"># report &quot;ERROR! Analysis failed!&quot;</span>
+                <span class="n">entry</span><span class="o">.</span><span class="n">qcstatus</span> <span class="o">=</span> <span class="n">Lit</span><span class="o">.</span><span class="n">stResultERROR</span><span class="o">+</span><span class="s">&#39; analysis failed&#39;</span>
+                <span class="k">continue</span>
+    
+            <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="mi">20</span> <span class="p">:</span>
+                <span class="c"># report &quot;ERROR! Analysis removed!&quot;</span>
+                <span class="n">entry</span><span class="o">.</span><span class="n">qcstatus</span> <span class="o">=</span> <span class="n">Lit</span><span class="o">.</span><span class="n">stResultERROR</span><span class="o">+</span><span class="s">&#39; analysis removed&#39;</span>
+                <span class="k">continue</span>
+    
+            <span class="c"># look if all results adhere to limits</span>
+            <span class="n">check_error</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+            <span class="n">check_warning</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+
+            <span class="c"># first check char limits</span>
+            <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s">&quot;SELECT * FROM </span><span class="si">%s</span><span class="s"> WHERE gewenste_processen_fk=</span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">Lit</span><span class="o">.</span><span class="n">table_char</span><span class="p">,</span><span class="n">entry</span><span class="o">.</span><span class="n">gpid</span><span class="p">))</span>
+            <span class="n">rows</span> <span class="o">=</span> <span class="n">cur</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
+                <span class="c"># does it have a criterion?</span>
+                <span class="n">criterium</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s">&#39;criterium&#39;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">criterium</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">criterium</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="c"># should this value be ignored?</span>
+                <span class="n">omschrijving</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s">&#39;omschrijving&#39;</span><span class="p">]</span>
+                <span class="n">ignore</span> <span class="o">=</span> <span class="bp">False</span>
+                <span class="k">for</span> <span class="n">ign</span> <span class="ow">in</span> <span class="n">qcIgnores</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">ign</span> <span class="ow">in</span> <span class="n">omschrijving</span><span class="p">:</span>
+                        <span class="n">ignore</span> <span class="o">=</span> <span class="bp">True</span>
+                        <span class="k">break</span>
+                <span class="k">if</span> <span class="n">ignore</span><span class="p">:</span>
+                    <span class="k">continue</span>
+    
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">row</span><span class="p">[</span><span class="s">&#39;waarde&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">criterium</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">check_error</span> <span class="o">!=</span> <span class="s">&#39;&#39;</span><span class="p">:</span>
+                        <span class="n">check_error</span> <span class="o">+=</span> <span class="s">&#39;:&#39;</span>
+                    <span class="n">check_error</span> <span class="o">+=</span> <span class="n">omschrijving</span>
+    
+            <span class="c"># check float limits</span>
+            <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s">&quot;SELECT * FROM </span><span class="si">%s</span><span class="s"> WHERE gewenste_processen_fk=</span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">Lit</span><span class="o">.</span><span class="n">table_float</span><span class="p">,</span><span class="n">entry</span><span class="o">.</span><span class="n">gpid</span><span class="p">))</span>
+            <span class="n">rows</span> <span class="o">=</span> <span class="n">cur</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
+                <span class="n">kr_onder</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s">&#39;grens_kritisch_onder&#39;</span><span class="p">]</span>
+                <span class="n">kr_boven</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s">&#39;grens_kritisch_boven&#39;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">kr_boven</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="n">kr_onder</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="n">ac_onder</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s">&#39;grens_acceptabel_onder&#39;</span><span class="p">]</span>
+                <span class="n">ac_boven</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s">&#39;grens_acceptabel_boven&#39;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">ac_boven</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="n">ac_onder</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="k">continue</span>
+
+                <span class="n">ignore</span> <span class="o">=</span> <span class="bp">False</span>
+                <span class="n">omschrijving</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s">&#39;omschrijving&#39;</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">ign</span> <span class="ow">in</span> <span class="n">qcIgnores</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">ign</span> <span class="ow">in</span> <span class="n">omschrijving</span><span class="p">:</span>
+                        <span class="n">ignore</span> <span class="o">=</span> <span class="bp">True</span>
+                        <span class="k">break</span>
+                <span class="k">if</span> <span class="n">ignore</span><span class="p">:</span>
+                    <span class="k">continue</span>
+    
+                <span class="n">val</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s">&#39;waarde&#39;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">val</span> <span class="o">&lt;</span> <span class="n">kr_onder</span> <span class="ow">or</span> <span class="n">val</span><span class="o">&gt;</span> <span class="n">kr_boven</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">check_error</span> <span class="o">!=</span> <span class="s">&#39;&#39;</span><span class="p">:</span>
+                        <span class="n">check_error</span> <span class="o">+=</span> <span class="s">&#39;:&#39;</span>
+                    <span class="n">check_error</span> <span class="o">+=</span> <span class="n">omschrijving</span>
+                <span class="k">elif</span> <span class="n">val</span> <span class="o">&lt;</span> <span class="n">ac_onder</span> <span class="ow">or</span> <span class="n">val</span><span class="o">&gt;</span> <span class="n">ac_boven</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">check_warning</span> <span class="o">!=</span> <span class="s">&#39;&#39;</span><span class="p">:</span>
+                        <span class="n">check_warning</span> <span class="o">+=</span> <span class="s">&#39;:&#39;</span>
+                    <span class="n">check_warning</span> <span class="o">+=</span> <span class="n">omschrijving</span>
+
+            <span class="k">if</span> <span class="n">check_error</span> <span class="o">!=</span> <span class="s">&#39;&#39;</span><span class="p">:</span>
+                <span class="n">entry</span><span class="o">.</span><span class="n">qcstatus</span> <span class="o">=</span> <span class="n">Lit</span><span class="o">.</span><span class="n">stResultERROR</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span><span class="n">check_error</span>
+            <span class="k">if</span> <span class="n">check_warning</span> <span class="o">!=</span> <span class="s">&#39;&#39;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">entry</span><span class="o">.</span><span class="n">qcstatus</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="n">entry</span><span class="o">.</span><span class="n">qcstatus</span> <span class="o">+=</span> <span class="s">&#39;: &#39;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">entry</span><span class="o">.</span><span class="n">qcstatus</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+                <span class="n">entry</span><span class="o">.</span><span class="n">qcstatus</span> <span class="o">+=</span> <span class="n">Lit</span><span class="o">.</span><span class="n">stResultWARNING</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span><span class="n">check_warning</span>
+            <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">qcstatus</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">entry</span><span class="o">.</span><span class="n">qcstatus</span> <span class="o">=</span> <span class="n">Lit</span><span class="o">.</span><span class="n">stResultOK</span>
+        
+        <span class="c">### close db</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">closedb</span><span class="p">(</span><span class="n">con</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">entries</span>
+        </div>
+    <span class="k">def</span> <span class="nf">_latestTestSelectors</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">qcstatus</span><span class="p">,</span><span class="n">gp_lab</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">db</span><span class="o">=</span><span class="n">Lit</span><span class="o">.</span><span class="n">db_iqc</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a dictionary of the entries with for each selector the series with the latest acquisition date</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c">###1 open db iqc</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">con</span><span class="p">,</span><span class="n">cur</span><span class="p">,</span><span class="n">dbversion</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">connectdb</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">,</span><span class="n">db</span><span class="o">=</span><span class="n">db</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">,</span><span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;[latestTest] Error: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+
+        <span class="n">sel2id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">readSelectors</span><span class="p">(</span><span class="n">db</span><span class="p">)</span>
+        
+        <span class="n">results</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">inperiod</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">sel</span> <span class="ow">in</span> <span class="n">qcstatus</span><span class="o">.</span><span class="n">selectors</span><span class="p">:</span>
+            <span class="c"># find the id of the selector</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">selid</span> <span class="o">=</span> <span class="n">sel2id</span><span class="p">[</span><span class="n">sel</span><span class="p">]</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">,</span><span class="n">e</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;[latestTest] Error: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+            
+            <span class="c"># read all sels from gewenste processen. </span>
+            <span class="n">gps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">readGewenst</span><span class="p">(</span><span class="n">db</span><span class="p">,</span><span class="n">selector</span><span class="o">=</span><span class="n">selid</span><span class="p">)</span>
+
+            <span class="c"># For each gewenste processen add acc time</span>
+            <span class="n">gps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">addDateTimeToEntries</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">gps</span><span class="p">,</span><span class="n">fromgp</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+            <span class="c"># select only relevant (latest 6 months)</span>
+            <span class="n">gps</span> <span class="o">=</span> <span class="p">[</span> <span class="n">g</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">gps</span> <span class="k">if</span> <span class="n">g</span><span class="o">.</span><span class="n">date</span> <span class="o">&gt;=</span> <span class="n">qcstatus</span><span class="o">.</span><span class="n">period</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="p">]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">gp_lab</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">gps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">addLabelToSeries</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">gps</span><span class="p">,</span><span class="n">gp_lab</span><span class="p">)</span>
+
+            <span class="n">gpss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">splitOnLabels</span><span class="p">(</span><span class="n">gps</span><span class="p">)</span>
+
+            <span class="c"># select entry with latest datetime</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span><span class="n">gps</span> <span class="ow">in</span> <span class="n">gpss</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">gps</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+                    <span class="n">results</span><span class="p">[</span><span class="n">sel</span><span class="o">+</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">gps</span><span class="p">,</span><span class="n">key</span><span class="o">=</span><span class="n">attrgetter</span><span class="p">(</span><span class="s">&#39;date&#39;</span><span class="p">))</span>
+                    <span class="n">inperiod</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">gps</span><span class="p">)</span> <span class="c"># sum(1 for x in gps if x.date &gt;= qcstatus.period[1])</span>
+                    
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">&gt;</span><span class="mi">1</span><span class="p">:</span>
+            <span class="n">inperiod</span> <span class="o">/=</span> <span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="n">qcstatus</span><span class="o">.</span><span class="n">period</span> <span class="o">=</span> <span class="p">(</span><span class="n">qcstatus</span><span class="o">.</span><span class="n">period</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">qcstatus</span><span class="o">.</span><span class="n">period</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">inperiod</span><span class="p">)</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qcStatusEntry</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="n">qcstatus</span><span class="o">.</span><span class="n">qcIgnores</span><span class="p">)</span>
+
+        <span class="c">### close db</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">closedb</span><span class="p">(</span><span class="n">con</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">results</span>
+        
+<div class="viewcode-block" id="DBIO.last_day_of_month"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.dbtools.DBIO.last_day_of_month">[docs]</a>    <span class="k">def</span> <span class="nf">last_day_of_month</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">any_day</span><span class="p">):</span>
+        <span class="c"># calculates the last day of month</span>
+        <span class="n">next_month</span> <span class="o">=</span> <span class="n">any_day</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">day</span><span class="o">=</span><span class="mi">28</span><span class="p">)</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>  <span class="c"># this will never fail</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">next_month</span> <span class="o">-</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="n">next_month</span><span class="o">.</span><span class="n">day</span><span class="p">))</span><span class="o">.</span><span class="n">day</span>
+</div>
+    <span class="k">def</span> <span class="nf">_production</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">qcstatus</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculates percentage of tests done over expected</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+    
+        <span class="c"># 1. Find same date 6 months ago</span>
+        <span class="n">dt_now</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">()</span>
+        <span class="n">y1</span> <span class="o">=</span> <span class="n">dt_now</span><span class="o">.</span><span class="n">year</span>
+        <span class="n">m1</span> <span class="o">=</span> <span class="n">dt_now</span><span class="o">.</span><span class="n">month</span><span class="o">-</span><span class="mi">6</span> <span class="c"># semi-anual</span>
+        <span class="k">if</span> <span class="n">m1</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">y1</span> <span class="o">-=</span> <span class="mi">1</span>
+            <span class="n">m1</span> <span class="o">+=</span> <span class="mi">12</span>
+        <span class="n">max_day_of_month</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_day_of_month</span><span class="p">(</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="n">year</span><span class="o">=</span><span class="n">y1</span><span class="p">,</span><span class="n">month</span><span class="o">=</span><span class="n">m1</span><span class="p">,</span><span class="n">day</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="p">)</span>
+        <span class="n">dt_start</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="n">year</span><span class="o">=</span><span class="n">y1</span><span class="p">,</span><span class="n">month</span><span class="o">=</span><span class="n">m1</span><span class="p">,</span><span class="n">day</span><span class="o">=</span><span class="nb">min</span><span class="p">(</span><span class="n">dt_now</span><span class="o">.</span><span class="n">day</span><span class="p">,</span><span class="n">max_day_of_month</span><span class="p">))</span>
+
+        <span class="c"># 2. Find number of days/weeks/months is reporting period</span>
+        <span class="n">delta_days</span> <span class="o">=</span> <span class="p">(</span><span class="n">dt_now</span> <span class="o">-</span> <span class="n">dt_start</span><span class="p">)</span><span class="o">.</span><span class="n">days</span>
+        <span class="n">delta_weeks</span> <span class="o">=</span> <span class="n">delta_days</span><span class="o">/</span><span class="mi">7</span>
+        <span class="n">delta_months</span> <span class="o">=</span> <span class="n">dt_now</span><span class="o">.</span><span class="n">month</span> <span class="o">-</span> <span class="n">dt_start</span><span class="o">.</span><span class="n">month</span><span class="o">+</span> <span class="mi">12</span><span class="o">*</span><span class="p">(</span><span class="n">dt_now</span><span class="o">.</span><span class="n">year</span> <span class="o">-</span> <span class="n">dt_start</span><span class="o">.</span><span class="n">year</span><span class="p">)</span>
+
+        <span class="c"># 3. Determine expected number of processes</span>
+        <span class="n">freq</span> <span class="o">=</span> <span class="n">qcstatus</span><span class="o">.</span><span class="n">frequency</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="s">&#39;monthly&#39;</span> <span class="ow">in</span> <span class="n">freq</span><span class="p">:</span>
+            <span class="n">num_expected</span> <span class="o">=</span> <span class="n">delta_months</span>
+        <span class="k">elif</span> <span class="s">&#39;bi-weekly&#39;</span> <span class="ow">in</span> <span class="n">freq</span><span class="p">:</span>
+            <span class="n">num_expected</span> <span class="o">=</span> <span class="n">delta_weeks</span><span class="o">/</span><span class="mi">2</span>
+        <span class="k">elif</span> <span class="s">&#39;weekly&#39;</span> <span class="ow">in</span> <span class="n">freq</span><span class="p">:</span>
+            <span class="n">num_expected</span> <span class="o">=</span> <span class="n">delta_weeks</span>
+        <span class="k">elif</span> <span class="s">&#39;daily&#39;</span> <span class="ow">in</span> <span class="n">freq</span><span class="p">:</span>
+            <span class="n">num_expected</span> <span class="o">=</span> <span class="n">delta_days</span>
+        
+        <span class="n">qcstatus</span><span class="o">.</span><span class="n">period</span> <span class="o">=</span> <span class="p">(</span><span class="n">qcstatus</span><span class="o">.</span><span class="n">period</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">qcstatus</span><span class="o">.</span><span class="n">period</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">qcstatus</span><span class="o">.</span><span class="n">period</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">num_expected</span><span class="p">)</span> <span class="c"># append num_expected</span>
+        <span class="n">comment</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s"> </span><span class="si">%d</span><span class="s"> </span><span class="si">%d</span><span class="s">/</span><span class="si">%d</span><span class="s">&#39;</span><span class="o">%</span><span class="p">(</span><span class="n">qcstatus</span><span class="o">.</span><span class="n">machine</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">qcstatus</span><span class="o">.</span><span class="n">selectors</span><span class="p">),</span><span class="n">qcstatus</span><span class="o">.</span><span class="n">period</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">num_expected</span><span class="p">)</span>
+        <span class="n">qcstatus</span><span class="o">.</span><span class="n">production</span> <span class="o">=</span> <span class="mf">100.</span><span class="o">*</span><span class="n">qcstatus</span><span class="o">.</span><span class="n">period</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">/</span><span class="n">num_expected</span>
+        <span class="k">return</span> <span class="n">qcstatus</span><span class="p">,</span><span class="n">comment</span>
+
+<div class="viewcode-block" id="DBIO.latestTestMachine"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.dbtools.DBIO.latestTestMachine">[docs]</a>    <span class="k">def</span> <span class="nf">latestTestMachine</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">machine</span><span class="p">,</span><span class="n">ininame</span><span class="p">,</span><span class="n">gp_lab</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">db</span><span class="o">=</span><span class="n">Lit</span><span class="o">.</span><span class="n">db_iqc</span><span class="p">):</span>
+        <span class="c">#print &#39;[latestTestMachine]&#39;,machine</span>
+        <span class="k">if</span> <span class="n">gp_lab</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">gp_lab</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_labelsFromGP</span><span class="p">(</span><span class="n">db</span><span class="p">)</span>
+        
+        <span class="n">status</span> <span class="o">=</span> <span class="n">QCStatus</span><span class="p">(</span><span class="n">machine</span><span class="p">,</span><span class="n">ininame</span><span class="p">)</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_latestTestSelectors</span><span class="p">(</span><span class="n">status</span><span class="p">,</span><span class="n">gp_lab</span><span class="p">,</span><span class="n">db</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+            <span class="n">status</span><span class="o">.</span><span class="n">date</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">results</span><span class="o">.</span><span class="n">itervalues</span><span class="p">(),</span><span class="n">key</span><span class="o">=</span><span class="n">attrgetter</span><span class="p">(</span><span class="s">&#39;date&#39;</span><span class="p">))</span><span class="o">.</span><span class="n">date</span>
+            <span class="n">status</span><span class="o">.</span><span class="n">overdue</span> <span class="o">=</span> <span class="n">status</span><span class="o">.</span><span class="n">date</span><span class="o">&lt;</span><span class="n">status</span><span class="o">.</span><span class="n">frequency</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="n">status</span><span class="o">.</span><span class="n">status_full</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="n">status</span><span class="o">.</span><span class="n">status_short</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="n">errors</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">warnings</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span><span class="n">entry</span> <span class="ow">in</span> <span class="n">results</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">qcstatus</span> <span class="o">==</span> <span class="n">Lit</span><span class="o">.</span><span class="n">stResultOK</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">Lit</span><span class="o">.</span><span class="n">stResultERROR</span> <span class="ow">in</span> <span class="n">entry</span><span class="o">.</span><span class="n">qcstatus</span><span class="p">:</span>
+                <span class="n">errors</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">qcstatus</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">Lit</span><span class="o">.</span><span class="n">stResultERROR</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">Lit</span><span class="o">.</span><span class="n">stResultWARNING</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s">&#39; :&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;:&#39;</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">Lit</span><span class="o">.</span><span class="n">stResultWARNING</span> <span class="ow">in</span> <span class="n">entry</span><span class="o">.</span><span class="n">qcstatus</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">qcstatus</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">Lit</span><span class="o">.</span><span class="n">stResultWARNING</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s">&#39; :&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;:&#39;</span><span class="p">))</span>
+        
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">errors</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+            <span class="n">status</span><span class="o">.</span><span class="n">status_short</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%d</span><span class="s"> ERRORS&quot;</span><span class="o">%</span><span class="nb">len</span><span class="p">(</span><span class="n">errors</span><span class="p">)</span>
+            <span class="n">status</span><span class="o">.</span><span class="n">status_full</span> <span class="o">=</span> <span class="n">Lit</span><span class="o">.</span><span class="n">stResultERROR</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span><span class="s">&#39;:&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">errors</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">warnings</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">status</span><span class="o">.</span><span class="n">status_short</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+                <span class="n">status</span><span class="o">.</span><span class="n">status_short</span> <span class="o">+=</span> <span class="s">&#39;, &#39;</span>
+                <span class="n">status</span><span class="o">.</span><span class="n">status_full</span> <span class="o">+=</span> <span class="s">&#39;, &#39;</span>
+            <span class="n">status</span><span class="o">.</span><span class="n">status_short</span> <span class="o">+=</span> <span class="s">&quot;</span><span class="si">%d</span><span class="s"> WARNINGS&quot;</span><span class="o">%</span><span class="nb">len</span><span class="p">(</span><span class="n">warnings</span><span class="p">)</span>
+            <span class="n">status</span><span class="o">.</span><span class="n">status_full</span> <span class="o">+=</span> <span class="n">Lit</span><span class="o">.</span><span class="n">stResultWARNING</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="o">+</span><span class="s">&#39;:&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">warnings</span><span class="p">)</span>
+
+        <span class="c">#print status.machine, status.date, status.status_full</span>
+        <span class="c">#print status.machine, status.date, status.status_short,status.overdue,status.period[2]</span>
+
+        <span class="n">status</span><span class="p">,</span><span class="n">comment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_production</span><span class="p">(</span><span class="n">status</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">status</span><span class="p">,</span><span class="n">comment</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

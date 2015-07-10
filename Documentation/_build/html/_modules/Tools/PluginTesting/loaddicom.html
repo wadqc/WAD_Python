@@ -1,0 +1,237 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Tools.PluginTesting.loaddicom &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for Tools.PluginTesting.loaddicom</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">dicom</span>
+
+
+<span class="k">class</span> <span class="nc">_LoadDicom</span><span class="p">():</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">initialdir</span><span class="p">):</span>
+
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">result</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">UIDs</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">initialdir</span> <span class="o">=</span> <span class="n">initialdir</span> <span class="k">if</span> <span class="n">initialdir</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">initialdir</span><span class="p">)</span> <span class="k">else</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">loadSeries</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">loadSeries</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">filelist</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">new_keys</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">initialdir</span>
+        <span class="k">if</span> <span class="n">path</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">initialdir</span> <span class="o">=</span> <span class="n">path</span>
+
+
+            <span class="n">abslist</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="k">for</span> <span class="n">dirname</span><span class="p">,</span> <span class="n">dirnames</span><span class="p">,</span> <span class="n">filenames</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="n">filenames</span><span class="p">:</span>
+                    <span class="n">abslist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dirname</span><span class="p">,</span><span class="n">filename</span><span class="p">))</span>
+
+<span class="c">#            abslist = [os.path.join(path, entry) for entry in os.listdir(path)]</span>
+            <span class="n">filelist</span> <span class="o">=</span> <span class="p">[</span><span class="n">entry</span> <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">abslist</span> <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">entry</span><span class="p">)]</span>
+            
+
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">filename</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">filelist</span><span class="p">):</span>
+
+            <span class="c">#print i, filename</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">dc</span> <span class="o">=</span> <span class="n">dicom</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">dicom</span><span class="o">.</span><span class="n">filereader</span><span class="o">.</span><span class="n">InvalidDicomError</span><span class="p">:</span>
+                <span class="k">continue</span>   
+            <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getKey</span><span class="p">(</span><span class="n">dc</span><span class="p">)</span>
+        
+        
+
+
+            <span class="n">uid</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;SOPInstanceUID&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">uid</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">UIDs</span><span class="p">:</span>
+                <span class="c">##Skip duplicates</span>
+                <span class="k">continue</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">UIDs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">uid</span><span class="p">)</span>
+
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="s">&quot;dc&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dc</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="s">&quot;filelst&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">dc</span><span class="o">.</span><span class="n">InstanceNumber</span><span class="p">,</span><span class="n">filename</span><span class="p">))</span>
+ 
+    
+                <span class="c">#self.series[key][&quot;thumb&quot;].append(photo)</span>
+
+
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="n">new_entry</span> <span class="o">=</span> <span class="p">{</span><span class="s">&quot;path&quot;</span><span class="p">:</span> <span class="n">path</span><span class="p">,</span>
+                             <span class="s">&quot;file&quot;</span><span class="p">:</span> <span class="n">filename</span><span class="p">,</span>
+                             <span class="s">&quot;filelst&quot;</span><span class="p">:[(</span><span class="n">dc</span><span class="o">.</span><span class="n">InstanceNumber</span><span class="p">,</span><span class="n">filename</span><span class="p">)],</span>
+                             <span class="s">&quot;id&quot;</span><span class="p">:</span> <span class="n">dc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;SeriesInstanceUID&#39;</span><span class="p">),</span>
+                             <span class="s">&quot;scroll&quot;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span>
+                             <span class="s">&quot;dc&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">dc</span><span class="p">]}</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_entry</span>
+                <span class="n">new_keys</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+
+            
+
+        
+        <span class="k">if</span> <span class="n">new_keys</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">new_keys</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">sortDCs</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s">&#39;ImageIndex&#39;</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">sortDCs</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s">&#39;InstanceNumber&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sortKeys</span><span class="p">(</span><span class="n">new_keys</span><span class="p">)</span>
+
+
+            
+
+    
+    <span class="k">def</span> <span class="nf">sortBox</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">selected</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">sels</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">box</span><span class="o">.</span><span class="n">getcurselection</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">sels</span><span class="p">:</span>
+            <span class="n">selected</span> <span class="o">=</span> <span class="n">sels</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>            
+        <span class="n">keys</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">box</span><span class="o">.</span><span class="n">get</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sortKeys</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">box</span><span class="o">.</span><span class="n">setlist</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">keys</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">selected</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">box</span><span class="o">.</span><span class="n">setvalue</span><span class="p">(</span><span class="n">selected</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">sortDCs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">to</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="s">&quot;dc&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">to</span><span class="p">)))</span>
+        
+    <span class="k">def</span> <span class="nf">sortKeys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keys</span><span class="p">):</span>
+        <span class="n">keys</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="p">[</span><span class="n">x</span><span class="p">][</span><span class="s">&quot;id&quot;</span><span class="p">])</span>
+            
+    <span class="k">def</span> <span class="nf">getKey</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dc</span><span class="p">):</span>
+
+
+        <span class="n">patient</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;PatientsName&#39;</span><span class="p">)</span>
+        <span class="n">study</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;StudyDescription&#39;</span><span class="p">)</span>
+        <span class="n">series</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;SeriesDescription&#39;</span><span class="p">)</span>
+        <span class="n">snum</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;SeriesNumber&#39;</span><span class="p">)</span>
+        
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">dt</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;SeriesDate&#39;</span><span class="p">)</span>
+            <span class="n">tm</span> <span class="o">=</span> <span class="n">dc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;SeriesTime&#39;</span><span class="p">)</span>
+            <span class="n">date</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">-</span><span class="si">%s</span><span class="s">-</span><span class="si">%s</span><span class="s">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">dt</span><span class="p">[</span><span class="mi">6</span><span class="p">:],</span> <span class="n">dt</span><span class="p">[</span><span class="mi">4</span><span class="p">:</span><span class="mi">6</span><span class="p">],</span> <span class="n">dt</span><span class="p">[:</span><span class="mi">4</span><span class="p">])</span>
+            <span class="n">time</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">:</span><span class="si">%s</span><span class="s">:</span><span class="si">%s</span><span class="s">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">tm</span><span class="p">[:</span><span class="mi">2</span><span class="p">],</span> <span class="n">tm</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="mi">4</span><span class="p">],</span> <span class="n">tm</span><span class="p">[</span><span class="mi">4</span><span class="p">:</span><span class="mi">6</span><span class="p">])</span>
+        
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">date</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+            <span class="n">time</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+            <span class="c">#print (&#39;Warning could not get series date/time&#39;)</span>
+        
+        <span class="k">return</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s"> - </span><span class="si">%s</span><span class="s"> - </span><span class="si">%s</span><span class="s"> - </span><span class="si">%s</span><span class="s"> - </span><span class="si">%s</span><span class="s"> - </span><span class="si">%s</span><span class="s">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">date</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">patient</span><span class="p">,</span> <span class="n">study</span><span class="p">,</span> <span class="n">series</span><span class="p">,</span> <span class="n">snum</span><span class="p">)</span>
+
+<div class="viewcode-block" id="LoadDicom"><a class="viewcode-back" href="../../../Tools.PluginTesting.html#Tools.PluginTesting.loaddicom.LoadDicom">[docs]</a><span class="k">def</span> <span class="nf">LoadDicom</span><span class="p">(</span><span class="n">initialdir</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="n">dc</span><span class="p">,</span> <span class="n">path</span> <span class="o">=</span> <span class="p">[],</span> <span class="s">&#39;&#39;</span>
+    <span class="n">w</span> <span class="o">=</span> <span class="n">_LoadDicom</span><span class="p">(</span><span class="n">initialdir</span><span class="p">)</span>
+
+    <span class="c">#for key in w.series.keys():</span>
+    <span class="c">#    print w.series[key][&#39;filelst&#39;]</span>
+    
+    <span class="k">return</span> <span class="n">w</span><span class="o">.</span><span class="n">series</span>
+
+
+
+
+
+    <span class="c">#return w.series</span>
+        </div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">LoadDicom</span><span class="p">(</span><span class="s">&#39;/home/dickrsch/KLIFIO/ExampleData/NM/QCData/EARL&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">t</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="k">print</span> <span class="n">t</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="s">&quot;filelst&quot;</span><span class="p">]</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

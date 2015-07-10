@@ -1,0 +1,176 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Tools.PET_Siemens_send2wad.source.File2DicomSend &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="../../../../index.html" />
+    <link rel="up" title="Module code" href="../../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for Tools.PET_Siemens_send2wad.source.File2DicomSend</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">ConfigParser</span>
+<span class="kn">import</span> <span class="nn">dicom</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+
+<span class="kn">import</span> <span class="nn">create_dicom</span>
+<span class="kn">import</span> <span class="nn">storescu</span>
+
+
+<div class="viewcode-block" id="main"><a class="viewcode-back" href="../../../../Tools.PET_Siemens_send2wad.source.html#Tools.PET_Siemens_send2wad.source.File2DicomSend.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">configFile</span><span class="p">):</span>
+    <span class="n">PROCESSED_FILEPATH</span> <span class="o">=</span> <span class="s">&quot;processed_files.txt&quot;</span>
+    <span class="nb">open</span><span class="p">(</span><span class="n">PROCESSED_FILEPATH</span><span class="p">,</span> <span class="s">&#39;a&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    
+    <span class="c">#Read config</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">ConfigParser</span><span class="o">.</span><span class="n">ConfigParser</span><span class="p">()</span>
+    <span class="n">config</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">configFile</span><span class="p">)</span>
+
+    <span class="n">sourcedir</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;FILECONFIG&quot;</span><span class="p">,</span><span class="s">&quot;SRCDIR&quot;</span><span class="p">)</span>
+    <span class="n">fileext</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;FILECONFIG&quot;</span><span class="p">,</span><span class="s">&quot;EXT&quot;</span><span class="p">)</span>
+    
+    <span class="c">#Convert comma-separated values into list</span>
+    <span class="n">contains</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;FILECONFIG&quot;</span><span class="p">,</span><span class="s">&quot;CONTAINS&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">)]</span>
+    <span class="n">not_contains</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;FILECONFIG&quot;</span><span class="p">,</span><span class="s">&quot;NOT_CONTAINS&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">)]</span>
+
+    <span class="n">dcmconfig</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s">&#39;patid&#39;</span><span class="p">:</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;DCMCONFIG&quot;</span><span class="p">,</span><span class="s">&quot;PATID&quot;</span><span class="p">),</span>
+        <span class="s">&#39;patname&#39;</span><span class="p">:</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;DCMCONFIG&quot;</span><span class="p">,</span><span class="s">&quot;PATNAME&quot;</span><span class="p">),</span>
+        <span class="s">&#39;studydes&#39;</span><span class="p">:</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;DCMCONFIG&quot;</span><span class="p">,</span><span class="s">&quot;STUDYDES&quot;</span><span class="p">),</span>
+        <span class="s">&#39;seriesdes&#39;</span><span class="p">:</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;DCMCONFIG&quot;</span><span class="p">,</span><span class="s">&quot;SERIESDES&quot;</span><span class="p">),</span>
+        <span class="s">&#39;stationname&#39;</span><span class="p">:</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;DCMCONFIG&quot;</span><span class="p">,</span><span class="s">&quot;STATIONNAME&quot;</span><span class="p">),}</span>
+    <span class="n">tag</span> <span class="o">=</span> <span class="n">dicom</span><span class="o">.</span><span class="n">tag</span><span class="o">.</span><span class="n">Tag</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;DCMCONFIG&quot;</span><span class="p">,</span><span class="s">&quot;TAG&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">))</span>
+
+    <span class="n">aet</span> <span class="o">=</span>  <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;SERVERCONFIG&quot;</span><span class="p">,</span><span class="s">&quot;AET&quot;</span><span class="p">)</span>
+    <span class="n">destip</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;SERVERCONFIG&quot;</span><span class="p">,</span><span class="s">&quot;IP&quot;</span><span class="p">)</span>
+    <span class="n">port</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;SERVERCONFIG&quot;</span><span class="p">,</span><span class="s">&quot;PORT&quot;</span><span class="p">))</span>
+    
+    <span class="c">#Processed filepaths</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">PROCESSED_FILEPATH</span><span class="p">,</span> <span class="s">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">processed</span> <span class="o">=</span> <span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">readlines</span><span class="p">()]</span>
+
+    <span class="c">#Find all files in `sourcedir` with extension `fileext`</span>
+    <span class="n">allfiles</span> <span class="o">=</span> <span class="p">[</span><span class="n">fn</span> <span class="k">for</span> <span class="n">fn</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">sourcedir</span><span class="p">)</span> <span class="k">if</span> <span class="n">fn</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">fileext</span><span class="p">)]</span>
+    
+    <span class="c">#Filter allfiles</span>
+    <span class="n">filepathlist</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="n">allfiles</span><span class="p">:</span>
+        <span class="c">#Include filenames which contain all substrings in `contains`</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">([</span><span class="n">substr</span> <span class="ow">in</span> <span class="n">filename</span> <span class="k">for</span> <span class="n">substr</span> <span class="ow">in</span> <span class="n">contains</span><span class="p">]):</span>
+            <span class="k">continue</span>
+        <span class="c">#Exclude filenames which contain any substring in `not_contains`</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">([</span><span class="n">substr</span> <span class="ow">in</span> <span class="n">filename</span> <span class="k">for</span> <span class="n">substr</span> <span class="ow">in</span> <span class="n">not_contains</span><span class="p">]):</span>
+            <span class="k">continue</span>
+        
+        <span class="c">#Include if file hasn&#39;t been processed before</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">sourcedir</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">path</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">processed</span><span class="p">:</span>
+            <span class="n">filepathlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">sourcedir</span><span class="p">,</span> <span class="n">filename</span><span class="p">))</span>
+
+    <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">filepathlist</span><span class="p">:</span>
+        <span class="k">print</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        
+        <span class="c">#Get file content</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">payload</span> <span class="o">=</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">readlines</span><span class="p">())</span>
+
+        <span class="c">#Get date and time from filepath</span>
+        <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s">r&#39;\d+&#39;</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+        <span class="n">dcmconfig</span><span class="p">[</span><span class="s">&#39;studydate&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">match</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span> <span class="s">&#39;</span><span class="si">%d</span><span class="s">%m%Y&#39;</span><span class="p">)</span>
+        <span class="n">dcmconfig</span><span class="p">[</span><span class="s">&#39;studytime&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">match</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="s">&#39;%H%M%S&#39;</span><span class="p">)</span>        
+
+        <span class="c">#Create DCM</span>
+        <span class="n">tmpdicom</span> <span class="o">=</span> <span class="n">create_dicom</span><span class="o">.</span><span class="n">create_dicom</span><span class="p">(</span><span class="n">tag</span><span class="p">,</span> <span class="n">payload</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">dcmconfig</span><span class="p">)</span>
+
+        <span class="c">#Send to PACS</span>
+        <span class="n">storescu</span><span class="o">.</span><span class="n">StoreSCU</span><span class="p">(</span><span class="n">aet</span><span class="p">,</span> <span class="n">destip</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="n">tmpdicom</span><span class="p">)</span>
+
+        <span class="c">#Add path to processed_files.txt</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">PROCESSED_FILEPATH</span><span class="p">,</span> <span class="s">&#39;a&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="o">+</span><span class="n">path</span><span class="p">)</span>
+
+</div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">(</span><span class="s">&quot;config.ini&quot;</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

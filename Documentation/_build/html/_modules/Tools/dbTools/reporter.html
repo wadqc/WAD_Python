@@ -1,0 +1,541 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Tools.dbTools.reporter &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for Tools.dbTools.reporter</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/env python</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">http://www.protocolostomy.com/2008/10/22/generating-reports-with-charts-using-python-reportlab/</span>
+<span class="sd">http://www.reportlab.com/software/documentation/</span>
+
+<span class="sd">TODO:</span>
+<span class="sd">    * kleuren aanpassen (lichtgeel onzichtbaar)</span>
+<span class="sd">    * critmin/max dikke lijnen erin</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">reportlab.graphics.shapes</span> <span class="kn">import</span> <span class="n">Drawing</span>
+<span class="kn">from</span> <span class="nn">reportlab.graphics.charts.lineplots</span> <span class="kn">import</span> <span class="n">LinePlot</span>
+<span class="kn">from</span> <span class="nn">reportlab.graphics.widgets.markers</span> <span class="kn">import</span> <span class="n">makeMarker</span>
+<span class="kn">from</span> <span class="nn">reportlab.platypus</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">reportlab.lib.styles</span> <span class="kn">import</span> <span class="n">getSampleStyleSheet</span>
+<span class="kn">from</span> <span class="nn">reportlab.lib</span> <span class="kn">import</span> <span class="n">pagesizes</span>
+<span class="kn">from</span> <span class="nn">reportlab.lib.units</span> <span class="kn">import</span> <span class="n">inch</span>
+<span class="kn">from</span> <span class="nn">reportlab.graphics.charts.legends</span> <span class="kn">import</span> <span class="n">Legend</span>
+<span class="kn">from</span> <span class="nn">reportlab.graphics.samples.excelcolors</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">reportlab.lib</span> <span class="kn">import</span> <span class="n">colors</span>
+
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="kn">from</span> <span class="nn">reportlab.pdfgen</span> <span class="kn">import</span> <span class="n">canvas</span>
+<span class="kn">from</span> <span class="nn">reportlab.lib.units</span> <span class="kn">import</span> <span class="n">mm</span>
+
+<div class="viewcode-block" id="NumberedCanvas"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.reporter.NumberedCanvas">[docs]</a><span class="k">class</span> <span class="nc">NumberedCanvas</span><span class="p">(</span><span class="n">canvas</span><span class="o">.</span><span class="n">Canvas</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">canvas</span><span class="o">.</span><span class="n">Canvas</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_saved_page_states</span> <span class="o">=</span> <span class="p">[]</span>
+
+<div class="viewcode-block" id="NumberedCanvas.showPage"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.reporter.NumberedCanvas.showPage">[docs]</a>    <span class="k">def</span> <span class="nf">showPage</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_saved_page_states</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_startPage</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="NumberedCanvas.save"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.reporter.NumberedCanvas.save">[docs]</a>    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;add page info to each page (page x of y)&quot;&quot;&quot;</span>
+        <span class="n">num_pages</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_saved_page_states</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">state</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_saved_page_states</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">draw_page_number</span><span class="p">(</span><span class="n">num_pages</span><span class="p">)</span>
+            <span class="n">canvas</span><span class="o">.</span><span class="n">Canvas</span><span class="o">.</span><span class="n">showPage</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">canvas</span><span class="o">.</span><span class="n">Canvas</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="NumberedCanvas.draw_page_number"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.reporter.NumberedCanvas.draw_page_number">[docs]</a>    <span class="k">def</span> <span class="nf">draw_page_number</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">page_count</span><span class="p">):</span>
+        <span class="c"># Change the position of this to wherever you want the page number to be</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">drawRightString</span><span class="p">(</span><span class="mi">185</span><span class="o">*</span><span class="n">mm</span><span class="p">,</span> <span class="mf">72.0</span><span class="o">-</span><span class="mi">5</span> <span class="o">*</span> <span class="n">mm</span> <span class="p">,</span>
+                             <span class="s">&quot;</span><span class="si">%d</span><span class="s">/</span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pageNumber</span><span class="p">,</span> <span class="n">page_count</span><span class="p">))</span>
+
+</div></div>
+<div class="viewcode-block" id="dateformatter"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.reporter.dateformatter">[docs]</a><span class="k">def</span> <span class="nf">dateformatter</span><span class="p">(</span><span class="n">val</span><span class="p">):</span>
+    <span class="c">#return val</span>
+    <span class="c">#return &#39;x=%s&#39;%val</span>
+    <span class="k">return</span> <span class="n">time</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">&#39;%Y-%m-</span><span class="si">%d</span><span class="s">&#39;</span><span class="p">,</span> <span class="n">time</span><span class="o">.</span><span class="n">localtime</span><span class="p">(</span><span class="n">val</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="emptyformatter"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.reporter.emptyformatter">[docs]</a><span class="k">def</span> <span class="nf">emptyformatter</span><span class="p">(</span><span class="n">val</span><span class="p">):</span>
+    <span class="k">return</span> <span class="s">&#39;&#39;</span>
+</div>
+<div class="viewcode-block" id="Reporter"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.reporter.Reporter">[docs]</a><span class="k">class</span> <span class="nc">Reporter</span><span class="p">:</span>
+    <span class="n">defaultPageSize</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">PAGE_HEIGHT</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">styles</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">Elements</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">HeaderStyle</span>  <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">ParaStyle</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">PreStyle</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">colors</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">maxnumgraphsinchart</span> <span class="o">=</span> <span class="mi">9</span>
+<div class="viewcode-block" id="Reporter.defaultstyle"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.reporter.Reporter.defaultstyle">[docs]</a>    <span class="k">def</span> <span class="nf">defaultstyle</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">defaultPageSize</span> <span class="o">=</span> <span class="n">pagesizes</span><span class="o">.</span><span class="n">A4</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">PAGE_HEIGHT</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">defaultPageSize</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">PAGE_WIDTH</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">defaultPageSize</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">styles</span> <span class="o">=</span> <span class="n">getSampleStyleSheet</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Elements</span><span class="o">=</span><span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">HeaderStyle</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">styles</span><span class="p">[</span><span class="s">&quot;Heading1&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Header2Style</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">styles</span><span class="p">[</span><span class="s">&quot;Heading2&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ParaStyle</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">styles</span><span class="p">[</span><span class="s">&quot;Normal&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">PreStyle</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">styles</span><span class="p">[</span><span class="s">&quot;Code&quot;</span><span class="p">]</span>
+<span class="c">#        self.colors = 5*[color01,color02,color03,color04,color05,color06,color07,color08,color09,color10,</span>
+<span class="c">#                       color01Light,color02Light,color03Light,color04Light,color05Light,color06Light,color07Light,color08Light,color09Light,color10Light,</span>
+<span class="c">#                       color01Dark,color02Dark,color03Dark,color04Dark,color05Dark,color06Dark,color07Dark,color08Dark,color09Dark,color10Dark]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">colorRangeStatic</span><span class="p">(</span><span class="mi">64</span><span class="p">)</span>
+</div>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">title</span><span class="o">=</span><span class="s">&#39;Sample report&#39;</span><span class="p">,</span><span class="n">author</span><span class="o">=</span><span class="s">&#39;Q.C. Wad&#39;</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="s">&#39;http://localhost:8080&#39;</span><span class="p">,</span><span class="n">abstract</span><span class="o">=</span><span class="s">&#39;This is a sample report&#39;</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">defaultstyle</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Title</span> <span class="o">=</span> <span class="n">title</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Author</span> <span class="o">=</span> <span class="n">author</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">URL</span> <span class="o">=</span> <span class="n">url</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Abstract</span> <span class="o">=</span> <span class="n">abstract</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_header_footer</span><span class="p">(</span><span class="n">canvas</span><span class="p">,</span> <span class="n">doc</span><span class="p">):</span>
+        <span class="c"># Save the state of our canvas so we can draw on it</span>
+        <span class="n">canvas</span><span class="o">.</span><span class="n">saveState</span><span class="p">()</span>
+        <span class="n">styles</span> <span class="o">=</span> <span class="n">getSampleStyleSheet</span><span class="p">()</span>
+
+        <span class="c"># Header</span>
+        <span class="c">##header = Paragraph(&#39;This is a multi-line header.  It goes on every page.   &#39; * 5, styles[&#39;Normal&#39;])</span>
+        <span class="c">##w, h = header.wrap(doc.width, doc.topMargin)</span>
+        <span class="c">##header.drawOn(canvas, doc.leftMargin, doc.height + doc.topMargin - h)</span>
+
+        <span class="c"># Footer</span>
+        <span class="n">canvas</span><span class="o">.</span><span class="n">line</span><span class="p">(</span><span class="n">doc</span><span class="o">.</span><span class="n">leftMargin</span><span class="p">,</span><span class="n">doc</span><span class="o">.</span><span class="n">bottomMargin</span><span class="p">,</span><span class="n">doc</span><span class="o">.</span><span class="n">leftMargin</span><span class="o">+</span><span class="n">doc</span><span class="o">.</span><span class="n">width</span><span class="p">,</span><span class="n">doc</span><span class="o">.</span><span class="n">bottomMargin</span><span class="p">)</span>
+        <span class="n">footer</span> <span class="o">=</span> <span class="n">Paragraph</span><span class="p">(</span><span class="s">&#39;QC Status Rapportage&#39;</span><span class="p">,</span> <span class="n">styles</span><span class="p">[</span><span class="s">&#39;Italic&#39;</span><span class="p">])</span>
+        <span class="n">w</span><span class="p">,</span> <span class="n">h</span> <span class="o">=</span> <span class="n">footer</span><span class="o">.</span><span class="n">wrap</span><span class="p">(</span><span class="n">doc</span><span class="o">.</span><span class="n">width</span><span class="p">,</span> <span class="n">doc</span><span class="o">.</span><span class="n">bottomMargin</span><span class="o">-</span><span class="mi">5</span><span class="o">*</span><span class="n">mm</span><span class="p">)</span>
+        <span class="n">footer</span><span class="o">.</span><span class="n">drawOn</span><span class="p">(</span><span class="n">canvas</span><span class="p">,</span> <span class="n">doc</span><span class="o">.</span><span class="n">leftMargin</span><span class="p">,</span> <span class="n">doc</span><span class="o">.</span><span class="n">bottomMargin</span><span class="o">-</span><span class="mi">5</span><span class="o">*</span><span class="n">mm</span><span class="p">)</span>
+
+        <span class="c"># Release the canvas</span>
+        <span class="n">canvas</span><span class="o">.</span><span class="n">restoreState</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Reporter.header"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.reporter.Reporter.header">[docs]</a>    <span class="k">def</span> <span class="nf">header</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">txt</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">klass</span><span class="o">=</span><span class="n">Paragraph</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="mf">0.3</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">style</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">style</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">HeaderStyle</span>
+
+        <span class="n">s</span> <span class="o">=</span> <span class="n">Spacer</span><span class="p">(</span><span class="mf">0.2</span><span class="o">*</span><span class="n">inch</span><span class="p">,</span> <span class="n">sep</span><span class="o">*</span><span class="n">inch</span><span class="p">)</span>
+        <span class="n">para</span> <span class="o">=</span> <span class="n">klass</span><span class="p">(</span><span class="n">txt</span><span class="p">,</span> <span class="n">style</span><span class="p">)</span>
+        <span class="n">sect</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="p">,</span> <span class="n">para</span><span class="p">]</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">KeepTogether</span><span class="p">(</span><span class="n">sect</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span>
+</div>
+<div class="viewcode-block" id="Reporter.paragraph"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.reporter.Reporter.paragraph">[docs]</a>    <span class="k">def</span> <span class="nf">paragraph</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">txt</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">(</span><span class="n">txt</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ParaStyle</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Reporter.header2"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.reporter.Reporter.header2">[docs]</a>    <span class="k">def</span> <span class="nf">header2</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">txt</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">(</span><span class="n">txt</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Header2Style</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Reporter.preblock"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.reporter.Reporter.preblock">[docs]</a>    <span class="k">def</span> <span class="nf">preblock</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">txt</span><span class="p">):</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">Spacer</span><span class="p">(</span><span class="mf">0.1</span><span class="o">*</span><span class="n">inch</span><span class="p">,</span> <span class="mf">0.1</span><span class="o">*</span><span class="n">inch</span><span class="p">)</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">Preformatted</span><span class="p">(</span><span class="n">txt</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">PreStyle</span><span class="p">)</span>
+        <span class="n">precomps</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="p">,</span><span class="n">p</span><span class="p">]</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">KeepTogether</span><span class="p">(</span><span class="n">precomps</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span>
+</div>
+<div class="viewcode-block" id="Reporter.render"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.reporter.Reporter.render">[docs]</a>    <span class="k">def</span> <span class="nf">render</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">outputname</span><span class="o">=</span><span class="s">&#39;gfe.pdf&#39;</span><span class="p">):</span>
+        <span class="n">doc</span> <span class="o">=</span> <span class="n">SimpleDocTemplate</span><span class="p">(</span><span class="n">outputname</span><span class="p">)</span>
+        <span class="n">doc</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Elements</span><span class="p">,</span><span class="n">onFirstPage</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_header_footer</span><span class="p">,</span> <span class="n">onLaterPages</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_header_footer</span><span class="p">,</span>
+                  <span class="n">canvasmaker</span><span class="o">=</span><span class="n">NumberedCanvas</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Reporter.addtitlepage"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.reporter.Reporter.addtitlepage">[docs]</a>    <span class="k">def</span> <span class="nf">addtitlepage</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Elements</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Title</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Elements</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">paragraph</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Author</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Elements</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">paragraph</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">URL</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Elements</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">header2</span><span class="p">(</span><span class="s">&quot;Samenvatting&quot;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Elements</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">paragraph</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Abstract</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="Reporter.addtitlepagewithtable"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.reporter.Reporter.addtitlepagewithtable">[docs]</a>    <span class="k">def</span> <span class="nf">addtitlepagewithtable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">tabledata</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Elements</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Title</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Elements</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">paragraph</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Author</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Elements</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">paragraph</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">URL</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Elements</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">header2</span><span class="p">(</span><span class="s">&quot;Samenvatting&quot;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Elements</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">(</span><span class="n">tabledata</span><span class="p">,</span><span class="n">lines</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span><span class="n">align</span><span class="o">=</span><span class="s">&#39;LEFT&#39;</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="Reporter.addsection"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.reporter.Reporter.addsection">[docs]</a>    <span class="k">def</span> <span class="nf">addsection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">sectionlist</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Elements</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">KeepTogether</span><span class="p">(</span><span class="n">sectionlist</span><span class="p">))</span>
+
+</div>
+<div class="viewcode-block" id="Reporter.table"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.reporter.Reporter.table">[docs]</a>    <span class="k">def</span> <span class="nf">table</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">data</span><span class="p">,</span><span class="n">lines</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span><span class="n">align</span><span class="o">=</span><span class="s">&#39;CENTER&#39;</span><span class="p">):</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">Spacer</span><span class="p">(</span><span class="mf">0.1</span><span class="o">*</span><span class="n">inch</span><span class="p">,</span> <span class="mf">0.1</span><span class="o">*</span><span class="n">inch</span><span class="p">)</span>
+        <span class="n">dtable</span> <span class="o">=</span> <span class="n">Table</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">dtable</span><span class="o">.</span><span class="n">hAlign</span><span class="o">=</span> <span class="n">align</span>
+        <span class="k">if</span> <span class="n">lines</span><span class="p">:</span>
+            <span class="n">dtable</span><span class="o">.</span><span class="n">setStyle</span><span class="p">(</span><span class="n">TableStyle</span><span class="p">([(</span><span class="s">&#39;INNERGRID&#39;</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="mf">0.25</span><span class="p">,</span> <span class="n">colors</span><span class="o">.</span><span class="n">black</span><span class="p">),</span>
+                                        <span class="p">(</span><span class="s">&#39;BOX&#39;</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="mf">0.25</span><span class="p">,</span> <span class="n">colors</span><span class="o">.</span><span class="n">black</span><span class="p">)]))</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="p">(</span><span class="n">KeepTogether</span><span class="p">([</span><span class="n">s</span><span class="p">,</span><span class="n">dtable</span><span class="p">]))</span>
+        <span class="k">return</span> <span class="n">result</span>
+</div>
+<div class="viewcode-block" id="Reporter.dategraph"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.reporter.Reporter.dategraph">[docs]</a>    <span class="k">def</span> <span class="nf">dategraph</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">lxydata</span><span class="p">,</span><span class="n">tmin</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">tmax</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span> <span class="c"># list of (label, [x,yarr]) with x in seconds</span>
+        <span class="n">maxX</span> <span class="o">=</span> <span class="n">lxydata</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">maxY</span> <span class="o">=</span> <span class="mf">1.</span>
+        <span class="n">minX</span> <span class="o">=</span> <span class="n">maxX</span>
+        <span class="n">minY</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="k">for</span> <span class="n">label</span><span class="p">,</span><span class="n">xyarr</span> <span class="ow">in</span> <span class="n">lxydata</span><span class="p">:</span>
+            <span class="n">xarr</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">)</span> <span class="ow">in</span> <span class="n">xyarr</span><span class="p">]</span>
+            <span class="n">yarr</span> <span class="o">=</span> <span class="p">[</span><span class="n">y</span> <span class="k">for</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">)</span> <span class="ow">in</span> <span class="n">xyarr</span><span class="p">]</span>
+            <span class="n">maxY</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">maxY</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">yarr</span><span class="p">))</span>
+            <span class="n">minY</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">minY</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="n">yarr</span><span class="p">))</span>
+            <span class="n">maxX</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">maxX</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">xarr</span><span class="p">))</span>
+            <span class="n">minX</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">minX</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="n">xarr</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">tmin</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">minX</span> <span class="o">=</span> <span class="n">tmin</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">tmax</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">maxX</span> <span class="o">=</span> <span class="n">tmax</span>
+        <span class="n">lxydata</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s">&#39;CritMax&#39;</span><span class="p">,[[</span><span class="n">minX</span><span class="p">,</span><span class="mf">1.</span><span class="p">],[</span><span class="n">maxX</span><span class="p">,</span><span class="mf">1.</span><span class="p">]]))</span>
+        <span class="n">lxydata</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s">&#39;CritMin&#39;</span><span class="p">,[[</span><span class="n">minX</span><span class="p">,</span><span class="o">-</span><span class="mf">1.</span><span class="p">],[</span><span class="n">maxX</span><span class="p">,</span><span class="o">-</span><span class="mf">1.</span><span class="p">]]))</span>
+
+        <span class="n">drawing</span> <span class="o">=</span> <span class="n">Drawing</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">PAGE_WIDTH</span><span class="o">-</span><span class="mi">150</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
+        <span class="n">lc</span> <span class="o">=</span> <span class="n">LinePlot</span><span class="p">()</span>
+        <span class="n">lc</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="mi">30</span>
+        <span class="n">lc</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="mi">50</span>
+        <span class="n">lc</span><span class="o">.</span><span class="n">height</span> <span class="o">=</span> <span class="mi">125</span>
+        <span class="n">lc</span><span class="o">.</span><span class="n">width</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">PAGE_WIDTH</span><span class="o">-</span><span class="mi">150</span><span class="o">-</span><span class="mi">30</span>
+        <span class="n">lc</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="n">xy</span> <span class="k">for</span> <span class="p">(</span><span class="n">l</span><span class="p">,</span><span class="n">xy</span><span class="p">)</span> <span class="ow">in</span> <span class="n">lxydata</span><span class="p">]</span>
+        <span class="n">datalabels</span> <span class="o">=</span> <span class="p">[</span> <span class="n">l</span> <span class="k">for</span> <span class="p">(</span><span class="n">l</span><span class="p">,</span><span class="n">xy</span><span class="p">)</span> <span class="ow">in</span> <span class="n">lxydata</span><span class="p">]</span>
+
+        <span class="n">lc</span><span class="o">.</span><span class="n">xValueAxis</span><span class="o">.</span><span class="n">valueMin</span> <span class="o">=</span> <span class="n">minX</span>
+        <span class="n">lc</span><span class="o">.</span><span class="n">xValueAxis</span><span class="o">.</span><span class="n">valueMax</span> <span class="o">=</span> <span class="n">maxX</span>
+        <span class="n">lc</span><span class="o">.</span><span class="n">xValueAxis</span><span class="o">.</span><span class="n">valueStep</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">maxX</span><span class="o">-</span><span class="n">minX</span><span class="p">)</span><span class="o">/</span><span class="mi">5</span><span class="p">)</span>
+        <span class="n">lc</span><span class="o">.</span><span class="n">xValueAxis</span><span class="o">.</span><span class="n">labelTextFormat</span> <span class="o">=</span> <span class="n">dateformatter</span> <span class="c"># Use the formatter</span>
+        <span class="n">lc</span><span class="o">.</span><span class="n">xValueAxis</span><span class="o">.</span><span class="n">visibleGrid</span>           <span class="o">=</span> <span class="bp">True</span>
+        <span class="n">lc</span><span class="o">.</span><span class="n">xValueAxis</span><span class="o">.</span><span class="n">gridStrokeWidth</span> <span class="o">=</span> <span class="o">.</span><span class="mi">5</span>
+        <span class="n">lc</span><span class="o">.</span><span class="n">xValueAxis</span><span class="o">.</span><span class="n">gridStrokeColor</span> <span class="o">=</span> <span class="n">colors</span><span class="o">.</span><span class="n">darkgrey</span>
+        <span class="n">lc</span><span class="o">.</span><span class="n">xValueAxis</span><span class="o">.</span><span class="n">subTickNum</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">lc</span><span class="o">.</span><span class="n">xValueAxis</span><span class="o">.</span><span class="n">subGridStrokeWidth</span> <span class="o">=</span> <span class="o">.</span><span class="mi">25</span>
+        <span class="n">lc</span><span class="o">.</span><span class="n">xValueAxis</span><span class="o">.</span><span class="n">subGridStrokeColor</span> <span class="o">=</span> <span class="n">colors</span><span class="o">.</span><span class="n">lightgrey</span>
+        <span class="n">lc</span><span class="o">.</span><span class="n">xValueAxis</span><span class="o">.</span><span class="n">visibleSubGrid</span> <span class="o">=</span> <span class="bp">True</span>
+
+        <span class="n">lc</span><span class="o">.</span><span class="n">yValueAxis</span><span class="o">.</span><span class="n">valueMin</span> <span class="o">=</span> <span class="n">minY</span>
+        <span class="n">lc</span><span class="o">.</span><span class="n">yValueAxis</span><span class="o">.</span><span class="n">valueMax</span> <span class="o">=</span> <span class="n">maxY</span>
+        <span class="n">lc</span><span class="o">.</span><span class="n">yValueAxis</span><span class="o">.</span><span class="n">valueStep</span> <span class="o">=</span> <span class="o">.</span><span class="mi">25</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">maxY</span><span class="o">-</span><span class="n">minY</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">2</span><span class="p">:</span>
+            <span class="n">lc</span><span class="o">.</span><span class="n">yValueAxis</span><span class="o">.</span><span class="n">valueStep</span> <span class="o">=</span> <span class="o">.</span><span class="mi">5</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">maxY</span><span class="o">-</span><span class="n">minY</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">4</span><span class="p">:</span>
+            <span class="n">lc</span><span class="o">.</span><span class="n">yValueAxis</span><span class="o">.</span><span class="n">valueStep</span> <span class="o">=</span> <span class="mf">1.</span>
+        <span class="n">lc</span><span class="o">.</span><span class="n">yValueAxis</span><span class="o">.</span><span class="n">visibleGrid</span>           <span class="o">=</span> <span class="bp">True</span>
+        <span class="n">lc</span><span class="o">.</span><span class="n">yValueAxis</span><span class="o">.</span><span class="n">gridStrokeWidth</span> <span class="o">=</span> <span class="o">.</span><span class="mi">5</span>
+        <span class="n">lc</span><span class="o">.</span><span class="n">yValueAxis</span><span class="o">.</span><span class="n">gridStrokeColor</span> <span class="o">=</span> <span class="n">colors</span><span class="o">.</span><span class="n">darkgrey</span>
+        <span class="n">lc</span><span class="o">.</span><span class="n">yValueAxis</span><span class="o">.</span><span class="n">subTickNum</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">lc</span><span class="o">.</span><span class="n">yValueAxis</span><span class="o">.</span><span class="n">subGridStrokeWidth</span> <span class="o">=</span> <span class="o">.</span><span class="mi">25</span>
+        <span class="n">lc</span><span class="o">.</span><span class="n">yValueAxis</span><span class="o">.</span><span class="n">subGridStrokeColor</span> <span class="o">=</span> <span class="n">colors</span><span class="o">.</span><span class="n">lightgrey</span>
+        <span class="n">lc</span><span class="o">.</span><span class="n">yValueAxis</span><span class="o">.</span><span class="n">visibleSubGrid</span> <span class="o">=</span> <span class="bp">True</span>
+
+        <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">lc</span><span class="o">.</span><span class="n">data</span><span class="p">)):</span>
+            <span class="n">lc</span><span class="o">.</span><span class="n">lines</span><span class="p">[</span><span class="n">x</span><span class="p">]</span><span class="o">.</span><span class="n">strokeColor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">colors</span><span class="p">[</span><span class="n">x</span><span class="p">]</span>
+            <span class="n">lc</span><span class="o">.</span><span class="n">lines</span><span class="p">[</span><span class="n">x</span><span class="p">]</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">datalabels</span><span class="p">[</span><span class="n">x</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">lc</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">x</span><span class="p">])</span> <span class="o">==</span><span class="mi">1</span><span class="p">:</span>
+                <span class="n">lc</span><span class="o">.</span><span class="n">lines</span><span class="p">[</span><span class="n">x</span><span class="p">]</span><span class="o">.</span><span class="n">symbol</span> <span class="o">=</span> <span class="n">makeMarker</span><span class="p">(</span><span class="s">&#39;FilledCircle&#39;</span><span class="p">)</span> <span class="c"># added to make filled circles.</span>
+            <span class="n">lc</span><span class="o">.</span><span class="n">lines</span><span class="p">[</span><span class="n">x</span><span class="p">]</span><span class="o">.</span><span class="n">strokeWidth</span> <span class="o">=</span> <span class="mi">2</span>
+            <span class="k">if</span> <span class="n">lc</span><span class="o">.</span><span class="n">lines</span><span class="p">[</span><span class="n">x</span><span class="p">]</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s">&#39;CritMin&#39;</span> <span class="ow">or</span> <span class="n">lc</span><span class="o">.</span><span class="n">lines</span><span class="p">[</span><span class="n">x</span><span class="p">]</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s">&#39;CritMax&#39;</span><span class="p">:</span> <span class="c"># distinguish min/max</span>
+                <span class="n">lc</span><span class="o">.</span><span class="n">lines</span><span class="p">[</span><span class="n">x</span><span class="p">]</span><span class="o">.</span><span class="n">strokeColor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">colors</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">lc</span><span class="o">.</span><span class="n">lines</span><span class="p">[</span><span class="n">x</span><span class="p">]</span><span class="o">.</span><span class="n">strokeDashArray</span> <span class="o">=</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">addLabels</span><span class="p">(</span><span class="n">drawing</span><span class="p">,</span><span class="n">ylabel</span><span class="o">=</span><span class="s">&quot;geschaalde waarde&quot;</span><span class="p">)</span>
+        <span class="n">drawing</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">lc</span><span class="p">)</span>
+        <span class="n">drawing</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">addAutoLegend</span><span class="p">(</span><span class="n">lc</span><span class="p">,(</span><span class="n">lc</span><span class="o">.</span><span class="n">x</span><span class="p">,</span><span class="n">lc</span><span class="o">.</span><span class="n">y</span><span class="p">),</span><span class="nb">len</span><span class="p">(</span><span class="n">lc</span><span class="o">.</span><span class="n">data</span><span class="p">)))</span>
+        <span class="k">return</span> <span class="n">drawing</span>
+</div>
+<div class="viewcode-block" id="Reporter.addAutoLegend"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.reporter.Reporter.addAutoLegend">[docs]</a>    <span class="k">def</span> <span class="nf">addAutoLegend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">chart</span><span class="p">,</span><span class="n">offset</span><span class="p">,</span><span class="n">num</span><span class="p">,</span><span class="n">side</span><span class="o">=</span><span class="s">&#39;bottom&#39;</span><span class="p">):</span>
+        <span class="kn">from</span> <span class="nn">reportlab.lib.validators</span> <span class="kn">import</span> <span class="n">Auto</span>
+        <span class="n">width</span> <span class="o">=</span> <span class="mi">300</span>
+        <span class="n">height</span> <span class="o">=</span> <span class="mi">150</span>
+        <span class="n">legend</span> <span class="o">=</span> <span class="n">Legend</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">side</span> <span class="o">==</span> <span class="s">&#39;bottom&#39;</span><span class="p">:</span>
+            <span class="n">legend</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">offset</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="mi">15</span>
+            <span class="n">legend</span><span class="o">.</span><span class="n">dx</span> <span class="o">=</span> <span class="mi">20</span>
+            <span class="n">legend</span><span class="o">.</span><span class="n">dy</span> <span class="o">=</span> <span class="mi">5</span>
+            <span class="n">legend</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">offset</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="mi">25</span>
+            <span class="n">legend</span><span class="o">.</span><span class="n">deltax</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="n">legend</span><span class="o">.</span><span class="n">autoXPadding</span> <span class="o">=</span> <span class="mi">35</span>
+            <span class="n">legend</span><span class="o">.</span><span class="n">deltay</span> <span class="o">=</span> <span class="mi">5</span>
+            <span class="n">legend</span><span class="o">.</span><span class="n">boxAnchor</span> <span class="o">=</span> <span class="s">&#39;nw&#39;</span>
+            <span class="n">legend</span><span class="o">.</span><span class="n">dxTextSpace</span> <span class="o">=</span> <span class="mi">5</span>
+            <span class="n">legend</span><span class="o">.</span><span class="n">columnMaximum</span> <span class="o">=</span> <span class="p">(</span><span class="n">num</span><span class="o">/</span><span class="mi">3</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">num</span><span class="o">%</span><span class="mi">3</span> <span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+                <span class="n">legend</span><span class="o">.</span><span class="n">columnMaximum</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="n">legend</span><span class="o">.</span><span class="n">variColumn</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">elif</span> <span class="n">side</span> <span class="o">==</span> <span class="s">&#39;right&#39;</span><span class="p">:</span>
+            <span class="n">legend</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">offset</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">offset</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">+</span><span class="mi">40</span>
+            <span class="n">legend</span><span class="o">.</span><span class="n">dx</span> <span class="o">=</span> <span class="mi">20</span>
+            <span class="n">legend</span><span class="o">.</span><span class="n">dy</span> <span class="o">=</span> <span class="mi">5</span>
+            <span class="n">legend</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">offset</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">offset</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">-</span><span class="mi">15</span>
+            <span class="n">legend</span><span class="o">.</span><span class="n">deltax</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="n">legend</span><span class="o">.</span><span class="n">deltay</span> <span class="o">=</span> <span class="mi">5</span>
+            <span class="n">legend</span><span class="o">.</span><span class="n">boxAnchor</span> <span class="o">=</span> <span class="s">&#39;nw&#39;</span>
+            <span class="n">legend</span><span class="o">.</span><span class="n">dxTextSpace</span> <span class="o">=</span> <span class="mi">5</span>
+            <span class="n">legend</span><span class="o">.</span><span class="n">columnMaximum</span> <span class="o">=</span> <span class="mi">9</span>
+
+        <span class="n">legend</span><span class="o">.</span><span class="n">colorNamePairs</span><span class="o">=</span><span class="n">Auto</span><span class="p">(</span><span class="n">chart</span><span class="o">=</span><span class="n">chart</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">legend</span>
+</div>
+<div class="viewcode-block" id="Reporter.addLabels"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.reporter.Reporter.addLabels">[docs]</a>    <span class="k">def</span> <span class="nf">addLabels</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">drawing</span><span class="p">,</span><span class="n">title</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">xlabel</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">ylabel</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="kn">from</span> <span class="nn">reportlab.graphics.charts.textlabels</span> <span class="kn">import</span> <span class="n">Label</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">title</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">Title</span> <span class="o">=</span> <span class="n">Label</span><span class="p">()</span>
+            <span class="n">Title</span><span class="o">.</span><span class="n">fontName</span> <span class="o">=</span> <span class="s">&#39;Helvetica-Bold&#39;</span>
+            <span class="n">Title</span><span class="o">.</span><span class="n">fontSize</span> <span class="o">=</span> <span class="mi">7</span>
+            <span class="n">Title</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">drawing</span><span class="o">.</span><span class="n">width</span><span class="o">/</span><span class="mi">2</span>
+            <span class="n">Title</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">drawing</span><span class="o">.</span><span class="n">height</span><span class="o">-</span><span class="mi">25</span>
+            <span class="n">Title</span><span class="o">.</span><span class="n">_text</span> <span class="o">=</span> <span class="n">title</span>
+            <span class="n">Title</span><span class="o">.</span><span class="n">maxWidth</span> <span class="o">=</span> <span class="mi">180</span>
+            <span class="n">Title</span><span class="o">.</span><span class="n">height</span> <span class="o">=</span> <span class="mi">20</span>
+            <span class="n">Title</span><span class="o">.</span><span class="n">textAnchor</span> <span class="o">=</span><span class="s">&#39;middle&#39;</span>
+            <span class="n">drawing</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">Title</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">xlabel</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">XLabel</span> <span class="o">=</span> <span class="n">Label</span><span class="p">()</span>
+            <span class="n">XLabel</span><span class="o">.</span><span class="n">fontName</span> <span class="o">=</span> <span class="s">&#39;Helvetica&#39;</span>
+            <span class="n">XLabel</span><span class="o">.</span><span class="n">fontSize</span> <span class="o">=</span> <span class="mi">7</span>
+            <span class="n">XLabel</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">drawing</span><span class="o">.</span><span class="n">width</span><span class="o">/</span><span class="mi">2</span>
+            <span class="n">XLabel</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="mi">10</span>
+            <span class="n">XLabel</span><span class="o">.</span><span class="n">textAnchor</span> <span class="o">=</span><span class="s">&#39;middle&#39;</span>
+            <span class="n">XLabel</span><span class="o">.</span><span class="n">maxWidth</span> <span class="o">=</span> <span class="mi">100</span>
+            <span class="n">XLabel</span><span class="o">.</span><span class="n">height</span> <span class="o">=</span> <span class="mi">20</span>
+            <span class="n">XLabel</span><span class="o">.</span><span class="n">_text</span> <span class="o">=</span> <span class="n">xlabel</span>
+            <span class="n">drawing</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">XLabel</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ylabel</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">YLabel</span> <span class="o">=</span> <span class="n">Label</span><span class="p">()</span>
+            <span class="n">YLabel</span><span class="o">.</span><span class="n">fontName</span> <span class="o">=</span> <span class="s">&#39;Helvetica&#39;</span>
+            <span class="n">YLabel</span><span class="o">.</span><span class="n">fontSize</span> <span class="o">=</span> <span class="mi">7</span>
+            <span class="n">YLabel</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="mi">12</span>
+            <span class="n">YLabel</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">drawing</span><span class="o">.</span><span class="n">height</span><span class="o">/</span><span class="mi">2</span>
+            <span class="n">YLabel</span><span class="o">.</span><span class="n">angle</span> <span class="o">=</span> <span class="mi">90</span>
+            <span class="n">YLabel</span><span class="o">.</span><span class="n">textAnchor</span> <span class="o">=</span><span class="s">&#39;middle&#39;</span>
+            <span class="n">YLabel</span><span class="o">.</span><span class="n">maxWidth</span> <span class="o">=</span> <span class="mi">100</span>
+            <span class="n">YLabel</span><span class="o">.</span><span class="n">height</span> <span class="o">=</span> <span class="mi">20</span>
+            <span class="n">YLabel</span><span class="o">.</span><span class="n">_text</span> <span class="o">=</span> <span class="n">ylabel</span>
+            <span class="n">drawing</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">YLabel</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="Reporter.colorRangeStatic"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.reporter.Reporter.colorRangeStatic">[docs]</a>    <span class="k">def</span> <span class="nf">colorRangeStatic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">colorcount</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        source: http://stackoverflow.com/questions/2328339/how-to-generate-n-different-colors-for-any-natural-number-n</span>
+<span class="sd">        :param colorcount: Number of distinguishable colors to generate. Only pick first colorcount of 128, cycling</span>
+<span class="sd">        :return: nothing</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">rgbhex</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s">&quot;#000000&quot;</span><span class="p">,</span> <span class="s">&quot;#FFFF00&quot;</span><span class="p">,</span> <span class="s">&quot;#1CE6FF&quot;</span><span class="p">,</span> <span class="s">&quot;#FF34FF&quot;</span><span class="p">,</span> <span class="s">&quot;#FF4A46&quot;</span><span class="p">,</span> <span class="s">&quot;#008941&quot;</span><span class="p">,</span> <span class="s">&quot;#006FA6&quot;</span><span class="p">,</span> <span class="s">&quot;#A30059&quot;</span><span class="p">,</span>
+            <span class="s">&quot;#FFDBE5&quot;</span><span class="p">,</span> <span class="s">&quot;#7A4900&quot;</span><span class="p">,</span> <span class="s">&quot;#0000A6&quot;</span><span class="p">,</span> <span class="s">&quot;#63FFAC&quot;</span><span class="p">,</span> <span class="s">&quot;#B79762&quot;</span><span class="p">,</span> <span class="s">&quot;#004D43&quot;</span><span class="p">,</span> <span class="s">&quot;#8FB0FF&quot;</span><span class="p">,</span> <span class="s">&quot;#997D87&quot;</span><span class="p">,</span>
+            <span class="s">&quot;#5A0007&quot;</span><span class="p">,</span> <span class="s">&quot;#809693&quot;</span><span class="p">,</span> <span class="s">&quot;#FEFFE6&quot;</span><span class="p">,</span> <span class="s">&quot;#1B4400&quot;</span><span class="p">,</span> <span class="s">&quot;#4FC601&quot;</span><span class="p">,</span> <span class="s">&quot;#3B5DFF&quot;</span><span class="p">,</span> <span class="s">&quot;#4A3B53&quot;</span><span class="p">,</span> <span class="s">&quot;#FF2F80&quot;</span><span class="p">,</span>
+            <span class="s">&quot;#61615A&quot;</span><span class="p">,</span> <span class="s">&quot;#BA0900&quot;</span><span class="p">,</span> <span class="s">&quot;#6B7900&quot;</span><span class="p">,</span> <span class="s">&quot;#00C2A0&quot;</span><span class="p">,</span> <span class="s">&quot;#FFAA92&quot;</span><span class="p">,</span> <span class="s">&quot;#FF90C9&quot;</span><span class="p">,</span> <span class="s">&quot;#B903AA&quot;</span><span class="p">,</span> <span class="s">&quot;#D16100&quot;</span><span class="p">,</span>
+            <span class="s">&quot;#DDEFFF&quot;</span><span class="p">,</span> <span class="s">&quot;#000035&quot;</span><span class="p">,</span> <span class="s">&quot;#7B4F4B&quot;</span><span class="p">,</span> <span class="s">&quot;#A1C299&quot;</span><span class="p">,</span> <span class="s">&quot;#300018&quot;</span><span class="p">,</span> <span class="s">&quot;#0AA6D8&quot;</span><span class="p">,</span> <span class="s">&quot;#013349&quot;</span><span class="p">,</span> <span class="s">&quot;#00846F&quot;</span><span class="p">,</span>
+            <span class="s">&quot;#372101&quot;</span><span class="p">,</span> <span class="s">&quot;#FFB500&quot;</span><span class="p">,</span> <span class="s">&quot;#C2FFED&quot;</span><span class="p">,</span> <span class="s">&quot;#A079BF&quot;</span><span class="p">,</span> <span class="s">&quot;#CC0744&quot;</span><span class="p">,</span> <span class="s">&quot;#C0B9B2&quot;</span><span class="p">,</span> <span class="s">&quot;#C2FF99&quot;</span><span class="p">,</span> <span class="s">&quot;#001E09&quot;</span><span class="p">,</span>
+            <span class="s">&quot;#00489C&quot;</span><span class="p">,</span> <span class="s">&quot;#6F0062&quot;</span><span class="p">,</span> <span class="s">&quot;#0CBD66&quot;</span><span class="p">,</span> <span class="s">&quot;#EEC3FF&quot;</span><span class="p">,</span> <span class="s">&quot;#456D75&quot;</span><span class="p">,</span> <span class="s">&quot;#B77B68&quot;</span><span class="p">,</span> <span class="s">&quot;#7A87A1&quot;</span><span class="p">,</span> <span class="s">&quot;#788D66&quot;</span><span class="p">,</span>
+            <span class="s">&quot;#885578&quot;</span><span class="p">,</span> <span class="s">&quot;#FAD09F&quot;</span><span class="p">,</span> <span class="s">&quot;#FF8A9A&quot;</span><span class="p">,</span> <span class="s">&quot;#D157A0&quot;</span><span class="p">,</span> <span class="s">&quot;#BEC459&quot;</span><span class="p">,</span> <span class="s">&quot;#456648&quot;</span><span class="p">,</span> <span class="s">&quot;#0086ED&quot;</span><span class="p">,</span> <span class="s">&quot;#886F4C&quot;</span><span class="p">,</span>
+
+            <span class="s">&quot;#34362D&quot;</span><span class="p">,</span> <span class="s">&quot;#B4A8BD&quot;</span><span class="p">,</span> <span class="s">&quot;#00A6AA&quot;</span><span class="p">,</span> <span class="s">&quot;#452C2C&quot;</span><span class="p">,</span> <span class="s">&quot;#636375&quot;</span><span class="p">,</span> <span class="s">&quot;#A3C8C9&quot;</span><span class="p">,</span> <span class="s">&quot;#FF913F&quot;</span><span class="p">,</span> <span class="s">&quot;#938A81&quot;</span><span class="p">,</span>
+            <span class="s">&quot;#575329&quot;</span><span class="p">,</span> <span class="s">&quot;#00FECF&quot;</span><span class="p">,</span> <span class="s">&quot;#B05B6F&quot;</span><span class="p">,</span> <span class="s">&quot;#8CD0FF&quot;</span><span class="p">,</span> <span class="s">&quot;#3B9700&quot;</span><span class="p">,</span> <span class="s">&quot;#04F757&quot;</span><span class="p">,</span> <span class="s">&quot;#C8A1A1&quot;</span><span class="p">,</span> <span class="s">&quot;#1E6E00&quot;</span><span class="p">,</span>
+            <span class="s">&quot;#7900D7&quot;</span><span class="p">,</span> <span class="s">&quot;#A77500&quot;</span><span class="p">,</span> <span class="s">&quot;#6367A9&quot;</span><span class="p">,</span> <span class="s">&quot;#A05837&quot;</span><span class="p">,</span> <span class="s">&quot;#6B002C&quot;</span><span class="p">,</span> <span class="s">&quot;#772600&quot;</span><span class="p">,</span> <span class="s">&quot;#D790FF&quot;</span><span class="p">,</span> <span class="s">&quot;#9B9700&quot;</span><span class="p">,</span>
+            <span class="s">&quot;#549E79&quot;</span><span class="p">,</span> <span class="s">&quot;#FFF69F&quot;</span><span class="p">,</span> <span class="s">&quot;#201625&quot;</span><span class="p">,</span> <span class="s">&quot;#72418F&quot;</span><span class="p">,</span> <span class="s">&quot;#BC23FF&quot;</span><span class="p">,</span> <span class="s">&quot;#99ADC0&quot;</span><span class="p">,</span> <span class="s">&quot;#3A2465&quot;</span><span class="p">,</span> <span class="s">&quot;#922329&quot;</span><span class="p">,</span>
+            <span class="s">&quot;#5B4534&quot;</span><span class="p">,</span> <span class="s">&quot;#FDE8DC&quot;</span><span class="p">,</span> <span class="s">&quot;#404E55&quot;</span><span class="p">,</span> <span class="s">&quot;#0089A3&quot;</span><span class="p">,</span> <span class="s">&quot;#CB7E98&quot;</span><span class="p">,</span> <span class="s">&quot;#A4E804&quot;</span><span class="p">,</span> <span class="s">&quot;#324E72&quot;</span><span class="p">,</span> <span class="s">&quot;#6A3A4C&quot;</span><span class="p">,</span>
+            <span class="s">&quot;#83AB58&quot;</span><span class="p">,</span> <span class="s">&quot;#001C1E&quot;</span><span class="p">,</span> <span class="s">&quot;#D1F7CE&quot;</span><span class="p">,</span> <span class="s">&quot;#004B28&quot;</span><span class="p">,</span> <span class="s">&quot;#C8D0F6&quot;</span><span class="p">,</span> <span class="s">&quot;#A3A489&quot;</span><span class="p">,</span> <span class="s">&quot;#806C66&quot;</span><span class="p">,</span> <span class="s">&quot;#222800&quot;</span><span class="p">,</span>
+            <span class="s">&quot;#BF5650&quot;</span><span class="p">,</span> <span class="s">&quot;#E83000&quot;</span><span class="p">,</span> <span class="s">&quot;#66796D&quot;</span><span class="p">,</span> <span class="s">&quot;#DA007C&quot;</span><span class="p">,</span> <span class="s">&quot;#FF1A59&quot;</span><span class="p">,</span> <span class="s">&quot;#8ADBB4&quot;</span><span class="p">,</span> <span class="s">&quot;#1E0200&quot;</span><span class="p">,</span> <span class="s">&quot;#5B4E51&quot;</span><span class="p">,</span>
+            <span class="s">&quot;#C895C5&quot;</span><span class="p">,</span> <span class="s">&quot;#320033&quot;</span><span class="p">,</span> <span class="s">&quot;#FF6832&quot;</span><span class="p">,</span> <span class="s">&quot;#66E1D3&quot;</span><span class="p">,</span> <span class="s">&quot;#CFCDAC&quot;</span><span class="p">,</span> <span class="s">&quot;#D0AC94&quot;</span><span class="p">,</span> <span class="s">&quot;#7ED379&quot;</span><span class="p">,</span> <span class="s">&quot;#012C58&quot;</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">colors</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">colorcount</span><span class="p">):</span>
+            <span class="n">ix</span> <span class="o">=</span> <span class="n">i</span><span class="o">%</span><span class="nb">len</span><span class="p">(</span><span class="n">rgbhex</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">colors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">colors</span><span class="o">.</span><span class="n">HexColor</span><span class="p">(</span><span class="n">rgbhex</span><span class="p">[</span><span class="n">ix</span><span class="p">]))</span>
+
+</div>
+<div class="viewcode-block" id="Reporter.colorTest"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.reporter.Reporter.colorTest">[docs]</a>    <span class="k">def</span> <span class="nf">colorTest</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="kn">from</span> <span class="nn">reportlab.graphics.shapes</span> <span class="kn">import</span> <span class="n">Rect</span>
+        <span class="kn">from</span> <span class="nn">reportlab.graphics.charts.textlabels</span> <span class="kn">import</span> <span class="n">Label</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">colorRangeStatic</span><span class="p">(</span><span class="mi">130</span><span class="p">)</span>
+
+        <span class="n">dim</span><span class="o">=</span><span class="mi">25</span>
+        <span class="n">width</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">PAGE_WIDTH</span><span class="o">-</span><span class="mi">150</span>
+        <span class="n">inrow</span> <span class="o">=</span> <span class="mi">8</span> <span class="c">#int(width/dim)</span>
+        <span class="n">height</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">colors</span><span class="p">)</span><span class="o">/</span><span class="n">inrow</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">colors</span><span class="p">)</span><span class="o">%</span><span class="n">inrow</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">height</span> <span class="o">+=</span><span class="mi">1</span>
+        <span class="n">height</span> <span class="o">*=</span> <span class="n">dim</span>
+        <span class="n">drawing</span> <span class="o">=</span> <span class="n">Drawing</span><span class="p">(</span><span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">col</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">colors</span><span class="p">):</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="p">(</span><span class="n">i</span><span class="o">%</span><span class="n">inrow</span><span class="p">)</span><span class="o">*</span><span class="n">dim</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">i</span><span class="o">/</span><span class="n">inrow</span><span class="p">)</span><span class="o">*</span><span class="n">dim</span>
+            <span class="n">rec</span> <span class="o">=</span> <span class="n">Rect</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">,</span><span class="n">width</span><span class="o">=</span><span class="n">dim</span><span class="p">,</span><span class="n">height</span><span class="o">=</span><span class="n">dim</span><span class="p">)</span>
+            <span class="n">rec</span><span class="o">.</span><span class="n">fillColor</span> <span class="o">=</span> <span class="n">col</span>
+            <span class="n">drawing</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">rec</span><span class="p">)</span>
+            <span class="n">lab</span> <span class="o">=</span> <span class="n">Label</span><span class="p">()</span>
+            <span class="n">lab</span><span class="o">.</span><span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="o">+</span><span class="n">dim</span><span class="o">/</span><span class="mi">2</span>
+            <span class="n">lab</span><span class="o">.</span><span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="o">+</span><span class="n">dim</span><span class="o">/</span><span class="mi">2</span>
+            <span class="n">lab</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%d</span><span class="s">&#39;</span><span class="o">%</span><span class="n">i</span><span class="p">)</span>
+            <span class="n">drawing</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">lab</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">drawing</span>
+</div>
+<div class="viewcode-block" id="Reporter.stackedGraphs"><a class="viewcode-back" href="../../../Tools.dbTools.html#Tools.dbTools.reporter.Reporter.stackedGraphs">[docs]</a>    <span class="k">def</span> <span class="nf">stackedGraphs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">lxydata</span><span class="p">,</span><span class="n">tmin</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">tmax</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span> <span class="c"># list of (label, [x,yarr]) with x in seconds</span>
+
+        <span class="n">lcheight</span> <span class="o">=</span> <span class="mi">125</span>
+        <span class="n">lcwidth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">PAGE_WIDTH</span><span class="o">-</span><span class="mi">280</span>
+        <span class="n">graphsinchart</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">maxnumgraphsinchart</span>
+        <span class="n">stacks</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">lxydata</span><span class="p">)</span><span class="o">/</span><span class="n">graphsinchart</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">lxydata</span><span class="p">)</span><span class="o">%</span><span class="n">graphsinchart</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+            <span class="n">stacks</span> <span class="o">+=</span><span class="mi">1</span>
+        <span class="n">drawing</span> <span class="o">=</span> <span class="n">Drawing</span><span class="p">(</span><span class="n">lcwidth</span><span class="o">+</span><span class="mi">130</span><span class="p">,</span> <span class="n">stacks</span><span class="o">*</span><span class="n">lcheight</span><span class="o">+</span><span class="mi">75</span><span class="p">)</span>
+        <span class="n">ix</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">ix</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">lxydata</span><span class="p">),</span><span class="n">graphsinchart</span><span class="p">):</span>
+            <span class="n">subset</span><span class="o">=</span><span class="n">lxydata</span><span class="p">[</span><span class="n">ix</span><span class="p">:</span><span class="nb">min</span><span class="p">(</span><span class="n">ix</span><span class="o">+</span><span class="n">graphsinchart</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">lxydata</span><span class="p">))]</span>
+            <span class="n">maxX</span> <span class="o">=</span> <span class="n">subset</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">maxY</span> <span class="o">=</span> <span class="mf">1.</span>
+            <span class="n">minX</span> <span class="o">=</span> <span class="n">maxX</span>
+            <span class="n">minY</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+            <span class="k">for</span> <span class="n">label</span><span class="p">,</span><span class="n">xyarr</span> <span class="ow">in</span> <span class="n">subset</span><span class="p">:</span>
+                <span class="n">xarr</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">)</span> <span class="ow">in</span> <span class="n">xyarr</span><span class="p">]</span>
+                <span class="n">yarr</span> <span class="o">=</span> <span class="p">[</span><span class="n">y</span> <span class="k">for</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">)</span> <span class="ow">in</span> <span class="n">xyarr</span><span class="p">]</span>
+                <span class="n">maxY</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">maxY</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">yarr</span><span class="p">))</span>
+                <span class="n">minY</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">minY</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="n">yarr</span><span class="p">))</span>
+                <span class="n">maxX</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">maxX</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">xarr</span><span class="p">))</span>
+                <span class="n">minX</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">minX</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="n">xarr</span><span class="p">))</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">tmin</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">minX</span> <span class="o">=</span> <span class="n">tmin</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">tmax</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">maxX</span> <span class="o">=</span> <span class="n">tmax</span>
+            <span class="n">subset</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s">&#39;CritMax&#39;</span><span class="p">,[[</span><span class="n">minX</span><span class="p">,</span><span class="mf">1.</span><span class="p">],[</span><span class="n">maxX</span><span class="p">,</span><span class="mf">1.</span><span class="p">]]))</span>
+            <span class="n">subset</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s">&#39;CritMin&#39;</span><span class="p">,[[</span><span class="n">minX</span><span class="p">,</span><span class="o">-</span><span class="mf">1.</span><span class="p">],[</span><span class="n">maxX</span><span class="p">,</span><span class="o">-</span><span class="mf">1.</span><span class="p">]]))</span>
+            <span class="n">lc</span> <span class="o">=</span> <span class="n">LinePlot</span><span class="p">()</span>
+            <span class="n">lc</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="mi">30</span>
+            <span class="n">lc</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="mi">50</span><span class="o">+</span><span class="n">lcheight</span><span class="o">*</span><span class="n">ix</span><span class="o">/</span><span class="n">graphsinchart</span>
+            <span class="n">lc</span><span class="o">.</span><span class="n">height</span> <span class="o">=</span> <span class="p">(</span><span class="n">lcheight</span><span class="o">-</span><span class="mi">10</span><span class="p">)</span>
+            <span class="n">lc</span><span class="o">.</span><span class="n">width</span> <span class="o">=</span> <span class="n">lcwidth</span>
+            <span class="n">lc</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="n">xy</span> <span class="k">for</span> <span class="p">(</span><span class="n">l</span><span class="p">,</span><span class="n">xy</span><span class="p">)</span> <span class="ow">in</span> <span class="n">subset</span><span class="p">]</span>
+            <span class="n">datalabels</span> <span class="o">=</span> <span class="p">[</span> <span class="n">l</span> <span class="k">for</span> <span class="p">(</span><span class="n">l</span><span class="p">,</span><span class="n">xy</span><span class="p">)</span> <span class="ow">in</span> <span class="n">subset</span><span class="p">]</span>
+
+            <span class="n">lc</span><span class="o">.</span><span class="n">xValueAxis</span><span class="o">.</span><span class="n">valueMin</span> <span class="o">=</span> <span class="n">minX</span>
+            <span class="n">lc</span><span class="o">.</span><span class="n">xValueAxis</span><span class="o">.</span><span class="n">valueMax</span> <span class="o">=</span> <span class="n">maxX</span>
+            <span class="n">lc</span><span class="o">.</span><span class="n">xValueAxis</span><span class="o">.</span><span class="n">valueStep</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">maxX</span><span class="o">-</span><span class="n">minX</span><span class="p">)</span><span class="o">/</span><span class="mi">5</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">ix</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">lc</span><span class="o">.</span><span class="n">xValueAxis</span><span class="o">.</span><span class="n">labelTextFormat</span> <span class="o">=</span> <span class="n">dateformatter</span> <span class="c"># Use the formatter</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">lc</span><span class="o">.</span><span class="n">xValueAxis</span><span class="o">.</span><span class="n">labelTextFormat</span> <span class="o">=</span> <span class="n">emptyformatter</span> <span class="c"># Use the formatter</span>
+            <span class="n">lc</span><span class="o">.</span><span class="n">xValueAxis</span><span class="o">.</span><span class="n">visibleGrid</span>           <span class="o">=</span> <span class="bp">True</span>
+            <span class="n">lc</span><span class="o">.</span><span class="n">xValueAxis</span><span class="o">.</span><span class="n">gridStrokeWidth</span> <span class="o">=</span> <span class="o">.</span><span class="mi">5</span>
+            <span class="n">lc</span><span class="o">.</span><span class="n">xValueAxis</span><span class="o">.</span><span class="n">gridStrokeColor</span> <span class="o">=</span> <span class="n">colors</span><span class="o">.</span><span class="n">darkgrey</span>
+            <span class="n">lc</span><span class="o">.</span><span class="n">xValueAxis</span><span class="o">.</span><span class="n">subTickNum</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="n">lc</span><span class="o">.</span><span class="n">xValueAxis</span><span class="o">.</span><span class="n">subGridStrokeWidth</span> <span class="o">=</span> <span class="o">.</span><span class="mi">25</span>
+            <span class="n">lc</span><span class="o">.</span><span class="n">xValueAxis</span><span class="o">.</span><span class="n">subGridStrokeColor</span> <span class="o">=</span> <span class="n">colors</span><span class="o">.</span><span class="n">lightgrey</span>
+            <span class="n">lc</span><span class="o">.</span><span class="n">xValueAxis</span><span class="o">.</span><span class="n">visibleSubGrid</span> <span class="o">=</span> <span class="bp">True</span>
+
+            <span class="n">lc</span><span class="o">.</span><span class="n">yValueAxis</span><span class="o">.</span><span class="n">valueMin</span> <span class="o">=</span> <span class="n">minY</span>
+            <span class="n">lc</span><span class="o">.</span><span class="n">yValueAxis</span><span class="o">.</span><span class="n">valueMax</span> <span class="o">=</span> <span class="n">maxY</span>
+            <span class="n">lc</span><span class="o">.</span><span class="n">yValueAxis</span><span class="o">.</span><span class="n">valueStep</span> <span class="o">=</span> <span class="o">.</span><span class="mi">25</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">maxY</span><span class="o">-</span><span class="n">minY</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">2</span><span class="p">:</span>
+                <span class="n">lc</span><span class="o">.</span><span class="n">yValueAxis</span><span class="o">.</span><span class="n">valueStep</span> <span class="o">=</span> <span class="o">.</span><span class="mi">5</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">maxY</span><span class="o">-</span><span class="n">minY</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">4</span><span class="p">:</span>
+                <span class="n">lc</span><span class="o">.</span><span class="n">yValueAxis</span><span class="o">.</span><span class="n">valueStep</span> <span class="o">=</span> <span class="mf">1.</span>
+            <span class="n">lc</span><span class="o">.</span><span class="n">yValueAxis</span><span class="o">.</span><span class="n">visibleGrid</span>           <span class="o">=</span> <span class="bp">True</span>
+            <span class="n">lc</span><span class="o">.</span><span class="n">yValueAxis</span><span class="o">.</span><span class="n">gridStrokeWidth</span> <span class="o">=</span> <span class="o">.</span><span class="mi">5</span>
+            <span class="n">lc</span><span class="o">.</span><span class="n">yValueAxis</span><span class="o">.</span><span class="n">gridStrokeColor</span> <span class="o">=</span> <span class="n">colors</span><span class="o">.</span><span class="n">darkgrey</span>
+            <span class="n">lc</span><span class="o">.</span><span class="n">yValueAxis</span><span class="o">.</span><span class="n">subTickNum</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="n">lc</span><span class="o">.</span><span class="n">yValueAxis</span><span class="o">.</span><span class="n">subGridStrokeWidth</span> <span class="o">=</span> <span class="o">.</span><span class="mi">25</span>
+            <span class="n">lc</span><span class="o">.</span><span class="n">yValueAxis</span><span class="o">.</span><span class="n">subGridStrokeColor</span> <span class="o">=</span> <span class="n">colors</span><span class="o">.</span><span class="n">lightgrey</span>
+            <span class="n">lc</span><span class="o">.</span><span class="n">yValueAxis</span><span class="o">.</span><span class="n">visibleSubGrid</span> <span class="o">=</span> <span class="bp">True</span>
+
+            <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">lc</span><span class="o">.</span><span class="n">data</span><span class="p">)):</span>
+                <span class="n">lc</span><span class="o">.</span><span class="n">lines</span><span class="p">[</span><span class="n">x</span><span class="p">]</span><span class="o">.</span><span class="n">strokeColor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">colors</span><span class="p">[</span><span class="n">x</span><span class="p">]</span>
+                <span class="n">lc</span><span class="o">.</span><span class="n">lines</span><span class="p">[</span><span class="n">x</span><span class="p">]</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">datalabels</span><span class="p">[</span><span class="n">x</span><span class="p">]</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">lc</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">x</span><span class="p">])</span> <span class="o">==</span><span class="mi">1</span><span class="p">:</span>
+                    <span class="n">lc</span><span class="o">.</span><span class="n">lines</span><span class="p">[</span><span class="n">x</span><span class="p">]</span><span class="o">.</span><span class="n">symbol</span> <span class="o">=</span> <span class="n">makeMarker</span><span class="p">(</span><span class="s">&#39;FilledCircle&#39;</span><span class="p">)</span> <span class="c"># added to make filled circles.</span>
+                <span class="n">lc</span><span class="o">.</span><span class="n">lines</span><span class="p">[</span><span class="n">x</span><span class="p">]</span><span class="o">.</span><span class="n">strokeWidth</span> <span class="o">=</span> <span class="mi">2</span>
+                <span class="k">if</span> <span class="n">lc</span><span class="o">.</span><span class="n">lines</span><span class="p">[</span><span class="n">x</span><span class="p">]</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s">&#39;CritMin&#39;</span> <span class="ow">or</span> <span class="n">lc</span><span class="o">.</span><span class="n">lines</span><span class="p">[</span><span class="n">x</span><span class="p">]</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s">&#39;CritMax&#39;</span><span class="p">:</span> <span class="c"># distinguish min/max</span>
+                    <span class="n">lc</span><span class="o">.</span><span class="n">lines</span><span class="p">[</span><span class="n">x</span><span class="p">]</span><span class="o">.</span><span class="n">strokeColor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">colors</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="n">lc</span><span class="o">.</span><span class="n">lines</span><span class="p">[</span><span class="n">x</span><span class="p">]</span><span class="o">.</span><span class="n">strokeDashArray</span> <span class="o">=</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">addLabels</span><span class="p">(</span><span class="n">drawing</span><span class="p">,</span><span class="n">ylabel</span><span class="o">=</span><span class="s">&quot;geschaalde waarde&quot;</span><span class="p">)</span>
+            <span class="n">drawing</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">lc</span><span class="p">)</span>
+            <span class="n">ix</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="n">drawing</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">addAutoLegend</span><span class="p">(</span><span class="n">lc</span><span class="p">,(</span><span class="n">lc</span><span class="o">.</span><span class="n">x</span><span class="p">,</span><span class="n">lc</span><span class="o">.</span><span class="n">y</span><span class="p">,</span><span class="n">lc</span><span class="o">.</span><span class="n">width</span><span class="p">,</span><span class="n">lc</span><span class="o">.</span><span class="n">height</span><span class="p">),</span><span class="nb">len</span><span class="p">(</span><span class="n">lc</span><span class="o">.</span><span class="n">data</span><span class="p">),</span><span class="n">side</span><span class="o">=</span><span class="s">&#39;right&#39;</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">drawing</span>
+</pre></div></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

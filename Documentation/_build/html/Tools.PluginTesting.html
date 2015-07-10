@@ -1,0 +1,183 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Tools.PluginTesting package &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">..  documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="tools-plugintesting-package">
+<h1>Tools.PluginTesting package<a class="headerlink" href="#tools-plugintesting-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-Tools.PluginTesting.PluginTester">
+<span id="tools-plugintesting-plugintester-module"></span><h2>Tools.PluginTesting.PluginTester module<a class="headerlink" href="#module-Tools.PluginTesting.PluginTester" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="Tools.PluginTesting.PluginTester.batchtest">
+<tt class="descclassname">Tools.PluginTesting.PluginTester.</tt><tt class="descname">batchtest</tt><big>(</big><em>exe</em>, <em>exepath</em>, <em>testlist</em>, <em>outputdir</em><big>)</big><a class="reference internal" href="_modules/Tools/PluginTesting/PluginTester.html#batchtest"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.PluginTesting.PluginTester.batchtest" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tries to make proper input files for all tests specified in testlist,
+tries to run the exe on each created input file
+returns results,errorlist</p>
+<blockquote>
+<div>exe = &#8216;pywadplugin&#8217; # name of exe
+exepath = &#8216;/folder/pywad2&#8217; # path to folder with exe
+testlist = {} # { plugin: {id: {input:[], config:[], data:[]} } }
+results = [] # list of results for each test
+errorlist = [] # list of errors creating XML</div></blockquote>
+</dd></dl>
+
+<dl class="function">
+<dt id="Tools.PluginTesting.PluginTester.createInputXML">
+<tt class="descclassname">Tools.PluginTesting.PluginTester.</tt><tt class="descname">createInputXML</tt><big>(</big><em>configxml</em>, <em>datapath</em>, <em>outputdir</em>, <em>level</em><big>)</big><a class="reference internal" href="_modules/Tools/PluginTesting/PluginTester.html#createInputXML"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.PluginTesting.PluginTester.createInputXML" title="Permalink to this definition">¶</a></dt>
+<dd><p>From a study hierarchy an inputXML file is created. This file can be used directly to test the pywad framework using
+python pywadplugin.py &lt;inputXML&gt;.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Tools.PluginTesting.PluginTester.inputxml">
+<tt class="descclassname">Tools.PluginTesting.PluginTester.</tt><tt class="descname">inputxml</tt><big>(</big><em>configpath</em>, <em>outputpath</em>, <em>idpar</em>, <em>name</em>, <em>uid</em>, <em>series</em>, <em>level='series'</em><big>)</big><a class="reference internal" href="_modules/Tools/PluginTesting/PluginTester.html#inputxml"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.PluginTesting.PluginTester.inputxml" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="Tools.PluginTesting.PluginTester.instancexml">
+<tt class="descclassname">Tools.PluginTesting.PluginTester.</tt><tt class="descname">instancexml</tt><big>(</big><em>number</em>, <em>filename</em><big>)</big><a class="reference internal" href="_modules/Tools/PluginTesting/PluginTester.html#instancexml"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.PluginTesting.PluginTester.instancexml" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="Tools.PluginTesting.PluginTester.sanitycheck">
+<tt class="descclassname">Tools.PluginTesting.PluginTester.</tt><tt class="descname">sanitycheck</tt><big>(</big><em>args</em><big>)</big><a class="reference internal" href="_modules/Tools/PluginTesting/PluginTester.html#sanitycheck"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.PluginTesting.PluginTester.sanitycheck" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>reguires a folder structure </dt>
+<dd>&lt;root&gt;/Plugins/&lt;some path&gt;/&lt;plugin name&gt;
+&lt;root&gt;/Testing/&lt;some path&gt;/&lt;plugin name&gt;</dd>
+<dt>The Testing plugin folder should at least one of:</dt>
+<dd>series/config_&lt;id&gt;.xml (plugin configuration file)
+instance/config_&lt;id&gt;.xml (plugin configuration file)
+study/config_&lt;id&gt;.xml (plugin configuration file)</dd>
+</dl>
+<p>In addition there needs to be a &lt;testdata&gt; folder with a folder dicom_&lt;id&gt;, in which test data is present for this plugin.</p>
+<dl class="docutils">
+<dt>Example: </dt>
+<dd>plugin: &lt;root&gt;/Plugins/CT/CT_Philips_QuickIQ
+plugin files: ....
+testing: &lt;root&gt;/Testing/CT/CT_Philips_QuickIQ
+testing files: series/config_body.xml,series/config_head.xml
+testdata: &lt;dataroot&gt;/CT/CT_Philips_QuickIQ/dicom_head/ and &lt;dataroot&gt;/CT/CT_Philips_QuickIQ/dicom_body/</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="Tools.PluginTesting.PluginTester.seriesxml">
+<tt class="descclassname">Tools.PluginTesting.PluginTester.</tt><tt class="descname">seriesxml</tt><big>(</big><em>number</em>, <em>description</em>, <em>instance</em><big>)</big><a class="reference internal" href="_modules/Tools/PluginTesting/PluginTester.html#seriesxml"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.PluginTesting.PluginTester.seriesxml" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-Tools.PluginTesting.loaddicom">
+<span id="tools-plugintesting-loaddicom-module"></span><h2>Tools.PluginTesting.loaddicom module<a class="headerlink" href="#module-Tools.PluginTesting.loaddicom" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="Tools.PluginTesting.loaddicom.LoadDicom">
+<tt class="descclassname">Tools.PluginTesting.loaddicom.</tt><tt class="descname">LoadDicom</tt><big>(</big><em>initialdir=None</em><big>)</big><a class="reference internal" href="_modules/Tools/PluginTesting/loaddicom.html#LoadDicom"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.PluginTesting.loaddicom.LoadDicom" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-Tools.PluginTesting">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-Tools.PluginTesting" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Tools.PluginTesting package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-Tools.PluginTesting.PluginTester">Tools.PluginTesting.PluginTester module</a></li>
+<li><a class="reference internal" href="#module-Tools.PluginTesting.loaddicom">Tools.PluginTesting.loaddicom module</a></li>
+<li><a class="reference internal" href="#module-Tools.PluginTesting">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/Tools.PluginTesting.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">..  documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

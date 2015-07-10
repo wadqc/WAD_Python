@@ -1,0 +1,143 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Tools.PET_Siemens_send2wad.source.create_dicom &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="../../../../index.html" />
+    <link rel="up" title="Module code" href="../../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for Tools.PET_Siemens_send2wad.source.create_dicom</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">dicom</span>
+<span class="kn">from</span> <span class="nn">dicom.dataset</span> <span class="kn">import</span> <span class="n">Dataset</span><span class="p">,</span> <span class="n">FileDataset</span>
+
+
+<div class="viewcode-block" id="create_dicom"><a class="viewcode-back" href="../../../../Tools.PET_Siemens_send2wad.source.html#Tools.PET_Siemens_send2wad.source.create_dicom.create_dicom">[docs]</a><span class="k">def</span> <span class="nf">create_dicom</span><span class="p">(</span><span class="n">private_tag</span><span class="p">,</span> <span class="n">payload</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">dcmconfig</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Function creates minimal dicom file from scratch with required tags</span>
+<span class="sd">        and stores payload (string) in the specified private tag.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">PatientID</span> <span class="o">=</span> <span class="n">dcmconfig</span><span class="p">[</span><span class="s">&#39;patid&#39;</span><span class="p">]</span>
+    <span class="n">PatientName</span> <span class="o">=</span> <span class="n">dcmconfig</span><span class="p">[</span><span class="s">&#39;patname&#39;</span><span class="p">]</span>
+    <span class="n">StudyDescription</span> <span class="o">=</span> <span class="n">dcmconfig</span><span class="p">[</span><span class="s">&#39;studydes&#39;</span><span class="p">]</span>
+    <span class="n">SeriesDescription</span> <span class="o">=</span> <span class="n">dcmconfig</span><span class="p">[</span><span class="s">&#39;seriesdes&#39;</span><span class="p">]</span>
+    <span class="n">StationName</span> <span class="o">=</span> <span class="n">dcmconfig</span><span class="p">[</span><span class="s">&#39;stationname&#39;</span><span class="p">]</span>
+
+    <span class="n">StudyDate</span> <span class="o">=</span> <span class="n">dcmconfig</span><span class="p">[</span><span class="s">&#39;studydate&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">&#39;%Y%m</span><span class="si">%d</span><span class="s">&#39;</span><span class="p">)</span>
+    <span class="n">StudyTime</span> <span class="o">=</span> <span class="n">dcmconfig</span><span class="p">[</span><span class="s">&#39;studytime&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">&#39;%H%M%S&#39;</span><span class="p">)</span>
+
+    <span class="c"># create empty dicomfile</span>
+    <span class="n">file_meta</span> <span class="o">=</span> <span class="n">Dataset</span><span class="p">()</span>
+
+    <span class="c"># Raw Data Storage</span>
+    <span class="n">file_meta</span><span class="o">.</span><span class="n">MediaStorageSOPClassUID</span> <span class="o">=</span> <span class="s">&#39;1.2.840.10008.5.1.4.1.1.66&#39;</span>
+
+    <span class="c"># unieke uid&#39;s</span>
+    <span class="n">file_meta</span><span class="o">.</span><span class="n">MediaStorageSOPInstanceUID</span> <span class="o">=</span> <span class="n">dicom</span><span class="o">.</span><span class="n">UID</span><span class="o">.</span><span class="n">generate_uid</span><span class="p">()</span>
+    <span class="n">file_meta</span><span class="o">.</span><span class="n">ImplementationClassUID</span> <span class="o">=</span> <span class="n">dicom</span><span class="o">.</span><span class="n">UID</span><span class="o">.</span><span class="n">generate_uid</span><span class="p">()</span>
+
+    <span class="n">ds</span> <span class="o">=</span> <span class="n">FileDataset</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="p">{},</span><span class="n">file_meta</span> <span class="o">=</span> <span class="n">file_meta</span><span class="p">,</span><span class="n">preamble</span><span class="o">=</span><span class="s">&quot;</span><span class="se">\0</span><span class="s">&quot;</span><span class="o">*</span><span class="mi">128</span><span class="p">)</span>
+
+    <span class="n">ds</span><span class="o">.</span><span class="n">SOPClassUID</span> <span class="o">=</span> <span class="s">&#39;1.2.840.10008.5.1.4.1.1.7&#39;</span> <span class="c"># secondary capture SOP UID</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">SOPInstanceUID</span> <span class="o">=</span> <span class="n">file_meta</span><span class="o">.</span><span class="n">MediaStorageSOPInstanceUID</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">StudyInstanceUID</span> <span class="o">=</span> <span class="n">dicom</span><span class="o">.</span><span class="n">UID</span><span class="o">.</span><span class="n">generate_uid</span><span class="p">()</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">SeriesInstanceUID</span> <span class="o">=</span> <span class="n">dicom</span><span class="o">.</span><span class="n">UID</span><span class="o">.</span><span class="n">generate_uid</span><span class="p">()</span>
+
+    <span class="n">ds</span><span class="o">.</span><span class="n">PatientID</span> <span class="o">=</span> <span class="n">PatientID</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">PatientName</span> <span class="o">=</span> <span class="n">PatientName</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">StudyDescription</span> <span class="o">=</span> <span class="n">StudyDescription</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">SeriesDescription</span> <span class="o">=</span> <span class="n">SeriesDescription</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">StationName</span> <span class="o">=</span> <span class="n">StationName</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">Modality</span> <span class="o">=</span> <span class="s">&#39;OT&#39;</span>
+
+    <span class="n">ds</span><span class="o">.</span><span class="n">StudyDate</span> <span class="o">=</span>  <span class="n">StudyDate</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">SeriesDate</span> <span class="o">=</span>  <span class="n">ds</span><span class="o">.</span><span class="n">StudyDate</span>
+
+    <span class="n">ds</span><span class="o">.</span><span class="n">ContentDate</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">StudyDate</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">StudyTime</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">SeriesTime</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">ContentTime</span> <span class="o">=</span> <span class="n">StudyTime</span>
+
+    <span class="n">ds</span><span class="o">.</span><span class="n">add_new</span><span class="p">(</span><span class="n">private_tag</span><span class="p">,</span><span class="s">&#39;OB&#39;</span><span class="p">,</span> <span class="n">payload</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">ds</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

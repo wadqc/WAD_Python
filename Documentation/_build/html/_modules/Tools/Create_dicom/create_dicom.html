@@ -1,0 +1,274 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Tools.Create_dicom.create_dicom &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for Tools.Create_dicom.create_dicom</h1><div class="highlight"><pre>
+<span class="c"># -*- coding: utf-8 -*-</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Test script that creates an empty dicom file and stores results</span>
+<span class="sd">(normally obtained from http-post, or some utility/script) in private tag (0071,9999)</span>
+<span class="sd">A structure of the following form should be stored in this tag (also see &quot;post&quot; below):</span>
+<span class="sd">{</span>
+<span class="sd">  &#39;Description&#39; : [</span>
+<span class="sd">       {</span>
+<span class="sd">        &#39;type&#39; : &#39;float&#39;,</span>
+<span class="sd">        &#39;description&#39; : &#39;&#39;,</span>
+<span class="sd">        &#39;value&#39; : &#39;&#39;,</span>
+<span class="sd">        &#39;level&#39; : 1,</span>
+<span class="sd">        &#39;quantity&#39; : &#39;&#39;,</span>
+<span class="sd">        &#39;units&#39; : &#39;&#39;,</span>
+<span class="sd">       },</span>
+<span class="sd">       {</span>
+<span class="sd">        &#39;type&#39; : &#39;char&#39;,</span>
+<span class="sd">        &#39;description&#39; : &#39;&#39;,</span>
+<span class="sd">        &#39;value&#39; : &#39;&#39;,</span>
+<span class="sd">        &#39;level&#39; : 1,</span>
+<span class="sd">        &#39;quantity&#39; : &#39;&#39;,</span>
+<span class="sd">        &#39;units&#39; : &#39;&#39;,</span>
+<span class="sd">       },</span>
+<span class="sd">       {</span>
+<span class="sd">        &#39;type&#39; : &#39;bool&#39;,</span>
+<span class="sd">        &#39;description&#39; : &#39;&#39;,</span>
+<span class="sd">        &#39;value&#39; : &#39;&#39;,</span>
+<span class="sd">        &#39;level&#39; : 1,</span>
+<span class="sd">        &#39;quantity&#39; : &#39;&#39;,</span>
+<span class="sd">        &#39;units&#39; : &#39;&#39;,</span>
+<span class="sd">       },</span>
+<span class="sd">       {</span>
+<span class="sd">        &#39;type&#39; : &#39;object&#39;,</span>
+<span class="sd">        &#39;description&#39; : &#39;&#39;,</span>
+<span class="sd">        &#39;level&#39; : 1,</span>
+<span class="sd">        &#39;quantity&#39; : &#39;&#39;,</span>
+<span class="sd">        &#39;units&#39; : &#39;&#39;,</span>
+<span class="sd">        &#39;filename&#39; : &#39;&#39;,</span>
+<span class="sd">        &#39;base64_blob&#39; : &#39;PUTBASE64BLOBHERE&#39;</span>
+<span class="sd">       }      </span>
+<span class="sd">  ]</span>
+<span class="sd">}</span>
+<span class="sd">where there can be any number of sub-dictionaries of the supported WAD types</span>
+<span class="sd">FIXME: check bool value!</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+
+<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">dicom</span>
+<span class="kn">from</span> <span class="nn">dicom.dataset</span> <span class="kn">import</span> <span class="n">Dataset</span><span class="p">,</span> <span class="n">FileDataset</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">ast</span> <span class="kn">import</span> <span class="n">literal_eval</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+
+<span class="c"># globals</span>
+
+<span class="n">private_tag</span><span class="o">=</span><span class="p">(</span><span class="mh">0x0071</span><span class="p">,</span><span class="mh">0x9999</span><span class="p">)</span>
+<span class="n">PatientID</span> <span class="o">=</span> <span class="s">&#39;1234567&#39;</span>
+<span class="n">PatientName</span> <span class="o">=</span> <span class="s">&#39;Gammaprobe QC&#39;</span>
+<span class="n">StudyDescription</span> <span class="o">=</span> <span class="s">&#39;EuroProbeII&#39;</span>
+<span class="n">SeriesDescription</span> <span class="o">=</span> <span class="s">&#39;Gammaprobe meting&#39;</span>
+
+
+
+<div class="viewcode-block" id="create_dicom"><a class="viewcode-back" href="../../../Tools.Create_dicom.html#Tools.Create_dicom.create_dicom.create_dicom">[docs]</a><span class="k">def</span> <span class="nf">create_dicom</span><span class="p">(</span><span class="n">private_tag</span><span class="p">,</span><span class="n">payload</span><span class="p">,</span><span class="n">filename</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Function creates minimal dicom file from scratch with required tags</span>
+<span class="sd">        and stores payload (string) in the specified private tag.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c"># create empty dicomfile</span>
+    <span class="n">file_meta</span> <span class="o">=</span> <span class="n">Dataset</span><span class="p">()</span>
+
+    <span class="c"># Raw Data Storage</span>
+    <span class="n">file_meta</span><span class="o">.</span><span class="n">MediaStorageSOPClassUID</span> <span class="o">=</span> <span class="s">&#39;1.2.840.10008.5.1.4.1.1.66&#39;</span>
+
+    <span class="c"># unieke uid&#39;s</span>
+    <span class="n">file_meta</span><span class="o">.</span><span class="n">MediaStorageSOPInstanceUID</span> <span class="o">=</span> <span class="n">dicom</span><span class="o">.</span><span class="n">UID</span><span class="o">.</span><span class="n">generate_uid</span><span class="p">()</span>
+    <span class="n">file_meta</span><span class="o">.</span><span class="n">ImplementationClassUID</span> <span class="o">=</span> <span class="n">dicom</span><span class="o">.</span><span class="n">UID</span><span class="o">.</span><span class="n">generate_uid</span><span class="p">()</span>
+
+    <span class="n">ds</span> <span class="o">=</span> <span class="n">FileDataset</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="p">{},</span><span class="n">file_meta</span> <span class="o">=</span> <span class="n">file_meta</span><span class="p">,</span><span class="n">preamble</span><span class="o">=</span><span class="s">&quot;</span><span class="se">\0</span><span class="s">&quot;</span><span class="o">*</span><span class="mi">128</span><span class="p">)</span>
+
+    <span class="n">ds</span><span class="o">.</span><span class="n">SOPClassUID</span> <span class="o">=</span> <span class="s">&#39;1.2.840.10008.5.1.4.1.1.7&#39;</span> <span class="c"># secondary capture SOP UID</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">SOPInstanceUID</span> <span class="o">=</span> <span class="n">file_meta</span><span class="o">.</span><span class="n">MediaStorageSOPInstanceUID</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">StudyInstanceUID</span> <span class="o">=</span> <span class="n">dicom</span><span class="o">.</span><span class="n">UID</span><span class="o">.</span><span class="n">generate_uid</span><span class="p">()</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">SeriesInstanceUID</span> <span class="o">=</span> <span class="n">dicom</span><span class="o">.</span><span class="n">UID</span><span class="o">.</span><span class="n">generate_uid</span><span class="p">()</span>
+
+    <span class="n">ds</span><span class="o">.</span><span class="n">PatientID</span> <span class="o">=</span> <span class="n">PatientID</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">PatientName</span> <span class="o">=</span> <span class="n">PatientName</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">StudyDescription</span> <span class="o">=</span> <span class="n">StudyDescription</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">SeriesDescription</span> <span class="o">=</span> <span class="n">SeriesDescription</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">Modality</span> <span class="o">=</span> <span class="s">&#39;OT&#39;</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">StudyDate</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">&#39;%Y%m</span><span class="si">%d</span><span class="s">&#39;</span><span class="p">)</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">SeriesDate</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">StudyDate</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">ContentDate</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">StudyDate</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">StudyTime</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">SeriesTime</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">ContentTime</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">&#39;%H%M%S&#39;</span><span class="p">)</span>
+
+    <span class="n">ds</span><span class="o">.</span><span class="n">add_new</span><span class="p">(</span><span class="n">private_tag</span><span class="p">,</span><span class="s">&#39;OB&#39;</span><span class="p">,</span> <span class="n">payload</span><span class="p">)</span>
+
+    <span class="n">ds</span><span class="o">.</span><span class="n">save_as</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+
+
+
+
+</div>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd"># open binary file and convert to base64 string</span>
+<span class="sd">#  linux commandline/bash script :   base64  (coreutils)</span>
+<span class="sd">#  java, c++ : numerous existing libraries</span>
+<span class="sd">file = open(&#39;test.png&#39;,&#39;rb&#39;)</span>
+<span class="sd">filedata = file.read()</span>
+<span class="sd">fileblob = filedata.encode(&quot;base64&quot;)</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="c"># string normally generated by some utility, php-code, or script:</span>
+<span class="n">payload</span> <span class="o">=</span> <span class="s">&quot;&quot;&quot;</span>
+<span class="s">{ &#39;grote gammaprobe&#39; : [</span>
+<span class="s">       { </span>
+<span class="s">        &#39;type&#39; : &#39;float&#39;,</span>
+<span class="s">        &#39;description&#39; : &#39;counts&#39;,</span>
+<span class="s">        &#39;value&#39; : &#39;13463&#39;,</span>
+<span class="s">        &#39;level&#39; : 1,</span>
+<span class="s">        &#39;quantity&#39; : &#39;&#39;,</span>
+<span class="s">        &#39;units&#39; : &#39;counts/10s&#39;,</span>
+<span class="s">       },</span>
+<span class="s">       { </span>
+<span class="s">        &#39;type&#39; : &#39;char&#39;,</span>
+<span class="s">        &#39;description&#39; : &#39;measurement_time&#39;,</span>
+<span class="s">        &#39;value&#39; : &#39;22-01-2015 12:45&#39;,</span>
+<span class="s">        &#39;level&#39; : 1,</span>
+<span class="s">        &#39;quantity&#39; : &#39;&#39;,</span>
+<span class="s">        &#39;units&#39; : &#39;&#39;,</span>
+<span class="s">       },</span>
+<span class="s">      { </span>
+<span class="s">        &#39;type&#39; : &#39;char&#39;,</span>
+<span class="s">        &#39;description&#39; : &#39;calibration_time&#39;,</span>
+<span class="s">        &#39;value&#39; : &#39;01-01-2015 13:00&#39;,</span>
+<span class="s">        &#39;level&#39; : 1,</span>
+<span class="s">        &#39;quantity&#39; : &#39;&#39;,</span>
+<span class="s">        &#39;units&#39; : &#39;&#39;,</span>
+<span class="s">       },</span>
+<span class="s">       { </span>
+<span class="s">        &#39;type&#39; : &#39;float&#39;,</span>
+<span class="s">        &#39;description&#39; : &#39;calibration_dose Co-57&#39;,</span>
+<span class="s">        &#39;value&#39; : &#39;200&#39;,</span>
+<span class="s">        &#39;level&#39; : 1,</span>
+<span class="s">        &#39;quantity&#39; : &#39;activity&#39;,</span>
+<span class="s">        &#39;units&#39; : &#39;kBq&#39;,</span>
+<span class="s">       },</span>
+<span class="s">       { </span>
+<span class="s">        &#39;type&#39; : &#39;float&#39;,</span>
+<span class="s">        &#39;description&#39; : &#39;sensitivity&#39;,</span>
+<span class="s">        &#39;value&#39; : &#39;23.56&#39;,</span>
+<span class="s">        &#39;level&#39; : 1,</span>
+<span class="s">        &#39;quantity&#39; : &#39;&#39;,</span>
+<span class="s">        &#39;units&#39; : &#39;cps/kBq&#39;,</span>
+<span class="s">       },</span>
+<span class="s">       { </span>
+<span class="s">        &#39;type&#39; : &#39;object&#39;,</span>
+<span class="s">        &#39;description&#39; : &#39;screenshot&#39;,</span>
+<span class="s">        &#39;level&#39; : 1,</span>
+<span class="s">        &#39;quantity&#39; : &#39;&#39;,</span>
+<span class="s">        &#39;units&#39; : &#39;&#39;,</span>
+<span class="s">        &#39;filename&#39; : &#39;test.png&#39;,</span>
+<span class="s">        &#39;base64_blob&#39; : &#39;iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABGdBTUEAAK/INwWK6QAAABl0RVh0</span>
+<span class="s">U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAACjSURBVDjL7ZNBCsIwEEVz1mwTo1YjiHdI</span>
+<span class="s">qyWgFBGPonWTC8T2BjlE4JsUwU0ILe7ExUtgPvNmNkMAkG8gPyAwxiAHYwxKKUgpk/kg8N5n4Zwn</span>
+<span class="s">6865j4CVLXj1AA//rArsW4hAzCil4wTFsUdx6rBuLLaXJ+aH+zTBqukDFpuzxe5qsagnCIbV32vH</span>
+<span class="s">ybF5Wd/GC3JkBfHJEZu11hBCJHPyvwXyAt6tONifnq6xAAAAAElFTkSuQmCC&#39;</span>
+<span class="s">       },</span>
+<span class="s">  ]</span>
+<span class="s">}</span>
+<span class="s">&quot;&quot;&quot;</span>
+
+
+
+
+
+<span class="c"># create empty dicomfile and write &quot;payload&quot; to private tag</span>
+
+<span class="n">create_dicom</span><span class="p">(</span><span class="n">private_tag</span><span class="p">,</span><span class="n">payload</span><span class="p">,</span><span class="s">&quot;test.dcm&quot;</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,203 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Tools.Barco package &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">..  documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="tools-barco-package">
+<h1>Tools.Barco package<a class="headerlink" href="#tools-barco-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-Tools.Barco.UID">
+<span id="tools-barco-uid-module"></span><h2>Tools.Barco.UID module<a class="headerlink" href="#module-Tools.Barco.UID" title="Permalink to this headline">¶</a></h2>
+<p>Dicom Unique identifiers</p>
+<dl class="exception">
+<dt id="Tools.Barco.UID.InvalidUID">
+<em class="property">exception </em><tt class="descclassname">Tools.Barco.UID.</tt><tt class="descname">InvalidUID</tt><big>(</big><em>value</em><big>)</big><a class="reference internal" href="_modules/Tools/Barco/UID.html#InvalidUID"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.Barco.UID.InvalidUID" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">exceptions.Exception</span></tt></p>
+<p>Throw when DICOM UID is invalid</p>
+<p>Example of invalid UID:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">uid</span> <span class="o">=</span> <span class="s">&#39;1.2.123.&#39;</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="class">
+<dt id="Tools.Barco.UID.UID">
+<em class="property">class </em><tt class="descclassname">Tools.Barco.UID.</tt><tt class="descname">UID</tt><big>(</big><em>val</em><big>)</big><a class="reference internal" href="_modules/Tools/Barco/UID.html#UID"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.Barco.UID.UID" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">str</span></tt></p>
+<p>Subclass python string so have human-friendly UIDs</p>
+<dl class="docutils">
+<dt>Use like:</dt>
+<dd>uid = UID(&#8216;1.2.840.10008.1.2.4.50&#8217;)</dd>
+<dt>then</dt>
+<dd><dl class="first last docutils">
+<dt>uid.name, uid.type, uid.info, and uid.is_retired all return</dt>
+<dd>values from the UID_dictionary</dd>
+</dl>
+</dd>
+</dl>
+<p>String representation (__str__) will be the name,
+__repr__ will be the full 1.2.840....</p>
+<dl class="method">
+<dt id="Tools.Barco.UID.UID.is_valid">
+<tt class="descname">is_valid</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Tools/Barco/UID.html#UID.is_valid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.Barco.UID.UID.is_valid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raise an exception is the UID is invalid</p>
+<p>Usage example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">invalid_uid</span> <span class="o">=</span> <span class="n">dicom</span><span class="o">.</span><span class="n">UID</span><span class="o">.</span><span class="n">UID</span><span class="p">(</span><span class="s">&#39;1.2.345.&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">invalid_uid</span><span class="o">.</span><span class="n">is_valid</span><span class="p">(</span><span class="n">invalid_uid</span><span class="p">)</span>
+<span class="go">InvalidUID: &#39;Trailing dot at the end of the UID&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">valid_uid</span> <span class="o">=</span> <span class="n">dicom</span><span class="o">.</span><span class="n">UID</span><span class="o">.</span><span class="n">UID</span><span class="p">(</span><span class="s">&#39;1.2.123&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="Tools.Barco.UID.generate_uid">
+<tt class="descclassname">Tools.Barco.UID.</tt><tt class="descname">generate_uid</tt><big>(</big><em>prefix='1.2.826.0.1.3680043.8.498.'</em>, <em>truncate=False</em><big>)</big><a class="reference internal" href="_modules/Tools/Barco/UID.html#generate_uid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.Barco.UID.generate_uid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a dicom unique identifier based on host id, process id and current
+time. The max lenght of the generated UID is 64 caracters.</p>
+<p>If the given prefix is <tt class="docutils literal"><span class="pre">None</span></tt>, the UID is generated following the method
+described on <a class="reference external" href="http://www.dclunie.com/medical-image-faq/html/part2.html#UID">David Clunie website</a></p>
+<p>Usage example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">dicom</span><span class="o">.</span><span class="n">UID</span><span class="o">.</span><span class="n">generate_uid</span><span class="p">()</span>
+<span class="go">1.2.826.0.1.3680043.8.498.2913212949509824014974371514</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dicom</span><span class="o">.</span><span class="n">UID</span><span class="o">.</span><span class="n">generate_uid</span><span class="p">(</span><span class="bp">None</span><span class="p">)</span>
+<span class="go">2.25.31215762025423160614120088028604965760</span>
+</pre></div>
+</div>
+<p>This method is inspired from the work of <a class="reference external" href="http://dicom.offis.de/dcmtk.php.en">DCMTK</a>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>prefix</strong> &#8211; The site root UID. Default to pydicom root UID.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-Tools.Barco.barcotxt2dcm">
+<span id="tools-barco-barcotxt2dcm-module"></span><h2>Tools.Barco.barcotxt2dcm module<a class="headerlink" href="#module-Tools.Barco.barcotxt2dcm" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="Tools.Barco.barcotxt2dcm.create_dcm">
+<tt class="descclassname">Tools.Barco.barcotxt2dcm.</tt><tt class="descname">create_dcm</tt><big>(</big><em>filename</em>, <em>patname='BarcoQC'</em>, <em>patid='112233'</em><big>)</big><a class="reference internal" href="_modules/Tools/Barco/barcotxt2dcm.html#create_dcm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.Barco.barcotxt2dcm.create_dcm" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="Tools.Barco.barcotxt2dcm.extract_date">
+<tt class="descclassname">Tools.Barco.barcotxt2dcm.</tt><tt class="descname">extract_date</tt><big>(</big><em>textfile</em><big>)</big><a class="reference internal" href="_modules/Tools/Barco/barcotxt2dcm.html#extract_date"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.Barco.barcotxt2dcm.extract_date" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="Tools.Barco.barcotxt2dcm.main">
+<tt class="descclassname">Tools.Barco.barcotxt2dcm.</tt><tt class="descname">main</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Tools/Barco/barcotxt2dcm.html#main"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.Barco.barcotxt2dcm.main" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-Tools.Barco">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-Tools.Barco" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Tools.Barco package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-Tools.Barco.UID">Tools.Barco.UID module</a></li>
+<li><a class="reference internal" href="#module-Tools.Barco.barcotxt2dcm">Tools.Barco.barcotxt2dcm module</a></li>
+<li><a class="reference internal" href="#module-Tools.Barco">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/Tools.Barco.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">..  documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

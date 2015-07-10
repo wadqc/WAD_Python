@@ -6,6 +6,7 @@
 
    Plugin_development
    Plugins
+   Tools
    pyWAD
    pyWADLib
    pywadplugin

@@ -1,0 +1,165 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Tools.Barco.barcotxt2dcm &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for Tools.Barco.barcotxt2dcm</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span><span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">dicom</span>
+<span class="kn">from</span> <span class="nn">dicom</span> <span class="kn">import</span> <span class="n">tag</span>
+<span class="kn">from</span> <span class="nn">dicom.dataset</span> <span class="kn">import</span> <span class="n">Dataset</span><span class="p">,</span> <span class="n">FileDataset</span>
+<span class="kn">import</span> <span class="nn">dicom.UID</span>
+<span class="kn">import</span> <span class="nn">argparse</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">import</span> <span class="nn">StringIO</span>
+
+<div class="viewcode-block" id="extract_date"><a class="viewcode-back" href="../../../Tools.Barco.html#Tools.Barco.barcotxt2dcm.extract_date">[docs]</a><span class="k">def</span> <span class="nf">extract_date</span><span class="p">(</span><span class="n">textfile</span><span class="p">):</span>
+    <span class="n">date</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">return</span> <span class="n">date</span> 
+
+</div>
+<div class="viewcode-block" id="create_dcm"><a class="viewcode-back" href="../../../Tools.Barco.html#Tools.Barco.barcotxt2dcm.create_dcm">[docs]</a><span class="k">def</span> <span class="nf">create_dcm</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="n">patname</span><span class="o">=</span><span class="s">&#39;BarcoQC&#39;</span><span class="p">,</span><span class="n">patid</span><span class="o">=</span><span class="s">&#39;112233&#39;</span><span class="p">):</span>
+
+
+    <span class="n">textfile</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="s">&#39;rb&#39;</span><span class="p">)</span>
+
+    <span class="n">filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">filename</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;.dcm&#39;</span>
+    <span class="k">print</span> <span class="s">&quot;Output filename:&quot;</span><span class="p">,</span> <span class="n">filename</span>
+
+    <span class="c"># Populate required values for file meta information</span>
+    <span class="n">file_meta</span> <span class="o">=</span> <span class="n">Dataset</span><span class="p">()</span>
+    <span class="n">file_meta</span><span class="o">.</span><span class="n">MediaStorageSOPClassUID</span> <span class="o">=</span> <span class="s">&#39;1.2.840.10008.5.1.4.1.1.104.1&#39;</span> <span class="c"># NM Image Storage misschien beter OT</span>
+    <span class="n">file_meta</span><span class="o">.</span><span class="n">MediaStorageSOPInstanceUID</span> <span class="o">=</span> <span class="s">&quot;1.2.3&quot;</span> <span class="c"># !! Need valid UID here for real work</span>
+    <span class="n">file_meta</span><span class="o">.</span><span class="n">ImplementationClassUID</span> <span class="o">=</span> <span class="s">&quot;1.2.3.4&quot;</span> <span class="c"># !!! Need valid UIDs here</span>
+   
+    <span class="k">print</span> <span class="s">&quot;Setting dataset values...&quot;</span>
+   
+    <span class="c"># Create the FileDataset instance (initially no data elements, but file_meta supplied)</span>
+    <span class="n">ds</span> <span class="o">=</span> <span class="n">FileDataset</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="p">{},</span> <span class="n">file_meta</span><span class="o">=</span><span class="n">file_meta</span><span class="p">,</span> <span class="n">preamble</span><span class="o">=</span><span class="s">&quot;</span><span class="se">\0</span><span class="s">&quot;</span><span class="o">*</span><span class="mi">128</span><span class="p">)</span>
+   
+    <span class="c"># Add the data elements -- not trying to set all required here. Check DICOM standard</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">PatientName</span> <span class="o">=</span> <span class="n">patname</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">PatientID</span> <span class="o">=</span> <span class="n">patid</span>
+    
+    <span class="c">#datestring = extract_date(textfile)</span>
+    <span class="c">#print datestring</span>
+    
+    <span class="c">#ds.InstanceCreationDate = datestring</span>
+    <span class="c"># Set the transfer syntax</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">is_little_endian</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">is_implicit_VR</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="c">#doctag = dicom.tag.Tag((&quot;0042&quot;,&quot;0011&quot;))</span>
+    <span class="n">doctag</span> <span class="o">=</span> <span class="n">dicom</span><span class="o">.</span><span class="n">tag</span><span class="o">.</span><span class="n">Tag</span><span class="p">((</span><span class="s">&quot;0001&quot;</span><span class="p">,</span><span class="s">&quot;9999&quot;</span><span class="p">))</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">add_new</span><span class="p">(</span><span class="n">doctag</span><span class="p">,</span><span class="s">&#39;OB&#39;</span><span class="p">,</span> <span class="n">textfile</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+
+   
+    <span class="k">print</span> <span class="s">&quot;Writing test file&quot;</span><span class="p">,</span> <span class="n">filename</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">save_as</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+    <span class="k">print</span> <span class="s">&quot;File saved.&quot;</span>
+   
+
+</div>
+<div class="viewcode-block" id="main"><a class="viewcode-back" href="../../../Tools.Barco.html#Tools.Barco.barcotxt2dcm.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s">&#39;Commandline arguments to run reconstructor&#39;</span><span class="p">)</span>  
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;-f&#39;</span><span class="p">,</span><span class="n">metavar</span><span class="o">=</span><span class="s">&#39;file&#39;</span><span class="p">,</span><span class="n">nargs</span><span class="o">=</span><span class="s">&#39;?&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+
+    <span class="n">args</span> <span class="o">=</span> <span class="nb">vars</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">())</span>
+    <span class="n">filename</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="s">&#39;f&#39;</span><span class="p">]</span> <span class="c">#dicom directory</span>
+
+    <span class="n">create_dcm</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span> 
+
+    <span class="k">return</span>
+
+
+    
+
+</div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>
