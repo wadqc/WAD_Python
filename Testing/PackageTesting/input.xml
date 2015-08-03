@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?><WAD>
    <version>
    </version>
-   <analysemodule_cfg>./Testing/TestPlugin/config.xml</analysemodule_cfg>
+   <analysemodule_cfg>./Testing/PackageTesting/config.xml</analysemodule_cfg>
    <analysemodule_output>./Testing/TestPlugin/result.xml</analysemodule_output>
    <analyselevel>series</analyselevel>
    <patient>
