@@ -11,5 +11,5 @@ python Tools/pywad2zip.py zip
 and upload the resulting pywadplugin.py.zip file
 
 To test if the package 'works':
-python pywadplugin.py Testing/TestPlugin/input.xml
+python pywadplugin.py Testing/PackageTesting/input.xml
 
