@@ -1,0 +1,6 @@
+<config>
+   <action>
+        <plugin>Plugins.Monitors.Barco.WADBarco</plugin>
+        <function>barco_compliance</function>
+    </action>
+</config>

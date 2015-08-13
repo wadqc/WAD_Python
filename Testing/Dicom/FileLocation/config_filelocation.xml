@@ -1,0 +1,6 @@
+<config>
+   <action>
+        <plugin>Plugins.Dicom.FileLocation.print_file</plugin>
+        <function>fileLocation</function>
+    </action>
+</config>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+-->
+<config>
+    <action>
+        <plugin>Plugin_development.CT.CT_Catphan_500.Analyzer_new</plugin>
+        <function>catphan500</function>
+        <default_level>2</default_level>
+	<params>
+           <scandirection>up</scandirection>
+	   <linewidth>10</linewidth>
+	   <profilelen>200</profilelen>
+	   <detthreshold>200</detthreshold>
+	   <roidim>10</roidim>
+	   <refroidim>5</refroidim>
+	   <refroioffset>225</refroioffset>	  
+	</params>
+
+    </action>
+</config>

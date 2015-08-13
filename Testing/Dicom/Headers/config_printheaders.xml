@@ -1,0 +1,6 @@
+<config>
+   <action>
+        <plugin>Plugins.Dicom.Headers.print_headers</plugin>
+        <function>print_header</function>
+    </action>
+</config>

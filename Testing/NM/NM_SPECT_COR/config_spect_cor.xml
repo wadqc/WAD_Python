@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Configuratie voor WAD NM analyse module
+-->
+<WAD_NM_config>
+    <!-- naam van de configuratie -->
+    <name>NM uniformity</name>
+    <!-- beschrijving -->
+    <description>WAD uniformity cfg</description>
+    <!-- versie / datum -->
+    <version>20150119</version>
+    <!-- Logfile verbose options -->
+
+    <action>
+        <plugin>Plugins.NM.NM_SPECT_COR.NM_SPECT_COR</plugin>
+        <function>spect_cor_main</function>
+        <default_level>1</default_level>
+
+    </action>
+
+</WAD_NM_config>

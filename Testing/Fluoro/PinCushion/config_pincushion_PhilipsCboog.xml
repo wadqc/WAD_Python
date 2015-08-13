@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<config>
+  <action>
+    <plugin>Plugins.Fluoro.PinCushion.pincushionWAD</plugin>
+    <function>fluoroscopydistortion</function>
+    <default_level>1</default_level>
+  </action>
+
+</config>

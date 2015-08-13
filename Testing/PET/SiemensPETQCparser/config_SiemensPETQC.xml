@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    Configuratie voor WAD NM analyse module
+-->
+
+<WAD_PETQC_config>
+    <!-- naam van de configuratie -->
+    <name>PET Siemens DailyQC</name>
+
+    <!-- beschrijving -->
+    <description>PET siemens cfg</description>
+
+    <!-- versie / datum -->
+    <version>20150131</version>
+        
+    <!-- Logfile verbose options -->
+
+    <action>
+        <plugin>Plugin_development.PET.SiemensPETQCparser.parser</plugin>
+	<function>parseqcreport</function>
+	<default_level>1</default_level>
+
+        <params>
+	  <use_private_tag>0x0071,0x9999</use_private_tag>
+        </params>
+
+        <limits>
+            <result description="Isotope">
+                <criterium>Ge-68</criterium>
+            </result>
+            <result description="System Quality Results">
+                <criterium>Passed</criterium>
+            </result>
+            <result description="QC Phantom Activity">
+                <criterium>Passed</criterium>
+            </result>
+
+            <result description="Block Noise">
+                <acc_low>0</acc_low>
+                <acc_high>3</acc_high>
+                <crit_low>0</crit_low>
+                <crit_high>3</crit_high>
+            </result>
+            <result description="Block Efficiency">
+                <acc_low>80</acc_low>
+                <acc_high></acc_high>
+                <crit_low>80</crit_low>
+                <crit_high></crit_high>
+            </result>
+            <result description="Measured Randoms">
+                <acc_low>85</acc_low>
+                <acc_high>115</acc_high>
+                <crit_low>85</crit_low>
+                <crit_high>115</crit_high>
+            </result>
+            <result description="Scanner Efficiency">
+                <acc_low>25.48</acc_low>
+                <acc_high>47.32</acc_high>
+                <crit_low>25.48</crit_low>
+                <crit_high>47.32</crit_high>
+            </result>
+            <result description="Scatter Ratio">
+                <acc_low>28.8</acc_low>
+                <acc_high>35.2</acc_high>
+                <crit_low>28.8</crit_low>
+                <crit_high>35.2</crit_high>
+            </result>
+            <result description="ECF">
+                <acc_low>20000000</acc_low>
+                <acc_high>40000000</acc_high>
+                <crit_low>20000000</crit_low>
+                <crit_high>40000000</crit_high>
+            </result>
+            <result description="Plane efficiency">
+                <acc_low>-5</acc_low>
+                <acc_high>5</acc_high>
+                <crit_low>-5</crit_low>
+                <crit_high>5</crit_high>
+            </result>
+            <result description="Time alignment residual">
+                <acc_low>0</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>0</crit_low>
+                <crit_high>2</crit_high>
+            </result>
+        </limits>
+
+    </action>
+
+</WAD_PETQC_config>
