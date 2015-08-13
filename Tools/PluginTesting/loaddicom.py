@@ -55,16 +55,27 @@ class _LoadDicom():
 
             try:
                 self.series[key]["dc"].append(dc)
-                self.series[key]["filelst"].append((dc.InstanceNumber,filename))
- 
+
+                try:
+                    self.series[key]["filelst"].append((dc.InstanceNumber,filename))
+                except:
+                    self.series[key]["filelst"].append((0,filename))
     
                 #self.series[key]["thumb"].append(photo)
 
 
             except KeyError:
-                new_entry = {"path": path,
+                try:
+                    new_entry = {"path": path,
                              "file": filename,
                              "filelst":[(dc.InstanceNumber,filename)],
+                             "id": dc.get('SeriesInstanceUID'),
+                             "scroll": None,
+                             "dc": [dc]}
+                except:
+                    new_entry = {"path": path,
+                             "file": filename,
+                             "filelst":[(0,filename)],
                              "id": dc.get('SeriesInstanceUID'),
                              "scroll": None,
                              "dc": [dc]}
@@ -98,8 +109,11 @@ class _LoadDicom():
             self.box.setvalue(selected)
     
     def sortDCs(self, key, to):
-        self.series[key]["dc"].sort(key=lambda x: int(x.get(to)))
-        
+        try:
+            self.series[key]["dc"].sort(key=lambda x: int(x.get(to)))
+        except:
+            pass
+
     def sortKeys(self, keys):
         keys.sort(key=lambda x: self.series[x]["id"])
             
@@ -140,6 +154,6 @@ def LoadDicom(initialdir=None):
     #return w.series
         
 if __name__ == "__main__":
-    t = LoadDicom('/home/dickrsch/KLIFIO/ExampleData/NM/QCData/EARL')
+    t = LoadDicom('myFolder')
     for key in t.keys():
         print t[key]["filelst"]
