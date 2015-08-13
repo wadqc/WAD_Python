@@ -19,7 +19,7 @@
 
 __version__=01062015
 
-import os
+import os, sys
 import tempfile
 os.environ['MPLCONFIGDIR'] = tempfile.mkdtemp()
 #import pylab as plt
