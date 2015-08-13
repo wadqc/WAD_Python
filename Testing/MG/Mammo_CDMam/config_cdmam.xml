@@ -7,7 +7,7 @@ original name: dimensions_mammo_umcu_series.xml
 -->
 <config>
     <action>
-        <plugin>Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper</plugin>
+        <plugin>Plugins.MG.Mammo_CDMam.CDMam_wadwrapper</plugin>
         <function>cdmamheader_series</function>
         <default_level>2</default_level>
         
@@ -19,7 +19,7 @@ original name: dimensions_mammo_umcu_series.xml
     </action>
     
     <action>
-        <plugin>Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper</plugin>
+        <plugin>Plugins.MG.Mammo_CDMam.CDMam_wadwrapper</plugin>
         <function>cdmamqc_series</function>
         <default_level>1</default_level>
 	

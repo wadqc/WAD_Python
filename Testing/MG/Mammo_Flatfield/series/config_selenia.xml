@@ -7,7 +7,7 @@ original name: selenia_mammo_umcu_series.xml
 -->
 <config>
     <action>
-        <plugin>Plugins.Mammo.Mammo_Flatfield.QCMammo_wadwrapper</plugin>
+        <plugin>Plugins.MG.Mammo_Flatfield.QCMammo_wadwrapper</plugin>
         <function>mammoheader_series</function>
         <default_level>2</default_level>
         
@@ -45,7 +45,7 @@ original name: selenia_mammo_umcu_series.xml
     </action>
     
     <action>
-        <plugin>Plugins.Mammo.Mammo_Flatfield.QCMammo_wadwrapper</plugin>
+        <plugin>Plugins.MG.Mammo_Flatfield.QCMammo_wadwrapper</plugin>
         <function>mammoqc_series</function>
         <default_level>1</default_level>
         

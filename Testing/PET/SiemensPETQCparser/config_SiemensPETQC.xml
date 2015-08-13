@@ -17,7 +17,7 @@
     <!-- Logfile verbose options -->
 
     <action>
-        <plugin>Plugin_development.PET.SiemensPETQCparser.parser</plugin>
+        <plugin>Plugins.PET.SiemensPETQCparser.parser</plugin>
 	<function>parseqcreport</function>
 	<default_level>1</default_level>
 
