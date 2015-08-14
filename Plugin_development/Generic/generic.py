@@ -7,7 +7,7 @@ from ast import literal_eval
 from pyWAD.plugindata import PluginData
 from pyWAD.pluginresults import PluginResults
 
-
+__version__='20150814'
 
 def main(data, results, **kwargs):
     """ Function extracts results from dicom file, using the private dicom tag
@@ -68,7 +68,7 @@ def main(data, results, **kwargs):
             outfile.close()
             print 'adding result for', m.get('description')
             results.addObject(m.get('description'),m.get('filename'),m.get('level'),m.get('quantity'),m.get('units'))
-        elif len(m.get('value'))>0:
+        elif m.get('type')=='bool' or len(m.get('value'))>0:
             function_name=translate_type_to_function(m.get('type'))
             if function_name is not None:
                 print 'adding result for', m.get('description')
