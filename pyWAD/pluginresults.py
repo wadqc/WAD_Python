@@ -39,7 +39,7 @@ class PluginResults(object):
             raise TypeError(error)
 
         value_str = '1' if value else '0'
-        self._addResult('bool', description, value_str, level, quantity, units)
+        self._addResult('boolean', description, value_str, level, quantity, units)
 
     def addFloat(self, description, value, level=None, quantity='', units=''):
         """Add string representation of `value` (float) to results.
