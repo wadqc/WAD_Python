@@ -1,6 +1,46 @@
- Congratulations, if you read this you succeeded in opening pywad's documentation. It is assumed you have installed the necessary python packages and an up and running WAD QC framework.
-The tools are located in the Tools folder. To use the plugins in the WAD QC framework one has to upload the pywadplugin.py.zip file as a new plugin with the
+Congratulations!, if you read this you succeeded in opening pywad's GettingStarted file.
+It is assumed you have installed the necessary python packages and an up and running WAD QC framework.
+
+============GETTING STARTED=======================
+
+To check for missing dependencies you can run the CheckDependencies script which is located in the Tools folder:
+
+cd Tools
+cd PluginTesting
+python CheckDependencies.py
+
+
+The WAD QC framework can be found on github:
+www.github.com/wadqc
+
+
+To use the plugins in the WAD QC framework one has to upload the pywadplugin.py.zip file as a new plugin with the
 WAD software. If no pywadplugin.py.zip file exists it can be created using
 the following command from the root folder of the package:
 
-``python Tools/pywad2zip.py zip``
+python Tools/pywad2zip.py zip
+
+
+============TESTING THE PLUGINS=======================
+
+The package plugins can be tested by using the plugintesting tool from the Tools folder
+
+cd Tools/PluginTesting
+python  PluginTester.py -d <PATH TO TESTDATA> 
+
+The testdata has to be organized strictly according to 
+optionally one can use the "-v True" switch for verbose output
+
+A specific plugin can be tested by creating a custom .ini file and running this explicitly:
+python  PluginTester.py -i myinifile -d <PATH TO TESTDATA>
+
+
+============DOCUMENTATION=======================
+
+Documentation in html format is located in the Documentation/_build/html folder
+To read the package documentation:
+
+xdg-open Documentation/_build/html/index.html
+
+
+
