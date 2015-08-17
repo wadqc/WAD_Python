@@ -42,37 +42,37 @@ scipy_version = [int(v) for v in scipy.__version__ .split('.')]
 if scipy_version[1]<10 or (scipy_version[1] == 10 and scipy_version[1]<1):
     raise RuntimeError("scipy version too old. Upgrade scipy to at least 0.10.1")
 
+class Room :
+    name = ""     # identifier of room
+    outvalue = -1 # value of pixels outside x-ray field
+    pidtablemm = -1    # distance between mid phantom and detector in mm
+    pidwallmm = -1
+    sidtablemm = -1
+    sidwallmm = -1
+    phantom = lit.stPehamed
+    skipFFT = False # only for wellhofer
+    sdthresh = -1 # threshold on stdev for determin table or wall, now only for CALHOS, maybe WKZ?
+    def __init__ (self,_name, outvalue=-1, tablesid=-1, wallsid=-1, tablepid=-1, wallpid=-1,phantom=lit.stPehamed,sdthresh=-1):
+        self.name = _name
+        self.outvalue = outvalue
+        self.pidtablemm = tablepid
+        self.pidwallmm  = wallpid
+        self.sidtablemm = tablesid
+        self.sidwallmm = wallsid
+        self.phantom = phantom
+        self.sdthresh = sdthresh
+        if(phantom == lit.stWellhofer):
+            self.skipFFT = True
+    def setPIDs(self,_pidtable, _pidwall):
+        self.pidtablemm = _pidtable
+        self.pidwallmm = _pidwall
+    def setSIDS(self,_sidtable, _sidwall):
+        self.sidtablemm = _sidtable
+        self.sidwallmm = _sidwall
+
 class XRayStruct:
     verbose = False
     knownTableOrWall = None
-
-    class Room :
-        name = ""     # identifier of room
-        outvalue = -1 # value of pixels outside x-ray field
-        pidtablemm = -1    # distance between mid phantom and detector in mm
-        pidwallmm = -1
-        sidtablemm = -1
-        sidwallmm = -1
-        phantom = lit.stPehamed
-        skipFFT = False # only for wellhofer
-        sdthresh = -1 # threshold on stdev for determin table or wall, now only for CALHOS, maybe WKZ?
-        def __init__ (self,_name, outvalue=-1, tablesid=-1, wallsid=-1, tablepid=-1, wallpid=-1,phantom=lit.stPehamed,sdthresh=-1):
-            self.name = _name
-            self.outvalue = outvalue
-            self.pidtablemm = tablepid
-            self.pidwallmm  = wallpid
-            self.sidtablemm = tablesid
-            self.sidwallmm = wallsid
-            self.phantom = phantom
-            self.sdthresh = sdthresh
-            if(phantom == lit.stWellhofer):
-                self.skipFFT = True
-        def setPIDs(self,_pidtable, _pidwall):
-            self.pidtablemm = _pidtable
-            self.pidwallmm = _pidwall
-        def setSIDS(self,_sidtable, _sidwall):
-            self.sidtablemm = _sidtable
-            self.sidwallmm = _sidwall
 
     # room names
     #    roomWKZ1 = Room("WKZ1",outvalue=1023,tablesid=1150,wallsid=2000, tablepid=60, wallpid=45,phantom="wellhofer")

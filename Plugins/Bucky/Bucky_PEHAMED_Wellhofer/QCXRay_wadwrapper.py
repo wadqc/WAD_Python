@@ -13,7 +13,7 @@
 #
 
 
-__version__='01062015'
+__version__='20150814'
 __author__ = 'aschilha'
 import sys
 import os
@@ -34,8 +34,81 @@ except ImportError:
 def logTag():
     return "[QCXRay_wadwrapper] "
 
-##### Series wrappers
-def xrayqc_series(data, results,**kwargs):
+# helper functions
+"""
+    roomWKZ1 = Room("WKZ1",outvalue=1023,tablesid=1150,wallsid=2000, tablepid=65, wallpid=50,phantom=lit.stWellhofer)
+    <params>
+      <roomname>WKZ1</roomname>
+      <phantom>wellhofer</phantom>
+      <tablesidmm>1150</tablesidmm>
+      <tablepidmm>65</tablepidmm>
+      <wallsidmm>2000</wallsidmm>
+      <wallpidmm>50</wallpidmm>
+      <outvalue>1023</outvalue>
+      
+      <sensitivities>
+        <threshold date="20100101" value="35" />
+      </sensitivities>
+      
+      <sdthreshold>40</sdthreshold>
+    </params>
+"""
+def _getRoomDefinition(params):
+    # Use the params in the config file to construct an Scanner object
+    try:
+        # a name for identification
+        roomname = params.find('roomname').text
+
+        # phantom name (only pehamed or wellhofer)
+        phantoms_supported = ['pehamed','wellhofer']
+        phantom = params.find('phantom').text
+        if not phantom in phantoms_supported:
+            raise ValueError(logTag()+" unsupported phantom %s"%phantom)
+            
+        # Source to Detector distance and Patient to Detector distance for wall and table (both in mm)
+        tablesidmm  = float(params.find('tablesidmm').text)
+        tablepidmm  = float(params.find('tablepidmm').text)
+        wallsidmm   = float(params.find('wallsidmm').text)
+        wallpidmm   = float(params.find('wallpidmm').text)
+
+        # pixelvalue that defines 'outside phantom' use '-1' to calculate from four cornerpoints
+        outvalue    = int(params.find('outvalue').text)
+        
+        # for fcr systems there is no dicom tag to indicate wall or table, but a hack on SD or Sensitivity is possible
+        kaas = ''
+        try:
+            thresholdlist = []
+            sensitivities = params.find("sensitivities")
+            for threshold in sensitivities.findall("threshold"):
+                thresholdlist.append([threshold.attrib["date"],threshold.attrib["value"]])
+            return QCXRay_lib.Room(roomname, outvalue=outvalue,
+                                   tablesid=tablesidmm, wallsid=wallsidmm, 
+                                   tablepid=tablepidmm, wallpid=wallpidmm,
+                                   phantom=phantom, sens_threshold = thresholdlist)
+        except:
+            pass
+
+        # no sensitivity threshold, so try is threshOnSD exists
+        try:
+            sdthreshold = float(params.find("sdthreshold").text)
+            return QCXRay_lib.Room(roomname, outvalue=outvalue,
+                                   tablesid=tablesidmm, wallsid=wallsidmm, 
+                                   tablepid=tablepidmm, wallpid=wallpidmm,
+                                   phantom=phantom, sdthresh = sdthreshold)
+        except:
+            pass
+
+        # no artificial thresholds present or needed
+        return QCXRay_lib.Room(roomname, outvalue=outvalue,
+                               tablesid=tablesidmm, wallsid=wallsidmm, 
+                               tablepid=tablepidmm, wallpid=wallpidmm,
+                               phantom=phantom)
+    except AttributeError,e:
+        raise ValueError(logTag()+" missing room definition parameter!"+str(e))
+
+
+###### Series wrappers
+def xrayqc_series(data, results, params):
     """
     QCXRay_UMCU checks:
         Horizontal uniformity
@@ -60,6 +133,7 @@ def xrayqc_series(data, results,**kwargs):
     remark = ""
     qclib = QCXRay_lib.XRayQC()
     cs = QCXRay_lib.XRayStruct(dcmInfile,pixeldataIn)
+    cs.forceRoom = _getRoomDefinition(params)
     cs.verbose = False # do not produce detailed logging
 
     ## 4. Run tests
@@ -81,7 +155,7 @@ def xrayqc_series(data, results,**kwargs):
     qclib.saveAnnotatedImage(cs,filename)
     results.addObject('AnnotatedImage'+idname,filename)
 
-def xrayheader_series(data,results,**kwargs):
+def xrayheader_series(data,results,params):
     """
     Read selected dicomfields and write to IQC database
 
