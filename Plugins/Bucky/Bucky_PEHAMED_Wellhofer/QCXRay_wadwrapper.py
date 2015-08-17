@@ -63,8 +63,19 @@ def _getRoomDefinition(params):
         phantoms_supported = ['pehamed','wellhofer']
         phantom = params.find('phantom').text
         if not phantom in phantoms_supported:
-            raise ValueError(logTag()+" unsupported phantom %s"%phantom)
-            
+            raise ValueError(logTag()+' unsupported phantom %s'%phantom)
+
+        # load the locations of markers on the linepair pattern. if these are not given, use the hardcoded values
+        linepairmarkers = {}
+        try:
+            markers = params.find('linepair_typ38')
+            mnames = ['mm1.8','mm0.6','mm1.4','mm4.6']
+            for mname in mnanes:
+                marker  = markers.find(mname)
+                linepairmarkers[mname] = [ marker.attrib['x'], marker.attrib['y'] ]
+        except:
+            print logTag()+' exact locations of markers on linepair pattern not supplied by config. Using empirical values; please check if these are valid here.'
+
         # Source to Detector distance and Patient to Detector distance for wall and table (both in mm)
         tablesidmm  = float(params.find('tablesidmm').text)
         tablepidmm  = float(params.find('tablepidmm').text)
@@ -75,7 +86,6 @@ def _getRoomDefinition(params):
         outvalue    = int(params.find('outvalue').text)
         
         # for fcr systems there is no dicom tag to indicate wall or table, but a hack on SD or Sensitivity is possible
-        kaas = ''
         try:
             thresholdlist = []
             sensitivities = params.find("sensitivities")
@@ -84,17 +94,19 @@ def _getRoomDefinition(params):
             return QCXRay_lib.Room(roomname, outvalue=outvalue,
                                    tablesid=tablesidmm, wallsid=wallsidmm, 
                                    tablepid=tablepidmm, wallpid=wallpidmm,
-                                   phantom=phantom, sens_threshold = thresholdlist)
+                                   phantom=phantom, sens_threshold = thresholdlist,
+                                   linepairmarkers=linepairmarkers)
         except:
             pass
 
-        # no sensitivity threshold, so try is threshOnSD exists
+        # no sensitivity threshold, so try if threshOnSD exists
         try:
             sdthreshold = float(params.find("sdthreshold").text)
             return QCXRay_lib.Room(roomname, outvalue=outvalue,
                                    tablesid=tablesidmm, wallsid=wallsidmm, 
                                    tablepid=tablepidmm, wallpid=wallpidmm,
-                                   phantom=phantom, sdthresh = sdthreshold)
+                                   phantom=phantom, sdthresh = sdthreshold,
+                                   linepairmarkers=linepairmarkers)
         except:
             pass
 
@@ -102,7 +114,7 @@ def _getRoomDefinition(params):
         return QCXRay_lib.Room(roomname, outvalue=outvalue,
                                tablesid=tablesidmm, wallsid=wallsidmm, 
                                tablepid=tablepidmm, wallpid=wallpidmm,
-                               phantom=phantom)
+                               phantom=phantom,linepairmarkers=linepairmarkers)
     except AttributeError,e:
         raise ValueError(logTag()+" missing room definition parameter!"+str(e))
 
