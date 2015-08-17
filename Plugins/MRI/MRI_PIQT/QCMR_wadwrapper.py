@@ -58,7 +58,7 @@ def mrqc_series(data,results,**kwargs):
     idname = ""
     error = qclib.DetermineScanID(cs)
     if error == True or cs.scanID == lit.stUnknown:
-        raise ValueError("{} ERROR! Cannot determine MR Scan ID".format(logTag))
+        raise ValueError("{} ERROR! Cannot determine MR Scan ID".format(logTag()))
 
     ## 2. Run tests
     setname = cs.scanID
@@ -179,7 +179,7 @@ def mrqc_series(data,results,**kwargs):
                 reportkeyvals.append( ("Ver_pxl_size"+idname,cs.mtf_pixelsize[1]) )
 
         if error:
-            raise ValueError("{} ERROR! processing error in {} {}".format(logTag,piqt,doTest))
+            raise ValueError("{} ERROR! processing error in {} {}".format(logTag(),piqt,doTest))
 
     for key,val in reportkeyvals:
         results.addFloat(key, val, quantity=str(key.split('_QA')[0]))
@@ -202,7 +202,7 @@ def mrheader_series(data,results,**kwargs):
     idname = ""
     error = qclib.DetermineScanID(cs)
     if error == True or cs.scanID == lit.stUnknown:
-        raise ValueError("{} ERROR! Cannot determine MR Scan ID".format(logTag))
+        raise ValueError("{} ERROR! Cannot determine MR Scan ID".format(logTag()))
 
     ## 1. Run tests
     setname = cs.scanID
