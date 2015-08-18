@@ -90,7 +90,7 @@ class Room :
             self.xy06mm = [80.1,-04.5] # x,y position in mm of decimal dot in 0.6 lp/mm 
             self.xy14mm = [59.4,-24.7] # x,y position in mm of decimal dot in 1.4 lp/mm 
             self.xy46mm = [28.0, 02.0] # x,y position in mm of decimal dot in 4.6 lp/mm 
-            
+        
     def setPIDs(self,_pidtable, _pidwall):
         self.pidtablemm = _pidtable
         self.pidwallmm = _pidwall

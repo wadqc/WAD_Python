@@ -70,27 +70,34 @@ def _getRoomDefinition(params):
         try:
             markers = params.find('linepair_typ38')
             mnames = ['mm1.8','mm0.6','mm1.4','mm4.6']
-            for mname in mnanes:
+            for mname in mnames:
                 marker  = markers.find(mname)
-                linepairmarkers[mname] = [ marker.attrib['x'], marker.attrib['y'] ]
+                linepairmarkers[mname] = [ float(marker.attrib['x']), float(marker.attrib['y']) ]
         except:
             print logTag()+' exact locations of markers on linepair pattern not supplied by config. Using empirical values; please check if these are valid here.'
-
+            
         # Source to Detector distance and Patient to Detector distance for wall and table (both in mm)
-        tablesidmm  = float(params.find('tablesidmm').text)
         tablepidmm  = float(params.find('tablepidmm').text)
-        wallsidmm   = float(params.find('wallsidmm').text)
         wallpidmm   = float(params.find('wallpidmm').text)
 
-        # pixelvalue that defines 'outside phantom' use '-1' to calculate from four cornerpoints
-        outvalue    = int(params.find('outvalue').text)
+        outvalue    = -1 # not supplied
+        wallsidmm   = -1 # not supplied
+        tablesidmm  = -1 # not supplied
+        try: # only for FCR
+            wallsidmm   = float(params.find('wallsidmm').text)
+            tablesidmm  = float(params.find('tablesidmm').text)
+            # pixelvalue that defines 'outside phantom' use '-1' to calculate from four cornerpoints
+            outvalue    = int(params.find('outvalue').text)
+        except:
+            pass
+        
         
         # for fcr systems there is no dicom tag to indicate wall or table, but a hack on SD or Sensitivity is possible
         try:
             thresholdlist = []
             sensitivities = params.find("sensitivities")
             for threshold in sensitivities.findall("threshold"):
-                thresholdlist.append([threshold.attrib["date"],threshold.attrib["value"]])
+                thresholdlist.append([int(threshold.attrib["date"]),int(threshold.attrib["value"])])
             return QCXRay_lib.Room(roomname, outvalue=outvalue,
                                    tablesid=tablesidmm, wallsid=wallsidmm, 
                                    tablepid=tablepidmm, wallpid=wallpidmm,
@@ -144,8 +151,8 @@ def xrayqc_series(data, results, params):
     ## 3. Build and populate qcstructure
     remark = ""
     qclib = QCXRay_lib.XRayQC()
-    cs = QCXRay_lib.XRayStruct(dcmInfile,pixeldataIn)
-    cs.forceRoom = _getRoomDefinition(params)
+    room = _getRoomDefinition(params)
+    cs = QCXRay_lib.XRayStruct(dcmInfile,pixeldataIn,room)
     cs.verbose = False # do not produce detailed logging
 
     ## 4. Run tests
@@ -183,9 +190,10 @@ def xrayheader_series(data,results,params):
 
     ## 2. Run tests
     qclib = QCXRay_lib.XRayQC()
+    room = _getRoomDefinition(params)
 
     ## Table or Wall? from distances and sensitivity; for well defined protocols to be defined in DESCRIPTION field
-    cs = QCXRay_lib.XRayStruct(dcmInfile,None)
+    cs = QCXRay_lib.XRayStruct(dcmInfile,None,room)
     cs.verbose = False # do not produce detailed logging
     dicominfo = qclib.DICOMInfo(cs,info)
     idname = '_'+qclib.TableOrWall(cs)
@@ -207,5 +215,5 @@ def xrayheader_series(data,results,params):
         else:
             results.addChar(di[0]+idname, str(di[1])[:min(len(str(di[1])),128)]) # do not specify level, use default from config
 
-    results.addChar('room'+idname, cs.guessroom.name) # do not specify level, use default from config
+    results.addChar('room'+idname, cs.forceRoom.name) # do not specify level, use default from config
     results.addChar('stand'+idname, qclib.TableOrWall(cs)) # do not specify level, use default from config
