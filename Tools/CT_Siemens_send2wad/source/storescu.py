@@ -12,6 +12,7 @@ python storescu.py -h
 
 import sys
 import argparse
+import socket
 from netdicom import AE, StorageSOPClass, VerificationSOPClass
 from dicom.UID import ExplicitVRLittleEndian, ImplicitVRLittleEndian, ExplicitVRBigEndian
 from dicom import read_file
@@ -55,8 +56,15 @@ def OnAssociateResponse(association):
 
 def StoreSCU(aec,remotehost,remoteport,dicomfile,aet='PYNETDICOM'):
 
+    # find random free port on localhost
+    tmpsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    tmpsocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR,1)
+    tmpsocket.bind(('', 0))
+    freelocalport=tmpsocket.getsockname()[1]
+    tmpsocket.close()
+
     # create application entity
-    MyAE = AE(aet, 9999, [StorageSOPClass,  VerificationSOPClass], [] , ts)
+    MyAE = AE(aet, freelocalport, [StorageSOPClass,  VerificationSOPClass], [] , ts)
 
     MyAE.OnAssociateResponse = OnAssociateResponse
 
