@@ -13,7 +13,7 @@
 #
 
 
-__version__='01062015'
+__version__='20150814'
 __author__ = 'aschilha'
 import sys
 import os
@@ -34,8 +34,100 @@ except ImportError:
 def logTag():
     return "[QCXRay_wadwrapper] "
 
-##### Series wrappers
-def xrayqc_series(data, results,**kwargs):
+# helper functions
+"""
+    roomWKZ1 = Room("WKZ1",outvalue=1023,tablesid=1150,wallsid=2000, tablepid=65, wallpid=50,phantom=lit.stWellhofer)
+    <params>
+      <roomname>WKZ1</roomname>
+      <phantom>wellhofer</phantom>
+      <tablesidmm>1150</tablesidmm>
+      <tablepidmm>65</tablepidmm>
+      <wallsidmm>2000</wallsidmm>
+      <wallpidmm>50</wallpidmm>
+      <outvalue>1023</outvalue>
+      
+      <sensitivities>
+        <threshold date="20100101" value="35" />
+      </sensitivities>
+      
+      <sdthreshold>40</sdthreshold>
+    </params>
+"""
+def _getRoomDefinition(params):
+    # Use the params in the config file to construct an Scanner object
+    try:
+        # a name for identification
+        roomname = params.find('roomname').text
+
+        # phantom name (only pehamed or wellhofer)
+        phantoms_supported = ['pehamed','wellhofer']
+        phantom = params.find('phantom').text
+        if not phantom in phantoms_supported:
+            raise ValueError(logTag()+' unsupported phantom %s'%phantom)
+
+        # load the locations of markers on the linepair pattern. if these are not given, use the hardcoded values
+        linepairmarkers = {}
+        try:
+            markers = params.find('linepair_typ38')
+            mnames = ['mm1.8','mm0.6','mm1.4','mm4.6']
+            for mname in mnames:
+                marker  = markers.find(mname)
+                linepairmarkers[mname] = [ float(marker.attrib['x']), float(marker.attrib['y']) ]
+        except:
+            print logTag()+' exact locations of markers on linepair pattern not supplied by config. Using empirical values; please check if these are valid here.'
+            
+        # Source to Detector distance and Patient to Detector distance for wall and table (both in mm)
+        tablepidmm  = float(params.find('tablepidmm').text)
+        wallpidmm   = float(params.find('wallpidmm').text)
+
+        outvalue    = -1 # not supplied
+        wallsidmm   = -1 # not supplied
+        tablesidmm  = -1 # not supplied
+        try: # only for FCR
+            wallsidmm   = float(params.find('wallsidmm').text)
+            tablesidmm  = float(params.find('tablesidmm').text)
+            # pixelvalue that defines 'outside phantom' use '-1' to calculate from four cornerpoints
+            outvalue    = int(params.find('outvalue').text)
+        except:
+            pass
+        
+        
+        # for fcr systems there is no dicom tag to indicate wall or table, but a hack on SD or Sensitivity is possible
+        try:
+            thresholdlist = []
+            sensitivities = params.find("sensitivities")
+            for threshold in sensitivities.findall("threshold"):
+                thresholdlist.append([int(threshold.attrib["date"]),int(threshold.attrib["value"])])
+            return QCXRay_lib.Room(roomname, outvalue=outvalue,
+                                   tablesid=tablesidmm, wallsid=wallsidmm, 
+                                   tablepid=tablepidmm, wallpid=wallpidmm,
+                                   phantom=phantom, sens_threshold = thresholdlist,
+                                   linepairmarkers=linepairmarkers)
+        except:
+            pass
+
+        # no sensitivity threshold, so try if threshOnSD exists
+        try:
+            sdthreshold = float(params.find("sdthreshold").text)
+            return QCXRay_lib.Room(roomname, outvalue=outvalue,
+                                   tablesid=tablesidmm, wallsid=wallsidmm, 
+                                   tablepid=tablepidmm, wallpid=wallpidmm,
+                                   phantom=phantom, sdthresh = sdthreshold,
+                                   linepairmarkers=linepairmarkers)
+        except:
+            pass
+
+        # no artificial thresholds present or needed
+        return QCXRay_lib.Room(roomname, outvalue=outvalue,
+                               tablesid=tablesidmm, wallsid=wallsidmm, 
+                               tablepid=tablepidmm, wallpid=wallpidmm,
+                               phantom=phantom,linepairmarkers=linepairmarkers)
+    except AttributeError,e:
+        raise ValueError(logTag()+" missing room definition parameter!"+str(e))
+
+
+###### Series wrappers
+def xrayqc_series(data, results, params):
     """
     QCXRay_UMCU checks:
         Horizontal uniformity
@@ -59,7 +151,8 @@ def xrayqc_series(data, results,**kwargs):
     ## 3. Build and populate qcstructure
     remark = ""
     qclib = QCXRay_lib.XRayQC()
-    cs = QCXRay_lib.XRayStruct(dcmInfile,pixeldataIn)
+    room = _getRoomDefinition(params)
+    cs = QCXRay_lib.XRayStruct(dcmInfile,pixeldataIn,room)
     cs.verbose = False # do not produce detailed logging
 
     ## 4. Run tests
@@ -81,7 +174,7 @@ def xrayqc_series(data, results,**kwargs):
     qclib.saveAnnotatedImage(cs,filename)
     results.addObject('AnnotatedImage'+idname,filename)
 
-def xrayheader_series(data,results,**kwargs):
+def xrayheader_series(data,results,params):
     """
     Read selected dicomfields and write to IQC database
 
@@ -97,9 +190,10 @@ def xrayheader_series(data,results,**kwargs):
 
     ## 2. Run tests
     qclib = QCXRay_lib.XRayQC()
+    room = _getRoomDefinition(params)
 
     ## Table or Wall? from distances and sensitivity; for well defined protocols to be defined in DESCRIPTION field
-    cs = QCXRay_lib.XRayStruct(dcmInfile,None)
+    cs = QCXRay_lib.XRayStruct(dcmInfile,None,room)
     cs.verbose = False # do not produce detailed logging
     dicominfo = qclib.DICOMInfo(cs,info)
     idname = '_'+qclib.TableOrWall(cs)
@@ -121,5 +215,5 @@ def xrayheader_series(data,results,**kwargs):
         else:
             results.addChar(di[0]+idname, str(di[1])[:min(len(str(di[1])),128)]) # do not specify level, use default from config
 
-    results.addChar('room'+idname, cs.guessroom.name) # do not specify level, use default from config
+    results.addChar('room'+idname, cs.forceRoom.name) # do not specify level, use default from config
     results.addChar('stand'+idname, qclib.TableOrWall(cs)) # do not specify level, use default from config

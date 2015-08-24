@@ -4,6 +4,7 @@ Warning: THIS MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED! And make su
 
 TODO:
 Changelog:
+    20150817: Removed hardcoded roomdefinitions. All in config files now!
     20150618: Tried DDL version of fftorientation, but that performs worse here. Left interface intact
     20150610: Bugfix: uniformity was calculated over copper only, instead of non-copper!; moved some math to wadwrapper_lib
     20150522: Force scipy version at least 0.10.1 to avoid problems with PIL/Pillow mixing
@@ -42,54 +43,67 @@ scipy_version = [int(v) for v in scipy.__version__ .split('.')]
 if scipy_version[1]<10 or (scipy_version[1] == 10 and scipy_version[1]<1):
     raise RuntimeError("scipy version too old. Upgrade scipy to at least 0.10.1")
 
+class Room :
+    name = ""     # identifier of room
+    outvalue = -1 # value of pixels outside x-ray field
+    pidtablemm = -1    # distance between mid phantom and detector in mm
+    pidwallmm = -1
+    sidtablemm = -1
+    sidwallmm = -1
+    phantom = lit.stPehamed
+    skipFFT = False # only for wellhofer
+    sdthresh = -1 # threshold on stdev for determin table or wall, now only for CALHOS, maybe WKZ?
+    sens_threshold = [] # list of (date,sensitivity) describing from dates and max threshold on sensitivity for table
+
+    xy06mm = [] # x,y position in mm of decimal dot in 0.6 lp/mm 
+    xy14mm = [] # x,y position in mm of decimal dot in 1.4 lp/mm 
+    xy18mm = [] # x,y position in mm of decimal dot in 1.8 lp/mm 
+    xy46mm = [] # x,y position in mm of decimal dot in 4.6 lp/mm 
+    
+    def __init__ (self,_name, outvalue=-1, tablesid=-1, wallsid=-1, tablepid=-1, wallpid=-1,
+                  phantom=lit.stPehamed,sdthresh=-1,sens_threshold = [],
+                  linepairmarkers = {}):
+        self.name = _name
+        self.outvalue = outvalue
+        self.pidtablemm = tablepid
+        self.pidwallmm  = wallpid
+        self.sidtablemm = tablesid
+        self.sidwallmm = wallsid
+        self.phantom = phantom
+        self.sdthresh = sdthresh
+        self.sens_threshold = sens_threshold
+        if(phantom == lit.stWellhofer):
+            self.skipFFT = True
+        if len(linepairmarkers)>0:
+            self.xy06mm = linepairmarkers['mm0.6']
+            self.xy14mm = linepairmarkers['mm1.4']
+            self.xy18mm = linepairmarkers['mm1.8']
+            self.xy46mm = linepairmarkers['mm4.6']
+        elif phantom == lit.stWellhofer:
+            # wellhofer WKZ
+            self.xy18mm = [53.7, 27.1] # x,y position in mm of decimal dot in 1.8 lp/mm 
+            self.xy06mm = [80.6,-04.7] # x,y position in mm of decimal dot in 0.6 lp/mm 
+            self.xy14mm = [59.9,-24.9] # x,y position in mm of decimal dot in 1.4 lp/mm 
+            self.xy46mm = [28.4, 01.8] # x,y position in mm of decimal dot in 4.6 lp/mm 
+        else: # pehamed phantom nr 100876
+            self.xy18mm = [53.1, 27.1] # x,y position in mm of decimal dot in 1.8 lp/mm 
+            self.xy06mm = [80.1,-04.5] # x,y position in mm of decimal dot in 0.6 lp/mm 
+            self.xy14mm = [59.4,-24.7] # x,y position in mm of decimal dot in 1.4 lp/mm 
+            self.xy46mm = [28.0, 02.0] # x,y position in mm of decimal dot in 4.6 lp/mm 
+        
+    def setPIDs(self,_pidtable, _pidwall):
+        self.pidtablemm = _pidtable
+        self.pidwallmm = _pidwall
+    def setSIDS(self,_sidtable, _sidwall):
+        self.sidtablemm = _sidtable
+        self.sidwallmm = _sidwall
+
 class XRayStruct:
     verbose = False
     knownTableOrWall = None
 
-    class Room :
-        name = ""     # identifier of room
-        outvalue = -1 # value of pixels outside x-ray field
-        pidtablemm = -1    # distance between mid phantom and detector in mm
-        pidwallmm = -1
-        sidtablemm = -1
-        sidwallmm = -1
-        phantom = lit.stPehamed
-        skipFFT = False # only for wellhofer
-        sdthresh = -1 # threshold on stdev for determin table or wall, now only for CALHOS, maybe WKZ?
-        def __init__ (self,_name, outvalue=-1, tablesid=-1, wallsid=-1, tablepid=-1, wallpid=-1,phantom=lit.stPehamed,sdthresh=-1):
-            self.name = _name
-            self.outvalue = outvalue
-            self.pidtablemm = tablepid
-            self.pidwallmm  = wallpid
-            self.sidtablemm = tablesid
-            self.sidwallmm = wallsid
-            self.phantom = phantom
-            self.sdthresh = sdthresh
-            if(phantom == lit.stWellhofer):
-                self.skipFFT = True
-        def setPIDs(self,_pidtable, _pidwall):
-            self.pidtablemm = _pidtable
-            self.pidwallmm = _pidwall
-        def setSIDS(self,_sidtable, _sidwall):
-            self.sidtablemm = _sidtable
-            self.sidwallmm = _sidwall
-
-    # room names
-    #    roomWKZ1 = Room("WKZ1",outvalue=1023,tablesid=1150,wallsid=2000, tablepid=60, wallpid=45,phantom="wellhofer")
-    # wkz tablepid=30 from fit
-    roomWKZ1 = Room("WKZ1",outvalue=1023,tablesid=1150,wallsid=2000, tablepid=65, wallpid=50,phantom=lit.stWellhofer)
-    roomWKZ2 = Room("WKZ2",1023,1150,2000, 65, 50,lit.stWellhofer)
-    roomF10 = Room("F10", tablepid=85,wallpid=65)
-    roomF11a = Room("F11a", tablepid=85,wallpid=65)
-    roomF11b = Room("F11b", tablepid=85,wallpid=65)
-    roomTrauma1 = Room("Trauma1", tablepid=85,wallpid=65)
-    roomTrauma2 = Room("Trauma2", tablepid=85,wallpid=65)#AAAAA
-    roomDRX1118 = Room("DRX1118",1250,1100,1100, 10, 10)
-    roomDRX1119 = Room("DRX1119",1250,1100,1100, 10, 10)
-    roomCMH = Room("CMH", outvalue=3499,tablepid=85,wallpid=85)
-    roomCALHOS1 = Room("CALHOS1", outvalue=1023,tablesid=1100,wallsid=2000,tablepid=77,wallpid=57,sdthresh=40)
     roomUnknown = Room(lit.stUnknown)
-    guessroom = roomUnknown
+    forceRoom = roomUnknown
 
     class UnifStruct :
         ROIuniformity = -1 # fraction
@@ -227,61 +241,15 @@ class XRayStruct:
             self.mustbeinverted = True
         print "Must be Inverted",self.mustbeinverted
 
-    def determineDeviceID(self):
-        if self.dcmInfile is None:
-            return
 
-        self.guessroom = self.roomUnknown
-
-        stationnames = [
-            ["WKZ1",self.roomWKZ1],
-            ["WKZ2",self.roomWKZ2],
-            ["BUCKY1",self.roomWKZ1],
-            ["BUCKY2",self.roomWKZ2],
-            ["DRXR000505",self.roomDRX1118],
-            ["DRXR000507",self.roomDRX1119],
-            ["AZU_CARESTREAM_IC", self.roomDRX1118],
-            ["CALHOS1", self.roomCALHOS1],
-        ]
-        dicomfields = [ ["0008,1010",  "Station Name"],["0018,1000","Device Serial Number"]]
-        key = dicomfields[0][0]
-        dicvalue = self.dcmInfile[dicom.tag.Tag(key.split(',')[0],key.split(',')[1])].value
-        if dicvalue != "":
-            dicvalue = dicvalue.upper()
-            for sn in stationnames:
-                if dicvalue.find(sn[0]) != -1:
-                    self.guessroom = sn[1]
-                    print "DetermineDeviceID:",self.guessroom.name,'(',dicvalue,')'
-                    return
-        # try one of the DiDirooms;
-        didiserialnumber = [
-            ["02.00.075",self.roomF10],
-            ["02.00.099",self.roomF11a],
-            ["02.00.076",self.roomF11b],
-            ["08.02.334",self.roomTrauma1],
-            ["08.02.328",self.roomTrauma2],
-            ["04.00.023",self.roomCMH],
-#        ["20064",self.roomMMC],
-#        ["1625116867", self.roomCZE],
-#        ["95595296577", self.roomWS1]
-        ]
-        key = dicomfields[1][0]
-        dicvalue = self.dcmInfile[dicom.tag.Tag(key.split(',')[0],key.split(',')[1])].value
-        if dicvalue != "":
-            for sn in didiserialnumber:
-                if  dicvalue.find(sn[0]) != -1:
-                    self.guessroom = sn[1]
-                    print "DetermineDeviceID:",self.guessroom.name,'(',dicvalue,')'
-                    return
-
-    def __init__ (self,dcmInfile,pixeldataIn):
+    def __init__ (self,dcmInfile,pixeldataIn,room):
         self.verbose = False
         self.dcmInfile = dcmInfile
         self.pixeldataIn = pixeldataIn
         self.hasmadeplots = False
         self.expertOverridepixToGridScaleCm = None
         self.mustbeinverted = False
-        self.guessroom = self.roomUnknown
+        self.forceRoom = room
         self.lastimage = None
         self.po_center_roi = []
         self.po_roi = []
@@ -299,10 +267,9 @@ class XRayStruct:
         self.bbox_confidence = 0.
 
         self.maybeInvert()
-        self.determineDeviceID()
 
 class XRayQC:
-    qcversion = 20150618
+    qcversion = 20150817
 
     boxradmm   = 110  # choose 11 cm or 8 cm for clean surroundings
     adjustmtfangledeg = 0. # if consistency check fails, add a little angle
@@ -326,13 +293,13 @@ class XRayQC:
         pixel_spacing_x = cs.dcmInfile.PixelSpacing[0]
         stand = self.TableOrWall(cs)
         # calculate distance = L0-Thick
-        if(cs.guessroom == cs.roomWKZ1 or cs.guessroom == cs.roomWKZ2 or cs.guessroom == cs.roomCALHOS1):
+        if not 'DistanceSourceToDetector' in cs.dcmInfile:
             if stand == lit.stTable:
-                sidmm = cs.guessroom.sidtablemm
-                pidmm = cs.guessroom.pidtablemm
+                sidmm = cs.forceRoom.sidtablemm
+                pidmm = cs.forceRoom.pidtablemm
             else:
-                sidmm = cs.guessroom.sidwallmm
-                pidmm = cs.guessroom.pidwallmm
+                sidmm = cs.forceRoom.sidwallmm
+                pidmm = cs.forceRoom.pidwallmm
         else:
             distance = ""
             try:
@@ -345,9 +312,9 @@ class XRayQC:
             if(distance != ""):
                 sidmm = distance
                 if(stand == lit.stTable):
-                    pidmm = cs.guessroom.pidtablemm # DiDi: 8cm +half phantom thickness
+                    pidmm = cs.forceRoom.pidtablemm # DiDi: 8cm +half phantom thickness
                 else:
-                    pidmm = cs.guessroom.pidwallmm # DiDi: 8cm +half phantom thickness
+                    pidmm = cs.forceRoom.pidwallmm # DiDi: 8cm +half phantom thickness
         return  pixel_spacing_x*(sidmm-pidmm)/sidmm
 
     def pix2phantomm(self, cs, pix):
@@ -448,7 +415,7 @@ class XRayQC:
 
         avg = np.mean(smallimage)
         std = np.std(smallimage)
-        if std<cs.guessroom.sdthresh:
+        if std<cs.forceRoom.sdthresh:
             return lit.stWall
         else:
             return lit.stTable
@@ -458,38 +425,23 @@ class XRayQC:
             return cs.knownTableOrWall
 
         result = ""
-        if cs.guessroom == cs.roomDRX1118 or cs.guessroom == cs.roomDRX1119:
+        if cs.forceRoom.sidtablemm < 0. and cs.forceRoom.sidwallmm > 0.:
+            result =  lit.stWall
+        elif cs.forceRoom.sidtablemm > 0. and cs.forceRoom.sidwallmm < 0.:
             result =  lit.stTable
-        elif cs.guessroom == cs.roomCALHOS1:
+        elif cs.forceRoom.sdthresh>0.:
             result =  self.TableOrWallFromSTDEV(cs)
             print result
 
-        elif cs.guessroom == cs.roomWKZ1 or cs.guessroom == cs.roomWKZ2:
+        elif len(cs.forceRoom.sens_threshold) > 0:
             # check on sensitivity
             sens = cs.dcmInfile.Sensitivity
             cdate = int(cs.dcmInfile.SeriesDate)
-            if cs.guessroom == cs.roomWKZ1:
-                if   cdate < 20110000:
-                    thresh = 500
-                elif cdate < 20121130:
-                    thresh = 450
-                elif cdate < 20130611:
-                    thresh = 350
-                else:
-                    thresh = 403
-            else:
-                if   cdate < 20110500:
-                    thresh = 700
-                elif cdate < 20110516:
-                    thresh = 350
-                elif cdate < 20110625:
-                    thresh = 600
-                elif cdate < 20111115:
-                    thresh = 350
-                elif cdate < 20121130:
-                    thresh = 400
-                else:
-                    thresh = 600
+            for maxdate,maxthresh in cs.forceRoom.sens_threshold:
+                if cdate < maxdate:
+                    thresh = maxthresh
+                    break
+
             if sens<thresh:
                 result = lit.stTable
             else:
@@ -504,9 +456,11 @@ class XRayQC:
                 result = lit.stWall
             else:
                 result = lit.stTable
-#        print "[TableOrWall] %s %d %d (%d): %s" %(cs.guessroom.name,int(cs.dcmInfile.SeriesDate),sens,thresh,result)
+#        print "[TableOrWall] %s %d %d (%d): %s" %(cs.forceRoom.name,int(cs.dcmInfile.SeriesDate),sens,thresh,result)
         if result != lit.stUnknown:
             cs.knownTableOrWall = result
+        else:
+            print "ERROR! Cannot determine if Wall or Table is used!"
         return result
 
 #----------------------------------------------------------------------
@@ -539,7 +493,7 @@ class XRayQC:
         # 1.2 position 10x10phantomcm box and manipulate corner positions
         pix2phantommm = self.pixToGridScaleCm(cs)
         # choose 11cm each direction or 8 cm
-        if cs.guessroom == cs.roomWKZ1 or cs.guessroom == cs.roomWKZ2:
+        if cs.forceRoom.phantom == lit.stWellhofer: 
             self.boxradmm = 80
         rad = 2*self.boxradmm/pix2phantommm
         roipts = [
@@ -560,7 +514,7 @@ class XRayQC:
                     self.boxradmm = i
             print "found mindist=",mindist,"rad=",self.boxradmm
         # try to find rotation of phantom
-        if not cs.guessroom.skipFFT:
+        if not cs.forceRoom.skipFFT:
             error,roipts,rotangledeg = self.FieldRotationFFT(cs,roipts)
             if error: # probably too small angle, so try again
                 error,roipts,rotangledeg = self.FieldRotationFFT(cs,roipts,10.)
@@ -573,7 +527,7 @@ class XRayQC:
         if not error:
             last_attempt= False
             radmmtests = [110,80,90,70,60]
-            if cs.guessroom == cs.roomWKZ1 or cs.guessroom == cs.roomWKZ2:
+            if cs.forceRoom.phantom == lit.stWellhofer: 
                 radmmtests = [80,90,70,60,110]
             for radmm in radmmtests:
                 self.boxradmm = radmm
@@ -1162,7 +1116,7 @@ class XRayQC:
         widthpx = np.shape(cs.pixeldataIn)[0] ## width/height in pixels
         heightpx = np.shape(cs.pixeldataIn)[1]
 
-        outvalue = cs.guessroom.outvalue
+        outvalue = cs.forceRoom.outvalue
         # for DiDi, just take the minimal corner value
         if outvalue<0:
             outvalue = min(cs.pixeldataIn[0][0], cs.pixeldataIn[-1][0],cs.pixeldataIn[0][-1],cs.pixeldataIn[-1][-1])
@@ -1303,7 +1257,7 @@ class XRayQC:
         seppx = int(self.phantommm2pix(cs,10.)+.5)
         widthpx = np.shape(cs.pixeldataIn)[0] ## width/height in pixels
 
-        outvalue = cs.guessroom.outvalue
+        outvalue = cs.forceRoom.outvalue
     # for DiDi, just take the minimal corner value
         if outvalue<0:
             outvalue = min(cs.pixeldataIn[0][0], cs.pixeldataIn[-1][0],cs.pixeldataIn[0][-1],cs.pixeldataIn[-1][-1])
@@ -1410,8 +1364,7 @@ class XRayQC:
         enhance = 3
         if what == "lowcontrast":
             enhance = 1
-#		if(guessroom.equals(roomANG2))
-#			enhance =3;
+
         for i in range (0,enhance):
             mask = scind.binary_erosion(mask)
 
@@ -1549,7 +1502,7 @@ class XRayQC:
         ymmur = -55.+bump
         xmmur =  55.-bump
         ymmll = -40.-bump
-        if cs.guessroom.phantom == lit.stWellhofer:
+        if cs.forceRoom.phantom == lit.stWellhofer:
             xmmll = -55.+4.
             ymmur = -60.+3.
             xmmur =  55.-4.
@@ -1726,52 +1679,10 @@ class XRayQC:
         if roipts_orig is None:
             roipts_orig = cs.po_roi
 
-        # pehamed nr 100876
-        mmx18 =  53.1
-        mmy18 =  27.1
-        mmx06 =  80.1
-        mmy06 = -04.5
-        mmx14 =  59.4
-        mmy14 = -24.7
-        mmx46 =  28.0
-        mmy46 =  02.0
-
-        # opnieuw berekend met F10 20141009, tussen 0,0 en 11.5,11.5 gem van wand en tafel
-#        mmx18 =  53.50
-#        mmy18 =  27.20
-#        mmx06 =  80.71
-#        mmy06 = -04.09
-#        mmx14 =  60.03
-#        mmy14 = -24.43
-#        mmx46 =  28.28
-#        mmy46 =  01.98
-
-        if cs.guessroom.name == "CMH": # pehamed nr 99866
-            print "ERROR! MTF ROI needs to be adjusted"
-            return
-            mmx18 =  53.3
-            mmy18 = -27.5
-            mmx06 =  80.35
-            mmy06 =  03.95
-            mmx46 =  28.2
-            mmy46 = -02.25
-            mmx14 =  59.55
-            mmy14 =  24.5
-
-        if cs.guessroom.phantom == lit.stWellhofer: # wellhofer
-            mmx18 =  53.7
-            mmy18 =  27.1
-            mmx06 =  80.6
-            mmy06 = -04.7
-            mmx14 =  59.9
-            mmy14 = -24.9
-            mmx46 =  28.4
-            mmy46 =  01.8
-
-        x18px,y18px = self.phantomposmm2pix(roipts_orig,mmx18,mmy18)
-        x06px,y06px = self.phantomposmm2pix(roipts_orig,mmx06,mmy06)
-        x46px,y46px = self.phantomposmm2pix(roipts_orig,mmx46,mmy46)
-        x14px,y14px = self.phantomposmm2pix(roipts_orig,mmx14,mmy14)
+        x18px,y18px = self.phantomposmm2pix(roipts_orig,cs.forceRoom.xy18mm[0],cs.forceRoom.xy18mm[1])
+        x06px,y06px = self.phantomposmm2pix(roipts_orig,cs.forceRoom.xy06mm[0],cs.forceRoom.xy06mm[1])
+        x46px,y46px = self.phantomposmm2pix(roipts_orig,cs.forceRoom.xy46mm[0],cs.forceRoom.xy46mm[1])
+        x14px,y14px = self.phantomposmm2pix(roipts_orig,cs.forceRoom.xy14mm[0],cs.forceRoom.xy14mm[1])
 
         roipts = [ [x18px,y18px],[x06px,y06px],[x14px,y14px],[x46px,y46px] ]
 #        print roipts
@@ -2452,12 +2363,12 @@ class XRayQC:
         CuDimmm = 04.
         yrefmm = 10. # offset to background
 
-        if cs.guessroom.phantom == lit.stWellhofer:
+        if cs.forceRoom.phantom == lit.stWellhofer:
             mmCu = [ [36.4,22.8], [31.,17.5], [25.,11.9], [19.3,06.] ]
             CuDimmm = 02.5
             yrefmm = 5.5
         else:
-            peha = XRayStruct(cs.dcmInfile,cs.pixeldataIn)
+            peha = XRayStruct(cs.dcmInfile,cs.pixeldataIn,cs.forceRoom)
 
         cs.loco.lo_rois = []
         for cu in mmCu:
@@ -2486,7 +2397,7 @@ class XRayQC:
             yhi -= int(.5+self.phantommm2pix(cs,yrefmm))
             roipts = [ [xlo,ylo],[xlo,yhi],[xhi,yhi],[xhi,ylo] ]
             cs.loco.lo_rois.append(roipts)
-            if cs.guessroom.phantom == lit.stWellhofer:
+            if cs.forceRoom.phantom == lit.stWellhofer:
                 if cs.mustbeinverted:
                     smallimage = invertmax - cs.pixeldataIn[xlo:xhi+1,ylo:yhi+1].astype(float)
                 else:
@@ -2557,8 +2468,8 @@ class XRayQC:
                 ["0028,0006",  "PlanarConfiguration"],
                 ["0028,0101",  "BitsStored"]
             ]
-#            if(cs.guessroom == cs.roomDRX1118 or cs.guessroom == cs.roomDRX1119):
-            dicomfields.append(["0018,1405","Relative Exposure"])
+            if 'RelativeXRayExposure' in cs.dcmInfile: #DX
+                dicomfields.append(["0018,1405","Relative Exposure"])
 
         elif(info == "qclight"):
             dicomfields = [
@@ -2582,11 +2493,11 @@ class XRayQC:
                 ["0018,5021",  "Postprocessing"],
                 ["0018,6000",  "Sensitivity"]
             ]
-#            if(cs.guessroom == cs.roomDRX1118 or cs.guessroom == cs.roomDRX1119):
-            dicomfields.append(["0018,1405","Relative Exposure"])
+            if 'RelativeXRayExposure' in cs.dcmInfile: #DX
+                dicomfields.append(["0018,1405","Relative Exposure"])
 
         elif(info == "qcwad"):
-            if 'WKZ' in cs.guessroom.name:
+            if not 'DistanceSourceToDetector' in cs.dcmInfile: # WKZ-like fcr
                 dicomfields = [
                     ["0008,0021",  "SeriesDate"],
                     ["0008,0031",  "SeriesTime"],
@@ -2703,21 +2614,21 @@ class XRayQC:
         """
         Convenience function to calculate mAs from DOP if not DR
         """
-        if cs.guessroom == cs.roomWKZ1 or cs.guessroom == cs.roomWKZ2 or cs.guessroom == cs.roomCALHOS1:
+        if not 'ImageAndFluoroscopyAreaDoseProduct' in cs.dcmInfile: # WKZ-like fcr 
             return 0. # no reported DOP
 
         stand = self.TableOrWall(cs)
-        if cs.guessroom == cs.roomWKZ1 or cs.guessroom == cs.roomWKZ2 or cs.guessroom == cs.roomDRX1118 or cs.guessroom == cs.roomCALHOS1:
+        if not 'DistanceSourceToDetector' in cs.dcmInfile:
             if stand == lit.stTable:
-                sidmm = cs.guessroom.sidtablemm
+                sidmm = cs.forceRoom.sidtablemm
             else:
-                sidmm = cs.guessroom.sidwallmm
+                sidmm = cs.forceRoom.sidwallmm
         else:
             sidmm = cs.dcmInfile.DistanceSourceToDetector
             if sidmm<1.e-6:
-                sidmm = cs.guessroom.sidtablemm
+                sidmm = cs.forceRoom.sidtablemm
                 if stand == lit.stWall:
-                    sidmm = cs.guessroom.sidwallmm
+                    sidmm = cs.forceRoom.sidwallmm
 
         sid_m = sidmm/1000.
         kvp = cs.dcmInfile.KVP
@@ -2741,17 +2652,17 @@ class XRayQC:
         minedge = min(cs.xrayNSWEmm)
         maxedge = max(cs.xrayNSWEmm)
         meanedge = np.mean(cs.xrayNSWEmm)
-        if cs.guessroom == cs.roomWKZ1 or cs.guessroom == cs.roomWKZ2 or cs.guessroom == cs.roomDRX1118 or cs.guessroom == cs.roomCALHOS1:
+        if not 'DistanceSourceToDetector' in cs.dcmInfile:
             if stand == lit.stTable:
-                sidmm = cs.guessroom.sidtablemm
+                sidmm = cs.forceRoom.sidtablemm
             else:
-                sidmm = cs.guessroom.sidwallmm
+                sidmm = cs.forceRoom.sidwallmm
         else:
             sidmm = cs.dcmInfile.DistanceSourceToDetector
             if sidmm<1.e-6:
-                sidmm = cs.guessroom.sidtablemm
+                sidmm = cs.forceRoom.sidtablemm
                 if stand == lit.stWall:
-                    sidmm = cs.guessroom.sidwallmm
+                    sidmm = cs.forceRoom.sidwallmm
         devedge = 100.*max(np.abs(minedge-meanedge),np.abs(maxedge-meanedge))/sidmm
         return devedge
 
@@ -2882,7 +2793,7 @@ class XRayQC:
         stds = []
         # 1. Make box around wedge (-5.5; -4) to (+5.5; -5.5)
 
-        if cs.guessroom.phantom == lit.stWellhofer: # WKZ
+        if cs.forceRoom.phantom == lit.stWellhofer: # WKZ
             x0 = -15.+4
             y0 = -43.-2.
             x1 =  15.-4
