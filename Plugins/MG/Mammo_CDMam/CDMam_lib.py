@@ -10,6 +10,7 @@ Some stuff that can be optimized:
  * speed up removal of grid (maybe with grid detection on lower scale?)
 
 Changelog:
+    20150826: reshuffling in gridremove to demand less memory (windows cannot cope)
     20150213: first working version
 """
 import subprocess
@@ -166,7 +167,7 @@ class CDMam():
     """
     Class for calculation of CDMAM score
     """
-    qcversion = 20150213
+    qcversion = 20150826
 
     def __init__(self,guimode=False):
         self.guimode = guimode
@@ -476,18 +477,21 @@ class CDMam():
         mask = scind.binary_dilation(mask)
 
         # fill the gridlines with the median values of the pixels around it
-        cs.gridimage = mask.astype(float)
         medimage = np.roll(cs.pixeldataIn,shift,axis=0).astype(float)
-        dest = cs.pixeldataIn+cs.gridimage*(medimage-cs.pixeldataIn)
+        dest = cs.pixeldataIn+mask*(medimage-cs.pixeldataIn)
         # repeat to remove propagated mask # new since 20150211
         medimage = np.roll(dest,shift,axis=0).astype(float)
-        dest = cs.pixeldataIn+cs.gridimage*(medimage-cs.pixeldataIn)
-
+        dest = cs.pixeldataIn+mask*(medimage-cs.pixeldataIn)
+        medimage = None
+        cs.gridimage = mask.astype(float)
+        mask = None
+        
         # find gridobject
         gridobject         = scind.binary_fill_holes(cs.gridimage)
         label_im,nb_labels = scind.label(gridobject)
         sizes = scind.sum(gridobject, label_im, range(nb_labels + 1))
-
+        gridobject = None
+        
         #Clean up small connect components:
         mask_size = sizes < max(sizes) #(100/self.pixDim())**2
         remove_pixel = mask_size[label_im]
@@ -499,6 +503,7 @@ class CDMam():
 
         medimage = np.roll(dest,shift,axis=0).astype(float)
         dest += cs.gridimage*(medimage-dest)
+        medimage = None
         cs.gridimage *= label_im
         if -1>0: # remove everything outside grid
             wid = dest.shape[0]

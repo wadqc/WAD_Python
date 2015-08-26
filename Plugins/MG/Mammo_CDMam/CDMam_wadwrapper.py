@@ -6,10 +6,8 @@
 #
 #
 
-__version__ = '01062015'
+__version__ = '20150826'
 __author__ = 'aschilham'
-
-
 
 
 import sys
