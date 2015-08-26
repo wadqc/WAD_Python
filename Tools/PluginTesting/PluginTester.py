@@ -371,7 +371,12 @@ def batchtest(exe, exepath, testlist, outputdir):
     return results,errorlist
    
 if __name__ == "__main__":
-    current_uid = os.getuid()
+    skip_usercheck = False
+    try:
+        current_uid = os.getuid()
+    except: #os.getuid() does not exist on this operating system
+        skip_usercheck = True
+
     wanted_user = 'www-data'
         
     _inifile = 'testconfig_default.ini'
@@ -394,16 +399,17 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     msg = ''
-    try:
-        msg += "For proper testing, this python script should be run as user %s\n"%wanted_user
-        msg += "and the output folder defined in the inifile %s should be writable by user %s\n"%(args.inifile,wanted_user)
-        msg += "  sudo chown -R www-data TestingOutput\n"
-        msg += "  sudo -u %s python PluginTester.py\n"%wanted_user
-        import pwd
-        if pwd.getpwnam(wanted_user).pw_uid == current_uid:
-            msg = 'Good! Running as %s'%wanted_user
-    except:
-        msg += 'However, user %s does not exist on this system...\n'%wanted_user
+    if not skip_usercheck:
+        try:
+            msg += "For proper testing, this python script should be run as user %s\n"%wanted_user
+            msg += "and the output folder defined in the inifile %s should be writable by user %s\n"%(args.inifile,wanted_user)
+            msg += "  sudo chown -R www-data TestingOutput\n"
+            msg += "  sudo -u %s python PluginTester.py\n"%wanted_user
+            import pwd
+            if pwd.getpwnam(wanted_user).pw_uid == current_uid:
+                msg = 'Good! Running as %s'%wanted_user
+        except:
+            msg += 'However, user %s does not exist on this system...\n'%wanted_user
 
     print msg
  
