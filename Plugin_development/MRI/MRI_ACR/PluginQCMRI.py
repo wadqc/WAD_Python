@@ -6,20 +6,22 @@ http://www.acr.org/~/media/ACR/Documents/Accreditation/MRI/LargePhantomInstructi
 http://www.acr.org/~/media/ACR/Documents/Accreditation/MRI/LargePhantomGuidance.pdf
 
 This code contains the following routines that can be called:
-ACR_GA_l: Geometric accuracy - measure length of phantom
-ACR_GA_wh: Geometric accuracy - measure width of phantom
-ACR_GA_whd: Geometric accuracy - measure length of diagonal
-ACR_STA: Slice Thickness Accuracy
-ACR_IIU: Image intensity uniformity
-ACR_HCSR: High contrast spatial resolution
-ACR_SPA: Slice position accuracy
-ACR_Ghosting: Ghosting
+
+* ACR_GA_l: Geometric accuracy - measure length of phantom
+* ACR_GA_wh: Geometric accuracy - measure width of phantom
+* ACR_GA_whd: Geometric accuracy - measure length of diagonal
+* ACR_STA: Slice Thickness Accuracy
+* ACR_IIU: Image intensity uniformity
+* ACR_HCSR: High contrast spatial resolution
+* ACR_SPA: Slice position accuracy
+* ACR_Ghosting: Ghosting
 
 Low contrast object detectability (LCOD) and Percent-signal ghosting (PSG) are currently not implemented.
 
-#Changelog:
-26-08-15 - Updated original code to a working wadplugin version (DD)
-05-12-14 - First version
+Changelog:
+
+* 26-08-15 - Updated original code to a working wadplugin version (DD)
+* 05-12-14 - First version
 
 '''
 
