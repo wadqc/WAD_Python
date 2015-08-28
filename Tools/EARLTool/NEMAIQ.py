@@ -51,7 +51,7 @@ import NEMAlib as niqlib
 
 import sys
 sys.path.append("../../")
-from Lib import pydicom_series
+from pyWADLib import pydicom_series
 
 
 

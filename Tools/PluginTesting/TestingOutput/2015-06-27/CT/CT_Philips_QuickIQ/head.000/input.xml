@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?><WAD>
+           <version>
+           </version>
+           <analysemodule_cfg>/data/SoftwareTools/WAD_Software/WADplugins/pywad2/Testing/CT/CT_Philips_QuickIQ/config_head.xml</analysemodule_cfg>
+           <analysemodule_output>/data/SoftwareTools/WAD_Software/WADplugins/pywad2/Tools/PluginTesting/TestingOutput/2015-06-27/CT/CT_Philips_QuickIQ/head.000/result.xml</analysemodule_output>
+           <analyselevel>series</analyselevel>
+           <patient>
+              <id>idpar</id>
+              <name>name</name>
+              <study>
+                 <uid>uid</uid>
+                 <description>
+                 </description>
+                   <series><number>1</number><description> -  - QC^Q. - None -  - 100009</description> <instance><number>1</number><filename>/data/Dropbox/pyWADdemodata/CT/CT_Philips_QuickIQ/dicom_head/dicom_head.dcm</filename></instance></series>
+              </study>
+           </patient>
+        </WAD>
+        

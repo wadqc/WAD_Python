@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?><WAD>
+           <version>
+           </version>
+           <analysemodule_cfg>/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/Testing/Fluoro/Pehamed/series/config_hsg.xml</analysemodule_cfg>
+           <analysemodule_output>/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/Tools/PluginTesting/TestingOutput/2015-07-03/Fluoro/Pehamed/series/hsg.000/result.xml</analysemodule_output>
+           <analyselevel>series</analyselevel>
+           <patient>
+              <id>idpar</id>
+              <name>name</name>
+              <study>
+                 <uid>uid</uid>
+                 <description>
+                 </description>
+                   <series><number>1</number><description>07-05-2015 - 13:45:17 - QC^Q. - HSG - None - 2</description> <instance><number>1</number><filename>/data/Dropbox/pyWADdemodata/Fluoro/Pehamed/dicom_hsg/dicom_hsg.dcm</filename></instance></series>
+              </study>
+           </patient>
+        </WAD>
+        

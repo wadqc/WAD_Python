@@ -1,0 +1,490 @@
+<WAD>
+<results>
+	<type>char</type>
+	<omschrijving>pluginversion_Wall</omschrijving>
+	<waarde>20150618</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>1</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>SeriesDate_Wall</omschrijving>
+	<waarde>20150109</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>2</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>SeriesTime_Wall</omschrijving>
+	<waarde>143719</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>3</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Operator's Name_Wall</omschrijving>
+	<waarde>rger</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>4</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>kVp_Wall</omschrijving>
+	<waarde>125.0</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>5</volgnummer>
+	<grens_acceptabel_onder>124.99</grens_acceptabel_onder>
+	<grens_acceptabel_boven>125.01</grens_acceptabel_boven>
+	<grens_kritisch_onder>124.5</grens_kritisch_onder>
+	<grens_kritisch_boven>125.5</grens_kritisch_boven>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>DeviceSerialNumber_Wall</omschrijving>
+	<waarde>02.00.075</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>6</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>SoftwareVersions_Wall</omschrijving>
+	<waarde>Version 1.5.3.1</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>7</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>DistanceSourceToDetector (mm)_Wall</omschrijving>
+	<waarde>2000.0</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>8</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>ExposureTime (ms)_Wall</omschrijving>
+	<waarde>6.0</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>9</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>Exposure (mAs)_Wall</omschrijving>
+	<waarde>3.0</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>10</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>ImageAreaDoseProduct_Wall</omschrijving>
+	<waarde>0.303</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>11</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>FilterType_Wall</omschrijving>
+	<waarde>0.2Cu,1Al</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>12</volgnummer>
+	<criterium>0.2Cu,1Al</criterium>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>FocalSpot(s)_Wall</omschrijving>
+	<waarde>2.000</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>13</volgnummer>
+	<criterium>2.000</criterium>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>ImagerPixelSpacing_Wall</omschrijving>
+	<waarde>['0.143', '0.143']</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>14</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Grid_Wall</omschrijving>
+	<waarde>IN</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>15</volgnummer>
+	<criterium>IN</criterium>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Date of Last Calibration_Wall</omschrijving>
+	<waarde>20150107</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>16</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Postprocessing_Wall</omschrijving>
+	<waarde>constancy</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>17</volgnummer>
+	<criterium>constancy</criterium>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>Sensitivity_Wall</omschrijving>
+	<waarde>250.0</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>18</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>room_Wall</omschrijving>
+	<waarde>F10</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>19</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>stand_Wall</omschrijving>
+	<waarde>Wall</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>20</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Version</omschrijving>
+	<waarde>01062015 (Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_wadwrapper)</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>21</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>PhantomOrientation_Wall</omschrijving>
+	<waarde>0.0</waarde>
+	<grootheid>PhantomOrientation</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>22</volgnummer>
+	<grens_acceptabel_onder>-1.</grens_acceptabel_onder>
+	<grens_acceptabel_boven>1.</grens_acceptabel_boven>
+	<grens_kritisch_onder>-1.</grens_kritisch_onder>
+	<grens_kritisch_boven>1.</grens_kritisch_boven>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>AlignConfidence_Wall</omschrijving>
+	<waarde>92.3582976131</waarde>
+	<grootheid>AlignConfidence</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>23</volgnummer>
+	<grens_acceptabel_onder>82.5</grens_acceptabel_onder>
+	<grens_acceptabel_boven>100.</grens_acceptabel_boven>
+	<grens_kritisch_onder>80.</grens_kritisch_onder>
+	<grens_kritisch_boven>100.</grens_kritisch_boven>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>xray[N]cm_Wall</omschrijving>
+	<waarde>12.7672708687</waarde>
+	<grootheid>xray[N]cm</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>24</volgnummer>
+	<grens_acceptabel_onder>11.5</grens_acceptabel_onder>
+	<grens_acceptabel_boven>13.5</grens_acceptabel_boven>
+	<grens_kritisch_onder>10.5</grens_kritisch_onder>
+	<grens_kritisch_boven>14.5</grens_kritisch_boven>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>xray[E]cm_Wall</omschrijving>
+	<waarde>13.2481312936</waarde>
+	<grootheid>xray[E]cm</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>25</volgnummer>
+	<grens_acceptabel_onder>11.5</grens_acceptabel_onder>
+	<grens_acceptabel_boven>13.5</grens_acceptabel_boven>
+	<grens_kritisch_onder>10.5</grens_kritisch_onder>
+	<grens_kritisch_boven>14.5</grens_kritisch_boven>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>xray[S]cm_Wall</omschrijving>
+	<waarde>13.5366411291</waarde>
+	<grootheid>xray[S]cm</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>26</volgnummer>
+	<grens_acceptabel_onder>11.5</grens_acceptabel_onder>
+	<grens_acceptabel_boven>13.5</grens_acceptabel_boven>
+	<grens_kritisch_onder>10.5</grens_kritisch_onder>
+	<grens_kritisch_boven>14.5</grens_kritisch_boven>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>xray[W]cm_Wall</omschrijving>
+	<waarde>13.35805567</waarde>
+	<grootheid>xray[W]cm</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>27</volgnummer>
+	<grens_acceptabel_onder>11.5</grens_acceptabel_onder>
+	<grens_acceptabel_boven>13.5</grens_acceptabel_boven>
+	<grens_kritisch_onder>10.5</grens_kritisch_onder>
+	<grens_kritisch_boven>14.5</grens_kritisch_boven>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>xrayDev_Wall</omschrijving>
+	<waarde>0.230126935845</waarde>
+	<grootheid>xrayDev</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>28</volgnummer>
+	<grens_acceptabel_onder>-1.</grens_acceptabel_onder>
+	<grens_acceptabel_boven>1.</grens_acceptabel_boven>
+	<grens_kritisch_onder>-2.</grens_kritisch_onder>
+	<grens_kritisch_boven>2.</grens_kritisch_boven>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>LRUniformity_Wall</omschrijving>
+	<waarde>3.3692715093</waarde>
+	<grootheid>LRUniformity</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>29</volgnummer>
+	<grens_acceptabel_onder>-5.</grens_acceptabel_onder>
+	<grens_acceptabel_boven>5.</grens_acceptabel_boven>
+	<grens_kritisch_onder>-10.</grens_kritisch_onder>
+	<grens_kritisch_boven>10.</grens_kritisch_boven>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>CuConfidence_Wall</omschrijving>
+	<waarde>98.610520977</waarde>
+	<grootheid>CuConfidence</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>30</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>CuSNR_0.0_Wall</omschrijving>
+	<waarde>53.5305061916</waarde>
+	<grootheid>CuSNR_0.0</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>31</volgnummer>
+	<grens_acceptabel_onder>40.0</grens_acceptabel_onder>
+	<grens_acceptabel_boven>80.0</grens_acceptabel_boven>
+	<grens_kritisch_onder>30.0</grens_kritisch_onder>
+	<grens_kritisch_boven>90.0</grens_kritisch_boven>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>CuCNRmin_Wall</omschrijving>
+	<waarde>2.17881851528</waarde>
+	<grootheid>CuCNRmin</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>32</volgnummer>
+	<grens_acceptabel_onder>1.2</grens_acceptabel_onder>
+	<grens_acceptabel_boven>2.5</grens_acceptabel_boven>
+	<grens_kritisch_onder>1.1</grens_kritisch_onder>
+	<grens_kritisch_boven>3.0</grens_kritisch_boven>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>CuDR0.6_0.0_Wall</omschrijving>
+	<waarde>1.80953416134</waarde>
+	<grootheid>CuDR0.6_0.0</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>33</volgnummer>
+	<grens_acceptabel_onder>1.6</grens_acceptabel_onder>
+	<grens_acceptabel_boven>1.9</grens_acceptabel_boven>
+	<grens_kritisch_onder>1.5</grens_kritisch_onder>
+	<grens_kritisch_boven>2.</grens_kritisch_boven>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>guesskVp_Wall</omschrijving>
+	<waarde>-1.0</waarde>
+	<grootheid>guesskVp</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>34</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>mAscalc_Wall</omschrijving>
+	<waarde>2.69753012416</waarde>
+	<grootheid>mAscalc</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>35</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>lowCNR_0_Wall</omschrijving>
+	<waarde>2.16261082625</waarde>
+	<grootheid>lowCNR_0</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>36</volgnummer>
+	<grens_acceptabel_onder>1.65</grens_acceptabel_onder>
+	<grens_acceptabel_boven>2.</grens_acceptabel_boven>
+	<grens_kritisch_onder>1.5</grens_kritisch_onder>
+	<grens_kritisch_boven>2.</grens_kritisch_boven>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>lowCNR_1_Wall</omschrijving>
+	<waarde>1.75900032009</waarde>
+	<grootheid>lowCNR_1</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>37</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>lowCNR_2_Wall</omschrijving>
+	<waarde>0.952104966612</waarde>
+	<grootheid>lowCNR_2</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>38</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>lowCNR_3_Wall</omschrijving>
+	<waarde>0.015594107027</waarde>
+	<grootheid>lowCNR_3</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>39</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>MTFPosConfidence_Wall</omschrijving>
+	<waarde>98.4604374704</waarde>
+	<grootheid>MTFPosConfidence</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>40</volgnummer>
+	<grens_acceptabel_onder>96.5</grens_acceptabel_onder>
+	<grens_acceptabel_boven>100.</grens_acceptabel_boven>
+	<grens_kritisch_onder>94.</grens_kritisch_onder>
+	<grens_kritisch_boven>100.</grens_kritisch_boven>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>MTFFreqConfidence_Wall</omschrijving>
+	<waarde>71.3492500352</waarde>
+	<grootheid>MTFFreqConfidence</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>41</volgnummer>
+	<grens_acceptabel_onder>90.</grens_acceptabel_onder>
+	<grens_acceptabel_boven>100.</grens_acceptabel_boven>
+	<grens_kritisch_onder>85.</grens_kritisch_onder>
+	<grens_kritisch_boven>100.</grens_kritisch_boven>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>AreaContrast5_Wall</omschrijving>
+	<waarde>0.0553643726169</waarde>
+	<grootheid>AreaContrast5</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>42</volgnummer>
+	<grens_acceptabel_onder>0.0525</grens_acceptabel_onder>
+	<grens_acceptabel_boven>1.</grens_acceptabel_boven>
+	<grens_kritisch_onder>0.05</grens_kritisch_onder>
+	<grens_kritisch_boven>1.</grens_kritisch_boven>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>AreaMTF5_Wall</omschrijving>
+	<waarde>0.450909825002</waarde>
+	<grootheid>AreaMTF5</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>43</volgnummer>
+	<grens_acceptabel_onder>0.45</grens_acceptabel_onder>
+	<grens_acceptabel_boven>1.</grens_acceptabel_boven>
+	<grens_kritisch_onder>0.425</grens_kritisch_onder>
+	<grens_kritisch_boven>1.</grens_kritisch_boven>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>MTF10_Wall</omschrijving>
+	<waarde>3.47355095026</waarde>
+	<grootheid>MTF10</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>44</volgnummer>
+	<grens_acceptabel_onder>3.325</grens_acceptabel_onder>
+	<grens_acceptabel_boven>5.</grens_acceptabel_boven>
+	<grens_kritisch_onder>3.15</grens_kritisch_onder>
+	<grens_kritisch_boven>5.</grens_kritisch_boven>
+</results>
+<results>
+	<type>object</type>
+	<omschrijving>AnnotatedImage_Wall</omschrijving>
+	<object_naam_pad>/data/SoftwareTools/WAD_Software/WADplugins/pywad2/Tools/PluginTesting/TestingOutput/2015-07-01/Bucky/Bucky_PEHAMED_Wellhofer/series/didi.000/test_Wall.jpg</object_naam_pad>
+	<niveau>1</niveau>
+	<volgnummer>45</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Version</omschrijving>
+	<waarde>01062015 (Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_wadwrapper)</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>46</volgnummer>
+</results>
+</WAD>

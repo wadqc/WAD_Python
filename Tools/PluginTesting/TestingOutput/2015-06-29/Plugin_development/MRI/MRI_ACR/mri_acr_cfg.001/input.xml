@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?><WAD>
+           <version>
+           </version>
+           <analysemodule_cfg>/data/SoftwareTools/WAD_Software/WADplugins/pywad2/Testing/MRI/MRI_ACR/mri_acr_cfg.xml</analysemodule_cfg>
+           <analysemodule_output>/data/SoftwareTools/WAD_Software/WADplugins/pywad2/Tools/PluginTesting/TestingOutput/2015-06-29/Plugin_development/MRI/MRI_ACR/mri_acr_cfg.001/result.xml</analysemodule_output>
+           <analyselevel>series</analyselevel>
+           <patient>
+              <id>idpar</id>
+              <name>name</name>
+              <study>
+                 <uid>uid</uid>
+                 <description>
+                 </description>
+                   <series><number>1</number><description>15-10-2013 - 16:16:58 - KFI DDtest - KFI ACR^KFI ACR - localizer - 1</description> <instance><number>1</number><filename>/data/Dropbox/pyWADdemodata/MRI/MRI_ACR/dicom_Espree/4E82E4FE/B750C78C/4C7315EB</filename></instance></series>
+              </study>
+           </patient>
+        </WAD>
+        

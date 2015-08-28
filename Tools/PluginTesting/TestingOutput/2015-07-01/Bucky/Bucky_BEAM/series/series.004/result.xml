@@ -1,0 +1,110 @@
+<WAD>
+<results>
+	<type>float</type>
+	<omschrijving>Gemiddelde ROI SNR Beam Wand</omschrijving>
+	<waarde>7.67582810197</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>1</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>Gemiddelde ROI mean Beam Wand</omschrijving>
+	<waarde>119.689266664</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>2</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>Gemiddelde stdev Beam Wand</omschrijving>
+	<waarde>15.5930103012</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>3</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>Gemiddelde ROI1 Beam Wand</omschrijving>
+	<waarde>124.461968763</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>4</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>Gemiddelde ROI2 Beam Wand</omschrijving>
+	<waarde>132.528279003</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>5</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>Gemiddelde ROI3 Beam Wand</omschrijving>
+	<waarde>108.369638128</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>6</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>Gemiddelde ROI4 Beam Wand</omschrijving>
+	<waarde>113.397180763</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>7</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>stdev ROI1 Beam Wand</omschrijving>
+	<waarde>15.858571503</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>8</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>stdev ROI2 Beam Wand</omschrijving>
+	<waarde>18.1781417923</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>9</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>stdev ROI3 Beam Wand</omschrijving>
+	<waarde>13.2111288901</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>10</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>stdev ROI4 Beam Wand</omschrijving>
+	<waarde>15.1241990194</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>11</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Version</omschrijving>
+	<waarde>01062015 (Plugins.Bucky.Bucky_BEAM.Bucky_BEAM_Phantom)</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>12</volgnummer>
+</results>
+</WAD>

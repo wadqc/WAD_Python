@@ -1,0 +1,282 @@
+<WAD>
+<results>
+	<type>char</type>
+	<omschrijving>pluginversion_Ver</omschrijving>
+	<waarde>20150616</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>1</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>SeriesDate_Ver</omschrijving>
+	<waarde>20150507</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>2</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>SeriesTime_Ver</omschrijving>
+	<waarde>134855</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>3</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>DeviceSerialNumber_Ver</omschrijving>
+	<waarde>24211830</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>4</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>SoftwareVersions_Ver</omschrijving>
+	<waarde>DSI R2.4.3 LUT       08-04-08 R6.1.8.0126</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>5</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>ProtocolName_Ver</omschrijving>
+	<waarde>Defaec</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>6</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Rows_Ver</omschrijving>
+	<waarde>512</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>7</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Columns_Ver</omschrijving>
+	<waarde>512</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>8</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>room_Ver</omschrijving>
+	<waarde>AZUDDL</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>9</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>stand_Ver</omschrijving>
+	<waarde>Ver</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>10</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Version</omschrijving>
+	<waarde>01062015 (Plugin_development.Fluoro.Pehamed.QCDDL_wadwrapper)</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>11</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>PhantomOrientation_Ver</omschrijving>
+	<waarde>0.0</waarde>
+	<grootheid>PhantomOrientation</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>12</volgnummer>
+	<grens_acceptabel_onder>-1</grens_acceptabel_onder>
+	<grens_acceptabel_boven>1</grens_acceptabel_boven>
+	<grens_kritisch_onder>-1</grens_kritisch_onder>
+	<grens_kritisch_boven>1</grens_kritisch_boven>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>PhantomAngle_Ver</omschrijving>
+	<waarde>0.30084557245</waarde>
+	<grootheid>PhantomAngle</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>13</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>AlignConfidence_Ver</omschrijving>
+	<waarde>93.0500642398</waarde>
+	<grootheid>AlignConfidence</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>14</volgnummer>
+	<grens_acceptabel_onder>90</grens_acceptabel_onder>
+	<grens_acceptabel_boven>100</grens_acceptabel_boven>
+	<grens_kritisch_onder>80</grens_kritisch_onder>
+	<grens_kritisch_boven>100</grens_kritisch_boven>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>LineUniformity_Ver</omschrijving>
+	<waarde>12.7841039269</waarde>
+	<grootheid>LineUniformity</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>15</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>LRUniformity_Ver</omschrijving>
+	<waarde>0.613393012781</waarde>
+	<grootheid>LRUniformity</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>16</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>ROIUniformity_Ver</omschrijving>
+	<waarde>12.0988527316</waarde>
+	<grootheid>ROIUniformity</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>17</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>CuConfidence_Ver</omschrijving>
+	<waarde>90.6491803279</waarde>
+	<grootheid>CuConfidence</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>18</volgnummer>
+	<grens_acceptabel_onder>90</grens_acceptabel_onder>
+	<grens_acceptabel_boven>100</grens_acceptabel_boven>
+	<grens_kritisch_onder>80</grens_kritisch_onder>
+	<grens_kritisch_boven>100</grens_kritisch_boven>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>Cu0mean_Ver</omschrijving>
+	<waarde>143.723183391</waarde>
+	<grootheid>Cu0mean</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>19</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>Cu0sd_Ver</omschrijving>
+	<waarde>3.50967751123</waarde>
+	<grootheid>Cu0sd</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>20</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>CuSNR_0.0_Ver</omschrijving>
+	<waarde>40.9505383134</waarde>
+	<grootheid>CuSNR_0.0</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>21</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>CuCNRmin_Ver</omschrijving>
+	<waarde>1.6960238147</waarde>
+	<grootheid>CuCNRmin</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>22</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>CuDR0.6_0.0_Ver</omschrijving>
+	<waarde>1.87885481652</waarde>
+	<grootheid>CuDR0.6_0.0</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>23</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>guesskVp_Ver</omschrijving>
+	<waarde>-1.0</waarde>
+	<grootheid>guesskVp</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>24</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>lowCNR_0_Ver</omschrijving>
+	<waarde>2.81962878697</waarde>
+	<grootheid>lowCNR_0</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>25</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>lowCNR_1_Ver</omschrijving>
+	<waarde>1.57874197181</waarde>
+	<grootheid>lowCNR_1</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>26</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>lowCNR_2_Ver</omschrijving>
+	<waarde>1.37726979805</waarde>
+	<grootheid>lowCNR_2</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>27</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>lowCNR_3_Ver</omschrijving>
+	<waarde>-0.0274338403288</waarde>
+	<grootheid>lowCNR_3</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>28</volgnummer>
+</results>
+<results>
+	<type>object</type>
+	<omschrijving>AnnotatedImage_Ver</omschrijving>
+	<object_naam_pad>/data/SoftwareTools/WAD_Software/WADplugins/pywad2/Tools/PluginTesting/TestingOutput/2015-07-01/Fluoro/Pehamed/series/dre.000/test_Ver.jpg</object_naam_pad>
+	<niveau>1</niveau>
+	<volgnummer>29</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Version</omschrijving>
+	<waarde>01062015 (Plugin_development.Fluoro.Pehamed.QCDDL_wadwrapper)</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>30</volgnummer>
+</results>
+</WAD>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?><WAD>
+           <version>
+           </version>
+           <analysemodule_cfg>/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/Testing/Fluoro/Pehamed/series/config_dre.xml</analysemodule_cfg>
+           <analysemodule_output>/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/Tools/PluginTesting/TestingOutput/2015-07-02/Fluoro/Pehamed/series/dre.000/result.xml</analysemodule_output>
+           <analyselevel>series</analyselevel>
+           <patient>
+              <id>idpar</id>
+              <name>name</name>
+              <study>
+                 <uid>uid</uid>
+                 <description>
+                 </description>
+                   <series><number>1</number><description>07-05-2015 - 13:48:55 - QC^Q. - Defaec - None - 5</description> <instance><number>11</number><filename>/data/Dropbox/pyWADdemodata/Fluoro/Pehamed/dicom_dre/593A9675</filename></instance> <instance><number>7</number><filename>/data/Dropbox/pyWADdemodata/Fluoro/Pehamed/dicom_dre/593A91C4</filename></instance> <instance><number>2</number><filename>/data/Dropbox/pyWADdemodata/Fluoro/Pehamed/dicom_dre/593A223A</filename></instance> <instance><number>3</number><filename>/data/Dropbox/pyWADdemodata/Fluoro/Pehamed/dicom_dre/593A24FF</filename></instance> <instance><number>18</number><filename>/data/Dropbox/pyWADdemodata/Fluoro/Pehamed/dicom_dre/593AA1D9</filename></instance> <instance><number>13</number><filename>/data/Dropbox/pyWADdemodata/Fluoro/Pehamed/dicom_dre/593A9A1B</filename></instance> <instance><number>19</number><filename>/data/Dropbox/pyWADdemodata/Fluoro/Pehamed/dicom_dre/593AA4FC</filename></instance> <instance><number>14</number><filename>/data/Dropbox/pyWADdemodata/Fluoro/Pehamed/dicom_dre/593A9D04</filename></instance> <instance><number>5</number><filename>/data/Dropbox/pyWADdemodata/Fluoro/Pehamed/dicom_dre/593A255D</filename></instance> <instance><number>9</number><filename>/data/Dropbox/pyWADdemodata/Fluoro/Pehamed/dicom_dre/593A92BA</filename></instance> <instance><number>22</number><filename>/data/Dropbox/pyWADdemodata/Fluoro/Pehamed/dicom_dre/593AA93A</filename></instance> <instance><number>10</number><filename>/data/Dropbox/pyWADdemodata/Fluoro/Pehamed/dicom_dre/593A95DD</filename></instance> <instance><number>8</number><filename>/data/Dropbox/pyWADdemodata/Fluoro/Pehamed/dicom_dre/593A9237</filename></instance> <instance><number>1</number><filename>/data/Dropbox/pyWADdemodata/Fluoro/Pehamed/dicom_dre/593A2216</filename></instance> <instance><number>20</number><filename>/data/Dropbox/pyWADdemodata/Fluoro/Pehamed/dicom_dre/593AA844</filename></instance> <instance><number>12</number><filename>/data/Dropbox/pyWADdemodata/Fluoro/Pehamed/dicom_dre/593A9983</filename></instance> <instance><number>17</number><filename>/data/Dropbox/pyWADdemodata/Fluoro/Pehamed/dicom_dre/593AA141</filename></instance> <instance><number>16</number><filename>/data/Dropbox/pyWADdemodata/Fluoro/Pehamed/dicom_dre/593AA0E3</filename></instance> <instance><number>6</number><filename>/data/Dropbox/pyWADdemodata/Fluoro/Pehamed/dicom_dre/593A28DE</filename></instance> <instance><number>4</number><filename>/data/Dropbox/pyWADdemodata/Fluoro/Pehamed/dicom_dre/593A2524</filename></instance> <instance><number>15</number><filename>/data/Dropbox/pyWADdemodata/Fluoro/Pehamed/dicom_dre/593A9DC0</filename></instance> <instance><number>21</number><filename>/data/Dropbox/pyWADdemodata/Fluoro/Pehamed/dicom_dre/593AA8A2</filename></instance></series>
+              </study>
+           </patient>
+        </WAD>
+        

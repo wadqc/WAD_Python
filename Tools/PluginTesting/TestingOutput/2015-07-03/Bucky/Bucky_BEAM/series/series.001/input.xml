@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?><WAD>
+           <version>
+           </version>
+           <analysemodule_cfg>/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/Testing/Bucky/Bucky_BEAM/series/config_series.xml</analysemodule_cfg>
+           <analysemodule_output>/data/SoftwareTools/WAD_Software/WADplugins/WAD_Python/Tools/PluginTesting/TestingOutput/2015-07-03/Bucky/Bucky_BEAM/series/series.001/result.xml</analysemodule_output>
+           <analyselevel>series</analyselevel>
+           <patient>
+              <id>idpar</id>
+              <name>name</name>
+              <study>
+                 <uid>uid</uid>
+                 <description>
+                 </description>
+                   <series><number>1</number><description>12-09-2014 - 11:03:06 - Qc Antonius^Tp - QC radiologie - Beam Tafel - 1</description> <instance><number>1</number><filename>/data/Dropbox/pyWADdemodata/Bucky/Bucky_BEAM/dicom_series/Philips/DA754336/4D485E49/4D3B85DE</filename></instance></series>
+              </study>
+           </patient>
+        </WAD>
+        

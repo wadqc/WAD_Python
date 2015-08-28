@@ -1,0 +1,189 @@
+<WAD>
+<results>
+	<type>float</type>
+	<omschrijving>HU Regions 1</omschrijving>
+	<waarde>-624.03125</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>1</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>HU Regions 2</omschrijving>
+	<waarde>-834.1484375</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>2</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>HU Regions 3</omschrijving>
+	<waarde>-938.0</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>3</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>HU Regions 4</omschrijving>
+	<waarde>-1010.28125</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>4</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>HU Regions 5</omschrijving>
+	<waarde>-1047.234375</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>5</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>HU Regions 6</omschrijving>
+	<waarde>-1076.703125</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>6</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>HU Passed</omschrijving>
+	<waarde>True</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>7</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>Uniformity 0</omschrijving>
+	<waarde>-1014.54944444</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>8</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>Uniformity 1</omschrijving>
+	<waarde>-1021.52</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>9</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>Uniformity 2</omschrijving>
+	<waarde>-1023.69222222</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>10</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>Uniformity 3</omschrijving>
+	<waarde>-1023.80722222</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>11</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>Uniformity 4</omschrijving>
+	<waarde>-1020.05777778</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>12</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Uniformity Passed</omschrijving>
+	<waarde>False</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>13</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>MTF 50% (lp/mm): </omschrijving>
+	<waarde>1.58</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>14</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>Geometric distances v1</omschrijving>
+	<waarde>14.2851965674</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>15</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>Geometric distances v2</omschrijving>
+	<waarde>31.9583118212</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>16</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>Geometric distances h1</omschrijving>
+	<waarde>14.904256191</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>17</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>Geometric distances h2</omschrijving>
+	<waarde>49.8188616404</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>18</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Geometry Passed</omschrijving>
+	<waarde>False</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>19</volgnummer>
+</results>
+<results>
+	<type>object</type>
+	<omschrijving>Overview</omschrijving>
+	<object_naam_pad>/data/SoftwareTools/WAD_Software/WADplugins/pywad2/Tools/PluginTesting/TestingOutput/2015-07-01/CT/CT_Catphan_500/series/catphan503.000/Overview.png</object_naam_pad>
+	<niveau>2</niveau>
+	<volgnummer>20</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Version</omschrijving>
+	<waarde>03062015 (Plugin_development.CT.CT_Catphan_500.Analyzer)</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>21</volgnummer>
+</results>
+</WAD>

@@ -1,0 +1,79 @@
+<WAD>
+<results>
+	<type>float</type>
+	<omschrijving>det1_DU_x (UFOV)</omschrijving>
+	<waarde>1.81163960545</waarde>
+	<grootheid>Differential Uniformity</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>1</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>det1_DU_y (UFOV)</omschrijving>
+	<waarde>2.04613616616</waarde>
+	<grootheid>Differential Uniformity</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>2</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>det1_DU_x (CFOV)</omschrijving>
+	<waarde>1.39468908037</waarde>
+	<grootheid>Differential Uniformity</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>3</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>det1_DU_y (CFOV)</omschrijving>
+	<waarde>1.59045635844</waarde>
+	<grootheid>Differential Uniformity</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>4</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>det1_Integral Uniformity (UFOV)</omschrijving>
+	<waarde>5.17104144431</waarde>
+	<grootheid>Integral Uniformity</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>5</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>det1_Integral Uniformity (CFOV)</omschrijving>
+	<waarde>3.41438685119</waarde>
+	<grootheid>Integral Uniformity</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>6</volgnummer>
+</results>
+<results>
+	<type>object</type>
+	<omschrijving>UFOV image det1</omschrijving>
+	<object_naam_pad>/data/SoftwareTools/WAD_Software/WADplugins/pywad2/Tools/PluginTesting/TestingOutput/2015-06-28/NM/NM_NEMA_Uniformity/uniformity.000/ufov_det1.png</object_naam_pad>
+	<niveau>1</niveau>
+	<volgnummer>7</volgnummer>
+</results>
+<results>
+	<type>object</type>
+	<omschrijving>CFOV image det1</omschrijving>
+	<object_naam_pad>/data/SoftwareTools/WAD_Software/WADplugins/pywad2/Tools/PluginTesting/TestingOutput/2015-06-28/NM/NM_NEMA_Uniformity/uniformity.000/cfov_det1.png</object_naam_pad>
+	<niveau>1</niveau>
+	<volgnummer>8</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Version</omschrijving>
+	<waarde>01062015 (Plugins.NM.NM_NEMA_Uniformity.QCUnif_wadwrapper)</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>9</volgnummer>
+</results>
+</WAD>

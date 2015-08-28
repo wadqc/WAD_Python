@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?><WAD>
+           <version>
+           </version>
+           <analysemodule_cfg>/data/SoftwareTools/WAD_Software/WADplugins/pywad2/Testing/PET/PhilipsPETQCparser/config_dailyqc.xml</analysemodule_cfg>
+           <analysemodule_output>/data/SoftwareTools/WAD_Software/WADplugins/pywad2/Tools/PluginTesting/TestingOutput/2015-06-29/PET/PhilipsPETQCparser/dailyqc.001/result.xml</analysemodule_output>
+           <analyselevel>series</analyselevel>
+           <patient>
+              <id>idpar</id>
+              <name>name</name>
+              <study>
+                 <uid>uid</uid>
+                 <description>
+                 </description>
+                   <series><number>1</number><description> -  - PET^QC - QC for r201 - QC 20140425 07:54 PASSED - 1</description> <instance><number>1</number><filename>/data/Dropbox/pyWADdemodata/PET/PhilipsPETQCparser/dicom_dailyqc/example1.dcm</filename></instance></series>
+              </study>
+           </patient>
+        </WAD>
+        

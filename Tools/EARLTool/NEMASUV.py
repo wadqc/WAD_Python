@@ -2,7 +2,6 @@
 ## python suv.py -f ~/KLIFIO/ExampleData/NM/QCData/EARL/WB_CTACHEMIBODY/ -ord zxy -s 20 -A 70.77 -Ta 1710 -Ar 0.85 -Tr 1603 -V 9287
 
 
-
 import numpy as np
 import pylab as plt
 from scipy import ndimage
@@ -94,93 +93,238 @@ class uniform_phantom(simple_nema_phantom):
         print "Net activity at acquisition : %s "%self.currconc
         
 
+#---------
 
-#float(indata.info["0028","0030"].value[0])
 
-        self.bgradius = 4
+def loadData(path):
+#    dirlist = [filename for filename in os.listdir(path) if filename.endswith(".IMA")]    
+    dirlist = [filename for filename in os.listdir(path) ]    
 
+    first = True
+    info = {}
+    slice_locations=[]
+    slice_index = []
+    for filename in dirlist:
+        ### Load data
+        print filename
+
+        dc=dicom.read_file(os.path.join(path,filename))
         
+        if first:
+            first = False
+            print dc
+            info["rescale_slope"] = float(dc.get('RescaleSlope'))
+            info["pixel_spacing"] = float(dc.get('PixelSpacing')[0])
+            info["SliceThickness"] = float(dc.get('SliceThickness'))
+            info["ActualFrameDuration"] = float(dc.get('ActualFrameDuration'))
+            info["AcquisitionDate"] = dc.get('AcquisitionDate')
+            print "wtp????"
+            wtp = 100 #float(dc.get("Radiopharmaceutical_Information_Sequence")[0].get("Radionuclide_Total_Dose"))
+            print wtp
+            info["RadionuclideTotalDose"] = wtp
+            nr_of_slices =  111 #(int(dc.get('NumberOfSlices')))
 
+            rows = (int(dc.get('Rows')))
+            cols = (int(dc.get('Columns')))
+            if rows != cols:
+                print "Slices niet vierkant!"
+            data = numpy.empty([rows, rows, nr_of_slices],dtype=numpy.int32)
 
-
-        self.data = np.array(array)
-
-        print type(self.data)
-        print type(self.data[0])
-
-        tmpshape  = np.shape(self.data)
-
-        print tmpshape
+        slice_index.append(int(dc.get('ImageIndex'))-1)
+        slice_locations.append(float(dc.get('SliceLocation')))
+        data[:,:,slice_index[-1]] = dc.pixel_array
         
-        self.ddimz = tmpshape[self.zind]
-        self.ddimy = tmpshape[self.yind]
-        self.ddimx = tmpshape[self.xind]
+    ### Determine boundaries
+    ind = numpy.argsort(slice_index)
+    info["slice_locations"] = numpy.array(slice_locations)[ind]
 
-        self.maxdata = self.data.max()
-        self.volume = np.zeros(np.shape(data))
+    return [data, info]
 
-#        self.mode = mode
-        self.z = self.z_init()
+       axial_center = numpy.median(info["slice_locations"])
+        ax_low = axial_center - const["AxialRange"]/2
+        ax_high = axial_center + const["AxialRange"]/2
+        use_slices = [i for i, loc in enumerate(info["slice_locations"]) if (ax_low <= loc <= ax_high)]
 
+        pict_size = data.shape[0]
+        xmin = int(pict_size*(1.0 - const["CropHeight"])/2.0)
+        xmax = int(pict_size*(1.0 + const["CropHeight"])/2.0)
 
-        self.thrdata = copy.deepcopy(self.data)
+        r_size = info["pixel_spacing"]
+        z_size = abs(info["slice_locations"][0]-info["slice_locations"][1])
 
-        lowind = (self.thrdata < np.max(self.thrdata[self.z,:,:])*0.2)
-        self.thrdata[lowind] = 0.0
-        highind = (self.thrdata >= np.max(self.thrdata[self.z,:,:])*0.2)
-        self.thrdata[highind] = 10
+        center_slice = use_slices[int(len(use_slices)/2)]
+        vmax = float(numpy.max(data[xmin:xmax,xmin:xmax,center_slice ]))
+        vmin = 0.0
 
-        self.bgdata = copy.deepcopy(self.data)
+        max_factor = 2.0
+        def_factor = 1.2
 
-        self.roughcom = ndimage.measurements.center_of_mass(self.data[self.z,:,:])
-
-        print "rough com location:", self.roughcom
-
-        self.cor = self.roughcom
-        self.bgspheres = {}
-
-        self.set_bg_spheres()
-
+     rad_pixel_bound = const["Diameter"]/info["pixel_spacing"]/2.0
+        square_size = max(1, int(const["SquareSize"]/info["pixel_spacing"]))
 
 
+        const = {"Path": self.path.get(),
+                 "AxialRange": float(self.cnf["AxialRange"]),
+                 "Diameter": float(self.cnf["Diameter"]),
+                 "SquareSize": float(self.cnf["SquareSize"]),
+                 "Activity": float(self.QC_activity.get()),
+                 "GeGaVolume": float(self.cnf["GeGaVolume"]),
+                 "CropHeight": float(self.cnf["CropHeight"])}
+
+def calculate(data, info, const, use_slices, center_slice, xmin, rad_pixel_bound, square_size):
+    allcounts = []
+    center_of_mass = []
+    squares_pos = []
+    vertices = [[],[]]
+    for index in use_slices:
+        ### Determine center for each slice and fill with squares up to the radial boundary
+        center_of_mass.append( get_center_of_mass(data[:,:,index])[::-1] )
+        squares_pos.append( getSquares(data.shape[0], center_of_mass[-1], rad_pixel_bound, square_size) )
+
+        ### List the total nr of counts in each square, in each slice
+        allcounts.append([])
+        for pos in squares_pos[-1]:
+            allcounts[-1].append(numpy.sum(data[pos[0]:pos[0]+square_size,pos[1]:pos[1]+square_size,index]))
+
+        ### Create bounding box in image 1 and 2. Indicates the area used for calculation.
+        for i, verts in enumerate(vertices):
+            start = (index, center_of_mass[-1][i]-rad_pixel_bound-xmin)
+            end = (start[0]+1,start[1])
+            verts+=[start,end]
+
+        if index == center_slice:
+            center_slice_index = len(allcounts)-1
+
+    for verts in vertices:
+        verts += [(v[0],v[1]+2.0*rad_pixel_bound) for v in reversed(verts)]
+        verts.insert(0, verts[0])
+        verts.append(verts[0])
+    codes = [Path.LINETO for v in vertices[0]]
+    codes[0] = Path.MOVETO
+    codes[-1] = Path.CLOSEPOLY
+
+    return [allcounts, squares_pos, center_of_mass, vertices, codes]
+
+def getNU(counts):
+        av = float(numpy.average(counts))
+        mx = float(numpy.max(counts))
+        mn = float(numpy.min(counts))
+        return [(mx-av)/av*100,(mn-av)/av*100]
+    
+def getResults(info, const, allcounts, square_size):#, use_slices, center_slice_index, r_size, z_size, square_size):
+    print "\n--- Results ---"
+    results = {}
+
+    
+    ### Average slice counts
+    #Vpix = info["SliceThickness"] * r_size**2 * 0.001
+    Time = info["ActualFrameDuration"]*1e-3
+    '''
+    avcounts = numpy.average(allcounts[center_slice_index])/square_size**2
+
+    print "RescaleSlope : ", info["rescale_slope"]
+    print "Slice-Thickness, Slice-Spacing, Pixel-Spacing: ", info["SliceThickness"], z_size, r_size
+    act = 1000 * const["Activity"] / const["GeGaVolume"]
+    print "C/s / mL         : ", avcounts/(Time*Vpix)
+    print "Activity / mL    : ", act
+    print "Ratio            : ", avcounts/(Time*Vpix)/act
+    '''
+    
+    ### Slice uniformity
+    NU_slice = []
+    CV_slice = []
+    for slicecounts in allcounts:
+        NU_slice.append(getNU(slicecounts))
+        CV_slice.append(coefficient_of_variation(slicecounts)*100)
+    showdata = numpy.transpose(numpy.append(numpy.transpose(NU_slice),[CV_slice], axis=0))
+    results["SlcNU_max"] = numpy.max(numpy.transpose(NU_slice)[0])
+    results["SlcNU_min"] = numpy.max(numpy.transpose(NU_slice)[1])
+    results["SlcCV"] = numpy.max(CV_slice)
+
+    ### Volume uniformity
+    flattened = [counts for slicecounts in allcounts for counts in slicecounts]
+    NU_volume = getNU(flattened)
+    CV_volume = coefficient_of_variation(flattened)*100
+    print "Volume: ", NU_volume, CV_volume
+    results["VolNU_max"] = NU_volume[0]
+    results["VolNU_min"] = NU_volume[1]
+    results["VolCV"] = CV_volume
+    
+    ### System uniformity
+    av_counts = [numpy.average(slicecounts) for slicecounts in allcounts]
+    NU_system = getNU(av_counts)
+    CV_system = coefficient_of_variation(av_counts)*100
+    print "System: ", NU_system, CV_system
+    results["SysNU_max"] = NU_system[0]
+    results["SysNU_min"] = NU_system[1]
+    results["SysCV"] = CV_system
+    
+    ### SUV = counts/pixel * rescale_slope / (activity*10^6 / volume*10^3) = counts * SUV_factor
+    SUV_factor = 0.001 * info["rescale_slope"] * const["GeGaVolume"] / (const["Activity"] * square_size**2)
+    SUV = float(numpy.average(flattened))*SUV_factor
+    print "SUV average      : ", SUV
+    results["SUV_av"] = SUV
+    
+    ### Measured activity (relying on rescale_slope).
+    decays = SUV * const["Activity"] * Time
+    results["Decays"] = decays
+    print "Expected decays  : ", const["Activity"] * Time
+    print "Decays (1E6)     : ", decays
+    print "---------------\n"
+    
+    return [results, showdata]
+
+def get_center_of_mass(image):
+    ### Copy from scipy.ndimage.measurements.center_of_mass (copied to reduce compiled size, prevents importing scipy)
+    normalizer = numpy.sum(image)
+    grids = numpy.ogrid[[slice(0, i) for i in image.shape]]
+    results = [numpy.sum(image * grids[dir].astype(float)) / normalizer for dir in range(image.ndim)]
+    return tuple(results)     
+
+def coefficient_of_variation(lijst):
+    return numpy.std(lijst)/numpy.average(lijst)
+    
+def getSquares(pict_size, center_of_mass, radius, square_size):
+    ### Returns a list of square locations (lower-left corner) within the bounded radius.
+    #Only check within (minx,miny) and (maxx,maxy). Integer multiples of the square_size, -1.
+    minx = int((center_of_mass[0]-radius)/square_size)*square_size
+    miny = int((center_of_mass[1]-radius)/square_size)*square_size
+    maxx = int((center_of_mass[0]+radius)/square_size)*square_size + square_size
+    maxy = int((center_of_mass[1]+radius)/square_size)*square_size + square_size
+
+    #Don't check within center square: Certain to fall within circle.
+    max_minx = int(center_of_mass[0]-(0.7*radius))+1
+    min_maxx = int(center_of_mass[0]+(0.7*radius))
+    max_miny = int(center_of_mass[1]-(0.7*radius))+1
+    min_maxy = int(center_of_mass[1]+(0.7*radius))
+
+    radsq = numpy.square(radius)
+    mat = numpy.zeros((maxx-minx, maxy-miny), dtype=numpy.int8)
+    #For every pixel within (minx,miny)and (maxx,maxy), check whether it lies in the circle.
+    for x in range(minx,maxx):
+        for y in range(miny,maxy):
+            if max_minx < x < min_maxx and max_miny < y < min_maxy:
+                mat[x-minx, y-miny] = 1
+            else:
+                dist = (float(x)-center_of_mass[0])**2 + (float(y)-center_of_mass[1])**2
+                if dist < radsq:
+                    mat[x-minx,y-miny]=1
+            
+    squares_pos=[]
+    s = square_size - 1
+    for x in range(0,maxx-minx,square_size):
+        for y in range(0,maxy-miny,square_size):
+            if mat[x,y] and mat[x+s,y] and mat[x,y+s] and mat[x+s,y+s]:
+                squares_pos.append([minx+x,miny+y])
+                
+    return squares_pos
+
+
+#---------
 
 
 
-    def guess_point(self,profile):
-        return simple_nema_phantom.guess_point(self,profile)
 
-    def set_bg_spheres(self):
-        return simple_nema_phantom.set_bg_spheres(self,nrangles=25,radlength=10)
-
-    def get_bg_stats(self,data=None):
-        return simple_nema_phantom.get_bg_stats(self,data=None)
-
-    def check_overlap(self,newsphere):
-        a = newsphere.volume
-        for key in self.bgspheres.keys():
-            b = self.bgspheres[key].volume
-            if niq.compare_coordsets(a,b) == True:
-                return None
-        return newsphere
-
-    def plot_bgspheres(self):
-        return simple_nema_phantom.plot_bgspheres(self)
-
-    def plot_dataspheres(self,sliceid,data=None,showfig=False):
-        if data == None:
-            data = self.data
-
-        tmpdat = data[sliceid,:,:]
-        tmpbg = self.plot_bgspheres()
-
-        fig = plt.figure()
-        ax1 = fig.add_subplot(111)
-        ax1.imshow(tmpdat)
-        ax1.imshow(tmpbg,alpha=0.5)
-
-        if showfig==True:
-            plt.show()
-        return fig
 
 
 
@@ -195,69 +339,6 @@ class uniform_phantom(simple_nema_phantom):
         if showfig==True:
             plt.show()
         return fig
-
-
-    def find_border(self,line):
-        for i in range(len(line)):
-            if line[i] < max(line)/2.0:
-                return i
-
-
-    def slice_uniformity(self,sliceid,data=None,showfig=False):
-
-        if data == None:
-            data = self.data
-
-        thrav = np.average(data[sliceid,:,:])
-        
-        
-        tmpdat = data[sliceid,:,:]
-        
-        tmpmaskdat = np.zeros(np.shape(tmpdat))
-        tmpmaskdat[(data[sliceid,:,:]>thrav*.50)] = 1
-
-        hline = []
-        vline = []
-        
-        for i in range(self.ddimx):
-            try:
-                hline.append(tmpdat[self.cor[1],self.cor[0]+i])
-                vline.append(tmpdat[self.cor[1]+i,self.cor[0]])
-            except:
-                pass
-                
-
-        tmpradius = 0.8*(min(self.find_border(vline),self.find_border(hline)))
-        
-        
-        x_grid, y_grid = np.meshgrid(np.arange(self.ddimx), np.arange(self.ddimy))
-        disk = ((x_grid - self.cor[0])**2 + (y_grid - self.cor[1])**2) <= tmpradius**2  # array of booleans with the disk shape
-
-        points_in_disk = tmpdat[disk]
-        points_in_circle2 = np.ma.masked_array(tmpdat, ~disk)
-
-        
-        
-
-        fig = plt.figure()
-        plt.imshow(points_in_circle2)
-        ax1 = fig.add_subplot(111)
-
-        if showfig==True:
-            plt.show()
-        return fig, np.average(points_in_disk), np.std(points_in_disk)
-
-
-
-    def z_init(self):
-        return simple_nema_phantom.z_init(self)        
-
-    def z_slice(self):
-        return simple_nema_phantom.z_slice(self)        
-
-    def z_profile(self,data):
-        return simple_nema_phantom.z_profile(self)        
-    
 
     def visualize_slices(self, sliceid):
         

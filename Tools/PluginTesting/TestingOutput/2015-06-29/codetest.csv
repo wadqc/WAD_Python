@@ -1,0 +1,81 @@
+input,returncode,message
+/data/SoftwareTools/WAD_Software/WADplugins/pywad2/Tools/PluginTesting/TestingOutput/2015-06-29/Plugin_development/MRI/MRI_ACR/mri_acr_cfg.000/input.xml,1,"/usr/local/lib/python2.7/dist-packages/scikit_image-0.11dev-py2.7-linux-x86_64.egg/skimage/filter/__init__.py:6: skimage_deprecation: The `skimage.filter` module has been renamed to `skimage.filters`.  This placeholder module will be removed in v0.13.
+  warn(skimage_deprecation('The `skimage.filter` module has been renamed '
+/usr/local/lib/python2.7/dist-packages/scikit_image-0.11dev-py2.7-linux-x86_64.egg/skimage/filter/__init__.py:40: skimage_deprecation: Call to deprecated function ``canny``. Use ``skimage.feature.canny`` instead.
+  def canny(*args, **kwargs):
+/usr/local/lib/python2.7/dist-packages/scikit_image-0.11dev-py2.7-linux-x86_64.egg/skimage/filter/__init__.py:40: skimage_deprecation: Call to deprecated function ``canny``. Use ``skimage.feature.canny`` instead.
+  def canny(*args, **kwargs):
+/usr/local/lib/python2.7/dist-packages/scikit_image-0.11dev-py2.7-linux-x86_64.egg/skimage/filter/__init__.py:40: skimage_deprecation: Call to deprecated function ``canny``. Use ``skimage.feature.canny`` instead.
+  def canny(*args, **kwargs):
+/usr/local/lib/python2.7/dist-packages/scikit_image-0.11dev-py2.7-linux-x86_64.egg/skimage/filter/__init__.py:40: skimage_deprecation: Call to deprecated function ``canny``. Use ``skimage.feature.canny`` instead.
+  def canny(*args, **kwargs):
+/usr/local/lib/python2.7/dist-packages/scikit_image-0.11dev-py2.7-linux-x86_64.egg/skimage/filter/__init__.py:40: skimage_deprecation: Call to deprecated function ``canny``. Use ``skimage.feature.canny`` instead.
+  def canny(*args, **kwargs):
+/usr/local/lib/python2.7/dist-packages/numpy/core/_methods.py:55: RuntimeWarning: Mean of empty slice.
+  warnings.warn("Mean of empty slice.", RuntimeWarning)
+/usr/local/lib/python2.7/dist-packages/numpy/core/_methods.py:67: RuntimeWarning: invalid value encountered in double_scalars
+  ret = ret.dtype.type(ret / rcount)
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/pywad2/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/pywad2/pyWAD/base.py", line 52, in pluginWrapper
+    function(plugin_data, plugin_results, params=action['params'])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/pywad2/Plugin_development/MRI/MRI_ACR/PluginQCMRI.py", line 370, in MRI_ACR_main
+    tmpfile = data.getAllInstances()[0]
+IndexError: list index out of range
+"
+/data/SoftwareTools/WAD_Software/WADplugins/pywad2/Tools/PluginTesting/TestingOutput/2015-06-29/Plugin_development/MRI/MRI_ACR/mri_acr_cfg.001/input.xml,1,"/usr/local/lib/python2.7/dist-packages/scikit_image-0.11dev-py2.7-linux-x86_64.egg/skimage/filter/__init__.py:6: skimage_deprecation: The `skimage.filter` module has been renamed to `skimage.filters`.  This placeholder module will be removed in v0.13.
+  warn(skimage_deprecation('The `skimage.filter` module has been renamed '
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/pywad2/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/pywad2/pyWAD/base.py", line 52, in pluginWrapper
+    function(plugin_data, plugin_results, params=action['params'])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/pywad2/Plugin_development/MRI/MRI_ACR/PluginQCMRI.py", line 370, in MRI_ACR_main
+    tmpfile = data.getAllInstances()[0]
+IndexError: list index out of range
+"
+/data/SoftwareTools/WAD_Software/WADplugins/pywad2/Tools/PluginTesting/TestingOutput/2015-06-29/Plugin_development/MRI/MRI_ACR/mri_acr_cfg.002/input.xml,1,"/usr/local/lib/python2.7/dist-packages/scikit_image-0.11dev-py2.7-linux-x86_64.egg/skimage/filter/__init__.py:6: skimage_deprecation: The `skimage.filter` module has been renamed to `skimage.filters`.  This placeholder module will be removed in v0.13.
+  warn(skimage_deprecation('The `skimage.filter` module has been renamed '
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/pywad2/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/pywad2/pyWAD/base.py", line 52, in pluginWrapper
+    function(plugin_data, plugin_results, params=action['params'])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/pywad2/Plugin_development/MRI/MRI_ACR/PluginQCMRI.py", line 370, in MRI_ACR_main
+    tmpfile = data.getAllInstances()[0]
+IndexError: list index out of range
+"
+/data/SoftwareTools/WAD_Software/WADplugins/pywad2/Tools/PluginTesting/TestingOutput/2015-06-29/Plugin_development/MRI/MRI_ACR/mri_acr_cfg.003/input.xml,1,"/usr/local/lib/python2.7/dist-packages/scikit_image-0.11dev-py2.7-linux-x86_64.egg/skimage/filter/__init__.py:6: skimage_deprecation: The `skimage.filter` module has been renamed to `skimage.filters`.  This placeholder module will be removed in v0.13.
+  warn(skimage_deprecation('The `skimage.filter` module has been renamed '
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/pywad2/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/pywad2/pyWAD/base.py", line 52, in pluginWrapper
+    function(plugin_data, plugin_results, params=action['params'])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/pywad2/Plugin_development/MRI/MRI_ACR/PluginQCMRI.py", line 370, in MRI_ACR_main
+    tmpfile = data.getAllInstances()[0]
+IndexError: list index out of range
+"
+/data/SoftwareTools/WAD_Software/WADplugins/pywad2/Tools/PluginTesting/TestingOutput/2015-06-29/Plugin_development/MRI/MRI_ACR/mri_acr_cfg.004/input.xml,1,"/usr/local/lib/python2.7/dist-packages/scikit_image-0.11dev-py2.7-linux-x86_64.egg/skimage/filter/__init__.py:6: skimage_deprecation: The `skimage.filter` module has been renamed to `skimage.filters`.  This placeholder module will be removed in v0.13.
+  warn(skimage_deprecation('The `skimage.filter` module has been renamed '
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/pywad2/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/pywad2/pyWAD/base.py", line 52, in pluginWrapper
+    function(plugin_data, plugin_results, params=action['params'])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/pywad2/Plugin_development/MRI/MRI_ACR/PluginQCMRI.py", line 370, in MRI_ACR_main
+    tmpfile = data.getAllInstances()[0]
+IndexError: list index out of range
+"
+/data/SoftwareTools/WAD_Software/WADplugins/pywad2/Tools/PluginTesting/TestingOutput/2015-06-29/Plugin_development/MRI/MRI_ACR/mri_acr_cfg.005/input.xml,1,"/usr/local/lib/python2.7/dist-packages/scikit_image-0.11dev-py2.7-linux-x86_64.egg/skimage/filter/__init__.py:6: skimage_deprecation: The `skimage.filter` module has been renamed to `skimage.filters`.  This placeholder module will be removed in v0.13.
+  warn(skimage_deprecation('The `skimage.filter` module has been renamed '
+Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/pywad2/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/pywad2/pyWAD/base.py", line 52, in pluginWrapper
+    function(plugin_data, plugin_results, params=action['params'])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/pywad2/Plugin_development/MRI/MRI_ACR/PluginQCMRI.py", line 370, in MRI_ACR_main
+    tmpfile = data.getAllInstances()[0]
+IndexError: list index out of range
+"

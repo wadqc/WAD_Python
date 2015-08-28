@@ -1,0 +1,427 @@
+<WAD>
+<results>
+	<type>char</type>
+	<omschrijving>pluginversion_B</omschrijving>
+	<waarde>20150409</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>1</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Anatomy</omschrijving>
+	<waarde>BODY</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>2</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Acquisition Date_B</omschrijving>
+	<waarde>20150127</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>3</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Acquisition Time_B</omschrijving>
+	<waarde>161633</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>4</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Modality_B</omschrijving>
+	<waarde>CT</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>5</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Manufacturer_B</omschrijving>
+	<waarde>Philips</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>6</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Station Name_B</omschrijving>
+	<waarde>AZUCT2iDT</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>7</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Manufacturer Model Name_B</omschrijving>
+	<waarde>Mx8000 IDT 16</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>8</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Scan Options_B</omschrijving>
+	<waarde>AXIAL</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>9</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Slice Thickness_B</omschrijving>
+	<waarde>6</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>10</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>kVp_B</omschrijving>
+	<waarde>120</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>11</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Spacing Between Slices_B</omschrijving>
+	<waarde>6.0</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>12</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Data Collection Diameter_B</omschrijving>
+	<waarde>500</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>13</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Software Versions(s)_B</omschrijving>
+	<waarde>'4.2.2</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>14</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Protocol Name_B</omschrijving>
+	<waarde>QA body/Abdomen/Ax</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>15</volgnummer>
+	<criterium>QA body/Abdomen/Ax</criterium>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Reconstruction Diameter_B</omschrijving>
+	<waarde>350</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>16</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Gantry/Detector Tilt_B</omschrijving>
+	<waarde>0</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>17</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Table Height_B</omschrijving>
+	<waarde>131</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>18</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Rotation Direction_B</omschrijving>
+	<waarde>CW</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>19</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Scan Arc_B</omschrijving>
+	<waarde>360</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>20</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Exposure Time ms_B</omschrijving>
+	<waarde>750</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>21</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>X-ray Tube Current_B</omschrijving>
+	<waarde>333</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>22</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Exposure mAs_B</omschrijving>
+	<waarde>250</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>23</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>CTDIvol_B</omschrijving>
+	<waarde>16.7</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>24</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Filter Type_B</omschrijving>
+	<waarde>B</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>25</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Convolution Kernel_B</omschrijving>
+	<waarde>B</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>26</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Patient Position_B</omschrijving>
+	<waarde>HFS</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>27</volgnummer>
+	<criterium>HFS</criterium>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Image Number_B</omschrijving>
+	<waarde>1</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>28</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Slice Location_B</omschrijving>
+	<waarde>42.50</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>29</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Pixel Spacing_B</omschrijving>
+	<waarde>['0.68359375', '0.68359375']</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>30</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Rotation Time_B</omschrijving>
+	<waarde>0.75</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>31</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Collimation_B</omschrijving>
+	<waarde>16x1.5</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>32</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Protocol_B</omschrijving>
+	<waarde>Body</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>33</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Version</omschrijving>
+	<waarde>01062015 (Plugins.CT.CT_Philips_QuickIQ.QCCT_wadwrapper)</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>34</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>MeanCenter_B</omschrijving>
+	<waarde>98.191011236</waarde>
+	<grootheid>MeanCenter</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>35</volgnummer>
+	<grens_acceptabel_onder>97</grens_acceptabel_onder>
+	<grens_acceptabel_boven>101</grens_acceptabel_boven>
+	<grens_kritisch_onder>95</grens_kritisch_onder>
+	<grens_kritisch_boven>102</grens_kritisch_boven>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>MeanAir_B</omschrijving>
+	<waarde>-998.678916828</waarde>
+	<grootheid>MeanAir</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>36</volgnummer>
+	<grens_acceptabel_onder>-1002</grens_acceptabel_onder>
+	<grens_acceptabel_boven>-998</grens_acceptabel_boven>
+	<grens_kritisch_onder>-1004</grens_kritisch_onder>
+	<grens_kritisch_boven>-996</grens_kritisch_boven>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>linearity_B</omschrijving>
+	<waarde>0.999988602677</waarde>
+	<grootheid>linearity</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>37</volgnummer>
+	<grens_acceptabel_onder>0.99</grens_acceptabel_onder>
+	<grens_acceptabel_boven>1.01</grens_acceptabel_boven>
+	<grens_kritisch_onder>0.995</grens_kritisch_onder>
+	<grens_kritisch_boven>1.005</grens_kritisch_boven>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>unif_B</omschrijving>
+	<waarde>-0.874421678784</waarde>
+	<grootheid>unif</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>38</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>maxdev_B</omschrijving>
+	<waarde>-1.80898876404</waarde>
+	<grootheid>maxdev</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>39</volgnummer>
+	<grens_acceptabel_onder>-4</grens_acceptabel_onder>
+	<grens_acceptabel_boven>4</grens_acceptabel_boven>
+	<grens_kritisch_onder>-8</grens_kritisch_onder>
+	<grens_kritisch_boven>8</grens_kritisch_boven>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>shiftxpx_B</omschrijving>
+	<waarde>-3.0</waarde>
+	<grootheid>shiftxpx</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>40</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>shiftypx_B</omschrijving>
+	<waarde>10.0</waarde>
+	<grootheid>shiftypx</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>41</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>snr_hol_B</omschrijving>
+	<waarde>81.3420480679</waarde>
+	<grootheid>snr_hol</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>42</volgnummer>
+</results>
+<results>
+	<type>float</type>
+	<omschrijving>roisd_B</omschrijving>
+	<waarde>13.5009018991</waarde>
+	<grootheid>roisd</grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>43</volgnummer>
+	<grens_acceptabel_onder>12.825</grens_acceptabel_onder>
+	<grens_acceptabel_boven>14.175</grens_acceptabel_boven>
+	<grens_kritisch_onder>12.15</grens_kritisch_onder>
+	<grens_kritisch_boven>14.85</grens_kritisch_boven>
+</results>
+<results>
+	<type>object</type>
+	<omschrijving>CTslice_B</omschrijving>
+	<object_naam_pad>/data/SoftwareTools/WAD_Software/WADplugins/pywad2/Tools/PluginTesting/TestingOutput/2015-07-01/CT/CT_Philips_QuickIQ/series/body.000/test_B.jpg</object_naam_pad>
+	<niveau>1</niveau>
+	<volgnummer>44</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Version</omschrijving>
+	<waarde>01062015 (Plugins.CT.CT_Philips_QuickIQ.QCCT_wadwrapper)</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>45</volgnummer>
+</results>
+</WAD>

@@ -1,0 +1,20 @@
+<WAD>
+<results>
+	<type>float</type>
+	<omschrijving>STA None</omschrijving>
+	<waarde>2.44</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>1</niveau>
+	<volgnummer>1</volgnummer>
+</results>
+<results>
+	<type>char</type>
+	<omschrijving>Version</omschrijving>
+	<waarde>287757 (Plugin_development.MRI.MRI_ACR.PluginQCMRI)</waarde>
+	<grootheid></grootheid>
+	<eenheid></eenheid>
+	<niveau>2</niveau>
+	<volgnummer>2</volgnummer>
+</results>
+</WAD>

@@ -1,0 +1,45 @@
+input,returncode,message
+/data/SoftwareTools/WAD_Software/WADplugins/pywad2/Tools/PluginTesting/TestingOutput/2015-06-27/NM/NM_NEMA_Uniformity/uniformity.000/input.xml,0,""
+/data/SoftwareTools/WAD_Software/WADplugins/pywad2/Tools/PluginTesting/TestingOutput/2015-06-27/MRI/MRI_PIQT/qa1.000/input.xml,0,""
+/data/SoftwareTools/WAD_Software/WADplugins/pywad2/Tools/PluginTesting/TestingOutput/2015-06-27/MRI/MRI_PIQT/qa2.000/input.xml,0,""
+/data/SoftwareTools/WAD_Software/WADplugins/pywad2/Tools/PluginTesting/TestingOutput/2015-06-27/PET/PhilipsPETQCparser/dailyqc.000/input.xml,1,"Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/pywad2/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/pywad2/pyWAD/base.py", line 39, in pluginWrapper
+    module = __import__(action['plugin'], fromlist=[action['function']])
+ImportError: Import by filename is not supported.
+"
+/data/SoftwareTools/WAD_Software/WADplugins/pywad2/Tools/PluginTesting/TestingOutput/2015-06-27/PET/PhilipsPETQCparser/dailyqc.001/input.xml,1,"Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/pywad2/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/pywad2/pyWAD/base.py", line 39, in pluginWrapper
+    module = __import__(action['plugin'], fromlist=[action['function']])
+ImportError: Import by filename is not supported.
+"
+/data/SoftwareTools/WAD_Software/WADplugins/pywad2/Tools/PluginTesting/TestingOutput/2015-06-27/PET/PhilipsPETQCparser/dailyqc.002/input.xml,1,"Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/pywad2/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/pywad2/pyWAD/base.py", line 39, in pluginWrapper
+    module = __import__(action['plugin'], fromlist=[action['function']])
+ImportError: Import by filename is not supported.
+"
+/data/SoftwareTools/WAD_Software/WADplugins/pywad2/Tools/PluginTesting/TestingOutput/2015-06-27/PET/PhilipsPETQCparser/dailyqc.003/input.xml,1,"Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/pywad2/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/pywad2/pyWAD/base.py", line 39, in pluginWrapper
+    module = __import__(action['plugin'], fromlist=[action['function']])
+ImportError: Import by filename is not supported.
+"
+/data/SoftwareTools/WAD_Software/WADplugins/pywad2/Tools/PluginTesting/TestingOutput/2015-06-27/PET/PhilipsPETQCparser/dailyqc.004/input.xml,1,"Traceback (most recent call last):
+  File "/data/SoftwareTools/WAD_Software/WADplugins/pywad2/pywadplugin.py", line 9, in <module>
+    pluginWrapper(sys.argv[1])
+  File "/data/SoftwareTools/WAD_Software/WADplugins/pywad2/pyWAD/base.py", line 39, in pluginWrapper
+    module = __import__(action['plugin'], fromlist=[action['function']])
+ImportError: Import by filename is not supported.
+"
+/data/SoftwareTools/WAD_Software/WADplugins/pywad2/Tools/PluginTesting/TestingOutput/2015-06-27/Bucky/Bucky_PEHAMED_Wellhofer/fcr.000/input.xml,0,""
+/data/SoftwareTools/WAD_Software/WADplugins/pywad2/Tools/PluginTesting/TestingOutput/2015-06-27/Bucky/Bucky_PEHAMED_Wellhofer/didi.000/input.xml,0,""
+/data/SoftwareTools/WAD_Software/WADplugins/pywad2/Tools/PluginTesting/TestingOutput/2015-06-27/US/US_AirReverberations/curve.000/input.xml,0,""
+/data/SoftwareTools/WAD_Software/WADplugins/pywad2/Tools/PluginTesting/TestingOutput/2015-06-27/US/US_AirReverberations/rect.000/input.xml,0,""
+/data/SoftwareTools/WAD_Software/WADplugins/pywad2/Tools/PluginTesting/TestingOutput/2015-06-27/CT/CT_Philips_QuickIQ/body.000/input.xml,0,""
+/data/SoftwareTools/WAD_Software/WADplugins/pywad2/Tools/PluginTesting/TestingOutput/2015-06-27/CT/CT_Philips_QuickIQ/head.000/input.xml,0,""

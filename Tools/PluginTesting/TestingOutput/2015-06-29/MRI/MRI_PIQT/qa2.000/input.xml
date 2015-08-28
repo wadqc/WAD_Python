@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?><WAD>
+           <version>
+           </version>
+           <analysemodule_cfg>/data/SoftwareTools/WAD_Software/WADplugins/pywad2/Testing/MRI/MRI_PIQT/config_qa2.xml</analysemodule_cfg>
+           <analysemodule_output>/data/SoftwareTools/WAD_Software/WADplugins/pywad2/Tools/PluginTesting/TestingOutput/2015-06-29/MRI/MRI_PIQT/qa2.000/result.xml</analysemodule_output>
+           <analyselevel>series</analyselevel>
+           <patient>
+              <id>idpar</id>
+              <name>name</name>
+              <study>
+                 <uid>uid</uid>
+                 <description>
+                 </description>
+                   <series><number>1</number><description>16-12-2014 - 12:01:13 - PIQT - batch - PIQT       QA2S:MS,FE - 401</description> <instance><number>1</number><filename>/data/Dropbox/pyWADdemodata/MRI/MRI_PIQT/dicom_qa2/01</filename></instance> <instance><number>1</number><filename>/data/Dropbox/pyWADdemodata/MRI/MRI_PIQT/dicom_qa2/02</filename></instance></series>
+              </study>
+           </patient>
+        </WAD>
+        
