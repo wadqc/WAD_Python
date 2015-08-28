@@ -10,6 +10,7 @@ The executable has to be installed on the system (AT YOUR OWN RISK!!) and the co
 -The source code is located in the source directory.
 -The executable is located in the bin directory. To make downloading in practice easier the executable has been renamed.
 
+It is HIGHLY recommended you compile your own executable from the source code using python setup.py 
 
 
 
