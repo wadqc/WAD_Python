@@ -1,6 +1,10 @@
 Congratulations!, if you read this you succeeded in opening pywad's GettingStarted file.
 It is assumed you have installed the necessary python packages and an up and running WAD QC framework.
 
+===========PREREQUISITES==========================
+
+Check the INSTALL.txt 
+
 ============GETTING STARTED=======================
 
 To check for missing dependencies you can run the CheckDependencies script which is located in the Tools folder:
