@@ -6,7 +6,6 @@ Subpackages
 
 .. toctree::
 
-    Plugins.MRI.MRI_ACR
     Plugins.MRI.MRI_PIQT
 
 Module contents

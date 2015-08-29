@@ -1,0 +1,308 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Tools.Input2DCM.Input2DCM &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for Tools.Input2DCM.Input2DCM</h1><div class="highlight"><pre>
+<span class="c"># functions to send strings as private tags in a dummy dicom file to the server</span>
+<span class="c">#</span>
+<span class="kn">import</span> <span class="nn">socket</span>
+<span class="kn">import</span> <span class="nn">uuid</span>
+<span class="kn">from</span> <span class="nn">netdicom</span> <span class="kn">import</span> <span class="n">AE</span><span class="p">,</span> <span class="n">StorageSOPClass</span><span class="p">,</span> <span class="n">VerificationSOPClass</span>
+<span class="kn">import</span> <span class="nn">dicom</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+<div class="viewcode-block" id="sendasdicom"><a class="viewcode-back" href="../../../Tools.Input2DCM.html#Tools.Input2DCM.Input2DCM.sendasdicom">[docs]</a><span class="k">def</span> <span class="nf">sendasdicom</span><span class="p">(</span><span class="n">dcmconfig</span><span class="p">,</span><span class="n">datastr</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    create a dicom file with the datastr embedded as a private tag, and send it to dcm4chee</span>
+<span class="sd">      dcmconfig is a dict that should at least contain: dest_aet, src_aet, dest_ip, dest_port</span>
+<span class="sd">      datastr is a string that should be of even string length (required for private tags content)</span>
+
+<span class="sd">    returns output of create_dicom: (Succes,msg) with Succes True or False and msg a string or None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># fill in defaults if these fields are missing</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="s">&#39;dest_aet&#39;</span> <span class="ow">in</span> <span class="n">dcmconfig</span><span class="p">:</span> <span class="n">dcmconfig</span><span class="p">[</span><span class="s">&#39;dest_aet&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;DCM4CHEE&#39;</span> <span class="c"># WAD-IQC PACS AE TITLE</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="s">&#39;src_aet&#39;</span> <span class="ow">in</span> <span class="n">dcmconfig</span><span class="p">:</span> <span class="n">dcmconfig</span><span class="p">[</span><span class="s">&#39;src_aet&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;PYNETDICOM&#39;</span> <span class="c"># AE TITLE TO STORE IN SRC_AETITLE</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="s">&#39;dest_ip&#39;</span> <span class="ow">in</span> <span class="n">dcmconfig</span><span class="p">:</span> <span class="n">dcmconfig</span><span class="p">[</span><span class="s">&#39;dest_ip&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;localhost&#39;</span> <span class="c"># WAD-IQC PACS IP</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="s">&#39;dest_port&#39;</span> <span class="ow">in</span> <span class="n">dcmconfig</span><span class="p">:</span> <span class="n">dcmconfig</span><span class="p">[</span><span class="s">&#39;dest_port&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">11112</span> <span class="c"># WAD-IQC PACS PORT (no quotes!)</span>
+    
+    <span class="c"># space padding until string length is even (required for private tags content)</span>
+    <span class="n">payload_str</span>  <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">datastr</span><span class="p">)</span>
+    <span class="n">payload_size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">payload_str</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">payload_size</span><span class="o">%</span><span class="mi">2</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">payload_str</span> <span class="o">=</span> <span class="n">payload_str</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="n">payload_size</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+    
+    <span class="c">##Create DCM</span>
+    <span class="c"># generate unique temporary filename for dicom output</span>
+    <span class="n">unique_dcm_filename</span> <span class="o">=</span> <span class="s">&#39;/tmp/&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">())</span><span class="o">+</span><span class="s">&#39;.dcm&#39;</span>
+
+    <span class="c"># create dicom file and inject payload</span>
+    <span class="n">tmpdicom</span> <span class="o">=</span> <span class="n">create_dicom</span><span class="p">(</span><span class="n">dcmconfig</span><span class="p">,</span><span class="n">payload_str</span><span class="p">,</span><span class="n">unique_dcm_filename</span><span class="p">)</span>
+
+    <span class="c">#Send to PACS</span>
+    <span class="k">return</span> <span class="n">send_dicom</span><span class="p">(</span><span class="n">dcmconfig</span><span class="p">[</span><span class="s">&#39;dest_aet&#39;</span><span class="p">],</span><span class="n">dcmconfig</span><span class="p">[</span><span class="s">&#39;src_aet&#39;</span><span class="p">],</span><span class="n">dcmconfig</span><span class="p">[</span><span class="s">&#39;dest_ip&#39;</span><span class="p">],</span><span class="n">dcmconfig</span><span class="p">[</span><span class="s">&#39;dest_port&#39;</span><span class="p">],</span><span class="n">unique_dcm_filename</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="create_dicom"><a class="viewcode-back" href="../../../Tools.Input2DCM.html#Tools.Input2DCM.Input2DCM.create_dicom">[docs]</a><span class="k">def</span> <span class="nf">create_dicom</span><span class="p">(</span><span class="n">dcmconfig</span><span class="p">,</span><span class="n">payload</span><span class="p">,</span><span class="n">filename</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Function creates minimal dicom file from scratch with required tags</span>
+<span class="sd">        and stores payload (string) in the specified private tag.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ptag</span> <span class="o">=</span> <span class="n">dicom</span><span class="o">.</span><span class="n">tag</span><span class="o">.</span><span class="n">Tag</span><span class="p">(</span><span class="n">dcmconfig</span><span class="p">[</span><span class="s">&#39;privatetag&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">))</span>
+
+    <span class="c"># create empty dicomfile</span>
+    <span class="n">file_meta</span> <span class="o">=</span> <span class="n">dicom</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">Dataset</span><span class="p">()</span>
+
+    <span class="c"># Raw Data Storage</span>
+    <span class="n">file_meta</span><span class="o">.</span><span class="n">MediaStorageSOPClassUID</span> <span class="o">=</span> <span class="s">&#39;1.2.840.10008.5.1.4.1.1.66&#39;</span>
+
+    <span class="c"># unieke uid&#39;s</span>
+    <span class="n">file_meta</span><span class="o">.</span><span class="n">MediaStorageSOPInstanceUID</span> <span class="o">=</span> <span class="n">dicom</span><span class="o">.</span><span class="n">UID</span><span class="o">.</span><span class="n">generate_uid</span><span class="p">()</span>
+    <span class="n">file_meta</span><span class="o">.</span><span class="n">ImplementationClassUID</span> <span class="o">=</span> <span class="n">dicom</span><span class="o">.</span><span class="n">UID</span><span class="o">.</span><span class="n">generate_uid</span><span class="p">()</span>
+
+    <span class="n">ds</span> <span class="o">=</span> <span class="n">dicom</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">FileDataset</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="p">{},</span><span class="n">file_meta</span> <span class="o">=</span> <span class="n">file_meta</span><span class="p">,</span><span class="n">preamble</span><span class="o">=</span><span class="s">&quot;</span><span class="se">\0</span><span class="s">&quot;</span><span class="o">*</span><span class="mi">128</span><span class="p">)</span>
+
+    <span class="n">ds</span><span class="o">.</span><span class="n">SOPClassUID</span> <span class="o">=</span> <span class="s">&#39;1.2.840.10008.5.1.4.1.1.7&#39;</span> <span class="c"># secondary capture SOP UID</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">SOPInstanceUID</span> <span class="o">=</span> <span class="n">file_meta</span><span class="o">.</span><span class="n">MediaStorageSOPInstanceUID</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">StudyInstanceUID</span> <span class="o">=</span> <span class="n">dicom</span><span class="o">.</span><span class="n">UID</span><span class="o">.</span><span class="n">generate_uid</span><span class="p">()</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">SeriesInstanceUID</span> <span class="o">=</span> <span class="n">dicom</span><span class="o">.</span><span class="n">UID</span><span class="o">.</span><span class="n">generate_uid</span><span class="p">()</span>
+
+    <span class="n">ds</span><span class="o">.</span><span class="n">PatientID</span> <span class="o">=</span> <span class="n">dcmconfig</span><span class="p">[</span><span class="s">&#39;patientid&#39;</span><span class="p">]</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">PatientName</span> <span class="o">=</span> <span class="n">dcmconfig</span><span class="p">[</span><span class="s">&#39;patientname&#39;</span><span class="p">]</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">StudyDescription</span> <span class="o">=</span> <span class="n">dcmconfig</span><span class="p">[</span><span class="s">&#39;studydesc&#39;</span><span class="p">]</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">SeriesDescription</span> <span class="o">=</span> <span class="n">dcmconfig</span><span class="p">[</span><span class="s">&#39;seriesdesc&#39;</span><span class="p">]</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">StationName</span> <span class="o">=</span> <span class="n">dcmconfig</span><span class="p">[</span><span class="s">&#39;stationname&#39;</span><span class="p">]</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">Modality</span> <span class="o">=</span> <span class="s">&#39;OT&#39;</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">StudyDate</span>   <span class="o">=</span> <span class="n">dcmconfig</span><span class="p">[</span><span class="s">&#39;studydate&#39;</span><span class="p">]</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">SeriesDate</span>  <span class="o">=</span> <span class="n">dcmconfig</span><span class="p">[</span><span class="s">&#39;seriesdate&#39;</span><span class="p">]</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">ContentDate</span> <span class="o">=</span> <span class="n">dcmconfig</span><span class="p">[</span><span class="s">&#39;contentdate&#39;</span><span class="p">]</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">StudyTime</span>   <span class="o">=</span> <span class="n">dcmconfig</span><span class="p">[</span><span class="s">&#39;studytime&#39;</span><span class="p">]</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">SeriesTime</span>  <span class="o">=</span> <span class="n">dcmconfig</span><span class="p">[</span><span class="s">&#39;seriestime&#39;</span><span class="p">]</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">ContentTime</span> <span class="o">=</span> <span class="n">dcmconfig</span><span class="p">[</span><span class="s">&#39;contenttime&#39;</span><span class="p">]</span>
+
+    <span class="n">ds</span><span class="o">.</span><span class="n">add_new</span><span class="p">(</span><span class="n">ptag</span><span class="p">,</span><span class="s">&#39;OB&#39;</span><span class="p">,</span> <span class="n">payload</span><span class="p">)</span>
+
+    <span class="n">ds</span><span class="o">.</span><span class="n">save_as</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="send_dicom"><a class="viewcode-back" href="../../../Tools.Input2DCM.html#Tools.Input2DCM.Input2DCM.send_dicom">[docs]</a><span class="k">def</span> <span class="nf">send_dicom</span><span class="p">(</span><span class="n">calledAET</span><span class="p">,</span><span class="n">callingAET</span><span class="p">,</span><span class="n">remotehost</span><span class="p">,</span><span class="n">remoteport</span><span class="p">,</span><span class="n">filename</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Function sends a dicom file to specified host.</span>
+<span class="sd">        Returns (status, msg):</span>
+<span class="sd">          Status:</span>
+<span class="sd">            True  : success</span>
+<span class="sd">            False : error occurred (added to logfile)</span>
+<span class="sd">          msg: string or None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">verbose</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="n">ts</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">dicom</span><span class="o">.</span><span class="n">UID</span><span class="o">.</span><span class="n">ExplicitVRLittleEndian</span><span class="p">,</span> 
+        <span class="n">dicom</span><span class="o">.</span><span class="n">UID</span><span class="o">.</span><span class="n">ImplicitVRLittleEndian</span><span class="p">,</span> 
+        <span class="n">dicom</span><span class="o">.</span><span class="n">UID</span><span class="o">.</span><span class="n">ExplicitVRBigEndian</span>
+    <span class="p">]</span>
+
+    <span class="c"># call back</span>
+    <span class="k">def</span> <span class="nf">OnAssociateResponse</span><span class="p">(</span><span class="n">association</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span> <span class="k">print</span> <span class="s">&quot;[Input2DCM] Association response received&quot;</span>
+        <span class="k">pass</span>
+
+    <span class="c"># find random free port on localhost</span>
+    <span class="n">tmpsocket</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">socket</span><span class="p">(</span><span class="n">socket</span><span class="o">.</span><span class="n">AF_INET</span><span class="p">,</span> <span class="n">socket</span><span class="o">.</span><span class="n">SOCK_STREAM</span><span class="p">)</span>
+    <span class="n">tmpsocket</span><span class="o">.</span><span class="n">setsockopt</span><span class="p">(</span><span class="n">socket</span><span class="o">.</span><span class="n">SOL_SOCKET</span><span class="p">,</span> <span class="n">socket</span><span class="o">.</span><span class="n">SO_REUSEADDR</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">tmpsocket</span><span class="o">.</span><span class="n">bind</span><span class="p">((</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+    <span class="n">freelocalport</span> <span class="o">=</span> <span class="n">tmpsocket</span><span class="o">.</span><span class="n">getsockname</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">tmpsocket</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="c"># create application entity</span>
+    <span class="n">MyAE</span> <span class="o">=</span> <span class="n">AE</span><span class="p">(</span><span class="n">callingAET</span><span class="p">,</span> <span class="n">freelocalport</span><span class="p">,</span> <span class="p">[</span><span class="n">StorageSOPClass</span><span class="p">,</span>  <span class="n">VerificationSOPClass</span><span class="p">],</span> <span class="p">[],</span> <span class="n">ts</span><span class="p">)</span>
+    <span class="n">MyAE</span><span class="o">.</span><span class="n">OnAssociateResponse</span> <span class="o">=</span> <span class="n">OnAssociateResponse</span>
+
+    <span class="c"># remote application entity</span>
+    <span class="n">RemoteAE</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">Address</span><span class="o">=</span><span class="n">remotehost</span><span class="p">,</span> <span class="n">Port</span><span class="o">=</span><span class="n">remoteport</span><span class="p">,</span> <span class="n">AET</span><span class="o">=</span><span class="n">calledAET</span><span class="p">)</span>
+
+    <span class="c"># create association with remote AE</span>
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span> <span class="k">print</span> <span class="s">&#39;[Input2DCM] Request association&#39;</span>
+    <span class="n">assoc</span> <span class="o">=</span> <span class="n">MyAE</span><span class="o">.</span><span class="n">RequestAssociation</span><span class="p">(</span><span class="n">RemoteAE</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">assoc</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39;Could not establish association&#39;</span>
+        <span class="k">print</span> <span class="s">&#39;[Input2DCM] </span><span class="si">%s</span><span class="s">&#39;</span><span class="o">%</span><span class="n">msg</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">False</span><span class="p">,</span><span class="n">msg</span><span class="p">)</span>
+
+    <span class="c"># perform a DICOM ECHO, just to make sure remote AE is listening</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">status</span> <span class="o">=</span> <span class="n">assoc</span><span class="o">.</span><span class="n">VerificationSOPClass</span><span class="o">.</span><span class="n">SCU</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span> <span class="k">print</span> <span class="s">&#39;[Input2DCM] DICOM Echo ... done with status &quot;</span><span class="si">%s</span><span class="s">&quot;&#39;</span> <span class="o">%</span> <span class="n">status</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39;DICOM Echo ... problem occurred&#39;</span>
+        <span class="k">print</span> <span class="s">&#39;[Input2DCM] </span><span class="si">%s</span><span class="s">&#39;</span><span class="o">%</span><span class="n">msg</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">False</span><span class="p">,</span><span class="n">msg</span><span class="p">)</span>
+
+    <span class="n">dcm</span> <span class="o">=</span> <span class="n">dicom</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">status</span> <span class="o">=</span> <span class="n">assoc</span><span class="o">.</span><span class="n">SCU</span><span class="p">(</span><span class="n">dcm</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span> <span class="k">print</span> <span class="s">&#39;[Input2DCM] DICOM StoreSCU ... done with status &quot;</span><span class="si">%s</span><span class="s">&quot;&#39;</span> <span class="o">%</span> <span class="n">status</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39;DICOM StoreSCU ... problem occurred&#39;</span>
+        <span class="k">print</span> <span class="s">&#39;[Input2DCM] </span><span class="si">%s</span><span class="s">&#39;</span><span class="o">%</span><span class="n">msg</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">False</span><span class="p">,</span><span class="n">msg</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span> <span class="k">print</span> <span class="s">&#39;Release association&#39;</span>
+    <span class="n">assoc</span><span class="o">.</span><span class="n">Release</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+
+    <span class="c"># done</span>
+    <span class="n">MyAE</span><span class="o">.</span><span class="n">Quit</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="bp">True</span><span class="p">,</span><span class="bp">None</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="write_generic_config"><a class="viewcode-back" href="../../../Tools.Input2DCM.html#Tools.Input2DCM.Input2DCM.write_generic_config">[docs]</a><span class="k">def</span> <span class="nf">write_generic_config</span><span class="p">(</span><span class="n">config</span><span class="p">,</span><span class="n">filename</span><span class="p">):</span>
+    <span class="n">conf</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">config</span><span class="p">)</span> <span class="c"># make a copy for usage</span>
+    <span class="n">defaults</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s">&#39;info_name&#39;</span><span class="p">:</span><span class="s">&#39;Input2DCM&#39;</span><span class="p">,</span>
+        <span class="s">&#39;info_description&#39;</span><span class="p">:</span><span class="s">&#39;Input2DCM Generic Config&#39;</span><span class="p">,</span>
+        <span class="s">&#39;info_version&#39;</span><span class="p">:</span> <span class="s">&#39;20150814&#39;</span><span class="p">,</span>
+        <span class="s">&#39;actions&#39;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="p">{</span>
+                <span class="s">&#39;plugin&#39;</span><span class="p">:</span> <span class="s">&#39;Plugin_development.Generic.generic&#39;</span><span class="p">,</span>
+                <span class="s">&#39;function&#39;</span><span class="p">:</span> <span class="s">&#39;main&#39;</span><span class="p">,</span>
+                <span class="s">&#39;default_level&#39;</span><span class="p">:</span> <span class="s">&#39;1&#39;</span><span class="p">,</span>
+                <span class="s">&#39;params&#39;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s">&#39;tag_type&#39;</span><span class="p">:</span><span class="s">&#39;dict&#39;</span><span class="p">,</span>
+                    <span class="s">&#39;private_group&#39;</span><span class="p">:</span><span class="s">&#39;0x0071&#39;</span><span class="p">,</span>
+                    <span class="s">&#39;private_element&#39;</span><span class="p">:</span><span class="s">&#39;0x9999&#39;</span>
+                <span class="p">},</span>
+                <span class="s">&#39;limits&#39;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s">&#39;sensitivity&#39;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s">&#39;acc_low&#39;</span><span class="p">:</span><span class="s">&#39;1.23&#39;</span><span class="p">,</span>
+                        <span class="s">&#39;acc_high&#39;</span><span class="p">:</span><span class="s">&#39;2.5&#39;</span><span class="p">,</span>
+                        <span class="s">&#39;crit_low&#39;</span><span class="p">:</span><span class="s">&#39;1.00&#39;</span><span class="p">,</span>
+                        <span class="s">&#39;crit_high&#39;</span><span class="p">:</span><span class="s">&#39;3.00&#39;</span><span class="p">,</span>
+                    <span class="p">}</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">]</span>
+    <span class="p">}</span>
+  
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span><span class="n">value</span> <span class="ow">in</span> <span class="n">defaults</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">conf</span><span class="p">:</span> <span class="n">conf</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="s">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fout</span><span class="p">:</span>
+        <span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+
+        <span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;&lt;!--</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+        <span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;  Configuration file written by Input2DCM.py</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+        <span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;--&gt;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+
+        <span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;&lt;Input2DCM_config&gt;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+
+        <span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;  &lt;name&gt;</span><span class="si">%s</span><span class="s">&lt;/name&gt;</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">%</span> <span class="n">conf</span><span class="p">[</span><span class="s">&#39;info_name&#39;</span><span class="p">])</span>
+        <span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;  &lt;description&gt;</span><span class="si">%s</span><span class="s">&lt;/description&gt;</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">conf</span><span class="p">[</span><span class="s">&#39;info_description&#39;</span><span class="p">])</span>
+        <span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;  &lt;version&gt;</span><span class="si">%s</span><span class="s">&lt;/version&gt;</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">conf</span><span class="p">[</span><span class="s">&#39;info_version&#39;</span><span class="p">])</span>
+    
+        <span class="k">for</span> <span class="n">act</span> <span class="ow">in</span> <span class="n">conf</span><span class="p">[</span><span class="s">&#39;actions&#39;</span><span class="p">]:</span>
+            <span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;  &lt;action&gt;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+            <span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;    &lt;plugin&gt;</span><span class="si">%s</span><span class="s">&lt;/plugin&gt;</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">act</span><span class="p">[</span><span class="s">&#39;plugin&#39;</span><span class="p">])</span>
+            <span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;    &lt;function&gt;</span><span class="si">%s</span><span class="s">&lt;/function&gt;</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">act</span><span class="p">[</span><span class="s">&#39;function&#39;</span><span class="p">])</span>
+            <span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;    &lt;default_level&gt;</span><span class="si">%s</span><span class="s">&lt;/default_level&gt;</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">%</span> <span class="n">act</span><span class="p">[</span><span class="s">&#39;function&#39;</span><span class="p">])</span>
+        
+            <span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;    &lt;params&gt;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">pkey</span><span class="p">,</span><span class="n">pval</span> <span class="ow">in</span> <span class="n">act</span><span class="p">[</span><span class="s">&#39;params&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;        &lt;</span><span class="si">%s</span><span class="s">&gt;</span><span class="si">%s</span><span class="s">&lt;/</span><span class="si">%s</span><span class="s">&gt;</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">%</span><span class="p">(</span><span class="n">pkey</span><span class="p">,</span><span class="n">pval</span><span class="p">,</span><span class="n">pkey</span><span class="p">))</span>
+            <span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;    &lt;/params&gt;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+        
+            <span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;    &lt;limits&gt;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">pkey</span><span class="p">,</span><span class="n">pval</span> <span class="ow">in</span> <span class="n">act</span><span class="p">[</span><span class="s">&#39;limits&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;        &lt;result description=&quot;</span><span class="si">%s</span><span class="s">&quot;&gt;</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">pkey</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">ppkey</span><span class="p">,</span><span class="n">ppval</span> <span class="ow">in</span> <span class="n">pval</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;            &lt;</span><span class="si">%s</span><span class="s">&gt;</span><span class="si">%s</span><span class="s">&lt;/</span><span class="si">%s</span><span class="s">&gt;</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">%</span><span class="p">(</span><span class="n">ppkey</span><span class="p">,</span><span class="n">ppval</span><span class="p">,</span><span class="n">ppkey</span><span class="p">))</span>
+                <span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;        &lt;/result&gt;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+            <span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;    &lt;/limits&gt;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+        
+            <span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;  &lt;/action&gt;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+    
+        <span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;&lt;/Input2DCM_config&gt;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+    </div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">..  documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

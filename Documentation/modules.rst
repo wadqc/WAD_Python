@@ -9,4 +9,3 @@
    Tools
    pyWAD
    pyWADLib
-   pywadplugin

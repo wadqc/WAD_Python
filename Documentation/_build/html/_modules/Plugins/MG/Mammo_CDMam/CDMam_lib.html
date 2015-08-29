@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Plugins.Mammo.Mammo_CDMam.CDMam_lib &mdash; ..  documentation</title>
+    <title>Plugins.MG.Mammo_CDMam.CDMam_lib &mdash; ..  documentation</title>
     
     <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
@@ -46,7 +46,7 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <h1>Source code for Plugins.Mammo.Mammo_CDMam.CDMam_lib</h1><div class="highlight"><pre>
+  <h1>Source code for Plugins.MG.Mammo_CDMam.CDMam_lib</h1><div class="highlight"><pre>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">CDMam_lib: classes and routines for calculation of CDMAM scores</span>
 <span class="sd">Warning: THIS MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!</span>
@@ -59,6 +59,7 @@
 <span class="sd"> * speed up removal of grid (maybe with grid detection on lower scale?)</span>
 
 <span class="sd">Changelog:</span>
+<span class="sd">    20150826: reshuffling in gridremove to demand less memory (windows cannot cope)</span>
 <span class="sd">    20150213: first working version</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">subprocess</span>
@@ -76,7 +77,7 @@
 
 <span class="kn">import</span> <span class="nn">CDMam_constants</span> <span class="kn">as</span> <span class="nn">lit</span>
 
-<div class="viewcode-block" id="CDMamPhantom"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_CDMam.html#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMamPhantom">[docs]</a><span class="k">class</span> <span class="nc">CDMamPhantom</span><span class="p">:</span>
+<div class="viewcode-block" id="CDMamPhantom"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_CDMam.html#Plugins.MG.Mammo_CDMam.CDMam_lib.CDMamPhantom">[docs]</a><span class="k">class</span> <span class="nc">CDMamPhantom</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Description of the CDMAM Phantom. For now version 3.2 and 3.4 are implemented</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -172,7 +173,7 @@
                                 <span class="p">[</span><span class="mf">0.06</span><span class="p">,</span> <span class="mf">0.16</span><span class="p">,</span> <span class="mf">1.42</span><span class="p">],</span>
                                 <span class="p">]</span>
 </div>
-<div class="viewcode-block" id="CDMamStruct"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_CDMam.html#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMamStruct">[docs]</a><span class="k">class</span> <span class="nc">CDMamStruct</span><span class="p">:</span>
+<div class="viewcode-block" id="CDMamStruct"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_CDMam.html#Plugins.MG.Mammo_CDMam.CDMam_lib.CDMamStruct">[docs]</a><span class="k">class</span> <span class="nc">CDMamStruct</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Class holding all information for IO between gui and Lib</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -211,11 +212,11 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">scannername</span> <span class="o">=</span> <span class="n">lit</span><span class="o">.</span><span class="n">stUnknown</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">energypresentation</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
 </div>
-<div class="viewcode-block" id="CDMam"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_CDMam.html#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam">[docs]</a><span class="k">class</span> <span class="nc">CDMam</span><span class="p">():</span>
+<div class="viewcode-block" id="CDMam"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_CDMam.html#Plugins.MG.Mammo_CDMam.CDMam_lib.CDMam">[docs]</a><span class="k">class</span> <span class="nc">CDMam</span><span class="p">():</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Class for calculation of CDMAM score</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">qcversion</span> <span class="o">=</span> <span class="mi">20150213</span>
+    <span class="n">qcversion</span> <span class="o">=</span> <span class="mi">20150826</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">guimode</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">guimode</span> <span class="o">=</span> <span class="n">guimode</span>
@@ -284,7 +285,7 @@
         <span class="n">x</span> <span class="o">=</span> <span class="n">x0</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="n">y</span><span class="o">-</span><span class="mf">1.</span><span class="p">)</span><span class="o">/</span><span class="n">k</span>
         <span class="k">return</span> <span class="n">x</span>
 
-<div class="viewcode-block" id="CDMam.thresholdThickness"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_CDMam.html#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.thresholdThickness">[docs]</a>    <span class="k">def</span> <span class="nf">thresholdThickness</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">,</span><span class="n">hitmatrix</span><span class="p">):</span>
+<div class="viewcode-block" id="CDMam.thresholdThickness"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_CDMam.html#Plugins.MG.Mammo_CDMam.CDMam_lib.CDMam.thresholdThickness">[docs]</a>    <span class="k">def</span> <span class="nf">thresholdThickness</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">,</span><span class="n">hitmatrix</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Calculation of threshold thickness</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -499,14 +500,14 @@
             <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
             <span class="n">cs</span><span class="o">.</span><span class="n">fit_fnames</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
   </div>
-<div class="viewcode-block" id="CDMam.pixDim"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_CDMam.html#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.pixDim">[docs]</a>    <span class="k">def</span> <span class="nf">pixDim</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">):</span>
+<div class="viewcode-block" id="CDMam.pixDim"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_CDMam.html#Plugins.MG.Mammo_CDMam.CDMam_lib.CDMam.pixDim">[docs]</a>    <span class="k">def</span> <span class="nf">pixDim</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">):</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">pix_mm</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">dcmInfile</span><span class="o">.</span><span class="n">PixelSpacing</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="k">except</span><span class="p">:</span>
             <span class="n">pix_mm</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">dcmInfile</span><span class="o">.</span><span class="n">ImagerPixelSpacing</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">pix_mm</span>
 </div>
-<div class="viewcode-block" id="CDMam.removeGrid"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_CDMam.html#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.removeGrid">[docs]</a>    <span class="k">def</span> <span class="nf">removeGrid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">,</span><span class="n">removeGrid</span><span class="p">):</span>
+<div class="viewcode-block" id="CDMam.removeGrid"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_CDMam.html#Plugins.MG.Mammo_CDMam.CDMam_lib.CDMam.removeGrid">[docs]</a>    <span class="k">def</span> <span class="nf">removeGrid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">,</span><span class="n">removeGrid</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Detect the grid of the phantom and remove it from the image</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -525,18 +526,21 @@
         <span class="n">mask</span> <span class="o">=</span> <span class="n">scind</span><span class="o">.</span><span class="n">binary_dilation</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span>
 
         <span class="c"># fill the gridlines with the median values of the pixels around it</span>
-        <span class="n">cs</span><span class="o">.</span><span class="n">gridimage</span> <span class="o">=</span> <span class="n">mask</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
         <span class="n">medimage</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="p">,</span><span class="n">shift</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
-        <span class="n">dest</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="o">+</span><span class="n">cs</span><span class="o">.</span><span class="n">gridimage</span><span class="o">*</span><span class="p">(</span><span class="n">medimage</span><span class="o">-</span><span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="p">)</span>
+        <span class="n">dest</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="o">+</span><span class="n">mask</span><span class="o">*</span><span class="p">(</span><span class="n">medimage</span><span class="o">-</span><span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="p">)</span>
         <span class="c"># repeat to remove propagated mask # new since 20150211</span>
         <span class="n">medimage</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">dest</span><span class="p">,</span><span class="n">shift</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
-        <span class="n">dest</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="o">+</span><span class="n">cs</span><span class="o">.</span><span class="n">gridimage</span><span class="o">*</span><span class="p">(</span><span class="n">medimage</span><span class="o">-</span><span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="p">)</span>
-
+        <span class="n">dest</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="o">+</span><span class="n">mask</span><span class="o">*</span><span class="p">(</span><span class="n">medimage</span><span class="o">-</span><span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="p">)</span>
+        <span class="n">medimage</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">cs</span><span class="o">.</span><span class="n">gridimage</span> <span class="o">=</span> <span class="n">mask</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="bp">None</span>
+        
         <span class="c"># find gridobject</span>
         <span class="n">gridobject</span>         <span class="o">=</span> <span class="n">scind</span><span class="o">.</span><span class="n">binary_fill_holes</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">gridimage</span><span class="p">)</span>
         <span class="n">label_im</span><span class="p">,</span><span class="n">nb_labels</span> <span class="o">=</span> <span class="n">scind</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="n">gridobject</span><span class="p">)</span>
         <span class="n">sizes</span> <span class="o">=</span> <span class="n">scind</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">gridobject</span><span class="p">,</span> <span class="n">label_im</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="n">nb_labels</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
-
+        <span class="n">gridobject</span> <span class="o">=</span> <span class="bp">None</span>
+        
         <span class="c">#Clean up small connect components:</span>
         <span class="n">mask_size</span> <span class="o">=</span> <span class="n">sizes</span> <span class="o">&lt;</span> <span class="nb">max</span><span class="p">(</span><span class="n">sizes</span><span class="p">)</span> <span class="c">#(100/self.pixDim())**2</span>
         <span class="n">remove_pixel</span> <span class="o">=</span> <span class="n">mask_size</span><span class="p">[</span><span class="n">label_im</span><span class="p">]</span>
@@ -548,6 +552,7 @@
 
         <span class="n">medimage</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">dest</span><span class="p">,</span><span class="n">shift</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
         <span class="n">dest</span> <span class="o">+=</span> <span class="n">cs</span><span class="o">.</span><span class="n">gridimage</span><span class="o">*</span><span class="p">(</span><span class="n">medimage</span><span class="o">-</span><span class="n">dest</span><span class="p">)</span>
+        <span class="n">medimage</span> <span class="o">=</span> <span class="bp">None</span>
         <span class="n">cs</span><span class="o">.</span><span class="n">gridimage</span> <span class="o">*=</span> <span class="n">label_im</span>
         <span class="k">if</span> <span class="o">-</span><span class="mi">1</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span> <span class="c"># remove everything outside grid</span>
             <span class="n">wid</span> <span class="o">=</span> <span class="n">dest</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -558,7 +563,7 @@
         <span class="k">if</span> <span class="n">removeGrid</span><span class="p">:</span>
             <span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span> <span class="o">=</span> <span class="n">dest</span>
 </div>
-<div class="viewcode-block" id="CDMam.findStartingCell"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_CDMam.html#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.findStartingCell">[docs]</a>    <span class="k">def</span> <span class="nf">findStartingCell</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">):</span>
+<div class="viewcode-block" id="CDMam.findStartingCell"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_CDMam.html#Plugins.MG.Mammo_CDMam.CDMam_lib.CDMam.findStartingCell">[docs]</a>    <span class="k">def</span> <span class="nf">findStartingCell</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Find first gridcell for gridcell locating.</span>
 <span class="sd">        Required: </span>
@@ -596,7 +601,7 @@
         <span class="n">roipts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">AlignROI</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span> <span class="n">roipts</span><span class="p">,</span> <span class="n">distmm</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">roipts</span>
     </div>
-<div class="viewcode-block" id="CDMam.CDMamSingle"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_CDMam.html#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.CDMamSingle">[docs]</a>    <span class="k">def</span> <span class="nf">CDMamSingle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">):</span>
+<div class="viewcode-block" id="CDMam.CDMamSingle"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_CDMam.html#Plugins.MG.Mammo_CDMam.CDMam_lib.CDMam.CDMamSingle">[docs]</a>    <span class="k">def</span> <span class="nf">CDMamSingle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Calculate score for one CDMam image</span>
 <span class="sd">        WorkFlow:</span>
@@ -637,7 +642,7 @@
 
         <span class="k">return</span> <span class="n">score</span>
     </div>
-<div class="viewcode-block" id="CDMam.CDCOMSingle"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_CDMam.html#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.CDCOMSingle">[docs]</a>    <span class="k">def</span> <span class="nf">CDCOMSingle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">):</span>
+<div class="viewcode-block" id="CDMam.CDCOMSingle"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_CDMam.html#Plugins.MG.Mammo_CDMam.CDMam_lib.CDMam.CDCOMSingle">[docs]</a>    <span class="k">def</span> <span class="nf">CDCOMSingle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        run cdcom.exe on given file</span>
 <span class="sd">        input matrix.inp and matrix2.inp, and average</span>
@@ -693,7 +698,7 @@
         <span class="k">return</span> <span class="n">score</span>
 
 </div>
-<div class="viewcode-block" id="CDMam.observerScore"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_CDMam.html#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.observerScore">[docs]</a>    <span class="k">def</span> <span class="nf">observerScore</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">):</span>
+<div class="viewcode-block" id="CDMam.observerScore"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_CDMam.html#Plugins.MG.Mammo_CDMam.CDMam_lib.CDMam.observerScore">[docs]</a>    <span class="k">def</span> <span class="nf">observerScore</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Calculate score of model observer:</span>
 <span class="sd">        Workflow: </span>
@@ -727,7 +732,7 @@
         <span class="k">return</span> <span class="n">score</span>
     
     </div>
-<div class="viewcode-block" id="CDMam.locateGridCells"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_CDMam.html#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.locateGridCells">[docs]</a>    <span class="k">def</span> <span class="nf">locateGridCells</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">):</span>
+<div class="viewcode-block" id="CDMam.locateGridCells"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_CDMam.html#Plugins.MG.Mammo_CDMam.CDMam_lib.CDMam.locateGridCells">[docs]</a>    <span class="k">def</span> <span class="nf">locateGridCells</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Starting from one a given box, locate all gridcells, using the previous one as a starting point.</span>
 <span class="sd">        This way local deformations will not lead to mismatches further away/</span>
@@ -797,7 +802,7 @@
             <span class="n">cs</span><span class="o">.</span><span class="n">gridrois</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">lineroi</span><span class="p">))</span>
 
 </div>
-<div class="viewcode-block" id="CDMam.AlignROI"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_CDMam.html#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.AlignROI">[docs]</a>    <span class="k">def</span> <span class="nf">AlignROI</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cs</span><span class="p">,</span><span class="n">roipts</span><span class="p">,</span><span class="n">distmm</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
+<div class="viewcode-block" id="CDMam.AlignROI"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_CDMam.html#Plugins.MG.Mammo_CDMam.CDMam_lib.CDMam.AlignROI">[docs]</a>    <span class="k">def</span> <span class="nf">AlignROI</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cs</span><span class="p">,</span><span class="n">roipts</span><span class="p">,</span><span class="n">distmm</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Moves the four cornerpoints of a ROI to the most likely crossing in the gridimage, within &lt;distmm&gt; distance from the starting point.</span>
 <span class="sd">        Returns four adjusted cornerpoints.</span>
@@ -832,7 +837,7 @@
             <span class="n">searchrad</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">searchrad</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">roipts</span>
 </div>
-<div class="viewcode-block" id="CDMam.nearestNeighborCorrection"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_CDMam.html#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.nearestNeighborCorrection">[docs]</a>    <span class="k">def</span> <span class="nf">nearestNeighborCorrection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">,</span><span class="n">scorematrix</span><span class="p">):</span>
+<div class="viewcode-block" id="CDMam.nearestNeighborCorrection"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_CDMam.html#Plugins.MG.Mammo_CDMam.CDMam_lib.CDMam.nearestNeighborCorrection">[docs]</a>    <span class="k">def</span> <span class="nf">nearestNeighborCorrection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">,</span><span class="n">scorematrix</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Nearest Neighbor Correction.</span>
 <span class="sd">        From the CDMAM manual:</span>
@@ -892,7 +897,7 @@
         <span class="k">return</span> <span class="n">hitmatrix</span>
 
 </div>
-<div class="viewcode-block" id="CDMam.detectVarGauss"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_CDMam.html#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.detectVarGauss">[docs]</a>    <span class="k">def</span> <span class="nf">detectVarGauss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">,</span> <span class="n">di</span><span class="p">,</span><span class="n">th</span><span class="p">):</span>
+<div class="viewcode-block" id="CDMam.detectVarGauss"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_CDMam.html#Plugins.MG.Mammo_CDMam.CDMam_lib.CDMam.detectVarGauss">[docs]</a>    <span class="k">def</span> <span class="nf">detectVarGauss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">,</span> <span class="n">di</span><span class="p">,</span><span class="n">th</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Blur with Gaussian of sigma matched to diameter of disc == averaging over disc size</span>
 <span class="sd">        Detect max response within search radius around expected location</span>
@@ -1036,7 +1041,7 @@
             <span class="n">guess</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="k">return</span> <span class="n">guess</span>
 </div>
-<div class="viewcode-block" id="CDMam.determineScannerID"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_CDMam.html#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.determineScannerID">[docs]</a>    <span class="k">def</span> <span class="nf">determineScannerID</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">):</span>
+<div class="viewcode-block" id="CDMam.determineScannerID"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_CDMam.html#Plugins.MG.Mammo_CDMam.CDMam_lib.CDMam.determineScannerID">[docs]</a>    <span class="k">def</span> <span class="nf">determineScannerID</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Tries to identify machine model, used filter, and energy presentation</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1065,7 +1070,7 @@
         <span class="n">cs</span><span class="o">.</span><span class="n">energypresentation</span> <span class="o">=</span> <span class="n">wadwrapper_lib</span><span class="o">.</span><span class="n">readDICOMtag</span><span class="p">(</span><span class="n">dicomfields</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span><span class="n">cs</span><span class="o">.</span><span class="n">dcmInfile</span><span class="p">)</span>
 
 </div>
-<div class="viewcode-block" id="CDMam.DICOMInfo"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_CDMam.html#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.DICOMInfo">[docs]</a>    <span class="k">def</span> <span class="nf">DICOMInfo</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">,</span><span class="n">info</span><span class="o">=</span><span class="s">&#39;dicom&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="CDMam.DICOMInfo"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_CDMam.html#Plugins.MG.Mammo_CDMam.CDMam_lib.CDMam.DICOMInfo">[docs]</a>    <span class="k">def</span> <span class="nf">DICOMInfo</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">,</span><span class="n">info</span><span class="o">=</span><span class="s">&#39;dicom&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Extract some info from the DICOM header. &lt;info&gt; is either &#39;dicom&#39; (extensive list) or &#39;qc&#39; (short list).</span>
 <span class="sd">        Returns list of &lt;tag description&gt;,&lt;tag value&gt;</span>

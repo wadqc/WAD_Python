@@ -1,17 +1,12 @@
 Plugins.Fluoro package
 ======================
 
-Submodules
-----------
+Subpackages
+-----------
 
-Plugins.Fluoro.pincushionWAD module
------------------------------------
+.. toctree::
 
-.. automodule:: Plugins.Fluoro.pincushionWAD
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
+    Plugins.Fluoro.PinCushion
 
 Module contents
 ---------------

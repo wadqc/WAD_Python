@@ -4,6 +4,14 @@ Tools.PluginTesting package
 Submodules
 ----------
 
+Tools.PluginTesting.CheckDependencies module
+--------------------------------------------
+
+.. automodule:: Tools.PluginTesting.CheckDependencies
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 Tools.PluginTesting.PluginTester module
 ---------------------------------------
 

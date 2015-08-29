@@ -1,0 +1,8 @@
+=======
+CHANGES
+=======
+
+v1.0.10
+* Various optimisations for windows users
+* Tool folder has been cleaned up. Each tool has its own folder.
+

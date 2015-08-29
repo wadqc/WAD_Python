@@ -11,7 +11,6 @@ Subpackages
     Plugin_development.Fluoro
     Plugin_development.Generic
     Plugin_development.MRI
-    Plugin_development.Mammo
     Plugin_development.PET
     Plugin_development.TestPlugin
     Plugin_development.Washer_Getinge

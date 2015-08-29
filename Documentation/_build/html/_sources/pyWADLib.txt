@@ -28,6 +28,14 @@ pyWADLib.pydicom_series module
     :undoc-members:
     :show-inheritance:
 
+pyWADLib.roi_lib module
+-----------------------
+
+.. automodule:: pyWADLib.roi_lib
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 pyWADLib.wadwrapper_lib module
 ------------------------------
 

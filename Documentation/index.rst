@@ -16,6 +16,11 @@ the overall WAD QC framework.
    :scale: 50 %
 
 
+Installation
+---------------
+
+.. include:: ../INSTALL.txt
+
 Getting Started
 ---------------
 

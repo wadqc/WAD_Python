@@ -51,8 +51,41 @@
 </div>
 <div class="section" id="module-Plugin_development.MRI.MRI_ACR.PluginQCMRI">
 <span id="plugin-development-mri-mri-acr-pluginqcmri-module"></span><h2>Plugin_development.MRI.MRI_ACR.PluginQCMRI module<a class="headerlink" href="#module-Plugin_development.MRI.MRI_ACR.PluginQCMRI" title="Permalink to this headline">¶</a></h2>
-<p>Created on Fri Dec 05 10:11:57 2014</p>
-<p>&#64;author: k.henken,dd</p>
+<p>This plugin is an implementation of the ACR quality control protocol for MRI as specified in the following documents published by the ACR:</p>
+<p><a class="reference external" href="http://www.acr.org/~/media/ACR/Documents/Accreditation/MRI/LargePhantomInstructions.pdf">http://www.acr.org/~/media/ACR/Documents/Accreditation/MRI/LargePhantomInstructions.pdf</a>
+<a class="reference external" href="http://www.acr.org/~/media/ACR/Documents/Accreditation/MRI/LargePhantomGuidance.pdf">http://www.acr.org/~/media/ACR/Documents/Accreditation/MRI/LargePhantomGuidance.pdf</a></p>
+<p>This code contains the following routines that can be called:</p>
+<ul class="simple">
+<li>ACR_GA_l: Geometric accuracy - measure length of phantom</li>
+<li>ACR_GA_wh: Geometric accuracy - measure width of phantom</li>
+<li>ACR_GA_whd: Geometric accuracy - measure length of diagonal</li>
+<li>ACR_STA: Slice Thickness Accuracy</li>
+<li>ACR_IIU: Image intensity uniformity</li>
+<li>ACR_HCSR: High contrast spatial resolution</li>
+<li>ACR_SPA: Slice position accuracy</li>
+<li>ACR_Ghosting: Ghosting</li>
+</ul>
+<p>Low contrast object detectability (LCOD) and Percent-signal ghosting (PSG) are currently not implemented.</p>
+<p>Changelog:</p>
+<ul class="simple">
+<li>26-08-15 - Updated original code to a working wadplugin version (DD)</li>
+<li>05-12-14 - First version</li>
+</ul>
+<dl class="function">
+<dt id="Plugin_development.MRI.MRI_ACR.PluginQCMRI.ACR_GA_l">
+<tt class="descclassname">Plugin_development.MRI.MRI_ACR.PluginQCMRI.</tt><tt class="descname">ACR_GA_l</tt><big>(</big><em>image</em>, <em>result</em>, <em>label=None</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/MRI/MRI_ACR/PluginQCMRI.html#ACR_GA_l"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.MRI.MRI_ACR.PluginQCMRI.ACR_GA_l" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="Plugin_development.MRI.MRI_ACR.PluginQCMRI.ACR_GA_wh">
+<tt class="descclassname">Plugin_development.MRI.MRI_ACR.PluginQCMRI.</tt><tt class="descname">ACR_GA_wh</tt><big>(</big><em>image</em>, <em>result</em>, <em>label=None</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/MRI/MRI_ACR/PluginQCMRI.html#ACR_GA_wh"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.MRI.MRI_ACR.PluginQCMRI.ACR_GA_wh" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="Plugin_development.MRI.MRI_ACR.PluginQCMRI.ACR_GA_whd">
+<tt class="descclassname">Plugin_development.MRI.MRI_ACR.PluginQCMRI.</tt><tt class="descname">ACR_GA_whd</tt><big>(</big><em>image</em>, <em>result</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/MRI/MRI_ACR/PluginQCMRI.html#ACR_GA_whd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.MRI.MRI_ACR.PluginQCMRI.ACR_GA_whd" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 <dl class="function">
 <dt id="Plugin_development.MRI.MRI_ACR.PluginQCMRI.ACR_Ghosting">
 <tt class="descclassname">Plugin_development.MRI.MRI_ACR.PluginQCMRI.</tt><tt class="descname">ACR_Ghosting</tt><big>(</big><em>header</em>, <em>pixarray</em>, <em>result</em>, <em>label=None</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/MRI/MRI_ACR/PluginQCMRI.html#ACR_Ghosting"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.MRI.MRI_ACR.PluginQCMRI.ACR_Ghosting" title="Permalink to this definition">¶</a></dt>
@@ -61,8 +94,7 @@
 <dl class="function">
 <dt id="Plugin_development.MRI.MRI_ACR.PluginQCMRI.ACR_HCSR">
 <tt class="descclassname">Plugin_development.MRI.MRI_ACR.PluginQCMRI.</tt><tt class="descname">ACR_HCSR</tt><big>(</big><em>header</em>, <em>pixarray</em>, <em>result</em>, <em>label=None</em><big>)</big><a class="reference internal" href="_modules/Plugin_development/MRI/MRI_ACR/PluginQCMRI.html#ACR_HCSR"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugin_development.MRI.MRI_ACR.PluginQCMRI.ACR_HCSR" title="Permalink to this definition">¶</a></dt>
-<dd><p>This routine is broken.</p>
-</dd></dl>
+<dd></dd></dl>
 
 <dl class="function">
 <dt id="Plugin_development.MRI.MRI_ACR.PluginQCMRI.ACR_IIU">

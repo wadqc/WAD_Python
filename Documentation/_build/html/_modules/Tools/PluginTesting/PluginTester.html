@@ -420,7 +420,12 @@
     <span class="k">return</span> <span class="n">results</span><span class="p">,</span><span class="n">errorlist</span>
    </div>
 <span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
-    <span class="n">current_uid</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getuid</span><span class="p">()</span>
+    <span class="n">skip_usercheck</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">current_uid</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getuid</span><span class="p">()</span>
+    <span class="k">except</span><span class="p">:</span> <span class="c">#os.getuid() does not exist on this operating system</span>
+        <span class="n">skip_usercheck</span> <span class="o">=</span> <span class="bp">True</span>
+
     <span class="n">wanted_user</span> <span class="o">=</span> <span class="s">&#39;www-data&#39;</span>
         
     <span class="n">_inifile</span> <span class="o">=</span> <span class="s">&#39;testconfig_default.ini&#39;</span>
@@ -443,16 +448,17 @@
     <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
 
     <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
-    <span class="k">try</span><span class="p">:</span>
-        <span class="n">msg</span> <span class="o">+=</span> <span class="s">&quot;For proper testing, this python script should be run as user </span><span class="si">%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="o">%</span><span class="n">wanted_user</span>
-        <span class="n">msg</span> <span class="o">+=</span> <span class="s">&quot;and the output folder defined in the inifile </span><span class="si">%s</span><span class="s"> should be writable by user </span><span class="si">%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">inifile</span><span class="p">,</span><span class="n">wanted_user</span><span class="p">)</span>
-        <span class="n">msg</span> <span class="o">+=</span> <span class="s">&quot;  sudo chown -R www-data TestingOutput</span><span class="se">\n</span><span class="s">&quot;</span>
-        <span class="n">msg</span> <span class="o">+=</span> <span class="s">&quot;  sudo -u </span><span class="si">%s</span><span class="s"> python PluginTester.py</span><span class="se">\n</span><span class="s">&quot;</span><span class="o">%</span><span class="n">wanted_user</span>
-        <span class="kn">import</span> <span class="nn">pwd</span>
-        <span class="k">if</span> <span class="n">pwd</span><span class="o">.</span><span class="n">getpwnam</span><span class="p">(</span><span class="n">wanted_user</span><span class="p">)</span><span class="o">.</span><span class="n">pw_uid</span> <span class="o">==</span> <span class="n">current_uid</span><span class="p">:</span>
-            <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39;Good! Running as </span><span class="si">%s</span><span class="s">&#39;</span><span class="o">%</span><span class="n">wanted_user</span>
-    <span class="k">except</span><span class="p">:</span>
-        <span class="n">msg</span> <span class="o">+=</span> <span class="s">&#39;However, user </span><span class="si">%s</span><span class="s"> does not exist on this system...</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">%</span><span class="n">wanted_user</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">skip_usercheck</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="s">&quot;For proper testing, this python script should be run as user </span><span class="si">%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="o">%</span><span class="n">wanted_user</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="s">&quot;and the output folder defined in the inifile </span><span class="si">%s</span><span class="s"> should be writable by user </span><span class="si">%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">inifile</span><span class="p">,</span><span class="n">wanted_user</span><span class="p">)</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="s">&quot;  sudo chown -R www-data TestingOutput</span><span class="se">\n</span><span class="s">&quot;</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="s">&quot;  sudo -u </span><span class="si">%s</span><span class="s"> python PluginTester.py</span><span class="se">\n</span><span class="s">&quot;</span><span class="o">%</span><span class="n">wanted_user</span>
+            <span class="kn">import</span> <span class="nn">pwd</span>
+            <span class="k">if</span> <span class="n">pwd</span><span class="o">.</span><span class="n">getpwnam</span><span class="p">(</span><span class="n">wanted_user</span><span class="p">)</span><span class="o">.</span><span class="n">pw_uid</span> <span class="o">==</span> <span class="n">current_uid</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39;Good! Running as </span><span class="si">%s</span><span class="s">&#39;</span><span class="o">%</span><span class="n">wanted_user</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="s">&#39;However, user </span><span class="si">%s</span><span class="s"> does not exist on this system...</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">%</span><span class="n">wanted_user</span>
 
     <span class="k">print</span> <span class="n">msg</span>
  

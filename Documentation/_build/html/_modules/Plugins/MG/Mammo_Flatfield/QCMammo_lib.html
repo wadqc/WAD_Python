@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Plugins.Mammo.Mammo_Flatfield.QCMammo_lib &mdash; ..  documentation</title>
+    <title>Plugins.MG.Mammo_Flatfield.QCMammo_lib &mdash; ..  documentation</title>
     
     <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
@@ -46,7 +46,7 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <h1>Source code for Plugins.Mammo.Mammo_Flatfield.QCMammo_lib</h1><div class="highlight"><pre>
+  <h1>Source code for Plugins.MG.Mammo_Flatfield.QCMammo_lib</h1><div class="highlight"><pre>
 <span class="c"># -*- coding: utf-8 -*-</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">Created on Wed Oct  9 08:50:51 2014</span>
@@ -98,7 +98,7 @@
     <span class="kn">from</span> <span class="nn">pyWADLib</span> <span class="kn">import</span> <span class="n">wadwrapper_lib</span>
 
 
-<div class="viewcode-block" id="MammoStruct"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_Flatfield.html#Plugins.Mammo.Mammo_Flatfield.QCMammo_lib.MammoStruct">[docs]</a><span class="k">class</span> <span class="nc">MammoStruct</span><span class="p">:</span>
+<div class="viewcode-block" id="MammoStruct"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_Flatfield.html#Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct">[docs]</a><span class="k">class</span> <span class="nc">MammoStruct</span><span class="p">:</span>
     <span class="n">verbose</span> <span class="o">=</span> <span class="bp">False</span>
 
     <span class="c"># input image</span>
@@ -168,25 +168,25 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">contrast_mean</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">contrast_sd</span> <span class="o">=</span> <span class="p">[]</span>
 </div>
-<div class="viewcode-block" id="Mammo_QC"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_Flatfield.html#Plugins.Mammo.Mammo_Flatfield.QCMammo_lib.Mammo_QC">[docs]</a><span class="k">class</span> <span class="nc">Mammo_QC</span><span class="p">:</span>
+<div class="viewcode-block" id="Mammo_QC"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_Flatfield.html#Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC">[docs]</a><span class="k">class</span> <span class="nc">Mammo_QC</span><span class="p">:</span>
     <span class="n">qcversion</span> <span class="o">=</span> <span class="mi">20150522</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">guimode</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">guimode</span> <span class="o">=</span> <span class="n">guimode</span>
         <span class="k">pass</span>
 
-<div class="viewcode-block" id="Mammo_QC.readDICOMtag"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_Flatfield.html#Plugins.Mammo.Mammo_Flatfield.QCMammo_lib.Mammo_QC.readDICOMtag">[docs]</a>    <span class="k">def</span> <span class="nf">readDICOMtag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs_mam</span><span class="p">,</span><span class="n">key</span><span class="p">,</span><span class="n">imslice</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span> <span class="c"># slice=2 is image 3</span>
+<div class="viewcode-block" id="Mammo_QC.readDICOMtag"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_Flatfield.html#Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.readDICOMtag">[docs]</a>    <span class="k">def</span> <span class="nf">readDICOMtag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs_mam</span><span class="p">,</span><span class="n">key</span><span class="p">,</span><span class="n">imslice</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span> <span class="c"># slice=2 is image 3</span>
         <span class="n">value</span> <span class="o">=</span> <span class="n">wadwrapper_lib</span><span class="o">.</span><span class="n">readDICOMtag</span><span class="p">(</span><span class="n">key</span><span class="p">,</span><span class="n">cs_mam</span><span class="o">.</span><span class="n">dcmInfile</span><span class="p">,</span><span class="n">imslice</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">value</span>
 </div>
-<div class="viewcode-block" id="Mammo_QC.pixDim"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_Flatfield.html#Plugins.Mammo.Mammo_Flatfield.QCMammo_lib.Mammo_QC.pixDim">[docs]</a>    <span class="k">def</span> <span class="nf">pixDim</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">dcmInfile</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<div class="viewcode-block" id="Mammo_QC.pixDim"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_Flatfield.html#Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.pixDim">[docs]</a>    <span class="k">def</span> <span class="nf">pixDim</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">dcmInfile</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">pix_mm</span> <span class="o">=</span> <span class="n">dcmInfile</span><span class="o">.</span><span class="n">PixelSpacing</span><span class="p">[</span><span class="n">axis</span><span class="p">]</span>
         <span class="k">except</span><span class="p">:</span>
             <span class="n">pix_mm</span> <span class="o">=</span> <span class="n">dcmInfile</span><span class="o">.</span><span class="n">ImagerPixelSpacing</span><span class="p">[</span><span class="n">axis</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">pix_mm</span>
 </div>
-<div class="viewcode-block" id="Mammo_QC.otsu"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_Flatfield.html#Plugins.Mammo.Mammo_Flatfield.QCMammo_lib.Mammo_QC.otsu">[docs]</a>    <span class="k">def</span> <span class="nf">otsu</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">hist</span><span class="p">,</span><span class="n">bins</span><span class="p">):</span>
+<div class="viewcode-block" id="Mammo_QC.otsu"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_Flatfield.html#Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.otsu">[docs]</a>    <span class="k">def</span> <span class="nf">otsu</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">hist</span><span class="p">,</span><span class="n">bins</span><span class="p">):</span>
         <span class="n">currentMax</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="n">threshold</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="n">sumTotal</span><span class="p">,</span> <span class="n">sumForeground</span><span class="p">,</span> <span class="n">sumBackground</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span>
@@ -225,7 +225,7 @@
 
         <span class="k">return</span> <span class="n">threshold</span>
 </div>
-<div class="viewcode-block" id="Mammo_QC.RestrictROI"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_Flatfield.html#Plugins.Mammo.Mammo_Flatfield.QCMammo_lib.Mammo_QC.RestrictROI">[docs]</a>    <span class="k">def</span> <span class="nf">RestrictROI</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs_mam</span><span class="p">):</span>
+<div class="viewcode-block" id="Mammo_QC.RestrictROI"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_Flatfield.html#Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.RestrictROI">[docs]</a>    <span class="k">def</span> <span class="nf">RestrictROI</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs_mam</span><span class="p">):</span>
         <span class="n">roipts</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">cs_mam</span><span class="o">.</span><span class="n">expert_roipts</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">try</span><span class="p">:</span>
@@ -290,7 +290,7 @@
             <span class="k">pass</span>
         <span class="k">return</span> <span class="n">roipts</span>
 </div>
-<div class="viewcode-block" id="Mammo_QC.NeedsCropping"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_Flatfield.html#Plugins.Mammo.Mammo_Flatfield.QCMammo_lib.Mammo_QC.NeedsCropping">[docs]</a>    <span class="k">def</span> <span class="nf">NeedsCropping</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs_mam</span><span class="p">):</span>
+<div class="viewcode-block" id="Mammo_QC.NeedsCropping"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_Flatfield.html#Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.NeedsCropping">[docs]</a>    <span class="k">def</span> <span class="nf">NeedsCropping</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs_mam</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Simple test: If the area of the automatic ROI is too small, the wrong phantom size is used,</span>
 <span class="sd">        so cropping must be applied. Note that this means that QC is in fact invalid, since only part</span>
@@ -311,7 +311,7 @@
         <span class="k">return</span> <span class="bp">False</span>
 
 </div>
-<div class="viewcode-block" id="Mammo_QC.L50Contrast"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_Flatfield.html#Plugins.Mammo.Mammo_Flatfield.QCMammo_lib.Mammo_QC.L50Contrast">[docs]</a>    <span class="k">def</span> <span class="nf">L50Contrast</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs_mam</span><span class="p">):</span>
+<div class="viewcode-block" id="Mammo_QC.L50Contrast"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_Flatfield.html#Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.L50Contrast">[docs]</a>    <span class="k">def</span> <span class="nf">L50Contrast</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs_mam</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Use the six contrast inserts of the Microdose phantom to calculate contrast</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -429,7 +429,7 @@
 
         <span class="k">return</span> <span class="n">error</span>
 </div>
-<div class="viewcode-block" id="Mammo_QC.FindPinShift2D"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_Flatfield.html#Plugins.Mammo.Mammo_Flatfield.QCMammo_lib.Mammo_QC.FindPinShift2D">[docs]</a>    <span class="k">def</span> <span class="nf">FindPinShift2D</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">,</span><span class="n">pixeldata</span><span class="p">):</span>
+<div class="viewcode-block" id="Mammo_QC.FindPinShift2D"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_Flatfield.html#Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.FindPinShift2D">[docs]</a>    <span class="k">def</span> <span class="nf">FindPinShift2D</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">,</span><span class="n">pixeldata</span><span class="p">):</span>
         <span class="n">error</span> <span class="o">=</span> <span class="bp">True</span>
 
         <span class="n">shiftxypx</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
@@ -554,7 +554,7 @@
         <span class="k">return</span> <span class="n">error</span><span class="p">,</span><span class="n">shiftxypx</span>
 
 </div>
-<div class="viewcode-block" id="Mammo_QC.Uniformity"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_Flatfield.html#Plugins.Mammo.Mammo_Flatfield.QCMammo_lib.Mammo_QC.Uniformity">[docs]</a>    <span class="k">def</span> <span class="nf">Uniformity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs_mam</span><span class="p">):</span>
+<div class="viewcode-block" id="Mammo_QC.Uniformity"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_Flatfield.html#Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.Uniformity">[docs]</a>    <span class="k">def</span> <span class="nf">Uniformity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs_mam</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Calculation of non-uniformity</span>
 
@@ -634,7 +634,7 @@
         <span class="n">error</span> <span class="o">=</span> <span class="bp">False</span>
         <span class="k">return</span> <span class="n">error</span>
 </div>
-<div class="viewcode-block" id="Mammo_QC.DoseRatio"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_Flatfield.html#Plugins.Mammo.Mammo_Flatfield.QCMammo_lib.Mammo_QC.DoseRatio">[docs]</a>    <span class="k">def</span> <span class="nf">DoseRatio</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs_mam</span><span class="p">):</span>
+<div class="viewcode-block" id="Mammo_QC.DoseRatio"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_Flatfield.html#Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.DoseRatio">[docs]</a>    <span class="k">def</span> <span class="nf">DoseRatio</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs_mam</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        New dose ratio. The idea is to produce a number that says something about the dose settings (calibration?)</span>
 <span class="sd">        without actually measuring the dose (with an external probe), which is not influenced by unimportant</span>
@@ -724,7 +724,7 @@
         <span class="k">return</span> <span class="n">error</span>
 
 <span class="c">#----------------------------------------------------------------------</span></div>
-<div class="viewcode-block" id="Mammo_QC.SplitMergeStructureDetector"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_Flatfield.html#Plugins.Mammo.Mammo_Flatfield.QCMammo_lib.Mammo_QC.SplitMergeStructureDetector">[docs]</a>    <span class="k">def</span> <span class="nf">SplitMergeStructureDetector</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">inImage</span><span class="p">,</span> <span class="n">bksigma</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span><span class="n">uiobject</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+<div class="viewcode-block" id="Mammo_QC.SplitMergeStructureDetector"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_Flatfield.html#Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.SplitMergeStructureDetector">[docs]</a>    <span class="k">def</span> <span class="nf">SplitMergeStructureDetector</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">inImage</span><span class="p">,</span> <span class="n">bksigma</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span><span class="n">uiobject</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        L50 images cause a huge memory hog.</span>
 <span class="sd">        To save some memory, the idea is to split the input image into parts,</span>
@@ -773,7 +773,7 @@
 
         <span class="k">return</span> <span class="n">result</span>
 </div>
-<div class="viewcode-block" id="Mammo_QC.StructureDetector"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_Flatfield.html#Plugins.Mammo.Mammo_Flatfield.QCMammo_lib.Mammo_QC.StructureDetector">[docs]</a>    <span class="k">def</span> <span class="nf">StructureDetector</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">inImage</span><span class="p">,</span> <span class="n">bksigma</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span><span class="n">uiobject</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+<div class="viewcode-block" id="Mammo_QC.StructureDetector"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_Flatfield.html#Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.StructureDetector">[docs]</a>    <span class="k">def</span> <span class="nf">StructureDetector</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">inImage</span><span class="p">,</span> <span class="n">bksigma</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span><span class="n">uiobject</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Code is helaas slecht leesbaar geworden, maar gebruikte teveel geheugen.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -878,7 +878,7 @@
 
         <span class="k">return</span> <span class="n">Lxx</span>
 </div>
-<div class="viewcode-block" id="Mammo_QC.LocalSNR"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_Flatfield.html#Plugins.Mammo.Mammo_Flatfield.QCMammo_lib.Mammo_QC.LocalSNR">[docs]</a>    <span class="k">def</span> <span class="nf">LocalSNR</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">pSrc</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span><span class="n">bksigma</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">uiobject</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+<div class="viewcode-block" id="Mammo_QC.LocalSNR"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_Flatfield.html#Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.LocalSNR">[docs]</a>    <span class="k">def</span> <span class="nf">LocalSNR</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">pSrc</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span><span class="n">bksigma</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">uiobject</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Local SNR: [ mean(x,y) ]/stdev(x,y)</span>
 <span class="sd">        Can be approximated as [ Gauss{I,sigma}] / sqrt[ Gauss{I-Gauss{I,sigma},sigma}^2]</span>
@@ -912,7 +912,7 @@
         <span class="k">return</span> <span class="n">locnormIm</span>
 
 <span class="c">#----------------------------------------------------------------------</span></div>
-<div class="viewcode-block" id="Mammo_QC.Artefacts"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_Flatfield.html#Plugins.Mammo.Mammo_Flatfield.QCMammo_lib.Mammo_QC.Artefacts">[docs]</a>    <span class="k">def</span> <span class="nf">Artefacts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs_mam</span><span class="p">,</span><span class="n">uiobject</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+<div class="viewcode-block" id="Mammo_QC.Artefacts"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_Flatfield.html#Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.Artefacts">[docs]</a>    <span class="k">def</span> <span class="nf">Artefacts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs_mam</span><span class="p">,</span><span class="n">uiobject</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
         <span class="n">error</span> <span class="o">=</span> <span class="bp">True</span>
         <span class="n">doUseStructureAlways</span> <span class="o">=</span> <span class="bp">False</span>
 
@@ -1078,7 +1078,7 @@
         <span class="k">return</span> <span class="n">error</span>
 
 <span class="c">#----------------------------------------------------------------------</span></div>
-<div class="viewcode-block" id="Mammo_QC.DICOMInfo"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_Flatfield.html#Plugins.Mammo.Mammo_Flatfield.QCMammo_lib.Mammo_QC.DICOMInfo">[docs]</a>    <span class="k">def</span> <span class="nf">DICOMInfo</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">,</span><span class="n">info</span><span class="o">=</span><span class="s">&#39;dicom&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="Mammo_QC.DICOMInfo"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_Flatfield.html#Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.DICOMInfo">[docs]</a>    <span class="k">def</span> <span class="nf">DICOMInfo</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">,</span><span class="n">info</span><span class="o">=</span><span class="s">&#39;dicom&#39;</span><span class="p">):</span>
         <span class="c"># Different from ImageJ version; tags &quot;0008&quot;,&quot;0104&quot; and &quot;0054&quot;,&quot;0220&quot;</span>
         <span class="c">#  appear to be part of sequences. This gives problems (cannot be found</span>
         <span class="c">#  or returning whole sequence blocks)</span>
@@ -1175,7 +1175,7 @@
 
         <span class="k">return</span> <span class="n">results</span>
 </div>
-<div class="viewcode-block" id="Mammo_QC.DetermineScannerID"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_Flatfield.html#Plugins.Mammo.Mammo_Flatfield.QCMammo_lib.Mammo_QC.DetermineScannerID">[docs]</a>    <span class="k">def</span> <span class="nf">DetermineScannerID</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">):</span>
+<div class="viewcode-block" id="Mammo_QC.DetermineScannerID"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_Flatfield.html#Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.DetermineScannerID">[docs]</a>    <span class="k">def</span> <span class="nf">DetermineScannerID</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">):</span>
         <span class="n">error</span> <span class="o">=</span> <span class="bp">True</span>
         <span class="n">cs</span><span class="o">.</span><span class="n">scannername</span> <span class="o">=</span> <span class="n">lit</span><span class="o">.</span><span class="n">stUnknown</span>
         <span class="n">dicomvalue</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">readDICOMtag</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="s">&quot;0008,1090&quot;</span><span class="p">)</span> <span class="c">#Manufacturer&#39;s Model Name</span>
@@ -1191,12 +1191,12 @@
             <span class="n">error</span> <span class="o">=</span> <span class="bp">False</span>
         <span class="k">return</span> <span class="n">error</span>
 </div>
-<div class="viewcode-block" id="Mammo_QC.drawThickCircle"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_Flatfield.html#Plugins.Mammo.Mammo_Flatfield.QCMammo_lib.Mammo_QC.drawThickCircle">[docs]</a>    <span class="k">def</span> <span class="nf">drawThickCircle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">draw</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">rad</span><span class="p">,</span><span class="n">color</span><span class="p">,</span><span class="n">thick</span><span class="p">):</span>
+<div class="viewcode-block" id="Mammo_QC.drawThickCircle"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_Flatfield.html#Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.drawThickCircle">[docs]</a>    <span class="k">def</span> <span class="nf">drawThickCircle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">draw</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">rad</span><span class="p">,</span><span class="n">color</span><span class="p">,</span><span class="n">thick</span><span class="p">):</span>
         <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">thick</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">,(</span><span class="n">thick</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">):</span>
             <span class="n">r1</span> <span class="o">=</span> <span class="n">rad</span><span class="o">+</span><span class="n">t</span>
             <span class="n">draw</span><span class="o">.</span><span class="n">ellipse</span><span class="p">((</span><span class="n">x</span><span class="o">-</span><span class="n">r1</span><span class="p">,</span><span class="n">y</span><span class="o">-</span><span class="n">r1</span><span class="p">,</span><span class="n">x</span><span class="o">+</span><span class="n">r1</span><span class="p">,</span><span class="n">y</span><span class="o">+</span><span class="n">r1</span><span class="p">),</span> <span class="n">outline</span><span class="o">=</span><span class="n">color</span><span class="p">)</span>
 </div>
-<div class="viewcode-block" id="Mammo_QC.saveAnnotatedArtefactImage"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_Flatfield.html#Plugins.Mammo.Mammo_Flatfield.QCMammo_lib.Mammo_QC.saveAnnotatedArtefactImage">[docs]</a>    <span class="k">def</span> <span class="nf">saveAnnotatedArtefactImage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">,</span><span class="n">fname</span><span class="p">):</span>
+<div class="viewcode-block" id="Mammo_QC.saveAnnotatedArtefactImage"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_Flatfield.html#Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.saveAnnotatedArtefactImage">[docs]</a>    <span class="k">def</span> <span class="nf">saveAnnotatedArtefactImage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cs</span><span class="p">,</span><span class="n">fname</span><span class="p">):</span>
         <span class="c"># make a palette, mapping intensities to greyscale</span>
         <span class="n">pal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">256</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)[:,</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span> <span class="o">*</span> \
                               <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">3</span><span class="p">,),</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)[</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,:]</span>

@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Plugins.Mammo.Mammo_Flatfield.QCMammo_wadwrapper &mdash; ..  documentation</title>
+    <title>Plugins.MG.Mammo_Flatfield.QCMammo_wadwrapper &mdash; ..  documentation</title>
     
     <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
@@ -46,7 +46,7 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <h1>Source code for Plugins.Mammo.Mammo_Flatfield.QCMammo_wadwrapper</h1><div class="highlight"><pre>
+  <h1>Source code for Plugins.MG.Mammo_Flatfield.QCMammo_wadwrapper</h1><div class="highlight"><pre>
 <span class="c"># PyWAD is open-source software and consists of a set of plugins written in python for the WAD-Software medical physics quality control software. </span>
 <span class="c"># The WAD Software can be found on https://github.com/wadqc</span>
 <span class="c"># </span>
@@ -73,14 +73,14 @@
 <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
     <span class="kn">from</span> <span class="nn">pyWADLib</span> <span class="kn">import</span> <span class="n">wadwrapper_lib</span>
 
-<div class="viewcode-block" id="logTag"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_Flatfield.html#Plugins.Mammo.Mammo_Flatfield.QCMammo_wadwrapper.logTag">[docs]</a><span class="k">def</span> <span class="nf">logTag</span><span class="p">():</span>
+<div class="viewcode-block" id="logTag"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_Flatfield.html#Plugins.MG.Mammo_Flatfield.QCMammo_wadwrapper.logTag">[docs]</a><span class="k">def</span> <span class="nf">logTag</span><span class="p">():</span>
     <span class="k">return</span> <span class="s">&quot;[QCMammo_wadwrapper] &quot;</span>
 
 <span class="c"># MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!</span>
 
 
 <span class="c">##### Series wrappers</span></div>
-<div class="viewcode-block" id="mammoqc_series"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_Flatfield.html#Plugins.Mammo.Mammo_Flatfield.QCMammo_wadwrapper.mammoqc_series">[docs]</a><span class="k">def</span> <span class="nf">mammoqc_series</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="mammoqc_series"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_Flatfield.html#Plugins.MG.Mammo_Flatfield.QCMammo_wadwrapper.mammoqc_series">[docs]</a><span class="k">def</span> <span class="nf">mammoqc_series</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    QCMammo_UMCU checks:</span>
 <span class="sd">        Uniformity (5 rois) and SNR (hologic),</span>
@@ -208,7 +208,7 @@
     <span class="n">qcmammolib</span><span class="o">.</span><span class="n">saveAnnotatedArtefactImage</span><span class="p">(</span><span class="n">cs_mam</span><span class="p">,</span><span class="n">filename</span><span class="p">)</span>
     <span class="n">results</span><span class="o">.</span><span class="n">addObject</span><span class="p">(</span><span class="s">&#39;ArtefactImage&#39;</span><span class="o">+</span><span class="n">idname</span><span class="p">,</span><span class="n">filename</span><span class="p">)</span>
 </div>
-<div class="viewcode-block" id="mammoheader_series"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_Flatfield.html#Plugins.Mammo.Mammo_Flatfield.QCMammo_wadwrapper.mammoheader_series">[docs]</a><span class="k">def</span> <span class="nf">mammoheader_series</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="n">results</span><span class="p">,</span><span class="n">params</span><span class="p">):</span>
+<div class="viewcode-block" id="mammoheader_series"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_Flatfield.html#Plugins.MG.Mammo_Flatfield.QCMammo_wadwrapper.mammoheader_series">[docs]</a><span class="k">def</span> <span class="nf">mammoheader_series</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="n">results</span><span class="p">,</span><span class="n">params</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Read selected dicomfields and write to IQC database</span>
 

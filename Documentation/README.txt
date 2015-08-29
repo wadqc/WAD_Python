@@ -5,5 +5,5 @@ make clean
 make html
 make html
 
-To view the documentation use your favorite browser to open the file
-_build/html/pywad2.html
+To view the documentation use your favorite browser to open the file:
+xdg-open _build/html/pywad2.html

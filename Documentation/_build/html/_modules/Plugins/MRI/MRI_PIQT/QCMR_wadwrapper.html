@@ -107,7 +107,7 @@
     <span class="n">idname</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
     <span class="n">error</span> <span class="o">=</span> <span class="n">qclib</span><span class="o">.</span><span class="n">DetermineScanID</span><span class="p">(</span><span class="n">cs</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">error</span> <span class="o">==</span> <span class="bp">True</span> <span class="ow">or</span> <span class="n">cs</span><span class="o">.</span><span class="n">scanID</span> <span class="o">==</span> <span class="n">lit</span><span class="o">.</span><span class="n">stUnknown</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;{} ERROR! Cannot determine MR Scan ID&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">logTag</span><span class="p">))</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;{} ERROR! Cannot determine MR Scan ID&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">logTag</span><span class="p">()))</span>
 
     <span class="c">## 2. Run tests</span>
     <span class="n">setname</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">scanID</span>
@@ -228,7 +228,7 @@
                 <span class="n">reportkeyvals</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="p">(</span><span class="s">&quot;Ver_pxl_size&quot;</span><span class="o">+</span><span class="n">idname</span><span class="p">,</span><span class="n">cs</span><span class="o">.</span><span class="n">mtf_pixelsize</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="p">)</span>
 
         <span class="k">if</span> <span class="n">error</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;{} ERROR! processing error in {} {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">logTag</span><span class="p">,</span><span class="n">piqt</span><span class="p">,</span><span class="n">doTest</span><span class="p">))</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;{} ERROR! processing error in {} {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">logTag</span><span class="p">(),</span><span class="n">piqt</span><span class="p">,</span><span class="n">doTest</span><span class="p">))</span>
 
     <span class="k">for</span> <span class="n">key</span><span class="p">,</span><span class="n">val</span> <span class="ow">in</span> <span class="n">reportkeyvals</span><span class="p">:</span>
         <span class="n">results</span><span class="o">.</span><span class="n">addFloat</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">quantity</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;_QA&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]))</span>
@@ -251,7 +251,7 @@
     <span class="n">idname</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
     <span class="n">error</span> <span class="o">=</span> <span class="n">qclib</span><span class="o">.</span><span class="n">DetermineScanID</span><span class="p">(</span><span class="n">cs</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">error</span> <span class="o">==</span> <span class="bp">True</span> <span class="ow">or</span> <span class="n">cs</span><span class="o">.</span><span class="n">scanID</span> <span class="o">==</span> <span class="n">lit</span><span class="o">.</span><span class="n">stUnknown</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;{} ERROR! Cannot determine MR Scan ID&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">logTag</span><span class="p">))</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;{} ERROR! Cannot determine MR Scan ID&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">logTag</span><span class="p">()))</span>
 
     <span class="c">## 1. Run tests</span>
     <span class="n">setname</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">scanID</span>

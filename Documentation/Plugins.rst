@@ -10,8 +10,8 @@ Subpackages
     Plugins.CT
     Plugins.Dicom
     Plugins.Fluoro
+    Plugins.MG
     Plugins.MRI
-    Plugins.Mammo
     Plugins.Monitors
     Plugins.NM
     Plugins.OCRtool

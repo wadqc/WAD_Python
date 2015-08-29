@@ -1,0 +1,442 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Plugins.MG.Mammo_Flatfield package &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">..  documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="plugins-mg-mammo-flatfield-package">
+<h1>Plugins.MG.Mammo_Flatfield package<a class="headerlink" href="#plugins-mg-mammo-flatfield-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-Plugins.MG.Mammo_Flatfield.QCMammo_constants">
+<span id="plugins-mg-mammo-flatfield-qcmammo-constants-module"></span><h2>Plugins.MG.Mammo_Flatfield.QCMammo_constants module<a class="headerlink" href="#module-Plugins.MG.Mammo_Flatfield.QCMammo_constants" title="Permalink to this headline">¶</a></h2>
+<p>String constants for usage in QCMammo</p>
+</div>
+<div class="section" id="module-Plugins.MG.Mammo_Flatfield.QCMammo_lib">
+<span id="plugins-mg-mammo-flatfield-qcmammo-lib-module"></span><h2>Plugins.MG.Mammo_Flatfield.QCMammo_lib module<a class="headerlink" href="#module-Plugins.MG.Mammo_Flatfield.QCMammo_lib" title="Permalink to this headline">¶</a></h2>
+<p>Created on Wed Oct  9 08:50:51 2014</p>
+<p>&#64;author: aschilha
+TODO:</p>
+<p>Warning: THIS MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!</p>
+<dl class="docutils">
+<dt>Changelog:</dt>
+<dd>20150522: Force scipy version at least 0.10.1 to avoid problems with PIL/Pillow mixing
+20150430: allow crash if no PIL.ImageDraw available
+20150428: prefer ImageDraw from PIL to fix error
+20150420: replaced connectedComponents with scipy&#8217;s version
+20150213: fixed missing scannername; no matplots if not in gui
+20150205: DICOMInfo according to general interface
+20141024: DoseRatio for Hologic Dimensions
+20141006: all DICOM read through wadwrapper_lib
+20140501: Annotated image downscaled since it is a jpeg anyway
+20140430: SplitMerge in two parts for L50 StructureDetector to save mem
+20140429: Always call L50 contrast; save jpg of annotated contrast; fixed roisize=0
+20140428: Also BK removal for Structure Artefact Detector; will keep both detectors Structure for L50 and SNR for Selenia; fix L50 contrast
+20140425: L50 contrast added
+20140424: New clustering, reverted artefact detection, gui visibility
+20140416: More sensitive doseratio
+20140402: Fix div zero in LocalSNR; added protocol name to dicominfo
+20140328: Compatibility with WAD; crop detection; new artefact detection
+20131011: Finished linearity
+20131010: FFU calc of rad10 and rad20 by Euclidan distance transform
+20131009: Finished SNR; finished ArtLevel; finish FloodField Uniformity</dd>
+</dl>
+<dl class="class">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct">
+<em class="property">class </em><tt class="descclassname">Plugins.MG.Mammo_Flatfield.QCMammo_lib.</tt><tt class="descname">MammoStruct</tt><big>(</big><em>dcmInfile</em>, <em>pixeldataIn</em><big>)</big><a class="reference internal" href="_modules/Plugins/MG/Mammo_Flatfield/QCMammo_lib.html#MammoStruct"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.art_borderpx">
+<tt class="descname">art_borderpx</tt><em class="property"> = -1</em><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.art_borderpx" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.art_clusters">
+<tt class="descname">art_clusters</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.art_clusters" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.art_image">
+<tt class="descname">art_image</tt><em class="property"> = None</em><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.art_image" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.art_rois">
+<tt class="descname">art_rois</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.art_rois" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.art_threshold">
+<tt class="descname">art_threshold</tt><em class="property"> = -1</em><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.art_threshold" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.contrast_mean">
+<tt class="descname">contrast_mean</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.contrast_mean" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.contrast_rois">
+<tt class="descname">contrast_rois</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.contrast_rois" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.contrast_sd">
+<tt class="descname">contrast_sd</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.contrast_sd" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.contrast_snr">
+<tt class="descname">contrast_snr</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.contrast_snr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.dcmInfile">
+<tt class="descname">dcmInfile</tt><em class="property"> = None</em><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.dcmInfile" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.doseratio">
+<tt class="descname">doseratio</tt><em class="property"> = -1</em><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.doseratio" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.expert_frac">
+<tt class="descname">expert_frac</tt><em class="property"> = -1</em><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.expert_frac" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.expert_inoutoverin">
+<tt class="descname">expert_inoutoverin</tt><em class="property"> = -1</em><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.expert_inoutoverin" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.expert_roipts">
+<tt class="descname">expert_roipts</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.expert_roipts" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.expertmode">
+<tt class="descname">expertmode</tt><em class="property"> = False</em><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.expertmode" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.filtername">
+<tt class="descname">filtername</tt><em class="property"> = 'Unknown'</em><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.filtername" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.hasmadeplots">
+<tt class="descname">hasmadeplots</tt><em class="property"> = False</em><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.hasmadeplots" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.means">
+<tt class="descname">means</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.means" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.pixeldataIn">
+<tt class="descname">pixeldataIn</tt><em class="property"> = None</em><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.pixeldataIn" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.scannername">
+<tt class="descname">scannername</tt><em class="property"> = 'Unknown'</em><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.scannername" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.snr_hol">
+<tt class="descname">snr_hol</tt><em class="property"> = -1</em><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.snr_hol" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.stdevs">
+<tt class="descname">stdevs</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.stdevs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.unif_pct">
+<tt class="descname">unif_pct</tt><em class="property"> = -1</em><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.unif_pct" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.unif_rois">
+<tt class="descname">unif_rois</tt><em class="property"> = []</em><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.unif_rois" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.verbose">
+<tt class="descname">verbose</tt><em class="property"> = False</em><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.MammoStruct.verbose" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC">
+<em class="property">class </em><tt class="descclassname">Plugins.MG.Mammo_Flatfield.QCMammo_lib.</tt><tt class="descname">Mammo_QC</tt><big>(</big><em>guimode=False</em><big>)</big><a class="reference internal" href="_modules/Plugins/MG/Mammo_Flatfield/QCMammo_lib.html#Mammo_QC"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.Artefacts">
+<tt class="descname">Artefacts</tt><big>(</big><em>cs_mam</em>, <em>uiobject=None</em><big>)</big><a class="reference internal" href="_modules/Plugins/MG/Mammo_Flatfield/QCMammo_lib.html#Mammo_QC.Artefacts"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.Artefacts" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.DICOMInfo">
+<tt class="descname">DICOMInfo</tt><big>(</big><em>cs</em>, <em>info='dicom'</em><big>)</big><a class="reference internal" href="_modules/Plugins/MG/Mammo_Flatfield/QCMammo_lib.html#Mammo_QC.DICOMInfo"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.DICOMInfo" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.DetermineScannerID">
+<tt class="descname">DetermineScannerID</tt><big>(</big><em>cs</em><big>)</big><a class="reference internal" href="_modules/Plugins/MG/Mammo_Flatfield/QCMammo_lib.html#Mammo_QC.DetermineScannerID"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.DetermineScannerID" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.DoseRatio">
+<tt class="descname">DoseRatio</tt><big>(</big><em>cs_mam</em><big>)</big><a class="reference internal" href="_modules/Plugins/MG/Mammo_Flatfield/QCMammo_lib.html#Mammo_QC.DoseRatio"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.DoseRatio" title="Permalink to this definition">¶</a></dt>
+<dd><p>New dose ratio. The idea is to produce a number that says something about the dose settings (calibration?)
+without actually measuring the dose (with an external probe), which is not influenced by unimportant
+common mistakes in producing the images (like an improper compression).
+Assume dose at detector (distance R) is constant D(R). Than the dose D(R-t) at entrance point
+of breast of compressed thickness t is D(R-t) = D(R) . [R/(R-t)]^2 . exp[mu.t]
+Next, the Dose will be scaled by uAs. This all results in something which is not entirely correct, but gives
+a good predictor of the dose settings.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.FindPinShift2D">
+<tt class="descname">FindPinShift2D</tt><big>(</big><em>cs</em>, <em>pixeldata</em><big>)</big><a class="reference internal" href="_modules/Plugins/MG/Mammo_Flatfield/QCMammo_lib.html#Mammo_QC.FindPinShift2D"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.FindPinShift2D" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.L50Contrast">
+<tt class="descname">L50Contrast</tt><big>(</big><em>cs_mam</em><big>)</big><a class="reference internal" href="_modules/Plugins/MG/Mammo_Flatfield/QCMammo_lib.html#Mammo_QC.L50Contrast"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.L50Contrast" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use the six contrast inserts of the Microdose phantom to calculate contrast</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.LocalSNR">
+<tt class="descname">LocalSNR</tt><big>(</big><em>pSrc</em>, <em>sigma</em>, <em>bksigma=None</em>, <em>uiobject=None</em><big>)</big><a class="reference internal" href="_modules/Plugins/MG/Mammo_Flatfield/QCMammo_lib.html#Mammo_QC.LocalSNR"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.LocalSNR" title="Permalink to this definition">¶</a></dt>
+<dd><p>Local SNR: [ mean(x,y) ]/stdev(x,y)
+Can be approximated as [ Gauss{I,sigma}] / sqrt[ Gauss{I-Gauss{I,sigma},sigma}^2]</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.NeedsCropping">
+<tt class="descname">NeedsCropping</tt><big>(</big><em>cs_mam</em><big>)</big><a class="reference internal" href="_modules/Plugins/MG/Mammo_Flatfield/QCMammo_lib.html#Mammo_QC.NeedsCropping"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.NeedsCropping" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simple test: If the area of the automatic ROI is too small, the wrong phantom size is used,
+so cropping must be applied. Note that this means that QC is in fact invalid, since only part
+of the detector area can be checked.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.RestrictROI">
+<tt class="descname">RestrictROI</tt><big>(</big><em>cs_mam</em><big>)</big><a class="reference internal" href="_modules/Plugins/MG/Mammo_Flatfield/QCMammo_lib.html#Mammo_QC.RestrictROI"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.RestrictROI" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.SplitMergeStructureDetector">
+<tt class="descname">SplitMergeStructureDetector</tt><big>(</big><em>inImage</em>, <em>bksigma=None</em>, <em>uiobject=None</em><big>)</big><a class="reference internal" href="_modules/Plugins/MG/Mammo_Flatfield/QCMammo_lib.html#Mammo_QC.SplitMergeStructureDetector"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.SplitMergeStructureDetector" title="Permalink to this definition">¶</a></dt>
+<dd><p>L50 images cause a huge memory hog.
+To save some memory, the idea is to split the input image into parts,
+process each part, and reassemble before return.
+Workflow:
+1. start with an empty result LIST
+2. define a part of the inImage, taking into account overlapping for blurring
+3. make a copy of that subpart of type float (inImage is explicitely expected to be INT)
+4. process that sub part without bkremoval
+5, append the processed image (with exception of overlap) to the result
+6. repeat 2-5 for all other parts
+7. convert result to np.array, do bkRemoval and return</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.StructureDetector">
+<tt class="descname">StructureDetector</tt><big>(</big><em>inImage</em>, <em>bksigma=None</em>, <em>uiobject=None</em><big>)</big><a class="reference internal" href="_modules/Plugins/MG/Mammo_Flatfield/QCMammo_lib.html#Mammo_QC.StructureDetector"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.StructureDetector" title="Permalink to this definition">¶</a></dt>
+<dd><p>Code is helaas slecht leesbaar geworden, maar gebruikte teveel geheugen.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.Uniformity">
+<tt class="descname">Uniformity</tt><big>(</big><em>cs_mam</em><big>)</big><a class="reference internal" href="_modules/Plugins/MG/Mammo_Flatfield/QCMammo_lib.html#Mammo_QC.Uniformity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.Uniformity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculation of non-uniformity</p>
+<p>Defined in EUREF_DMWG_Protocol_2003 as max deviation between avg pix value in five ROIs</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.drawThickCircle">
+<tt class="descname">drawThickCircle</tt><big>(</big><em>draw</em>, <em>x</em>, <em>y</em>, <em>rad</em>, <em>color</em>, <em>thick</em><big>)</big><a class="reference internal" href="_modules/Plugins/MG/Mammo_Flatfield/QCMammo_lib.html#Mammo_QC.drawThickCircle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.drawThickCircle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.otsu">
+<tt class="descname">otsu</tt><big>(</big><em>hist</em>, <em>bins</em><big>)</big><a class="reference internal" href="_modules/Plugins/MG/Mammo_Flatfield/QCMammo_lib.html#Mammo_QC.otsu"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.otsu" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.pixDim">
+<tt class="descname">pixDim</tt><big>(</big><em>dcmInfile</em>, <em>axis=0</em><big>)</big><a class="reference internal" href="_modules/Plugins/MG/Mammo_Flatfield/QCMammo_lib.html#Mammo_QC.pixDim"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.pixDim" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.qcversion">
+<tt class="descname">qcversion</tt><em class="property"> = 20150522</em><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.qcversion" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.readDICOMtag">
+<tt class="descname">readDICOMtag</tt><big>(</big><em>cs_mam</em>, <em>key</em>, <em>imslice=0</em><big>)</big><a class="reference internal" href="_modules/Plugins/MG/Mammo_Flatfield/QCMammo_lib.html#Mammo_QC.readDICOMtag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.readDICOMtag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.saveAnnotatedArtefactImage">
+<tt class="descname">saveAnnotatedArtefactImage</tt><big>(</big><em>cs</em>, <em>fname</em><big>)</big><a class="reference internal" href="_modules/Plugins/MG/Mammo_Flatfield/QCMammo_lib.html#Mammo_QC.saveAnnotatedArtefactImage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_lib.Mammo_QC.saveAnnotatedArtefactImage" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-Plugins.MG.Mammo_Flatfield.QCMammo_wadwrapper">
+<span id="plugins-mg-mammo-flatfield-qcmammo-wadwrapper-module"></span><h2>Plugins.MG.Mammo_Flatfield.QCMammo_wadwrapper module<a class="headerlink" href="#module-Plugins.MG.Mammo_Flatfield.QCMammo_wadwrapper" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_wadwrapper.logTag">
+<tt class="descclassname">Plugins.MG.Mammo_Flatfield.QCMammo_wadwrapper.</tt><tt class="descname">logTag</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Plugins/MG/Mammo_Flatfield/QCMammo_wadwrapper.html#logTag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_wadwrapper.logTag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_wadwrapper.mammoheader_series">
+<tt class="descclassname">Plugins.MG.Mammo_Flatfield.QCMammo_wadwrapper.</tt><tt class="descname">mammoheader_series</tt><big>(</big><em>data</em>, <em>results</em>, <em>params</em><big>)</big><a class="reference internal" href="_modules/Plugins/MG/Mammo_Flatfield/QCMammo_wadwrapper.html#mammoheader_series"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_wadwrapper.mammoheader_series" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read selected dicomfields and write to IQC database</p>
+<dl class="docutils">
+<dt>Workflow:</dt>
+<dd><ol class="first last arabic simple">
+<li>Run tests</li>
+<li>Build xml output</li>
+</ol>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="Plugins.MG.Mammo_Flatfield.QCMammo_wadwrapper.mammoqc_series">
+<tt class="descclassname">Plugins.MG.Mammo_Flatfield.QCMammo_wadwrapper.</tt><tt class="descname">mammoqc_series</tt><big>(</big><em>data</em>, <em>results</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/Plugins/MG/Mammo_Flatfield/QCMammo_wadwrapper.html#mammoqc_series"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.MG.Mammo_Flatfield.QCMammo_wadwrapper.mammoqc_series" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>QCMammo_UMCU checks:</dt>
+<dd>Uniformity (5 rois) and SNR (hologic),
+DoseRatio (empirical/calculated from DICOM)
+Artefacts (spots, dead pixels)</dd>
+<dt>Workflow:</dt>
+<dd><ol class="first last arabic simple" start="2">
+<li>Check data format</li>
+<li>Build and populate qcstructure</li>
+<li>Run tests</li>
+<li>Build xml output</li>
+<li>Build artefact picture thumbnail</li>
+</ol>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-Plugins.MG.Mammo_Flatfield">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-Plugins.MG.Mammo_Flatfield" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Plugins.MG.Mammo_Flatfield package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-Plugins.MG.Mammo_Flatfield.QCMammo_constants">Plugins.MG.Mammo_Flatfield.QCMammo_constants module</a></li>
+<li><a class="reference internal" href="#module-Plugins.MG.Mammo_Flatfield.QCMammo_lib">Plugins.MG.Mammo_Flatfield.QCMammo_lib module</a></li>
+<li><a class="reference internal" href="#module-Plugins.MG.Mammo_Flatfield.QCMammo_wadwrapper">Plugins.MG.Mammo_Flatfield.QCMammo_wadwrapper module</a></li>
+<li><a class="reference internal" href="#module-Plugins.MG.Mammo_Flatfield">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/Plugins.MG.Mammo_Flatfield.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">..  documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

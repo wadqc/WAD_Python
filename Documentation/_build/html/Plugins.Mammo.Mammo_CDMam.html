@@ -72,18 +72,18 @@ Warning: THIS MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!</p>
 </dl>
 <dl class="class">
 <dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam">
-<em class="property">class </em><tt class="descclassname">Plugins.Mammo.Mammo_CDMam.CDMam_lib.</tt><tt class="descname">CDMam</tt><big>(</big><em>guimode=False</em><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_lib.html#CDMam"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">Plugins.Mammo.Mammo_CDMam.CDMam_lib.</tt><tt class="descname">CDMam</tt><big>(</big><em>guimode=False</em><big>)</big><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam" title="Permalink to this definition">¶</a></dt>
 <dd><p>Class for calculation of CDMAM score</p>
 <dl class="method">
 <dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.AlignROI">
-<tt class="descname">AlignROI</tt><big>(</big><em>cs</em>, <em>roipts</em>, <em>distmm=5</em><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_lib.html#CDMam.AlignROI"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.AlignROI" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">AlignROI</tt><big>(</big><em>cs</em>, <em>roipts</em>, <em>distmm=5</em><big>)</big><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.AlignROI" title="Permalink to this definition">¶</a></dt>
 <dd><p>Moves the four cornerpoints of a ROI to the most likely crossing in the gridimage, within &lt;distmm&gt; distance from the starting point.
 Returns four adjusted cornerpoints.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.CDCOMSingle">
-<tt class="descname">CDCOMSingle</tt><big>(</big><em>cs</em><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_lib.html#CDMam.CDCOMSingle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.CDCOMSingle" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">CDCOMSingle</tt><big>(</big><em>cs</em><big>)</big><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.CDCOMSingle" title="Permalink to this definition">¶</a></dt>
 <dd><p>run cdcom.exe on given file
 input matrix.inp and matrix2.inp, and average
 (matrix2.inp should be matrix.inp after plain_nnc; avg shouldbe matrix.inp after my ncc, but this is not the case)
@@ -93,7 +93,7 @@ calc threshold thickness</p>
 
 <dl class="method">
 <dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.CDMamSingle">
-<tt class="descname">CDMamSingle</tt><big>(</big><em>cs</em><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_lib.html#CDMam.CDMamSingle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.CDMamSingle" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">CDMamSingle</tt><big>(</big><em>cs</em><big>)</big><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.CDMamSingle" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculate score for one CDMam image
 WorkFlow:
 1. Extract grid from image (will be used to define regions of interest for observer)
@@ -104,27 +104,27 @@ WorkFlow:
 
 <dl class="method">
 <dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.DICOMInfo">
-<tt class="descname">DICOMInfo</tt><big>(</big><em>cs</em>, <em>info='dicom'</em><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_lib.html#CDMam.DICOMInfo"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.DICOMInfo" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">DICOMInfo</tt><big>(</big><em>cs</em>, <em>info='dicom'</em><big>)</big><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.DICOMInfo" title="Permalink to this definition">¶</a></dt>
 <dd><p>Extract some info from the DICOM header. &lt;info&gt; is either &#8216;dicom&#8217; (extensive list) or &#8216;qc&#8217; (short list).
 Returns list of &lt;tag description&gt;,&lt;tag value&gt;</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.detectVarGauss">
-<tt class="descname">detectVarGauss</tt><big>(</big><em>cs</em>, <em>di</em>, <em>th</em><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_lib.html#CDMam.detectVarGauss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.detectVarGauss" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">detectVarGauss</tt><big>(</big><em>cs</em>, <em>di</em>, <em>th</em><big>)</big><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.detectVarGauss" title="Permalink to this definition">¶</a></dt>
 <dd><p>Blur with Gaussian of sigma matched to diameter of disc == averaging over disc size
 Detect max response within search radius around expected location</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.determineScannerID">
-<tt class="descname">determineScannerID</tt><big>(</big><em>cs</em><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_lib.html#CDMam.determineScannerID"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.determineScannerID" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">determineScannerID</tt><big>(</big><em>cs</em><big>)</big><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.determineScannerID" title="Permalink to this definition">¶</a></dt>
 <dd><p>Tries to identify machine model, used filter, and energy presentation</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.findStartingCell">
-<tt class="descname">findStartingCell</tt><big>(</big><em>cs</em><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_lib.html#CDMam.findStartingCell"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.findStartingCell" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">findStartingCell</tt><big>(</big><em>cs</em><big>)</big><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.findStartingCell" title="Permalink to this definition">¶</a></dt>
 <dd><p>Find first gridcell for gridcell locating.
 Required:</p>
 <blockquote>
@@ -147,7 +147,7 @@ Required:</p>
 
 <dl class="method">
 <dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.locateGridCells">
-<tt class="descname">locateGridCells</tt><big>(</big><em>cs</em><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_lib.html#CDMam.locateGridCells"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.locateGridCells" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">locateGridCells</tt><big>(</big><em>cs</em><big>)</big><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.locateGridCells" title="Permalink to this definition">¶</a></dt>
 <dd><p>Starting from one a given box, locate all gridcells, using the previous one as a starting point.
 This way local deformations will not lead to mismatches further away/
 Returns a matrix or roicornerpoints in cs.gridrois</p>
@@ -155,7 +155,7 @@ Returns a matrix or roicornerpoints in cs.gridrois</p>
 
 <dl class="method">
 <dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.nearestNeighborCorrection">
-<tt class="descname">nearestNeighborCorrection</tt><big>(</big><em>cs</em>, <em>scorematrix</em><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_lib.html#CDMam.nearestNeighborCorrection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.nearestNeighborCorrection" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">nearestNeighborCorrection</tt><big>(</big><em>cs</em>, <em>scorematrix</em><big>)</big><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.nearestNeighborCorrection" title="Permalink to this definition">¶</a></dt>
 <dd><p>Nearest Neighbor Correction.
 From the CDMAM manual:</p>
 <blockquote>
@@ -171,7 +171,7 @@ From the CDMAM manual:</p>
 
 <dl class="method">
 <dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.observerScore">
-<tt class="descname">observerScore</tt><big>(</big><em>cs</em><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_lib.html#CDMam.observerScore"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.observerScore" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">observerScore</tt><big>(</big><em>cs</em><big>)</big><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.observerScore" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculate score of model observer:
 Workflow:</p>
 <blockquote>
@@ -184,7 +184,7 @@ Workflow:</p>
 
 <dl class="method">
 <dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.pixDim">
-<tt class="descname">pixDim</tt><big>(</big><em>cs</em><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_lib.html#CDMam.pixDim"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.pixDim" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">pixDim</tt><big>(</big><em>cs</em><big>)</big><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.pixDim" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
@@ -194,13 +194,13 @@ Workflow:</p>
 
 <dl class="method">
 <dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.removeGrid">
-<tt class="descname">removeGrid</tt><big>(</big><em>cs</em>, <em>removeGrid</em><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_lib.html#CDMam.removeGrid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.removeGrid" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">removeGrid</tt><big>(</big><em>cs</em>, <em>removeGrid</em><big>)</big><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.removeGrid" title="Permalink to this definition">¶</a></dt>
 <dd><p>Detect the grid of the phantom and remove it from the image</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.thresholdThickness">
-<tt class="descname">thresholdThickness</tt><big>(</big><em>cs</em>, <em>hitmatrix</em><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_lib.html#CDMam.thresholdThickness"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.thresholdThickness" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">thresholdThickness</tt><big>(</big><em>cs</em>, <em>hitmatrix</em><big>)</big><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMam.thresholdThickness" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculation of threshold thickness</p>
 </dd></dl>
 
@@ -208,7 +208,7 @@ Workflow:</p>
 
 <dl class="class">
 <dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMamPhantom">
-<em class="property">class </em><tt class="descclassname">Plugins.Mammo.Mammo_CDMam.CDMam_lib.</tt><tt class="descname">CDMamPhantom</tt><big>(</big><em>version</em><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_lib.html#CDMamPhantom"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMamPhantom" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">Plugins.Mammo.Mammo_CDMam.CDMam_lib.</tt><tt class="descname">CDMamPhantom</tt><big>(</big><em>version</em><big>)</big><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMamPhantom" title="Permalink to this definition">¶</a></dt>
 <dd><p>Description of the CDMAM Phantom. For now version 3.2 and 3.4 are implemented</p>
 <dl class="attribute">
 <dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMamPhantom.diameter_mm">
@@ -244,7 +244,7 @@ Workflow:</p>
 
 <dl class="class">
 <dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMamStruct">
-<em class="property">class </em><tt class="descclassname">Plugins.Mammo.Mammo_CDMam.CDMam_lib.</tt><tt class="descname">CDMamStruct</tt><big>(</big><em>dcmInfile</em>, <em>pixeldataIn</em>, <em>phantomversion</em><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_lib.html#CDMamStruct"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMamStruct" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">Plugins.Mammo.Mammo_CDMam.CDMam_lib.</tt><tt class="descname">CDMamStruct</tt><big>(</big><em>dcmInfile</em>, <em>pixeldataIn</em>, <em>phantomversion</em><big>)</big><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMamStruct" title="Permalink to this definition">¶</a></dt>
 <dd><p>Class holding all information for IO between gui and Lib</p>
 <dl class="attribute">
 <dt id="Plugins.Mammo.Mammo_CDMam.CDMam_lib.CDMamStruct.dcmInfile">
@@ -278,7 +278,7 @@ Workflow:</p>
 <span id="plugins-mammo-mammo-cdmam-cdmam-wadwrapper-module"></span><h2>Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper module<a class="headerlink" href="#module-Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper" title="Permalink to this headline">¶</a></h2>
 <dl class="function">
 <dt id="Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.cdmamheader_series">
-<tt class="descclassname">Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.</tt><tt class="descname">cdmamheader_series</tt><big>(</big><em>data</em>, <em>results</em>, <em>params</em><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_wadwrapper.html#cdmamheader_series"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.cdmamheader_series" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.</tt><tt class="descname">cdmamheader_series</tt><big>(</big><em>data</em>, <em>results</em>, <em>params</em><big>)</big><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.cdmamheader_series" title="Permalink to this definition">¶</a></dt>
 <dd><p>Read selected dicomfields and write to IQC database</p>
 <dl class="docutils">
 <dt>Workflow:</dt>
@@ -295,13 +295,13 @@ Workflow:</p>
 
 <dl class="function">
 <dt id="Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.cdmamqc_list">
-<tt class="descclassname">Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.</tt><tt class="descname">cdmamqc_list</tt><big>(</big><em>data</em>, <em>results</em>, <em>params</em><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_wadwrapper.html#cdmamqc_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.cdmamqc_list" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.</tt><tt class="descname">cdmamqc_list</tt><big>(</big><em>data</em>, <em>results</em>, <em>params</em><big>)</big><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.cdmamqc_list" title="Permalink to this definition">¶</a></dt>
 <dd><p>CDMAM analysis for a list of images (as should be!) see cdmamqc_series for more information</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.cdmamqc_series">
-<tt class="descclassname">Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.</tt><tt class="descname">cdmamqc_series</tt><big>(</big><em>data</em>, <em>results</em>, <em>params</em><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_wadwrapper.html#cdmamqc_series"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.cdmamqc_series" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.</tt><tt class="descname">cdmamqc_series</tt><big>(</big><em>data</em>, <em>results</em>, <em>params</em><big>)</big><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.cdmamqc_series" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="docutils">
 <dt>CDMAM analysis:</dt>
 <dd><p class="first">Use a model observer to detect location of gold disc, for different thicknesses and diameters of the disc.
@@ -332,7 +332,7 @@ NOTE: CDMAM analysis should be performed on 10-16 slightly shifted images to get
 
 <dl class="function">
 <dt id="Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.cdmamsetup_series">
-<tt class="descclassname">Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.</tt><tt class="descname">cdmamsetup_series</tt><big>(</big><em>inputfile</em>, <em>params</em>, <em>headers_only</em><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_wadwrapper.html#cdmamsetup_series"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.cdmamsetup_series" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.</tt><tt class="descname">cdmamsetup_series</tt><big>(</big><em>inputfile</em>, <em>params</em>, <em>headers_only</em><big>)</big><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.cdmamsetup_series" title="Permalink to this definition">¶</a></dt>
 <dd><p>Shared routine to set runtime parameters and build structure
 Workflow:</p>
 <blockquote>
@@ -346,13 +346,13 @@ Workflow:</p>
 
 <dl class="function">
 <dt id="Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.identifyName">
-<tt class="descclassname">Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.</tt><tt class="descname">identifyName</tt><big>(</big><em>cs</em><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_wadwrapper.html#identifyName"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.identifyName" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.</tt><tt class="descname">identifyName</tt><big>(</big><em>cs</em><big>)</big><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.identifyName" title="Permalink to this definition">¶</a></dt>
 <dd><p>Come up with a simple identification tag</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.logTag">
-<tt class="descclassname">Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.</tt><tt class="descname">logTag</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/Plugins/Mammo/Mammo_CDMam/CDMam_wadwrapper.html#logTag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.logTag" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.</tt><tt class="descname">logTag</tt><big>(</big><big>)</big><a class="headerlink" href="#Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.logTag" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </div>

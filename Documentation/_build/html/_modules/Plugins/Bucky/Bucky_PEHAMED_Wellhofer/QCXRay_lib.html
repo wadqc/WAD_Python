@@ -53,6 +53,7 @@
 
 <span class="sd">TODO:</span>
 <span class="sd">Changelog:</span>
+<span class="sd">    20150817: Removed hardcoded roomdefinitions. All in config files now!</span>
 <span class="sd">    20150618: Tried DDL version of fftorientation, but that performs worse here. Left interface intact</span>
 <span class="sd">    20150610: Bugfix: uniformity was calculated over copper only, instead of non-copper!; moved some math to wadwrapper_lib</span>
 <span class="sd">    20150522: Force scipy version at least 0.10.1 to avoid problems with PIL/Pillow mixing</span>
@@ -91,54 +92,67 @@
 <span class="k">if</span> <span class="n">scipy_version</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">&lt;</span><span class="mi">10</span> <span class="ow">or</span> <span class="p">(</span><span class="n">scipy_version</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">10</span> <span class="ow">and</span> <span class="n">scipy_version</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">&lt;</span><span class="mi">1</span><span class="p">):</span>
     <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s">&quot;scipy version too old. Upgrade scipy to at least 0.10.1&quot;</span><span class="p">)</span>
 
+<div class="viewcode-block" id="Room"><a class="viewcode-back" href="../../../../Plugins.Bucky.Bucky_PEHAMED_Wellhofer.html#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.Room">[docs]</a><span class="k">class</span> <span class="nc">Room</span> <span class="p">:</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>     <span class="c"># identifier of room</span>
+    <span class="n">outvalue</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span> <span class="c"># value of pixels outside x-ray field</span>
+    <span class="n">pidtablemm</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>    <span class="c"># distance between mid phantom and detector in mm</span>
+    <span class="n">pidwallmm</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="n">sidtablemm</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="n">sidwallmm</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="n">phantom</span> <span class="o">=</span> <span class="n">lit</span><span class="o">.</span><span class="n">stPehamed</span>
+    <span class="n">skipFFT</span> <span class="o">=</span> <span class="bp">False</span> <span class="c"># only for wellhofer</span>
+    <span class="n">sdthresh</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span> <span class="c"># threshold on stdev for determin table or wall, now only for CALHOS, maybe WKZ?</span>
+    <span class="n">sens_threshold</span> <span class="o">=</span> <span class="p">[]</span> <span class="c"># list of (date,sensitivity) describing from dates and max threshold on sensitivity for table</span>
+
+    <span class="n">xy06mm</span> <span class="o">=</span> <span class="p">[]</span> <span class="c"># x,y position in mm of decimal dot in 0.6 lp/mm </span>
+    <span class="n">xy14mm</span> <span class="o">=</span> <span class="p">[]</span> <span class="c"># x,y position in mm of decimal dot in 1.4 lp/mm </span>
+    <span class="n">xy18mm</span> <span class="o">=</span> <span class="p">[]</span> <span class="c"># x,y position in mm of decimal dot in 1.8 lp/mm </span>
+    <span class="n">xy46mm</span> <span class="o">=</span> <span class="p">[]</span> <span class="c"># x,y position in mm of decimal dot in 4.6 lp/mm </span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span> <span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">_name</span><span class="p">,</span> <span class="n">outvalue</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">tablesid</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">wallsid</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">tablepid</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">wallpid</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+                  <span class="n">phantom</span><span class="o">=</span><span class="n">lit</span><span class="o">.</span><span class="n">stPehamed</span><span class="p">,</span><span class="n">sdthresh</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span><span class="n">sens_threshold</span> <span class="o">=</span> <span class="p">[],</span>
+                  <span class="n">linepairmarkers</span> <span class="o">=</span> <span class="p">{}):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">outvalue</span> <span class="o">=</span> <span class="n">outvalue</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pidtablemm</span> <span class="o">=</span> <span class="n">tablepid</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pidwallmm</span>  <span class="o">=</span> <span class="n">wallpid</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sidtablemm</span> <span class="o">=</span> <span class="n">tablesid</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sidwallmm</span> <span class="o">=</span> <span class="n">wallsid</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">phantom</span> <span class="o">=</span> <span class="n">phantom</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sdthresh</span> <span class="o">=</span> <span class="n">sdthresh</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sens_threshold</span> <span class="o">=</span> <span class="n">sens_threshold</span>
+        <span class="k">if</span><span class="p">(</span><span class="n">phantom</span> <span class="o">==</span> <span class="n">lit</span><span class="o">.</span><span class="n">stWellhofer</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">skipFFT</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">linepairmarkers</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">xy06mm</span> <span class="o">=</span> <span class="n">linepairmarkers</span><span class="p">[</span><span class="s">&#39;mm0.6&#39;</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">xy14mm</span> <span class="o">=</span> <span class="n">linepairmarkers</span><span class="p">[</span><span class="s">&#39;mm1.4&#39;</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">xy18mm</span> <span class="o">=</span> <span class="n">linepairmarkers</span><span class="p">[</span><span class="s">&#39;mm1.8&#39;</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">xy46mm</span> <span class="o">=</span> <span class="n">linepairmarkers</span><span class="p">[</span><span class="s">&#39;mm4.6&#39;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">phantom</span> <span class="o">==</span> <span class="n">lit</span><span class="o">.</span><span class="n">stWellhofer</span><span class="p">:</span>
+            <span class="c"># wellhofer WKZ</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">xy18mm</span> <span class="o">=</span> <span class="p">[</span><span class="mf">53.7</span><span class="p">,</span> <span class="mf">27.1</span><span class="p">]</span> <span class="c"># x,y position in mm of decimal dot in 1.8 lp/mm </span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">xy06mm</span> <span class="o">=</span> <span class="p">[</span><span class="mf">80.6</span><span class="p">,</span><span class="o">-</span><span class="mf">04.7</span><span class="p">]</span> <span class="c"># x,y position in mm of decimal dot in 0.6 lp/mm </span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">xy14mm</span> <span class="o">=</span> <span class="p">[</span><span class="mf">59.9</span><span class="p">,</span><span class="o">-</span><span class="mf">24.9</span><span class="p">]</span> <span class="c"># x,y position in mm of decimal dot in 1.4 lp/mm </span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">xy46mm</span> <span class="o">=</span> <span class="p">[</span><span class="mf">28.4</span><span class="p">,</span> <span class="mf">01.8</span><span class="p">]</span> <span class="c"># x,y position in mm of decimal dot in 4.6 lp/mm </span>
+        <span class="k">else</span><span class="p">:</span> <span class="c"># pehamed phantom nr 100876</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">xy18mm</span> <span class="o">=</span> <span class="p">[</span><span class="mf">53.1</span><span class="p">,</span> <span class="mf">27.1</span><span class="p">]</span> <span class="c"># x,y position in mm of decimal dot in 1.8 lp/mm </span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">xy06mm</span> <span class="o">=</span> <span class="p">[</span><span class="mf">80.1</span><span class="p">,</span><span class="o">-</span><span class="mf">04.5</span><span class="p">]</span> <span class="c"># x,y position in mm of decimal dot in 0.6 lp/mm </span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">xy14mm</span> <span class="o">=</span> <span class="p">[</span><span class="mf">59.4</span><span class="p">,</span><span class="o">-</span><span class="mf">24.7</span><span class="p">]</span> <span class="c"># x,y position in mm of decimal dot in 1.4 lp/mm </span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">xy46mm</span> <span class="o">=</span> <span class="p">[</span><span class="mf">28.0</span><span class="p">,</span> <span class="mf">02.0</span><span class="p">]</span> <span class="c"># x,y position in mm of decimal dot in 4.6 lp/mm </span>
+        
+<div class="viewcode-block" id="Room.setPIDs"><a class="viewcode-back" href="../../../../Plugins.Bucky.Bucky_PEHAMED_Wellhofer.html#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.Room.setPIDs">[docs]</a>    <span class="k">def</span> <span class="nf">setPIDs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">_pidtable</span><span class="p">,</span> <span class="n">_pidwall</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pidtablemm</span> <span class="o">=</span> <span class="n">_pidtable</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pidwallmm</span> <span class="o">=</span> <span class="n">_pidwall</span></div>
+<div class="viewcode-block" id="Room.setSIDS"><a class="viewcode-back" href="../../../../Plugins.Bucky.Bucky_PEHAMED_Wellhofer.html#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.Room.setSIDS">[docs]</a>    <span class="k">def</span> <span class="nf">setSIDS</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">_sidtable</span><span class="p">,</span> <span class="n">_sidwall</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sidtablemm</span> <span class="o">=</span> <span class="n">_sidtable</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sidwallmm</span> <span class="o">=</span> <span class="n">_sidwall</span>
+</div></div>
 <div class="viewcode-block" id="XRayStruct"><a class="viewcode-back" href="../../../../Plugins.Bucky.Bucky_PEHAMED_Wellhofer.html#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct">[docs]</a><span class="k">class</span> <span class="nc">XRayStruct</span><span class="p">:</span>
     <span class="n">verbose</span> <span class="o">=</span> <span class="bp">False</span>
     <span class="n">knownTableOrWall</span> <span class="o">=</span> <span class="bp">None</span>
 
-<div class="viewcode-block" id="XRayStruct.Room"><a class="viewcode-back" href="../../../../Plugins.Bucky.Bucky_PEHAMED_Wellhofer.html#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.Room">[docs]</a>    <span class="k">class</span> <span class="nc">Room</span> <span class="p">:</span>
-        <span class="n">name</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>     <span class="c"># identifier of room</span>
-        <span class="n">outvalue</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span> <span class="c"># value of pixels outside x-ray field</span>
-        <span class="n">pidtablemm</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>    <span class="c"># distance between mid phantom and detector in mm</span>
-        <span class="n">pidwallmm</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
-        <span class="n">sidtablemm</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
-        <span class="n">sidwallmm</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
-        <span class="n">phantom</span> <span class="o">=</span> <span class="n">lit</span><span class="o">.</span><span class="n">stPehamed</span>
-        <span class="n">skipFFT</span> <span class="o">=</span> <span class="bp">False</span> <span class="c"># only for wellhofer</span>
-        <span class="n">sdthresh</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span> <span class="c"># threshold on stdev for determin table or wall, now only for CALHOS, maybe WKZ?</span>
-        <span class="k">def</span> <span class="nf">__init__</span> <span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">_name</span><span class="p">,</span> <span class="n">outvalue</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">tablesid</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">wallsid</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">tablepid</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">wallpid</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span><span class="n">phantom</span><span class="o">=</span><span class="n">lit</span><span class="o">.</span><span class="n">stPehamed</span><span class="p">,</span><span class="n">sdthresh</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">_name</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">outvalue</span> <span class="o">=</span> <span class="n">outvalue</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">pidtablemm</span> <span class="o">=</span> <span class="n">tablepid</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">pidwallmm</span>  <span class="o">=</span> <span class="n">wallpid</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">sidtablemm</span> <span class="o">=</span> <span class="n">tablesid</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">sidwallmm</span> <span class="o">=</span> <span class="n">wallsid</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">phantom</span> <span class="o">=</span> <span class="n">phantom</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">sdthresh</span> <span class="o">=</span> <span class="n">sdthresh</span>
-            <span class="k">if</span><span class="p">(</span><span class="n">phantom</span> <span class="o">==</span> <span class="n">lit</span><span class="o">.</span><span class="n">stWellhofer</span><span class="p">):</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">skipFFT</span> <span class="o">=</span> <span class="bp">True</span>
-<div class="viewcode-block" id="XRayStruct.Room.setPIDs"><a class="viewcode-back" href="../../../../Plugins.Bucky.Bucky_PEHAMED_Wellhofer.html#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.Room.setPIDs">[docs]</a>        <span class="k">def</span> <span class="nf">setPIDs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">_pidtable</span><span class="p">,</span> <span class="n">_pidwall</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">pidtablemm</span> <span class="o">=</span> <span class="n">_pidtable</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">pidwallmm</span> <span class="o">=</span> <span class="n">_pidwall</span></div>
-<div class="viewcode-block" id="XRayStruct.Room.setSIDS"><a class="viewcode-back" href="../../../../Plugins.Bucky.Bucky_PEHAMED_Wellhofer.html#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.Room.setSIDS">[docs]</a>        <span class="k">def</span> <span class="nf">setSIDS</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">_sidtable</span><span class="p">,</span> <span class="n">_sidwall</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">sidtablemm</span> <span class="o">=</span> <span class="n">_sidtable</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">sidwallmm</span> <span class="o">=</span> <span class="n">_sidwall</span>
-
-    <span class="c"># room names</span>
-    <span class="c">#    roomWKZ1 = Room(&quot;WKZ1&quot;,outvalue=1023,tablesid=1150,wallsid=2000, tablepid=60, wallpid=45,phantom=&quot;wellhofer&quot;)</span>
-    <span class="c"># wkz tablepid=30 from fit</span></div></div>
-    <span class="n">roomWKZ1</span> <span class="o">=</span> <span class="n">Room</span><span class="p">(</span><span class="s">&quot;WKZ1&quot;</span><span class="p">,</span><span class="n">outvalue</span><span class="o">=</span><span class="mi">1023</span><span class="p">,</span><span class="n">tablesid</span><span class="o">=</span><span class="mi">1150</span><span class="p">,</span><span class="n">wallsid</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span> <span class="n">tablepid</span><span class="o">=</span><span class="mi">65</span><span class="p">,</span> <span class="n">wallpid</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span><span class="n">phantom</span><span class="o">=</span><span class="n">lit</span><span class="o">.</span><span class="n">stWellhofer</span><span class="p">)</span>
-    <span class="n">roomWKZ2</span> <span class="o">=</span> <span class="n">Room</span><span class="p">(</span><span class="s">&quot;WKZ2&quot;</span><span class="p">,</span><span class="mi">1023</span><span class="p">,</span><span class="mi">1150</span><span class="p">,</span><span class="mi">2000</span><span class="p">,</span> <span class="mi">65</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span><span class="n">lit</span><span class="o">.</span><span class="n">stWellhofer</span><span class="p">)</span>
-    <span class="n">roomF10</span> <span class="o">=</span> <span class="n">Room</span><span class="p">(</span><span class="s">&quot;F10&quot;</span><span class="p">,</span> <span class="n">tablepid</span><span class="o">=</span><span class="mi">85</span><span class="p">,</span><span class="n">wallpid</span><span class="o">=</span><span class="mi">65</span><span class="p">)</span>
-    <span class="n">roomF11a</span> <span class="o">=</span> <span class="n">Room</span><span class="p">(</span><span class="s">&quot;F11a&quot;</span><span class="p">,</span> <span class="n">tablepid</span><span class="o">=</span><span class="mi">85</span><span class="p">,</span><span class="n">wallpid</span><span class="o">=</span><span class="mi">65</span><span class="p">)</span>
-    <span class="n">roomF11b</span> <span class="o">=</span> <span class="n">Room</span><span class="p">(</span><span class="s">&quot;F11b&quot;</span><span class="p">,</span> <span class="n">tablepid</span><span class="o">=</span><span class="mi">85</span><span class="p">,</span><span class="n">wallpid</span><span class="o">=</span><span class="mi">65</span><span class="p">)</span>
-    <span class="n">roomTrauma1</span> <span class="o">=</span> <span class="n">Room</span><span class="p">(</span><span class="s">&quot;Trauma1&quot;</span><span class="p">,</span> <span class="n">tablepid</span><span class="o">=</span><span class="mi">85</span><span class="p">,</span><span class="n">wallpid</span><span class="o">=</span><span class="mi">65</span><span class="p">)</span>
-    <span class="n">roomTrauma2</span> <span class="o">=</span> <span class="n">Room</span><span class="p">(</span><span class="s">&quot;Trauma2&quot;</span><span class="p">,</span> <span class="n">tablepid</span><span class="o">=</span><span class="mi">85</span><span class="p">,</span><span class="n">wallpid</span><span class="o">=</span><span class="mi">65</span><span class="p">)</span><span class="c">#AAAAA</span>
-    <span class="n">roomDRX1118</span> <span class="o">=</span> <span class="n">Room</span><span class="p">(</span><span class="s">&quot;DRX1118&quot;</span><span class="p">,</span><span class="mi">1250</span><span class="p">,</span><span class="mi">1100</span><span class="p">,</span><span class="mi">1100</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
-    <span class="n">roomDRX1119</span> <span class="o">=</span> <span class="n">Room</span><span class="p">(</span><span class="s">&quot;DRX1119&quot;</span><span class="p">,</span><span class="mi">1250</span><span class="p">,</span><span class="mi">1100</span><span class="p">,</span><span class="mi">1100</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
-    <span class="n">roomCMH</span> <span class="o">=</span> <span class="n">Room</span><span class="p">(</span><span class="s">&quot;CMH&quot;</span><span class="p">,</span> <span class="n">outvalue</span><span class="o">=</span><span class="mi">3499</span><span class="p">,</span><span class="n">tablepid</span><span class="o">=</span><span class="mi">85</span><span class="p">,</span><span class="n">wallpid</span><span class="o">=</span><span class="mi">85</span><span class="p">)</span>
-    <span class="n">roomCALHOS1</span> <span class="o">=</span> <span class="n">Room</span><span class="p">(</span><span class="s">&quot;CALHOS1&quot;</span><span class="p">,</span> <span class="n">outvalue</span><span class="o">=</span><span class="mi">1023</span><span class="p">,</span><span class="n">tablesid</span><span class="o">=</span><span class="mi">1100</span><span class="p">,</span><span class="n">wallsid</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span><span class="n">tablepid</span><span class="o">=</span><span class="mi">77</span><span class="p">,</span><span class="n">wallpid</span><span class="o">=</span><span class="mi">57</span><span class="p">,</span><span class="n">sdthresh</span><span class="o">=</span><span class="mi">40</span><span class="p">)</span>
     <span class="n">roomUnknown</span> <span class="o">=</span> <span class="n">Room</span><span class="p">(</span><span class="n">lit</span><span class="o">.</span><span class="n">stUnknown</span><span class="p">)</span>
-    <span class="n">guessroom</span> <span class="o">=</span> <span class="n">roomUnknown</span>
+    <span class="n">forceRoom</span> <span class="o">=</span> <span class="n">roomUnknown</span>
 
 <div class="viewcode-block" id="XRayStruct.UnifStruct"><a class="viewcode-back" href="../../../../Plugins.Bucky.Bucky_PEHAMED_Wellhofer.html#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.UnifStruct">[docs]</a>    <span class="k">class</span> <span class="nc">UnifStruct</span> <span class="p">:</span>
         <span class="n">ROIuniformity</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span> <span class="c"># fraction</span>
@@ -275,62 +289,16 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dcmInfile</span><span class="o">.</span><span class="n">PhotometricInterpretation</span> <span class="o">==</span> <span class="s">&quot;MONOCHROME2&quot;</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">mustbeinverted</span> <span class="o">=</span> <span class="bp">True</span>
         <span class="k">print</span> <span class="s">&quot;Must be Inverted&quot;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">mustbeinverted</span>
-</div>
-<div class="viewcode-block" id="XRayStruct.determineDeviceID"><a class="viewcode-back" href="../../../../Plugins.Bucky.Bucky_PEHAMED_Wellhofer.html#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayStruct.determineDeviceID">[docs]</a>    <span class="k">def</span> <span class="nf">determineDeviceID</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dcmInfile</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-            <span class="k">return</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">guessroom</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">roomUnknown</span>
-
-        <span class="n">stationnames</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="p">[</span><span class="s">&quot;WKZ1&quot;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">roomWKZ1</span><span class="p">],</span>
-            <span class="p">[</span><span class="s">&quot;WKZ2&quot;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">roomWKZ2</span><span class="p">],</span>
-            <span class="p">[</span><span class="s">&quot;BUCKY1&quot;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">roomWKZ1</span><span class="p">],</span>
-            <span class="p">[</span><span class="s">&quot;BUCKY2&quot;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">roomWKZ2</span><span class="p">],</span>
-            <span class="p">[</span><span class="s">&quot;DRXR000505&quot;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">roomDRX1118</span><span class="p">],</span>
-            <span class="p">[</span><span class="s">&quot;DRXR000507&quot;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">roomDRX1119</span><span class="p">],</span>
-            <span class="p">[</span><span class="s">&quot;AZU_CARESTREAM_IC&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">roomDRX1118</span><span class="p">],</span>
-            <span class="p">[</span><span class="s">&quot;CALHOS1&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">roomCALHOS1</span><span class="p">],</span>
-        <span class="p">]</span>
-        <span class="n">dicomfields</span> <span class="o">=</span> <span class="p">[</span> <span class="p">[</span><span class="s">&quot;0008,1010&quot;</span><span class="p">,</span>  <span class="s">&quot;Station Name&quot;</span><span class="p">],[</span><span class="s">&quot;0018,1000&quot;</span><span class="p">,</span><span class="s">&quot;Device Serial Number&quot;</span><span class="p">]]</span>
-        <span class="n">key</span> <span class="o">=</span> <span class="n">dicomfields</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">dicvalue</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dcmInfile</span><span class="p">[</span><span class="n">dicom</span><span class="o">.</span><span class="n">tag</span><span class="o">.</span><span class="n">Tag</span><span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span><span class="n">key</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">])]</span><span class="o">.</span><span class="n">value</span>
-        <span class="k">if</span> <span class="n">dicvalue</span> <span class="o">!=</span> <span class="s">&quot;&quot;</span><span class="p">:</span>
-            <span class="n">dicvalue</span> <span class="o">=</span> <span class="n">dicvalue</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
-            <span class="k">for</span> <span class="n">sn</span> <span class="ow">in</span> <span class="n">stationnames</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">dicvalue</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">sn</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">guessroom</span> <span class="o">=</span> <span class="n">sn</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-                    <span class="k">print</span> <span class="s">&quot;DetermineDeviceID:&quot;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">guessroom</span><span class="o">.</span><span class="n">name</span><span class="p">,</span><span class="s">&#39;(&#39;</span><span class="p">,</span><span class="n">dicvalue</span><span class="p">,</span><span class="s">&#39;)&#39;</span>
-                    <span class="k">return</span>
-        <span class="c"># try one of the DiDirooms;</span>
-        <span class="n">didiserialnumber</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="p">[</span><span class="s">&quot;02.00.075&quot;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">roomF10</span><span class="p">],</span>
-            <span class="p">[</span><span class="s">&quot;02.00.099&quot;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">roomF11a</span><span class="p">],</span>
-            <span class="p">[</span><span class="s">&quot;02.00.076&quot;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">roomF11b</span><span class="p">],</span>
-            <span class="p">[</span><span class="s">&quot;08.02.334&quot;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">roomTrauma1</span><span class="p">],</span>
-            <span class="p">[</span><span class="s">&quot;08.02.328&quot;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">roomTrauma2</span><span class="p">],</span>
-            <span class="p">[</span><span class="s">&quot;04.00.023&quot;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">roomCMH</span><span class="p">],</span>
-<span class="c">#        [&quot;20064&quot;,self.roomMMC],</span>
-<span class="c">#        [&quot;1625116867&quot;, self.roomCZE],</span>
-<span class="c">#        [&quot;95595296577&quot;, self.roomWS1]</span>
-        <span class="p">]</span>
-        <span class="n">key</span> <span class="o">=</span> <span class="n">dicomfields</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">dicvalue</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dcmInfile</span><span class="p">[</span><span class="n">dicom</span><span class="o">.</span><span class="n">tag</span><span class="o">.</span><span class="n">Tag</span><span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span><span class="n">key</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">])]</span><span class="o">.</span><span class="n">value</span>
-        <span class="k">if</span> <span class="n">dicvalue</span> <span class="o">!=</span> <span class="s">&quot;&quot;</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">sn</span> <span class="ow">in</span> <span class="n">didiserialnumber</span><span class="p">:</span>
-                <span class="k">if</span>  <span class="n">dicvalue</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">sn</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">guessroom</span> <span class="o">=</span> <span class="n">sn</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-                    <span class="k">print</span> <span class="s">&quot;DetermineDeviceID:&quot;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">guessroom</span><span class="o">.</span><span class="n">name</span><span class="p">,</span><span class="s">&#39;(&#39;</span><span class="p">,</span><span class="n">dicvalue</span><span class="p">,</span><span class="s">&#39;)&#39;</span>
-                    <span class="k">return</span>
 </div>
-    <span class="k">def</span> <span class="nf">__init__</span> <span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">dcmInfile</span><span class="p">,</span><span class="n">pixeldataIn</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span> <span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">dcmInfile</span><span class="p">,</span><span class="n">pixeldataIn</span><span class="p">,</span><span class="n">room</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="bp">False</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dcmInfile</span> <span class="o">=</span> <span class="n">dcmInfile</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pixeldataIn</span> <span class="o">=</span> <span class="n">pixeldataIn</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">hasmadeplots</span> <span class="o">=</span> <span class="bp">False</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">expertOverridepixToGridScaleCm</span> <span class="o">=</span> <span class="bp">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mustbeinverted</span> <span class="o">=</span> <span class="bp">False</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">guessroom</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">roomUnknown</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">forceRoom</span> <span class="o">=</span> <span class="n">room</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lastimage</span> <span class="o">=</span> <span class="bp">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">po_center_roi</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">po_roi</span> <span class="o">=</span> <span class="p">[]</span>
@@ -348,10 +316,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">bbox_confidence</span> <span class="o">=</span> <span class="mf">0.</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">maybeInvert</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">determineDeviceID</span><span class="p">()</span>
 </div>
 <div class="viewcode-block" id="XRayQC"><a class="viewcode-back" href="../../../../Plugins.Bucky.Bucky_PEHAMED_Wellhofer.html#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC">[docs]</a><span class="k">class</span> <span class="nc">XRayQC</span><span class="p">:</span>
-    <span class="n">qcversion</span> <span class="o">=</span> <span class="mi">20150618</span>
+    <span class="n">qcversion</span> <span class="o">=</span> <span class="mi">20150817</span>
 
     <span class="n">boxradmm</span>   <span class="o">=</span> <span class="mi">110</span>  <span class="c"># choose 11 cm or 8 cm for clean surroundings</span>
     <span class="n">adjustmtfangledeg</span> <span class="o">=</span> <span class="mf">0.</span> <span class="c"># if consistency check fails, add a little angle</span>
@@ -375,13 +342,13 @@
         <span class="n">pixel_spacing_x</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">dcmInfile</span><span class="o">.</span><span class="n">PixelSpacing</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="n">stand</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">TableOrWall</span><span class="p">(</span><span class="n">cs</span><span class="p">)</span>
         <span class="c"># calculate distance = L0-Thick</span>
-        <span class="k">if</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span> <span class="o">==</span> <span class="n">cs</span><span class="o">.</span><span class="n">roomWKZ1</span> <span class="ow">or</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span> <span class="o">==</span> <span class="n">cs</span><span class="o">.</span><span class="n">roomWKZ2</span> <span class="ow">or</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span> <span class="o">==</span> <span class="n">cs</span><span class="o">.</span><span class="n">roomCALHOS1</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s">&#39;DistanceSourceToDetector&#39;</span> <span class="ow">in</span> <span class="n">cs</span><span class="o">.</span><span class="n">dcmInfile</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">stand</span> <span class="o">==</span> <span class="n">lit</span><span class="o">.</span><span class="n">stTable</span><span class="p">:</span>
-                <span class="n">sidmm</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span><span class="o">.</span><span class="n">sidtablemm</span>
-                <span class="n">pidmm</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span><span class="o">.</span><span class="n">pidtablemm</span>
+                <span class="n">sidmm</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">forceRoom</span><span class="o">.</span><span class="n">sidtablemm</span>
+                <span class="n">pidmm</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">forceRoom</span><span class="o">.</span><span class="n">pidtablemm</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">sidmm</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span><span class="o">.</span><span class="n">sidwallmm</span>
-                <span class="n">pidmm</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span><span class="o">.</span><span class="n">pidwallmm</span>
+                <span class="n">sidmm</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">forceRoom</span><span class="o">.</span><span class="n">sidwallmm</span>
+                <span class="n">pidmm</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">forceRoom</span><span class="o">.</span><span class="n">pidwallmm</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">distance</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
             <span class="k">try</span><span class="p">:</span>
@@ -394,9 +361,9 @@
             <span class="k">if</span><span class="p">(</span><span class="n">distance</span> <span class="o">!=</span> <span class="s">&quot;&quot;</span><span class="p">):</span>
                 <span class="n">sidmm</span> <span class="o">=</span> <span class="n">distance</span>
                 <span class="k">if</span><span class="p">(</span><span class="n">stand</span> <span class="o">==</span> <span class="n">lit</span><span class="o">.</span><span class="n">stTable</span><span class="p">):</span>
-                    <span class="n">pidmm</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span><span class="o">.</span><span class="n">pidtablemm</span> <span class="c"># DiDi: 8cm +half phantom thickness</span>
+                    <span class="n">pidmm</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">forceRoom</span><span class="o">.</span><span class="n">pidtablemm</span> <span class="c"># DiDi: 8cm +half phantom thickness</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="n">pidmm</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span><span class="o">.</span><span class="n">pidwallmm</span> <span class="c"># DiDi: 8cm +half phantom thickness</span>
+                    <span class="n">pidmm</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">forceRoom</span><span class="o">.</span><span class="n">pidwallmm</span> <span class="c"># DiDi: 8cm +half phantom thickness</span>
         <span class="k">return</span>  <span class="n">pixel_spacing_x</span><span class="o">*</span><span class="p">(</span><span class="n">sidmm</span><span class="o">-</span><span class="n">pidmm</span><span class="p">)</span><span class="o">/</span><span class="n">sidmm</span>
 </div>
 <div class="viewcode-block" id="XRayQC.pix2phantomm"><a class="viewcode-back" href="../../../../Plugins.Bucky.Bucky_PEHAMED_Wellhofer.html#Plugins.Bucky.Bucky_PEHAMED_Wellhofer.QCXRay_lib.XRayQC.pix2phantomm">[docs]</a>    <span class="k">def</span> <span class="nf">pix2phantomm</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cs</span><span class="p">,</span> <span class="n">pix</span><span class="p">):</span>
@@ -497,7 +464,7 @@
 
         <span class="n">avg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">smallimage</span><span class="p">)</span>
         <span class="n">std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">smallimage</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">std</span><span class="o">&lt;</span><span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span><span class="o">.</span><span class="n">sdthresh</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">std</span><span class="o">&lt;</span><span class="n">cs</span><span class="o">.</span><span class="n">forceRoom</span><span class="o">.</span><span class="n">sdthresh</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">lit</span><span class="o">.</span><span class="n">stWall</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">lit</span><span class="o">.</span><span class="n">stTable</span>
@@ -507,38 +474,23 @@
             <span class="k">return</span> <span class="n">cs</span><span class="o">.</span><span class="n">knownTableOrWall</span>
 
         <span class="n">result</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span> <span class="o">==</span> <span class="n">cs</span><span class="o">.</span><span class="n">roomDRX1118</span> <span class="ow">or</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span> <span class="o">==</span> <span class="n">cs</span><span class="o">.</span><span class="n">roomDRX1119</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">forceRoom</span><span class="o">.</span><span class="n">sidtablemm</span> <span class="o">&lt;</span> <span class="mf">0.</span> <span class="ow">and</span> <span class="n">cs</span><span class="o">.</span><span class="n">forceRoom</span><span class="o">.</span><span class="n">sidwallmm</span> <span class="o">&gt;</span> <span class="mf">0.</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span>  <span class="n">lit</span><span class="o">.</span><span class="n">stWall</span>
+        <span class="k">elif</span> <span class="n">cs</span><span class="o">.</span><span class="n">forceRoom</span><span class="o">.</span><span class="n">sidtablemm</span> <span class="o">&gt;</span> <span class="mf">0.</span> <span class="ow">and</span> <span class="n">cs</span><span class="o">.</span><span class="n">forceRoom</span><span class="o">.</span><span class="n">sidwallmm</span> <span class="o">&lt;</span> <span class="mf">0.</span><span class="p">:</span>
             <span class="n">result</span> <span class="o">=</span>  <span class="n">lit</span><span class="o">.</span><span class="n">stTable</span>
-        <span class="k">elif</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span> <span class="o">==</span> <span class="n">cs</span><span class="o">.</span><span class="n">roomCALHOS1</span><span class="p">:</span>
+        <span class="k">elif</span> <span class="n">cs</span><span class="o">.</span><span class="n">forceRoom</span><span class="o">.</span><span class="n">sdthresh</span><span class="o">&gt;</span><span class="mf">0.</span><span class="p">:</span>
             <span class="n">result</span> <span class="o">=</span>  <span class="bp">self</span><span class="o">.</span><span class="n">TableOrWallFromSTDEV</span><span class="p">(</span><span class="n">cs</span><span class="p">)</span>
             <span class="k">print</span> <span class="n">result</span>
 
-        <span class="k">elif</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span> <span class="o">==</span> <span class="n">cs</span><span class="o">.</span><span class="n">roomWKZ1</span> <span class="ow">or</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span> <span class="o">==</span> <span class="n">cs</span><span class="o">.</span><span class="n">roomWKZ2</span><span class="p">:</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">forceRoom</span><span class="o">.</span><span class="n">sens_threshold</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="c"># check on sensitivity</span>
             <span class="n">sens</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">dcmInfile</span><span class="o">.</span><span class="n">Sensitivity</span>
             <span class="n">cdate</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">dcmInfile</span><span class="o">.</span><span class="n">SeriesDate</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span> <span class="o">==</span> <span class="n">cs</span><span class="o">.</span><span class="n">roomWKZ1</span><span class="p">:</span>
-                <span class="k">if</span>   <span class="n">cdate</span> <span class="o">&lt;</span> <span class="mi">20110000</span><span class="p">:</span>
-                    <span class="n">thresh</span> <span class="o">=</span> <span class="mi">500</span>
-                <span class="k">elif</span> <span class="n">cdate</span> <span class="o">&lt;</span> <span class="mi">20121130</span><span class="p">:</span>
-                    <span class="n">thresh</span> <span class="o">=</span> <span class="mi">450</span>
-                <span class="k">elif</span> <span class="n">cdate</span> <span class="o">&lt;</span> <span class="mi">20130611</span><span class="p">:</span>
-                    <span class="n">thresh</span> <span class="o">=</span> <span class="mi">350</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">thresh</span> <span class="o">=</span> <span class="mi">403</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="k">if</span>   <span class="n">cdate</span> <span class="o">&lt;</span> <span class="mi">20110500</span><span class="p">:</span>
-                    <span class="n">thresh</span> <span class="o">=</span> <span class="mi">700</span>
-                <span class="k">elif</span> <span class="n">cdate</span> <span class="o">&lt;</span> <span class="mi">20110516</span><span class="p">:</span>
-                    <span class="n">thresh</span> <span class="o">=</span> <span class="mi">350</span>
-                <span class="k">elif</span> <span class="n">cdate</span> <span class="o">&lt;</span> <span class="mi">20110625</span><span class="p">:</span>
-                    <span class="n">thresh</span> <span class="o">=</span> <span class="mi">600</span>
-                <span class="k">elif</span> <span class="n">cdate</span> <span class="o">&lt;</span> <span class="mi">20111115</span><span class="p">:</span>
-                    <span class="n">thresh</span> <span class="o">=</span> <span class="mi">350</span>
-                <span class="k">elif</span> <span class="n">cdate</span> <span class="o">&lt;</span> <span class="mi">20121130</span><span class="p">:</span>
-                    <span class="n">thresh</span> <span class="o">=</span> <span class="mi">400</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">thresh</span> <span class="o">=</span> <span class="mi">600</span>
+            <span class="k">for</span> <span class="n">maxdate</span><span class="p">,</span><span class="n">maxthresh</span> <span class="ow">in</span> <span class="n">cs</span><span class="o">.</span><span class="n">forceRoom</span><span class="o">.</span><span class="n">sens_threshold</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">cdate</span> <span class="o">&lt;</span> <span class="n">maxdate</span><span class="p">:</span>
+                    <span class="n">thresh</span> <span class="o">=</span> <span class="n">maxthresh</span>
+                    <span class="k">break</span>
+
             <span class="k">if</span> <span class="n">sens</span><span class="o">&lt;</span><span class="n">thresh</span><span class="p">:</span>
                 <span class="n">result</span> <span class="o">=</span> <span class="n">lit</span><span class="o">.</span><span class="n">stTable</span>
             <span class="k">else</span><span class="p">:</span>
@@ -553,9 +505,11 @@
                 <span class="n">result</span> <span class="o">=</span> <span class="n">lit</span><span class="o">.</span><span class="n">stWall</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">result</span> <span class="o">=</span> <span class="n">lit</span><span class="o">.</span><span class="n">stTable</span>
-<span class="c">#        print &quot;[TableOrWall] %s %d %d (%d): %s&quot; %(cs.guessroom.name,int(cs.dcmInfile.SeriesDate),sens,thresh,result)</span>
+<span class="c">#        print &quot;[TableOrWall] %s %d %d (%d): %s&quot; %(cs.forceRoom.name,int(cs.dcmInfile.SeriesDate),sens,thresh,result)</span>
         <span class="k">if</span> <span class="n">result</span> <span class="o">!=</span> <span class="n">lit</span><span class="o">.</span><span class="n">stUnknown</span><span class="p">:</span>
             <span class="n">cs</span><span class="o">.</span><span class="n">knownTableOrWall</span> <span class="o">=</span> <span class="n">result</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&quot;ERROR! Cannot determine if Wall or Table is used!&quot;</span>
         <span class="k">return</span> <span class="n">result</span>
 
 <span class="c">#----------------------------------------------------------------------</span></div>
@@ -588,7 +542,7 @@
         <span class="c"># 1.2 position 10x10phantomcm box and manipulate corner positions</span>
         <span class="n">pix2phantommm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pixToGridScaleCm</span><span class="p">(</span><span class="n">cs</span><span class="p">)</span>
         <span class="c"># choose 11cm each direction or 8 cm</span>
-        <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span> <span class="o">==</span> <span class="n">cs</span><span class="o">.</span><span class="n">roomWKZ1</span> <span class="ow">or</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span> <span class="o">==</span> <span class="n">cs</span><span class="o">.</span><span class="n">roomWKZ2</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">forceRoom</span><span class="o">.</span><span class="n">phantom</span> <span class="o">==</span> <span class="n">lit</span><span class="o">.</span><span class="n">stWellhofer</span><span class="p">:</span> 
             <span class="bp">self</span><span class="o">.</span><span class="n">boxradmm</span> <span class="o">=</span> <span class="mi">80</span>
         <span class="n">rad</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">boxradmm</span><span class="o">/</span><span class="n">pix2phantommm</span>
         <span class="n">roipts</span> <span class="o">=</span> <span class="p">[</span>
@@ -609,7 +563,7 @@
                     <span class="bp">self</span><span class="o">.</span><span class="n">boxradmm</span> <span class="o">=</span> <span class="n">i</span>
             <span class="k">print</span> <span class="s">&quot;found mindist=&quot;</span><span class="p">,</span><span class="n">mindist</span><span class="p">,</span><span class="s">&quot;rad=&quot;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">boxradmm</span>
         <span class="c"># try to find rotation of phantom</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span><span class="o">.</span><span class="n">skipFFT</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">cs</span><span class="o">.</span><span class="n">forceRoom</span><span class="o">.</span><span class="n">skipFFT</span><span class="p">:</span>
             <span class="n">error</span><span class="p">,</span><span class="n">roipts</span><span class="p">,</span><span class="n">rotangledeg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">FieldRotationFFT</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="n">roipts</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">error</span><span class="p">:</span> <span class="c"># probably too small angle, so try again</span>
                 <span class="n">error</span><span class="p">,</span><span class="n">roipts</span><span class="p">,</span><span class="n">rotangledeg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">FieldRotationFFT</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="n">roipts</span><span class="p">,</span><span class="mf">10.</span><span class="p">)</span>
@@ -622,7 +576,7 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="n">error</span><span class="p">:</span>
             <span class="n">last_attempt</span><span class="o">=</span> <span class="bp">False</span>
             <span class="n">radmmtests</span> <span class="o">=</span> <span class="p">[</span><span class="mi">110</span><span class="p">,</span><span class="mi">80</span><span class="p">,</span><span class="mi">90</span><span class="p">,</span><span class="mi">70</span><span class="p">,</span><span class="mi">60</span><span class="p">]</span>
-            <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span> <span class="o">==</span> <span class="n">cs</span><span class="o">.</span><span class="n">roomWKZ1</span> <span class="ow">or</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span> <span class="o">==</span> <span class="n">cs</span><span class="o">.</span><span class="n">roomWKZ2</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">forceRoom</span><span class="o">.</span><span class="n">phantom</span> <span class="o">==</span> <span class="n">lit</span><span class="o">.</span><span class="n">stWellhofer</span><span class="p">:</span> 
                 <span class="n">radmmtests</span> <span class="o">=</span> <span class="p">[</span><span class="mi">80</span><span class="p">,</span><span class="mi">90</span><span class="p">,</span><span class="mi">70</span><span class="p">,</span><span class="mi">60</span><span class="p">,</span><span class="mi">110</span><span class="p">]</span>
             <span class="k">for</span> <span class="n">radmm</span> <span class="ow">in</span> <span class="n">radmmtests</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">boxradmm</span> <span class="o">=</span> <span class="n">radmm</span>
@@ -1211,7 +1165,7 @@
         <span class="n">widthpx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="c">## width/height in pixels</span>
         <span class="n">heightpx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
 
-        <span class="n">outvalue</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span><span class="o">.</span><span class="n">outvalue</span>
+        <span class="n">outvalue</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">forceRoom</span><span class="o">.</span><span class="n">outvalue</span>
         <span class="c"># for DiDi, just take the minimal corner value</span>
         <span class="k">if</span> <span class="n">outvalue</span><span class="o">&lt;</span><span class="mi">0</span><span class="p">:</span>
             <span class="n">outvalue</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span><span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
@@ -1352,7 +1306,7 @@
         <span class="n">seppx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phantommm2pix</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="mf">10.</span><span class="p">)</span><span class="o">+.</span><span class="mi">5</span><span class="p">)</span>
         <span class="n">widthpx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="c">## width/height in pixels</span>
 
-        <span class="n">outvalue</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span><span class="o">.</span><span class="n">outvalue</span>
+        <span class="n">outvalue</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">forceRoom</span><span class="o">.</span><span class="n">outvalue</span>
     <span class="c"># for DiDi, just take the minimal corner value</span>
         <span class="k">if</span> <span class="n">outvalue</span><span class="o">&lt;</span><span class="mi">0</span><span class="p">:</span>
             <span class="n">outvalue</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span><span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
@@ -1459,8 +1413,7 @@
         <span class="n">enhance</span> <span class="o">=</span> <span class="mi">3</span>
         <span class="k">if</span> <span class="n">what</span> <span class="o">==</span> <span class="s">&quot;lowcontrast&quot;</span><span class="p">:</span>
             <span class="n">enhance</span> <span class="o">=</span> <span class="mi">1</span>
-<span class="c">#		if(guessroom.equals(roomANG2))</span>
-<span class="c">#			enhance =3;</span>
+
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">enhance</span><span class="p">):</span>
             <span class="n">mask</span> <span class="o">=</span> <span class="n">scind</span><span class="o">.</span><span class="n">binary_erosion</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span>
 
@@ -1598,7 +1551,7 @@
         <span class="n">ymmur</span> <span class="o">=</span> <span class="o">-</span><span class="mf">55.</span><span class="o">+</span><span class="n">bump</span>
         <span class="n">xmmur</span> <span class="o">=</span>  <span class="mf">55.</span><span class="o">-</span><span class="n">bump</span>
         <span class="n">ymmll</span> <span class="o">=</span> <span class="o">-</span><span class="mf">40.</span><span class="o">-</span><span class="n">bump</span>
-        <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span><span class="o">.</span><span class="n">phantom</span> <span class="o">==</span> <span class="n">lit</span><span class="o">.</span><span class="n">stWellhofer</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">forceRoom</span><span class="o">.</span><span class="n">phantom</span> <span class="o">==</span> <span class="n">lit</span><span class="o">.</span><span class="n">stWellhofer</span><span class="p">:</span>
             <span class="n">xmmll</span> <span class="o">=</span> <span class="o">-</span><span class="mf">55.</span><span class="o">+</span><span class="mf">4.</span>
             <span class="n">ymmur</span> <span class="o">=</span> <span class="o">-</span><span class="mf">60.</span><span class="o">+</span><span class="mf">3.</span>
             <span class="n">xmmur</span> <span class="o">=</span>  <span class="mf">55.</span><span class="o">-</span><span class="mf">4.</span>
@@ -1775,52 +1728,10 @@
         <span class="k">if</span> <span class="n">roipts_orig</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
             <span class="n">roipts_orig</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">po_roi</span>
 
-        <span class="c"># pehamed nr 100876</span>
-        <span class="n">mmx18</span> <span class="o">=</span>  <span class="mf">53.1</span>
-        <span class="n">mmy18</span> <span class="o">=</span>  <span class="mf">27.1</span>
-        <span class="n">mmx06</span> <span class="o">=</span>  <span class="mf">80.1</span>
-        <span class="n">mmy06</span> <span class="o">=</span> <span class="o">-</span><span class="mf">04.5</span>
-        <span class="n">mmx14</span> <span class="o">=</span>  <span class="mf">59.4</span>
-        <span class="n">mmy14</span> <span class="o">=</span> <span class="o">-</span><span class="mf">24.7</span>
-        <span class="n">mmx46</span> <span class="o">=</span>  <span class="mf">28.0</span>
-        <span class="n">mmy46</span> <span class="o">=</span>  <span class="mf">02.0</span>
-
-        <span class="c"># opnieuw berekend met F10 20141009, tussen 0,0 en 11.5,11.5 gem van wand en tafel</span>
-<span class="c">#        mmx18 =  53.50</span>
-<span class="c">#        mmy18 =  27.20</span>
-<span class="c">#        mmx06 =  80.71</span>
-<span class="c">#        mmy06 = -04.09</span>
-<span class="c">#        mmx14 =  60.03</span>
-<span class="c">#        mmy14 = -24.43</span>
-<span class="c">#        mmx46 =  28.28</span>
-<span class="c">#        mmy46 =  01.98</span>
-
-        <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s">&quot;CMH&quot;</span><span class="p">:</span> <span class="c"># pehamed nr 99866</span>
-            <span class="k">print</span> <span class="s">&quot;ERROR! MTF ROI needs to be adjusted&quot;</span>
-            <span class="k">return</span>
-            <span class="n">mmx18</span> <span class="o">=</span>  <span class="mf">53.3</span>
-            <span class="n">mmy18</span> <span class="o">=</span> <span class="o">-</span><span class="mf">27.5</span>
-            <span class="n">mmx06</span> <span class="o">=</span>  <span class="mf">80.35</span>
-            <span class="n">mmy06</span> <span class="o">=</span>  <span class="mf">03.95</span>
-            <span class="n">mmx46</span> <span class="o">=</span>  <span class="mf">28.2</span>
-            <span class="n">mmy46</span> <span class="o">=</span> <span class="o">-</span><span class="mf">02.25</span>
-            <span class="n">mmx14</span> <span class="o">=</span>  <span class="mf">59.55</span>
-            <span class="n">mmy14</span> <span class="o">=</span>  <span class="mf">24.5</span>
-
-        <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span><span class="o">.</span><span class="n">phantom</span> <span class="o">==</span> <span class="n">lit</span><span class="o">.</span><span class="n">stWellhofer</span><span class="p">:</span> <span class="c"># wellhofer</span>
-            <span class="n">mmx18</span> <span class="o">=</span>  <span class="mf">53.7</span>
-            <span class="n">mmy18</span> <span class="o">=</span>  <span class="mf">27.1</span>
-            <span class="n">mmx06</span> <span class="o">=</span>  <span class="mf">80.6</span>
-            <span class="n">mmy06</span> <span class="o">=</span> <span class="o">-</span><span class="mf">04.7</span>
-            <span class="n">mmx14</span> <span class="o">=</span>  <span class="mf">59.9</span>
-            <span class="n">mmy14</span> <span class="o">=</span> <span class="o">-</span><span class="mf">24.9</span>
-            <span class="n">mmx46</span> <span class="o">=</span>  <span class="mf">28.4</span>
-            <span class="n">mmy46</span> <span class="o">=</span>  <span class="mf">01.8</span>
-
-        <span class="n">x18px</span><span class="p">,</span><span class="n">y18px</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">phantomposmm2pix</span><span class="p">(</span><span class="n">roipts_orig</span><span class="p">,</span><span class="n">mmx18</span><span class="p">,</span><span class="n">mmy18</span><span class="p">)</span>
-        <span class="n">x06px</span><span class="p">,</span><span class="n">y06px</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">phantomposmm2pix</span><span class="p">(</span><span class="n">roipts_orig</span><span class="p">,</span><span class="n">mmx06</span><span class="p">,</span><span class="n">mmy06</span><span class="p">)</span>
-        <span class="n">x46px</span><span class="p">,</span><span class="n">y46px</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">phantomposmm2pix</span><span class="p">(</span><span class="n">roipts_orig</span><span class="p">,</span><span class="n">mmx46</span><span class="p">,</span><span class="n">mmy46</span><span class="p">)</span>
-        <span class="n">x14px</span><span class="p">,</span><span class="n">y14px</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">phantomposmm2pix</span><span class="p">(</span><span class="n">roipts_orig</span><span class="p">,</span><span class="n">mmx14</span><span class="p">,</span><span class="n">mmy14</span><span class="p">)</span>
+        <span class="n">x18px</span><span class="p">,</span><span class="n">y18px</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">phantomposmm2pix</span><span class="p">(</span><span class="n">roipts_orig</span><span class="p">,</span><span class="n">cs</span><span class="o">.</span><span class="n">forceRoom</span><span class="o">.</span><span class="n">xy18mm</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">cs</span><span class="o">.</span><span class="n">forceRoom</span><span class="o">.</span><span class="n">xy18mm</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">x06px</span><span class="p">,</span><span class="n">y06px</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">phantomposmm2pix</span><span class="p">(</span><span class="n">roipts_orig</span><span class="p">,</span><span class="n">cs</span><span class="o">.</span><span class="n">forceRoom</span><span class="o">.</span><span class="n">xy06mm</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">cs</span><span class="o">.</span><span class="n">forceRoom</span><span class="o">.</span><span class="n">xy06mm</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">x46px</span><span class="p">,</span><span class="n">y46px</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">phantomposmm2pix</span><span class="p">(</span><span class="n">roipts_orig</span><span class="p">,</span><span class="n">cs</span><span class="o">.</span><span class="n">forceRoom</span><span class="o">.</span><span class="n">xy46mm</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">cs</span><span class="o">.</span><span class="n">forceRoom</span><span class="o">.</span><span class="n">xy46mm</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">x14px</span><span class="p">,</span><span class="n">y14px</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">phantomposmm2pix</span><span class="p">(</span><span class="n">roipts_orig</span><span class="p">,</span><span class="n">cs</span><span class="o">.</span><span class="n">forceRoom</span><span class="o">.</span><span class="n">xy14mm</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">cs</span><span class="o">.</span><span class="n">forceRoom</span><span class="o">.</span><span class="n">xy14mm</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
 
         <span class="n">roipts</span> <span class="o">=</span> <span class="p">[</span> <span class="p">[</span><span class="n">x18px</span><span class="p">,</span><span class="n">y18px</span><span class="p">],[</span><span class="n">x06px</span><span class="p">,</span><span class="n">y06px</span><span class="p">],[</span><span class="n">x14px</span><span class="p">,</span><span class="n">y14px</span><span class="p">],[</span><span class="n">x46px</span><span class="p">,</span><span class="n">y46px</span><span class="p">]</span> <span class="p">]</span>
 <span class="c">#        print roipts</span>
@@ -2501,12 +2412,12 @@
         <span class="n">CuDimmm</span> <span class="o">=</span> <span class="mf">04.</span>
         <span class="n">yrefmm</span> <span class="o">=</span> <span class="mf">10.</span> <span class="c"># offset to background</span>
 
-        <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span><span class="o">.</span><span class="n">phantom</span> <span class="o">==</span> <span class="n">lit</span><span class="o">.</span><span class="n">stWellhofer</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">forceRoom</span><span class="o">.</span><span class="n">phantom</span> <span class="o">==</span> <span class="n">lit</span><span class="o">.</span><span class="n">stWellhofer</span><span class="p">:</span>
             <span class="n">mmCu</span> <span class="o">=</span> <span class="p">[</span> <span class="p">[</span><span class="mf">36.4</span><span class="p">,</span><span class="mf">22.8</span><span class="p">],</span> <span class="p">[</span><span class="mf">31.</span><span class="p">,</span><span class="mf">17.5</span><span class="p">],</span> <span class="p">[</span><span class="mf">25.</span><span class="p">,</span><span class="mf">11.9</span><span class="p">],</span> <span class="p">[</span><span class="mf">19.3</span><span class="p">,</span><span class="mf">06.</span><span class="p">]</span> <span class="p">]</span>
             <span class="n">CuDimmm</span> <span class="o">=</span> <span class="mf">02.5</span>
             <span class="n">yrefmm</span> <span class="o">=</span> <span class="mf">5.5</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">peha</span> <span class="o">=</span> <span class="n">XRayStruct</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">dcmInfile</span><span class="p">,</span><span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="p">)</span>
+            <span class="n">peha</span> <span class="o">=</span> <span class="n">XRayStruct</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">dcmInfile</span><span class="p">,</span><span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="p">,</span><span class="n">cs</span><span class="o">.</span><span class="n">forceRoom</span><span class="p">)</span>
 
         <span class="n">cs</span><span class="o">.</span><span class="n">loco</span><span class="o">.</span><span class="n">lo_rois</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">cu</span> <span class="ow">in</span> <span class="n">mmCu</span><span class="p">:</span>
@@ -2535,7 +2446,7 @@
             <span class="n">yhi</span> <span class="o">-=</span> <span class="nb">int</span><span class="p">(</span><span class="o">.</span><span class="mi">5</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">phantommm2pix</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="n">yrefmm</span><span class="p">))</span>
             <span class="n">roipts</span> <span class="o">=</span> <span class="p">[</span> <span class="p">[</span><span class="n">xlo</span><span class="p">,</span><span class="n">ylo</span><span class="p">],[</span><span class="n">xlo</span><span class="p">,</span><span class="n">yhi</span><span class="p">],[</span><span class="n">xhi</span><span class="p">,</span><span class="n">yhi</span><span class="p">],[</span><span class="n">xhi</span><span class="p">,</span><span class="n">ylo</span><span class="p">]</span> <span class="p">]</span>
             <span class="n">cs</span><span class="o">.</span><span class="n">loco</span><span class="o">.</span><span class="n">lo_rois</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">roipts</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span><span class="o">.</span><span class="n">phantom</span> <span class="o">==</span> <span class="n">lit</span><span class="o">.</span><span class="n">stWellhofer</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">forceRoom</span><span class="o">.</span><span class="n">phantom</span> <span class="o">==</span> <span class="n">lit</span><span class="o">.</span><span class="n">stWellhofer</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">mustbeinverted</span><span class="p">:</span>
                     <span class="n">smallimage</span> <span class="o">=</span> <span class="n">invertmax</span> <span class="o">-</span> <span class="n">cs</span><span class="o">.</span><span class="n">pixeldataIn</span><span class="p">[</span><span class="n">xlo</span><span class="p">:</span><span class="n">xhi</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">ylo</span><span class="p">:</span><span class="n">yhi</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
@@ -2606,8 +2517,8 @@
                 <span class="p">[</span><span class="s">&quot;0028,0006&quot;</span><span class="p">,</span>  <span class="s">&quot;PlanarConfiguration&quot;</span><span class="p">],</span>
                 <span class="p">[</span><span class="s">&quot;0028,0101&quot;</span><span class="p">,</span>  <span class="s">&quot;BitsStored&quot;</span><span class="p">]</span>
             <span class="p">]</span>
-<span class="c">#            if(cs.guessroom == cs.roomDRX1118 or cs.guessroom == cs.roomDRX1119):</span>
-            <span class="n">dicomfields</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="s">&quot;0018,1405&quot;</span><span class="p">,</span><span class="s">&quot;Relative Exposure&quot;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="s">&#39;RelativeXRayExposure&#39;</span> <span class="ow">in</span> <span class="n">cs</span><span class="o">.</span><span class="n">dcmInfile</span><span class="p">:</span> <span class="c">#DX</span>
+                <span class="n">dicomfields</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="s">&quot;0018,1405&quot;</span><span class="p">,</span><span class="s">&quot;Relative Exposure&quot;</span><span class="p">])</span>
 
         <span class="k">elif</span><span class="p">(</span><span class="n">info</span> <span class="o">==</span> <span class="s">&quot;qclight&quot;</span><span class="p">):</span>
             <span class="n">dicomfields</span> <span class="o">=</span> <span class="p">[</span>
@@ -2631,11 +2542,11 @@
                 <span class="p">[</span><span class="s">&quot;0018,5021&quot;</span><span class="p">,</span>  <span class="s">&quot;Postprocessing&quot;</span><span class="p">],</span>
                 <span class="p">[</span><span class="s">&quot;0018,6000&quot;</span><span class="p">,</span>  <span class="s">&quot;Sensitivity&quot;</span><span class="p">]</span>
             <span class="p">]</span>
-<span class="c">#            if(cs.guessroom == cs.roomDRX1118 or cs.guessroom == cs.roomDRX1119):</span>
-            <span class="n">dicomfields</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="s">&quot;0018,1405&quot;</span><span class="p">,</span><span class="s">&quot;Relative Exposure&quot;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="s">&#39;RelativeXRayExposure&#39;</span> <span class="ow">in</span> <span class="n">cs</span><span class="o">.</span><span class="n">dcmInfile</span><span class="p">:</span> <span class="c">#DX</span>
+                <span class="n">dicomfields</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="s">&quot;0018,1405&quot;</span><span class="p">,</span><span class="s">&quot;Relative Exposure&quot;</span><span class="p">])</span>
 
         <span class="k">elif</span><span class="p">(</span><span class="n">info</span> <span class="o">==</span> <span class="s">&quot;qcwad&quot;</span><span class="p">):</span>
-            <span class="k">if</span> <span class="s">&#39;WKZ&#39;</span> <span class="ow">in</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="s">&#39;DistanceSourceToDetector&#39;</span> <span class="ow">in</span> <span class="n">cs</span><span class="o">.</span><span class="n">dcmInfile</span><span class="p">:</span> <span class="c"># WKZ-like fcr</span>
                 <span class="n">dicomfields</span> <span class="o">=</span> <span class="p">[</span>
                     <span class="p">[</span><span class="s">&quot;0008,0021&quot;</span><span class="p">,</span>  <span class="s">&quot;SeriesDate&quot;</span><span class="p">],</span>
                     <span class="p">[</span><span class="s">&quot;0008,0031&quot;</span><span class="p">,</span>  <span class="s">&quot;SeriesTime&quot;</span><span class="p">],</span>
@@ -2752,21 +2663,21 @@
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Convenience function to calculate mAs from DOP if not DR</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span> <span class="o">==</span> <span class="n">cs</span><span class="o">.</span><span class="n">roomWKZ1</span> <span class="ow">or</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span> <span class="o">==</span> <span class="n">cs</span><span class="o">.</span><span class="n">roomWKZ2</span> <span class="ow">or</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span> <span class="o">==</span> <span class="n">cs</span><span class="o">.</span><span class="n">roomCALHOS1</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s">&#39;ImageAndFluoroscopyAreaDoseProduct&#39;</span> <span class="ow">in</span> <span class="n">cs</span><span class="o">.</span><span class="n">dcmInfile</span><span class="p">:</span> <span class="c"># WKZ-like fcr </span>
             <span class="k">return</span> <span class="mf">0.</span> <span class="c"># no reported DOP</span>
 
         <span class="n">stand</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">TableOrWall</span><span class="p">(</span><span class="n">cs</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span> <span class="o">==</span> <span class="n">cs</span><span class="o">.</span><span class="n">roomWKZ1</span> <span class="ow">or</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span> <span class="o">==</span> <span class="n">cs</span><span class="o">.</span><span class="n">roomWKZ2</span> <span class="ow">or</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span> <span class="o">==</span> <span class="n">cs</span><span class="o">.</span><span class="n">roomDRX1118</span> <span class="ow">or</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span> <span class="o">==</span> <span class="n">cs</span><span class="o">.</span><span class="n">roomCALHOS1</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s">&#39;DistanceSourceToDetector&#39;</span> <span class="ow">in</span> <span class="n">cs</span><span class="o">.</span><span class="n">dcmInfile</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">stand</span> <span class="o">==</span> <span class="n">lit</span><span class="o">.</span><span class="n">stTable</span><span class="p">:</span>
-                <span class="n">sidmm</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span><span class="o">.</span><span class="n">sidtablemm</span>
+                <span class="n">sidmm</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">forceRoom</span><span class="o">.</span><span class="n">sidtablemm</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">sidmm</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span><span class="o">.</span><span class="n">sidwallmm</span>
+                <span class="n">sidmm</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">forceRoom</span><span class="o">.</span><span class="n">sidwallmm</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">sidmm</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">dcmInfile</span><span class="o">.</span><span class="n">DistanceSourceToDetector</span>
             <span class="k">if</span> <span class="n">sidmm</span><span class="o">&lt;</span><span class="mf">1.e-6</span><span class="p">:</span>
-                <span class="n">sidmm</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span><span class="o">.</span><span class="n">sidtablemm</span>
+                <span class="n">sidmm</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">forceRoom</span><span class="o">.</span><span class="n">sidtablemm</span>
                 <span class="k">if</span> <span class="n">stand</span> <span class="o">==</span> <span class="n">lit</span><span class="o">.</span><span class="n">stWall</span><span class="p">:</span>
-                    <span class="n">sidmm</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span><span class="o">.</span><span class="n">sidwallmm</span>
+                    <span class="n">sidmm</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">forceRoom</span><span class="o">.</span><span class="n">sidwallmm</span>
 
         <span class="n">sid_m</span> <span class="o">=</span> <span class="n">sidmm</span><span class="o">/</span><span class="mf">1000.</span>
         <span class="n">kvp</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">dcmInfile</span><span class="o">.</span><span class="n">KVP</span>
@@ -2790,17 +2701,17 @@
         <span class="n">minedge</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">xrayNSWEmm</span><span class="p">)</span>
         <span class="n">maxedge</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">xrayNSWEmm</span><span class="p">)</span>
         <span class="n">meanedge</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">xrayNSWEmm</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span> <span class="o">==</span> <span class="n">cs</span><span class="o">.</span><span class="n">roomWKZ1</span> <span class="ow">or</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span> <span class="o">==</span> <span class="n">cs</span><span class="o">.</span><span class="n">roomWKZ2</span> <span class="ow">or</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span> <span class="o">==</span> <span class="n">cs</span><span class="o">.</span><span class="n">roomDRX1118</span> <span class="ow">or</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span> <span class="o">==</span> <span class="n">cs</span><span class="o">.</span><span class="n">roomCALHOS1</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s">&#39;DistanceSourceToDetector&#39;</span> <span class="ow">in</span> <span class="n">cs</span><span class="o">.</span><span class="n">dcmInfile</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">stand</span> <span class="o">==</span> <span class="n">lit</span><span class="o">.</span><span class="n">stTable</span><span class="p">:</span>
-                <span class="n">sidmm</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span><span class="o">.</span><span class="n">sidtablemm</span>
+                <span class="n">sidmm</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">forceRoom</span><span class="o">.</span><span class="n">sidtablemm</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">sidmm</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span><span class="o">.</span><span class="n">sidwallmm</span>
+                <span class="n">sidmm</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">forceRoom</span><span class="o">.</span><span class="n">sidwallmm</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">sidmm</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">dcmInfile</span><span class="o">.</span><span class="n">DistanceSourceToDetector</span>
             <span class="k">if</span> <span class="n">sidmm</span><span class="o">&lt;</span><span class="mf">1.e-6</span><span class="p">:</span>
-                <span class="n">sidmm</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span><span class="o">.</span><span class="n">sidtablemm</span>
+                <span class="n">sidmm</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">forceRoom</span><span class="o">.</span><span class="n">sidtablemm</span>
                 <span class="k">if</span> <span class="n">stand</span> <span class="o">==</span> <span class="n">lit</span><span class="o">.</span><span class="n">stWall</span><span class="p">:</span>
-                    <span class="n">sidmm</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span><span class="o">.</span><span class="n">sidwallmm</span>
+                    <span class="n">sidmm</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">forceRoom</span><span class="o">.</span><span class="n">sidwallmm</span>
         <span class="n">devedge</span> <span class="o">=</span> <span class="mf">100.</span><span class="o">*</span><span class="nb">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">minedge</span><span class="o">-</span><span class="n">meanedge</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">maxedge</span><span class="o">-</span><span class="n">meanedge</span><span class="p">))</span><span class="o">/</span><span class="n">sidmm</span>
         <span class="k">return</span> <span class="n">devedge</span>
 </div>
@@ -2931,7 +2842,7 @@
         <span class="n">stds</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="c"># 1. Make box around wedge (-5.5; -4) to (+5.5; -5.5)</span>
 
-        <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">guessroom</span><span class="o">.</span><span class="n">phantom</span> <span class="o">==</span> <span class="n">lit</span><span class="o">.</span><span class="n">stWellhofer</span><span class="p">:</span> <span class="c"># WKZ</span>
+        <span class="k">if</span> <span class="n">cs</span><span class="o">.</span><span class="n">forceRoom</span><span class="o">.</span><span class="n">phantom</span> <span class="o">==</span> <span class="n">lit</span><span class="o">.</span><span class="n">stWellhofer</span><span class="p">:</span> <span class="c"># WKZ</span>
             <span class="n">x0</span> <span class="o">=</span> <span class="o">-</span><span class="mf">15.</span><span class="o">+</span><span class="mi">4</span>
             <span class="n">y0</span> <span class="o">=</span> <span class="o">-</span><span class="mf">43.</span><span class="o">-</span><span class="mf">2.</span>
             <span class="n">x1</span> <span class="o">=</span>  <span class="mf">15.</span><span class="o">-</span><span class="mi">4</span>

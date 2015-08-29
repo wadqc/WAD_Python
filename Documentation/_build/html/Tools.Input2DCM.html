@@ -1,0 +1,153 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Tools.Input2DCM package &mdash; ..  documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="..  documentation" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">..  documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="tools-input2dcm-package">
+<h1>Tools.Input2DCM package<a class="headerlink" href="#tools-input2dcm-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-Tools.Input2DCM.Input2DCM">
+<span id="tools-input2dcm-input2dcm-module"></span><h2>Tools.Input2DCM.Input2DCM module<a class="headerlink" href="#module-Tools.Input2DCM.Input2DCM" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="Tools.Input2DCM.Input2DCM.create_dicom">
+<tt class="descclassname">Tools.Input2DCM.Input2DCM.</tt><tt class="descname">create_dicom</tt><big>(</big><em>dcmconfig</em>, <em>payload</em>, <em>filename</em><big>)</big><a class="reference internal" href="_modules/Tools/Input2DCM/Input2DCM.html#create_dicom"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.Input2DCM.Input2DCM.create_dicom" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function creates minimal dicom file from scratch with required tags
+and stores payload (string) in the specified private tag.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Tools.Input2DCM.Input2DCM.send_dicom">
+<tt class="descclassname">Tools.Input2DCM.Input2DCM.</tt><tt class="descname">send_dicom</tt><big>(</big><em>calledAET</em>, <em>callingAET</em>, <em>remotehost</em>, <em>remoteport</em>, <em>filename</em><big>)</big><a class="reference internal" href="_modules/Tools/Input2DCM/Input2DCM.html#send_dicom"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.Input2DCM.Input2DCM.send_dicom" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function sends a dicom file to specified host.
+Returns (status, msg):</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>Status:</dt>
+<dd>True  : success
+False : error occurred (added to logfile)</dd>
+</dl>
+<p>msg: string or None</p>
+</div></blockquote>
+</dd></dl>
+
+<dl class="function">
+<dt id="Tools.Input2DCM.Input2DCM.sendasdicom">
+<tt class="descclassname">Tools.Input2DCM.Input2DCM.</tt><tt class="descname">sendasdicom</tt><big>(</big><em>dcmconfig</em>, <em>datastr</em><big>)</big><a class="reference internal" href="_modules/Tools/Input2DCM/Input2DCM.html#sendasdicom"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.Input2DCM.Input2DCM.sendasdicom" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>create a dicom file with the datastr embedded as a private tag, and send it to dcm4chee</dt>
+<dd>dcmconfig is a dict that should at least contain: dest_aet, src_aet, dest_ip, dest_port
+datastr is a string that should be of even string length (required for private tags content)</dd>
+</dl>
+<p>returns output of create_dicom: (Succes,msg) with Succes True or False and msg a string or None</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Tools.Input2DCM.Input2DCM.write_generic_config">
+<tt class="descclassname">Tools.Input2DCM.Input2DCM.</tt><tt class="descname">write_generic_config</tt><big>(</big><em>config</em>, <em>filename</em><big>)</big><a class="reference internal" href="_modules/Tools/Input2DCM/Input2DCM.html#write_generic_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Tools.Input2DCM.Input2DCM.write_generic_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-Tools.Input2DCM">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-Tools.Input2DCM" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Tools.Input2DCM package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-Tools.Input2DCM.Input2DCM">Tools.Input2DCM.Input2DCM module</a></li>
+<li><a class="reference internal" href="#module-Tools.Input2DCM">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/Tools.Input2DCM.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">..  documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

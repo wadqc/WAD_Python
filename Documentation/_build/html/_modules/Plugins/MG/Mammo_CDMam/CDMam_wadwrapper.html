@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper &mdash; ..  documentation</title>
+    <title>Plugins.MG.Mammo_CDMam.CDMam_wadwrapper &mdash; ..  documentation</title>
     
     <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
@@ -46,7 +46,7 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <h1>Source code for Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper</h1><div class="highlight"><pre>
+  <h1>Source code for Plugins.MG.Mammo_CDMam.CDMam_wadwrapper</h1><div class="highlight"><pre>
 <span class="c"># PyWAD is open-source software and consists of a set of plugins written in python for the WAD-Software medical physics quality control software. </span>
 <span class="c"># The WAD Software can be found on https://github.com/wadqc</span>
 <span class="c"># </span>
@@ -55,10 +55,8 @@
 <span class="c">#</span>
 <span class="c">#</span>
 
-<span class="n">__version__</span> <span class="o">=</span> <span class="s">&#39;01062015&#39;</span>
+<span class="n">__version__</span> <span class="o">=</span> <span class="s">&#39;20150826&#39;</span>
 <span class="n">__author__</span> <span class="o">=</span> <span class="s">&#39;aschilham&#39;</span>
-
-
 
 
 <span class="kn">import</span> <span class="nn">sys</span>
@@ -75,14 +73,14 @@
 <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
     <span class="kn">from</span> <span class="nn">pyWADLib</span> <span class="kn">import</span> <span class="n">wadwrapper_lib</span>
 
-<div class="viewcode-block" id="logTag"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_CDMam.html#Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.logTag">[docs]</a><span class="k">def</span> <span class="nf">logTag</span><span class="p">():</span>
+<div class="viewcode-block" id="logTag"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_CDMam.html#Plugins.MG.Mammo_CDMam.CDMam_wadwrapper.logTag">[docs]</a><span class="k">def</span> <span class="nf">logTag</span><span class="p">():</span>
     <span class="k">return</span> <span class="s">&quot;[CDMam_wadwrapper] &quot;</span>
 
 <span class="c"># MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!</span>
 
 
 <span class="c">##### Series wrappers</span></div>
-<div class="viewcode-block" id="cdmamsetup_series"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_CDMam.html#Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.cdmamsetup_series">[docs]</a><span class="k">def</span> <span class="nf">cdmamsetup_series</span><span class="p">(</span><span class="n">inputfile</span><span class="p">,</span><span class="n">params</span><span class="p">,</span><span class="n">headers_only</span><span class="p">):</span>
+<div class="viewcode-block" id="cdmamsetup_series"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_CDMam.html#Plugins.MG.Mammo_CDMam.CDMam_wadwrapper.cdmamsetup_series">[docs]</a><span class="k">def</span> <span class="nf">cdmamsetup_series</span><span class="p">(</span><span class="n">inputfile</span><span class="p">,</span><span class="n">params</span><span class="p">,</span><span class="n">headers_only</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Shared routine to set runtime parameters and build structure</span>
 <span class="sd">    Workflow:</span>
@@ -117,7 +115,7 @@
     <span class="n">qclib</span><span class="o">.</span><span class="n">determineScannerID</span><span class="p">(</span><span class="n">cs</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">qclib</span><span class="p">,</span><span class="n">cs</span><span class="p">,</span><span class="n">modeCDCOM</span>
 </div>
-<div class="viewcode-block" id="identifyName"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_CDMam.html#Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.identifyName">[docs]</a><span class="k">def</span> <span class="nf">identifyName</span><span class="p">(</span><span class="n">cs</span><span class="p">):</span>
+<div class="viewcode-block" id="identifyName"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_CDMam.html#Plugins.MG.Mammo_CDMam.CDMam_wadwrapper.identifyName">[docs]</a><span class="k">def</span> <span class="nf">identifyName</span><span class="p">(</span><span class="n">cs</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Come up with a simple identification tag</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -144,7 +142,7 @@
     
     <span class="k">return</span> <span class="n">idname</span>
 </div>
-<div class="viewcode-block" id="cdmamqc_list"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_CDMam.html#Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.cdmamqc_list">[docs]</a><span class="k">def</span> <span class="nf">cdmamqc_list</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="n">results</span><span class="p">,</span><span class="n">params</span><span class="p">):</span>
+<div class="viewcode-block" id="cdmamqc_list"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_CDMam.html#Plugins.MG.Mammo_CDMam.CDMam_wadwrapper.cdmamqc_list">[docs]</a><span class="k">def</span> <span class="nf">cdmamqc_list</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="n">results</span><span class="p">,</span><span class="n">params</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    CDMAM analysis for a list of images (as should be!) see cdmamqc_series for more information</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -174,7 +172,7 @@
 
     <span class="n">qclib</span><span class="o">.</span><span class="n">thresholdThickness</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span><span class="n">finalscore</span><span class="p">)</span>
 </div>
-<div class="viewcode-block" id="cdmamqc_series"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_CDMam.html#Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.cdmamqc_series">[docs]</a><span class="k">def</span> <span class="nf">cdmamqc_series</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+<div class="viewcode-block" id="cdmamqc_series"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_CDMam.html#Plugins.MG.Mammo_CDMam.CDMam_wadwrapper.cdmamqc_series">[docs]</a><span class="k">def</span> <span class="nf">cdmamqc_series</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    CDMAM analysis:</span>
 <span class="sd">        Use a model observer to detect location of gold disc, for different thicknesses and diameters of the disc.</span>
@@ -226,7 +224,7 @@
     <span class="k">for</span> <span class="n">fn</span> <span class="ow">in</span> <span class="n">cs</span><span class="o">.</span><span class="n">fit_fnames</span><span class="p">:</span>
         <span class="n">results</span><span class="o">.</span><span class="n">addObject</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">fn</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span><span class="n">fn</span><span class="p">)</span>
 </div>
-<div class="viewcode-block" id="cdmamheader_series"><a class="viewcode-back" href="../../../../Plugins.Mammo.Mammo_CDMam.html#Plugins.Mammo.Mammo_CDMam.CDMam_wadwrapper.cdmamheader_series">[docs]</a><span class="k">def</span> <span class="nf">cdmamheader_series</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="n">results</span><span class="p">,</span><span class="n">params</span><span class="p">):</span>
+<div class="viewcode-block" id="cdmamheader_series"><a class="viewcode-back" href="../../../../Plugins.MG.Mammo_CDMam.html#Plugins.MG.Mammo_CDMam.CDMam_wadwrapper.cdmamheader_series">[docs]</a><span class="k">def</span> <span class="nf">cdmamheader_series</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="n">results</span><span class="p">,</span><span class="n">params</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Read selected dicomfields and write to IQC database</span>
 
