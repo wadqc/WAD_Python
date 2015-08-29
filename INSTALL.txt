@@ -1,0 +1,54 @@
+The following is an overview of packages used by pywad.
+
+=============LINUX=============================
+Verified on ubuntu 15 installation.
+
+ apt-get install python-pip
+ apt-get install python-numpy
+ apt-get install python-scipy
+ apt-get install python-matplotlib
+ apt-get remove python-pil
+ apt-get install libjpeg-dev libfreetype6 libfreetype6-dev zlib1g-dev
+ pip install -I pillow 
+ pip install pydicom
+ pip install pynetdicom
+ pip install pdfminer
+ pip install scikit-image
+ pip install pyocr
+ apt-get install tesseract-ocr
+ pip install MySQL-python
+ pip install pip-tools
+ pip install cython
+ pip install networkx
+
+
+============WINDOWS=============================
+Verified on XP, W10.
+
+
+Install python-2.7.10.msi:
+https://www.python.org/downloads/
+
+Install install MicroSoft Visual C++ compiler for python 2.7:
+http://www.microsoft.com/en-us/download/details.aspx?id=44266
+
+Install MySQL-python-1.2.4.win32-py2.7.exe:
+https://pypi.python.org/pypi/MySQL-python/1.2.4
+
+Install scipy-0.16.0-win32-superpack-python2.7.exe:
+http://sourceforge.net/projects/scipy/files/scipy/0.16.0/
+
+Add Python to the path.
+Then in a command window:
+
+pip install numpy
+pip install matplotlib
+pip install pillow
+pip install lxml
+pip install pip-tools
+pip install cython
+pip install networkx
+pip install pydicom
+pip install pdfminer
+pip install scikit-image
+pip install pynetdicom
