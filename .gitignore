@@ -26,6 +26,9 @@ __pycache__/
 *.dcm
 /pyWADdemodata/
 
+# no testresults
+Tools/PluginTesting/TestingOutput/
+
 # latex temporary files
 *.aux
 *.bbl
