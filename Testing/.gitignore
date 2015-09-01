@@ -1,7 +1,0 @@
-# no result files:
-result*.xml
-test*.jpg
-
-# no dicom images
-dicom_*
-*.dcm
