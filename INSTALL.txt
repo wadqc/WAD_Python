@@ -17,9 +17,6 @@ Verified on ubuntu 15 installation.
  pip install pyocr
  apt-get install tesseract-ocr
  pip install MySQL-python
- pip install pip-tools
- pip install cython
- pip install networkx
 
 
 ============WINDOWS=============================
@@ -45,10 +42,16 @@ pip install numpy
 pip install matplotlib
 pip install pillow
 pip install lxml
-pip install pip-tools
-pip install cython
-pip install networkx
 pip install pydicom
 pip install pdfminer
 pip install scikit-image
 pip install pynetdicom
+
+For pyocr on windows:
+ First install https://code.google.com/p/tesseract-ocr/downloads/detail?name=tesseract-ocr-setup-3.02.02.exe
+ Now permanently add the installation location ( default: C:\Program Files (x86)\Tesseract-OCR ) to your PATH
+ Download https://github.com/asch99/pyocr/archive/master.zip
+ Unpack the downloaded pyocr-master.zip
+ In a new (bash) command shell:
+  cd pyocr-master
+  python setup.py install
