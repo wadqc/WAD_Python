@@ -20,6 +20,7 @@ Low contrast object detectability (LCOD) and Percent-signal ghosting (PSG) are c
 
 Changelog:
 
+* 23-09-15 - Added missing add_result statements (DD)
 * 26-08-15 - Updated original code to a working wadplugin version (DD)
 * 05-12-14 - First version
 
@@ -64,7 +65,7 @@ from pyWADLib import findmax
 
 def mid_phantom(image_ACR, imarray):
     # Detect edges in image
-    edges = filter.canny(imarray, sigma=3, low_threshold=200, high_threshold=1000)
+    edges = filters.canny(imarray, sigma=3, low_threshold=200, high_threshold=1000)
 
     hough_radii = np.array([190/2/image_ACR.PixelSpacing[1]])
     print type(edges)
@@ -84,9 +85,6 @@ def mid_phantom(image_ACR, imarray):
     radius = radii[1] # Niet nodig?
     radius = np.int32(radius) # Niet nodig?
     cy, cx = circle_perimeter(center_y, center_x, radius) # Niet nodig?
-#    imarray[center_x, center_y] = 10000
-#    imarray[cx,cy] = 10000
-#    plt.imshow(imarray)
     return center_x, center_y, radii
 
 
@@ -116,9 +114,9 @@ def ROI_ellipse(image_ACR, imarray, a, b, radius, orientation):
     
 
 # GEOMETRIC ACCURACY
-def ACR_GA_l(image,result,label=None):
+def ACR_GA_l(header,pixarray,result,label=None):
     # Read image and store pixel values in array
-    image_ACR, imarray = load_image(image)
+    image_ACR, imarray = header, pixarray
     ########## Measure length of phantom ##########    
      # set threshold
     threshold = 0.12*np.mean(imarray)
@@ -135,9 +133,12 @@ def ACR_GA_l(image,result,label=None):
     txt_temp = 'length is '+repr(round(height,1))+' mm (should be 146-150 mm)'
     print(txt_temp)
 
-def ACR_GA_wh(image,result,label=None):
+    
+    results.addFloat('GA_length_%s'%label,repr(round(height,1)),level=1)
+
+def ACR_GA_wh(header,pixarray,result,label=None):
     # Read image and store pixel values in array
-    image_ACR, imarray = load_image(image) 
+    image_ACR, imarray = header, pixarray 
     ########## Measure width of phantom ##########
     # set threshold
     threshold = 0.12*np.mean(imarray)
@@ -168,9 +169,13 @@ def ACR_GA_wh(image,result,label=None):
     txt_temp = 'height is '+repr(round(height,1))+' mm (should be 188-192 mm)'
     print(txt_temp)
 
-def ACR_GA_whd(image,result):
+
+    results.addFloat('GA_wh_width_%s'%label,repr(round(width,1)),level=1)
+    results.addFloat('GA_wh_height_%s'%label,repr(round(height,1)),level=1)
+
+def ACR_GA_whd(header,pixarray,result,label=None):
     # Read image and store pixel values in array
-    image_ACR, imarray = load_image(image)
+    image_ACR, imarray = header, pixarray
         ########## Measure width of phantom ##########
     # set threshold
     threshold = 0.12*np.mean(imarray)
@@ -200,6 +205,9 @@ def ACR_GA_whd(image,result):
     print(txt_temp)
     txt_temp = 'height is '+repr(round(height,1))+' mm (should be 188-192 mm)'
     print(txt_temp)
+
+    results.addFloat('GA_whd_width_%s'%label,repr(round(width,1)),level=1)
+    results.addFloat('GA_whd_height_%s'%label,repr(round(height,1)),level=1)
 
     ########## Rotate image to measure diagonal ##########
     imarrayrot = scipy.misc.imrotate(imarray,45)
@@ -238,11 +246,13 @@ def ACR_GA_whd(image,result):
     txt_temp = 'diagonal 2 is '+repr(round(diag2,1))+' mm (should be 188-192 mm)'
     print(txt_temp)
 
+    results.addFloat('GA_whd_diag1_%s'%label,repr(round(diag1,1)),level=1)
+    results.addFloat('GA_whd_diag2_%s'%label,repr(round(diag2,1)),level=1)
 
 # SLICE THICKNESS ACCURACY
 def ACR_STA(header, pixarray, result, label=None):
     # Read image and store pixel values in array
-    image_ACR, imarray = load_image(image)
+    image_ACR, imarray = header, pixarray
 #    plt.figure(1)
 #    plt.imshow(imarray)
     # Determine midpoint of phantom
@@ -282,13 +292,13 @@ def ACR_STA(header, pixarray, result, label=None):
     txt1 = 'Slice thickness is ' + repr(round(slice_thickness,2)) + 'mm (Should be 4.3-5.7 mm)'
     print txt1
 
-    result.addFloat('STA %s'%label,round(slice_thickness,2))
+    result.addFloat('STA_%s'%label,round(slice_thickness,2))
     
 
 #IMAGE INTENSISY UNIFORMITY
 def ACR_IIU(header,pixarray,result,label=None):
     # Read image and store pixel values in array
-    image_ACR, imarray = load_image(image)
+    image_ACR, imarray = header, pixarray
     # Determine midpoint of phantom
     center_x, center_y, radii = mid_phantom(image_ACR, imarray)
     # Determine ROI
@@ -357,12 +367,12 @@ def ACR_IIU(header,pixarray,result,label=None):
     txt1 = 'Percent integral uniformity (should be >82% for 3T) is ' + repr(round(PIU,0)) + '%'
     print txt1
 
-    result.addFloat('IIU %s'%label,round(PIU,2))
+    result.addFloat('IIU_%s'%label,round(PIU,2))
 
 # GHOSTING
 def ACR_Ghosting(header,pixarray,result,label=None):
         # Read image and store pixel values in array
-    image_ACR, imarray = load_image(image)
+    image_ACR, imarray = header, pixarray 
     # Determine midpoint of phantom
     center_x, center_y, radii = mid_phantom(image_ACR, imarray)
     # Determine mean PV in middle of phantom
@@ -373,11 +383,6 @@ def ACR_Ghosting(header,pixarray,result,label=None):
     ROI, ROI3m = ROI_ellipse(image_ACR, imarray, center_x, b, image_ACR.Columns-b-2, "vertical")
     ROI, ROI4m = ROI_ellipse(image_ACR, imarray, (center_x+np.int(radii[1]))+(image_ACR.Rows-center_x-np.int(radii[0]))/2, center_y, image_ACR.Rows-((center_x+np.int(radii[1]))+(image_ACR.Rows-center_x-np.int(radii[0]))/2)-2, "horizontal")
     ROI, ROI5m = ROI_ellipse(image_ACR, imarray, center_x, (center_y-np.int(radii[1]))/2, ((center_y-np.int(radii[1]))/2-2), "vertical")
-#    print ROI1m
-#    print ROI2m
-#    print ROI3m
-#    print ROI4m
-#    print ROI5m
 
     # Calculate ghosting ratio (GR)
     GR = np.abs(((ROI2m+ROI4m)-(ROI3m+ROI5m))/(2*ROI1m)) #--> hier klopt iets niet!!!!!!!!!!!!!!!!!1
@@ -387,12 +392,12 @@ def ACR_Ghosting(header,pixarray,result,label=None):
     
 
     
-    result.addFloat('Ghosting %s'%label,round(GR,2))
+    result.addFloat('Ghosting_%s'%label,round(GR,2))
 
 # SLICE POSITION ACCURACY
 def ACR_SPA(header,pixarray,result,label=None):
     # Read image and store pixel values in array
-    image_ACR, imarray = load_image(image)
+    image_ACR, imarray = header, pixarray 
 #    plt.figure(1)
 #    plt.imshow(imarray)
     # Determine midpoint of phantom
@@ -423,12 +428,12 @@ def ACR_SPA(header,pixarray,result,label=None):
     temp_txt = 'Verschil in lengte van staafjes is ' + repr(round(l_diff,1)) + ' mm (should be <5 mm)'
     print(temp_txt)
 
-    result.wad.addFloat('SPA %s'%label,round(l_diff,1))
+    result.addFloat('SPA_%s'%label,round(l_diff,1))
     
 # HIGH CONTRAST SPATIAL RESOLUTION
 def ACR_HCSR(header,pixarray,result,label=None):
     # Read image and store pixel values in array
-    image_ACR, imarray = load_image(image)   
+    image_ACR, imarray = header, pixarray 
     plt.figure(1)    
     plt.imshow(imarray)
     
@@ -459,25 +464,7 @@ def ACR_HCSR(header,pixarray,result,label=None):
             x = center_x+28/image_ACR.PixelSpacing[0]
             y = center_y+21/image_ACR.PixelSpacing[0]
     
-#        print image_ACR.PixelSpacing[0]       
-#        print image_ACR.PixelSpacing[1]
         ROI = ROI[x:x+dxy,y:y+dxy]
-#        plt.imshow(ROI)
-    
-        # Detect local maxima / corners of grid
-#        T = np.max(ROI)/2
-#        T = 0.5*np.max(ROI)
-##        max1 = find_max(ROI,neighborhood_size=20,threshold=T)
-#        max1 = find_max(ROI,neighborhood_size=20,threshold=T)
-##        print max1
-##        ROI[max1] = 10000
-#        mid_tst = scipy.ndimage.measurements.center_of_mass(ROI)
-#        print mid_tst
-#        ROI[mid_tst] = 10000
-#        plt.imshow(ROI)
-         
-        #ROI[max1[1],max1[0]] = 2000
-        #plt.imshow(ROI)
     
         # Thresholding
         threshold = np.mean(imarray)*0.7
@@ -501,11 +488,6 @@ def ACR_HCSR(header,pixarray,result,label=None):
             col_val.append(temp)
         midy = np.argmax(col_val)
         
-#        print midx
-#        print midy
-#        ROI[midx, midy] = 2
-        
-#        plt.imshow(ROI)
         # Count spaces in between dots per row
         dots_row = []
         # pos_tst = []
@@ -530,24 +512,15 @@ def ACR_HCSR(header,pixarray,result,label=None):
         for idx1 in range(4):
 #            profile =  ROI[max1[1][4]-14:max1[1][4]+5,max1[0][4]+idx1*(max1[0][5]-max1[0][4])/3]
             profile =  ROI[midx:midx+9.2/image_ACR.PixelSpacing[1],midy+idx1*2.2/image_ACR.PixelSpacing[0]]
-#            ROI[midx:midx+9.2/image_ACR.PixelSpacing[1],midy+idx1*2.2/image_ACR.PixelSpacing[0]] = 2
-#            pos_tst.append(max1[0][4]+idx1*(max1[0][5]-max1[0][4])/3)
-#            print profile
             num_dots = 0
             for idx in range(len(profile)):
                 if profile[idx]==0 and profile[idx-1]==1:
                     num_dots = num_dots+1
             dots_col.append(num_dots)
-#        print dots_col
-#        plt.figure(2)        
-#        plt.imshow(ROI)
         
         # Store findings
         dots_col = [dot for dot in dots_col if dot>3]
         
-#        print 'hiero        '
-#        print dots_col
-#        print len(dots_col)
         if len(dots_col) >0:
             HCSR.append('Pass')
         else:
@@ -580,7 +553,7 @@ def ACR_HCSR(header,pixarray,result,label=None):
     tmpout = []
 
     for key in outputdict:
-        result.addChar(key+'%s'%label,outputdict[key])
+        result.addChar(key+'_%s'%label,outputdict[key])
 
 
 
@@ -603,10 +576,10 @@ def MRI_ACR_main(data,results, **kwargs):
      if len(data.getAllInstances())>0:
          tmpfile = data.getAllInstances()[0]
          for child in params:
-            print child.text
+            print('Performing',child.text)
             if child.text in acr_test_dict.keys():
                 try:
-                     acr_test_dict[child.text](tmpfile,tmpfile.pixel_array,results)
+                     acr_test_dict[child.text](tmpfile,tmpfile.pixel_array,results,label=tmpfile.SeriesDescription.replace(' ','_'))
                 except:
                      pass
 
