@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    
+-->
+<config>
+
+
+    <action>
+        <plugin>Path_to_MyXMLparser</plugin>
+        <function>parseqcreport</function>
+        <default_level>1</default_level>        
+
+
+        <params>
+          <use_private_tag>0x0071,0x9999</use_private_tag>
+        </params>
+
+        <filters>
+        </filters>       
+        <limits>
+        </limits>
+    </action>
+</config>
