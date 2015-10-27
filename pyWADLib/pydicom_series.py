@@ -47,7 +47,10 @@ import time
 import gc
 import dicom
 from dicom.sequence import Sequence
-import pylab as plt
+try:
+    import pylab as plt
+except:
+    pass
 
 # Try importing numpy
 try:
@@ -709,8 +712,11 @@ def get_data(dicomseries):
     return dicomseries[0]._datasets[0].pixel_array
 
 def show_data(array):
-    plt.matshow(array[20,:,:])
-    plt.show()
+    try:
+	plt.matshow(array[20,:,:])
+	plt.show()
+    except:
+	print '[show_data] Error! matplotlib was installed or accessible'
 
 
 if __name__ == '__main__':

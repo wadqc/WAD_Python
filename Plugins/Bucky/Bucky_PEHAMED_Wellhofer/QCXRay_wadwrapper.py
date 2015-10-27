@@ -13,7 +13,7 @@
 #
 
 
-__version__='20150814'
+__version__='20151027'
 __author__ = 'aschilha'
 import sys
 import os

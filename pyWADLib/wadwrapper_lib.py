@@ -301,7 +301,7 @@ def prepareInput(instancedict,headers_only,logTag="[prepareInput] "):
                 elif modality == 'MG' and getDICOMMode(dcmInfile) == stModeBTO:
                     print '!WARNING! MG BTO dataset! DICOM info is NOT properly adjusted, no scaling applied yet!'
                     pixeldataIn = np.transpose(dcmInfile.pixel_array,(0,2,1))
-                elif modality == 'MG' or modality == 'CR':
+                elif modality == 'MG' or modality == 'CR' or modality == 'DX':
                     pixeldataIn = dcmInfile.pixel_array.transpose()
                 elif modality == 'RF': # fixme! 2D and 3D
                     pixeldataIn = dcmInfile.pixel_array.transpose()

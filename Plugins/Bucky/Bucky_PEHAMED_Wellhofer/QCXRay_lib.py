@@ -4,6 +4,7 @@ Warning: THIS MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED! And make su
 
 TODO:
 Changelog:
+    20151027: Added sign to XRayDev
     20150817: Removed hardcoded roomdefinitions. All in config files now!
     20150618: Tried DDL version of fftorientation, but that performs worse here. Left interface intact
     20150610: Bugfix: uniformity was calculated over copper only, instead of non-copper!; moved some math to wadwrapper_lib
@@ -269,7 +270,7 @@ class XRayStruct:
         self.maybeInvert()
 
 class XRayQC:
-    qcversion = 20150817
+    qcversion = 20151027
 
     boxradmm   = 110  # choose 11 cm or 8 cm for clean surroundings
     adjustmtfangledeg = 0. # if consistency check fails, add a little angle
@@ -2664,6 +2665,8 @@ class XRayQC:
                 if stand == lit.stWall:
                     sidmm = cs.forceRoom.sidwallmm
         devedge = 100.*max(np.abs(minedge-meanedge),np.abs(maxedge-meanedge))/sidmm
+        if maxedge-meanedge < meanedge-minedge:
+            devedge *= -1
         return devedge
 
     def ReportEntries(self,cs):

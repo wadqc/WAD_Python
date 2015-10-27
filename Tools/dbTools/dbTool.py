@@ -1,6 +1,7 @@
 #!/usr/bin/python
 """
 Changelog:
+20151015: SeedAndDestroy (patientid)
 20150617: Fix crash on empty value; SeekAndDestroy (SrcAET) added; restructured SeekAndDestroy for SrcAET,Modality,StationName
 20150413: SeekAndDestroy (modality)
 20150407: SeekAndDestroy (selector); fix empty stationname
@@ -67,7 +68,7 @@ class reportentry:
         self.srcaet = srcaet
 
 class dbTool(QtGui.QMainWindow):
-    qcversion = 20150617
+    qcversion = 20151015
     verbose = False
 
     stModeProcessor = 'processor'
@@ -141,7 +142,7 @@ class dbTool(QtGui.QMainWindow):
         'resultaten_status',
         'series',
         'study',
-        ]
+    ]
 
     stNone = 'NONE'
     stResultOK = 'Ok'
@@ -238,6 +239,7 @@ class dbTool(QtGui.QMainWindow):
             ("Seek and Destroy: remove all iqc database traces of a given GewenstID (will start reimport from dcm4chee)",functools.partial(self.seekandDestroy,mode='GewenstID')),
             ("Seek and Destroy: remove all iqc database traces of a given Selector (will start reimport from dcm4chee)",functools.partial(self.seekandDestroy,mode='Selector')),
             ("Seek and Destroy: remove all iqc database traces of all selectors of a given Modality (will start reimport from dcm4chee)",functools.partial(self.seekandDestroy,mode='Modality')),
+            ("Seek and Destroy: remove all iqc database traces of a PatientID (will start reimport from dcm4chee)",functools.partial(self.seekandDestroy,mode='PatientID')),
         ]
         databaseMenu = menubar.addMenu("&Database")
         for ra in databaseactions:
@@ -251,7 +253,7 @@ class dbTool(QtGui.QMainWindow):
             ("Current status report per selector",functools.partial(self.currentStatus,mode='selector')),
             ("Demo status report",self.reportDemo),
             ("MIR Bucky report",self.reportMIRBucky),
-            ]
+        ]
         reportMenu = menubar.addMenu("&Reports")
         for ra in reportactions:
             reportAction = QtGui.QAction(ra[0], self)
@@ -309,7 +311,7 @@ class dbTool(QtGui.QMainWindow):
             'status',
             'selector_fk',
             'creation_time'
-            ]
+        ]
         ###1 open db iqc
         con,cur,dbversion = self.connectdb(host=self.host)
 
@@ -520,7 +522,7 @@ class dbTool(QtGui.QMainWindow):
             cur.execute("SELECT * FROM %s where pk=%s" % (self.table_gewenste_processen,self.selectedGewenst))
         else:
             cur.execute("SELECT * FROM %s where selector_fk=%s" % (self.table_gewenste_processen,selector))
-            
+
         rows_processen = cur.fetchall()
         checklist = [
             ('pk',                     daProcessen,self.table_gewenste_processen),
@@ -769,13 +771,13 @@ class dbTool(QtGui.QMainWindow):
             thisthing = self.selectedAET
         else:
             feedback = "Unknown mode %s"%mode
-                
+
             if self.qctext:
                 self.qctext.appendPlainText(feedback)
             else:
                 print feedback
             return
-        
+
         thisthing = '%s=%s'%(mode,thisthing)    
         feedback = "Found %d rows in %s for %s" %(len(rows_processen),self.table_series,thisthing)
         if self.qctext:
@@ -1042,7 +1044,7 @@ class dbTool(QtGui.QMainWindow):
                     gpid = row['pk']
                     sfk = []
                     if row['series_fk']:
-                       sfk.append(row['series_fk'])
+                        sfk.append(row['series_fk'])
                     elif row['study_fk']:
                         cur.execute("SELECT pk FROM %s WHERE study_fk=%d" % (self.table_series,row['study_fk']))
                         rows_series = cur.fetchall()
@@ -1079,6 +1081,8 @@ class dbTool(QtGui.QMainWindow):
                         # add datetime
                         cur.execute("SELECT content_datetime FROM %s WHERE series_fk=%d" % (self.table_instances,skf))
                         instance_rows = cur.fetchall()
+                        if not len(instance_rows): continue
+
                         seriesdate = min ( [ row['content_datetime'] for row in instance_rows] )
                         entry.date = seriesdate
 
@@ -1635,7 +1639,7 @@ class dbTool(QtGui.QMainWindow):
         self.qctext.setTextInteractionFlags(self.qctext.textInteractionFlags() | QtCore.Qt.TextSelectableByKeyboard) # keep selectable
 
         # Reset Button
-        btnDestroy = QtGui.QPushButton("Destroy all traces of selected StationName/ID/Selector/Modality")
+        btnDestroy = QtGui.QPushButton("Destroy all traces of selected StationName/ID/Selector/Modality/PatientID")
         btnDestroy.clicked.connect(self.destroySelected)
 
         ###1 open db iqc
@@ -1892,15 +1896,15 @@ class dbTool(QtGui.QMainWindow):
 
         title = "Warning"
         text = "Are you sure you want to truncate?\n" \
-               "This will remove all datasets and results from the IQC database,\n" \
-               "which will trigger the WAD-Collector to treat all data in the DCM4CHEE database as new\n\n" \
-               "This is NOT a clean reset of the WAD-Server.\n" \
-               "XML input and output files are NOT removed (but new ones will generated, so expect clutter)\n" \
-               "Configuration files and Selectors will remain and stay active.\n\n" \
-               "Last chance: press \"OK\" to truncate or \"CANCEL\" to bail out."
+            "This will remove all datasets and results from the IQC database,\n" \
+            "which will trigger the WAD-Collector to treat all data in the DCM4CHEE database as new\n\n" \
+            "This is NOT a clean reset of the WAD-Server.\n" \
+            "XML input and output files are NOT removed (but new ones will generated, so expect clutter)\n" \
+            "Configuration files and Selectors will remain and stay active.\n\n" \
+            "Last chance: press \"OK\" to truncate or \"CANCEL\" to bail out."
 
         ret = QtGui.QMessageBox.warning(self, title,text,
-                QtGui.QMessageBox.Cancel, QtGui.QMessageBox.Ok)
+                                        QtGui.QMessageBox.Cancel, QtGui.QMessageBox.Ok)
         if ret == QtGui.QMessageBox.Ok:
             # textfield showing number of selected processes
             nrows = self.databaseTruncate()
@@ -1937,15 +1941,15 @@ class dbTool(QtGui.QMainWindow):
         path = os.path.join(path,'XML')
         title = "Warning"
         text = "Are you sure you want to purge?\n" \
-               "This will remove the files in %s\n" \
-               "and remove all datasets and results from the IQC database,\n" \
-               "which will trigger the WAD-Collector to treat all data in the DCM4CHEE database as new\n\n" \
-               "This is NOT a clean reset of the WAD-Server.\n" \
-               "Configuration files and Selectors will remain and stay active.\n\n" \
-               "Last chance: press \"OK\" to purge or \"CANCEL\" to bail out." % path
+            "This will remove the files in %s\n" \
+            "and remove all datasets and results from the IQC database,\n" \
+            "which will trigger the WAD-Collector to treat all data in the DCM4CHEE database as new\n\n" \
+            "This is NOT a clean reset of the WAD-Server.\n" \
+            "Configuration files and Selectors will remain and stay active.\n\n" \
+            "Last chance: press \"OK\" to purge or \"CANCEL\" to bail out." % path
 
         ret = QtGui.QMessageBox.warning(self, title,text,
-                QtGui.QMessageBox.Cancel, QtGui.QMessageBox.Ok)
+                                        QtGui.QMessageBox.Cancel, QtGui.QMessageBox.Ok)
         if ret == QtGui.QMessageBox.Ok:
             path1 = os.path.join(path,'analysemodule_input')
             path2 = os.path.join(path,'analysemodule_output')
@@ -2023,7 +2027,7 @@ class dbTool(QtGui.QMainWindow):
             "Last 12 months",
             "Previous year",
             "This year",
-            ]
+        ]
         for it in items:
             cmReportPeriod.addItem(it)
         self.selectedReportPeriod = cmReportPeriod.itemText(0)
@@ -2036,7 +2040,7 @@ class dbTool(QtGui.QMainWindow):
             "Bi-Weekly",
             "Weekly",
             "Daily"
-            ]
+        ]
         for it in items:
             cmQCPeriodicity.addItem(it)
         self.selectedReportQCPeriodicity = cmQCPeriodicity.itemText(0)
@@ -2163,7 +2167,7 @@ class dbTool(QtGui.QMainWindow):
         self.reporter = None
 
     def addToReport(self,machine='',selectors=[],scaleddata={},errors={},
-                             verwacht=0,counts={},bads={},retakes={}):
+                    verwacht=0,counts={},bads={},retakes={}):
         if self.reporter is None:
             self.reporter = Reporter(title='QC Status Rapportage',author='dbTool.py versie %d'%self.qcversion,url=self.host)
 
@@ -2305,10 +2309,10 @@ class dbTool(QtGui.QMainWindow):
 
             for sk in sfk: # WIJKT AF VAN EERDER, OMDAT ONDERSCHEID MEERDERE SERIES PER STUDY NODIG
                 allentries[str(gpid)+'_'+str(sk)]= reportentry(gpid=gpid,seriesid=sk,
-                                                      status=self.status_id_text[row['status']],
-                                                      analysisdate=row['creation_time'],
-                                                      selector=self.selector_id_text[row['selector_fk']],
-                                                      description='')
+                                                               status=self.status_id_text[row['status']],
+                                                               analysisdate=row['creation_time'],
+                                                               selector=self.selector_id_text[row['selector_fk']],
+                                                               description='')
 
         # 2.2: Add modality and stationname to all entries
         for gpid,entry in allentries.iteritems():
@@ -2627,21 +2631,21 @@ class DateAxis(pg.AxisItem):
 
 def process_args(argv):
     parser = argparse.ArgumentParser(description='PyQt4 argstest',
-                                   add_help=False)
+                                     add_help=False)
 
     # reimplement help (which we disabled above) so that -help works rather
     # than --help; done to be consistent with the style of args Qt wants
     parser.add_argument("-h", "-help", action='help',
-                      help="show this help message and exit")
+                        help="show this help message and exit")
 
     # AS: now my own
     parser.add_argument("-f", "--file", help="No gui, just run for given file")
     return parser.parse_args(argv[1:])
 
 class ignore(argparse.Action):
-  # we create an action that does nothing, so the Qt args do nothing
-  def __call__(self, parser, namespace, values, option_string=None):
-    pass
+    # we create an action that does nothing, so the Qt args do nothing
+    def __call__(self, parser, namespace, values, option_string=None):
+        pass
 
 if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv) # QApplication eats argv in constructor
