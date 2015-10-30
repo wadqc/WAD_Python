@@ -227,4 +227,3 @@ def xrayheader_series(data,results,params):
 
     results.addChar('room'+idname, cs.forceRoom.name) # do not specify level, use default from config
     results.addChar('stand'+idname, qclib.TableOrWall(cs), level=1,rank=offset+1) # do not specify level, use default from config
-    results.addBool('boolshit'+idname, True) # do not specify level, use default from config
