@@ -165,8 +165,15 @@ def xrayqc_series(data, results, params):
 
     labvals = qclib.ReportEntries(cs)
     tmpdict={}
-    for key,val in labvals:
-        results.addFloat(key+str(idname), val, quantity=str(key))
+    for elem in labvals:
+        #labvals.append( {'name':'label','value':0, 'quantity':'columnname','level':'1:default, 2: detail','pos':missing or a number} )
+        # if no pos given, the next one will be given
+        # if no quantity given, 'name' will be used
+        # if no level given, the default will be used
+        quan = elem['quantity'] if 'quantity' in elem else str(elem['name'])
+        level = elem['level'] if 'level' in elem else None
+        rank = elem['rank'] if 'rank' in elem else None
+        results.addFloat(elem['name']+str(idname), elem['value'], quantity=quan, level=level,rank=rank)
 
     ## 6. Build artefact picture thumbnail
     filename = 'test'+idname+'.jpg' # Use jpg if a thumbnail is desired
@@ -207,13 +214,17 @@ def xrayheader_series(data,results,params):
         'Sensitivity',
         'kVp'
     ]
-
+    offset = -25
     results.addChar('pluginversion'+idname, str(qclib.qcversion)) # do not specify level, use default from config
-    for di in dicominfo:
-        if di[0] in floatlist:
-            results.addFloat(di[0]+idname, di[1]) # do not specify level, use default from config
+    for elem in dicominfo:
+        quan = elem['quantity'] if 'quantity' in elem else str(elem['name'])
+        level = elem['level'] if 'level' in elem else None # if not specify level, use default from config
+        rank = elem['rank'] if 'rank' in elem else None
+        if elem['name'] in floatlist:
+            results.addFloat(elem['name']+str(idname), elem['value'], quantity=quan, level=level,rank=rank)
         else:
-            results.addChar(di[0]+idname, str(di[1])[:min(len(str(di[1])),128)]) # do not specify level, use default from config
+            results.addChar(elem['name']+str(idname), str(elem['value'])[:min(len(str(elem['value'])),128)], quantity=quan, level=level,rank=rank)
 
     results.addChar('room'+idname, cs.forceRoom.name) # do not specify level, use default from config
-    results.addChar('stand'+idname, qclib.TableOrWall(cs)) # do not specify level, use default from config
+    results.addChar('stand'+idname, qclib.TableOrWall(cs), level=1,rank=offset+1) # do not specify level, use default from config
+    results.addBool('boolshit'+idname, True) # do not specify level, use default from config

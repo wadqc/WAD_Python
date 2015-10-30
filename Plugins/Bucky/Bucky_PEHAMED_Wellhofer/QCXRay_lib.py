@@ -4,6 +4,7 @@ Warning: THIS MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED! And make su
 
 TODO:
 Changelog:
+    20151029: Changed output levels and descriptions etc.
     20151027: Added sign to XRayDev
     20150817: Removed hardcoded roomdefinitions. All in config files now!
     20150618: Tried DDL version of fftorientation, but that performs worse here. Left interface intact
@@ -270,7 +271,7 @@ class XRayStruct:
         self.maybeInvert()
 
 class XRayQC:
-    qcversion = 20151027
+    qcversion = 20151029
 
     boxradmm   = 110  # choose 11 cm or 8 cm for clean surroundings
     adjustmtfangledeg = 0. # if consistency check fails, add a little angle
@@ -2435,105 +2436,109 @@ class XRayQC:
 
         if(info == "dicom"):
             dicomfields = [
-                ["0008,0021",  "SeriesDate"],
-                ["0008,0031",  "SeriesTime"],
-                ["0008,0070",  "Manufacturer"],
-                ["0008,0080",  "InstitutionName"],
-                ["0008,1010",  "StationName"],
-                ["0008,1030",  "StudyDescription"],
-                ["0008,103E",  "SeriesDescription"],
-                ["0008,1070",  "Operator's Name"],
-                ["0010,0020",  "PatientID"],
-                ["0018,0015",  "BodyPartExamined"],
-                ["0018,0060",  "kVp"],
-                ["0018,1000",  "DeviceSerialNumber"],
-                ["0018,1004",  "PlateID"],
-                ["0018,1020",  "SoftwareVersions"],
-                ["0018,1110",  "DistanceSourceToDetector (mm)"],
-                ["0018,1150",  "ExposureTime (ms)"],
-                ["0018,1152",  "Exposure (mAs)"],
-                ["0018,115E",  "ImageAreaDoseProduct"],
-                ["0018,1160",  "FilterType"],
-                ["0018,1164",  "ImagerPixelSpacing"],
-                ["0018,1166",  "Grid"],
-                ["0018,1190",  "FocalSpot(s)"],
-                ["0018,1200",  "Date of Last Calibration"],
-                ["0018,1260",  "PlateType"],
-                ["0018,1400",  "AcquisitionDeviceProcessingDescription"],
-                ["0018,1401",  "AcquisitionDeviceProcessingCode"],
-                ["0018,1403",  "CassetteSize"],
-                ["0018,1404",  "ExposuresOnPlate"],
-                ["0018,1508",  "PositionerType"],
-                ["0018,6000",  "Sensitivity"],
-                ["0020,4000",  "ImageComments"],
-                ["0028,0006",  "PlanarConfiguration"],
-                ["0028,0101",  "BitsStored"]
+                #{'key':"0008,0021",'name','value':0, 'quantity','level':,'rank':},
+                {'key':"0008,0021",  'name':"SeriesDate"},
+                {'key':"0008,0031",  'name':"SeriesTime"},
+                {'key':"0008,0070",  'name':"Manufacturer"},
+                {'key':"0008,0080",  'name':"InstitutionName"},
+                {'key':"0008,1010",  'name':"StationName"},
+                {'key':"0008,1030",  'name':"StudyDescription"},
+                {'key':"0008,103E",  'name':"SeriesDescription"},
+                {'key':"0008,1070",  'name':"Operator's Name"},
+                {'key':"0010,0020",  'name':"PatientID"},
+                {'key':"0018,0015",  'name':"BodyPartExamined"},
+                {'key':"0018,0060",  'name':"kVp"},
+                {'key':"0018,1000",  'name':"DeviceSerialNumber"},
+                {'key':"0018,1004",  'name':"PlateID"},
+                {'key':"0018,1020",  'name':"SoftwareVersions"},
+                {'key':"0018,1110",  'name':"DistanceSourceToDetector (mm)"},
+                {'key':"0018,1150",  'name':"ExposureTime (ms)"},
+                {'key':"0018,1152",  'name':"Exposure (mAs)"},
+                {'key':"0018,115E",  'name':"ImageAreaDoseProduct"},
+                {'key':"0018,1160",  'name':"FilterType"},
+                {'key':"0018,1164",  'name':"ImagerPixelSpacing"},
+                {'key':"0018,1166",  'name':"Grid"},
+                {'key':"0018,1190",  'name':"FocalSpot(s)"},
+                {'key':"0018,1200",  'name':"Date of Last Calibration"},
+                {'key':"0018,1260",  'name':"PlateType"},
+                {'key':"0018,1400",  'name':"AcquisitionDeviceProcessingDescription"},
+                {'key':"0018,1401",  'name':"AcquisitionDeviceProcessingCode"},
+                {'key':"0018,1403",  'name':"CassetteSize"},
+                {'key':"0018,1404",  'name':"ExposuresOnPlate"},
+                {'key':"0018,1508",  'name':"PositionerType"},
+                {'key':"0018,6000",  'name':"Sensitivity"},
+                {'key':"0020,4000",  'name':"ImageComments"},
+                {'key':"0028,0006",  'name':"PlanarConfiguration"},
+                {'key':"0028,0101",  'name':"BitsStored"}
             ]
             if 'RelativeXRayExposure' in cs.dcmInfile: #DX
-                dicomfields.append(["0018,1405","Relative Exposure"])
+                dicomfields.append({'key':"0018,1405",'name':"Relative Exposure"})
 
         elif(info == "qclight"):
             dicomfields = [
-                ["0008,0021",  "SeriesDate"],
-                ["0008,0031",  "SeriesTime"],
-                ["0008,1070",  "Operator's Name"],
-                ["0018,0060",  "kVp"],
-                ["0018,1000",  "DeviceSerialNumber"],
-                ["0018,1004",  "Plate ID"],
-                ["0018,1401",  "Acquisition Device Processing Code"],
-                ["0018,1020",  "SoftwareVersions"],
-                ["0018,1110",  "DistanceSourceToDetector (mm)"],
-                ["0018,1150",  "ExposureTime (ms)"],
-                ["0018,1152",  "Exposure (mAs)"],
-                ["0018,115E",  "ImageAreaDoseProduct"],
-                ["0018,1160",  "FilterType"],
-                ["0018,1190",  "FocalSpot(s)"],
-                ["0018,1164",  "ImagerPixelSpacing"],
-                ["0018,1166",  "Grid"],
-                ["0018,1200",  "Date of Last Calibration"],
-                ["0018,5021",  "Postprocessing"],
-                ["0018,6000",  "Sensitivity"]
+                {'key':"0008,0021",  'name':"SeriesDate"},
+                {'key':"0008,0031",  'name':"SeriesTime"},
+                {'key':"0008,1070",  'name':"Operator's Name"},
+                {'key':"0018,0060",  'name':"kVp"},
+                {'key':"0018,1000",  'name':"DeviceSerialNumber"},
+                {'key':"0018,1004",  'name':"Plate ID"},
+                {'key':"0018,1401",  'name':"Acquisition Device Processing Code"},
+                {'key':"0018,1020",  'name':"SoftwareVersions"},
+                {'key':"0018,1110",  'name':"DistanceSourceToDetector (mm)"},
+                {'key':"0018,1150",  'name':"ExposureTime (ms)"},
+                {'key':"0018,1152",  'name':"Exposure (mAs)"},
+                {'key':"0018,115E",  'name':"ImageAreaDoseProduct"},
+                {'key':"0018,1160",  'name':"FilterType"},
+                {'key':"0018,1190",  'name':"FocalSpot(s)"},
+                {'key':"0018,1164",  'name':"ImagerPixelSpacing"},
+                {'key':"0018,1166",  'name':"Grid"},
+                {'key':"0018,1200",  'name':"Date of Last Calibration"},
+                {'key':"0018,5021",  'name':"Postprocessing"},
+                {'key':"0018,6000",  'name':"Sensitivity"}
             ]
             if 'RelativeXRayExposure' in cs.dcmInfile: #DX
-                dicomfields.append(["0018,1405","Relative Exposure"])
+                dicomfields.append({'key':"0018,1405",'name':"Relative Exposure"})
 
         elif(info == "qcwad"):
+            offset = -25 # rank must be negative, so recalc as offset+real position
             if not 'DistanceSourceToDetector' in cs.dcmInfile: # WKZ-like fcr
                 dicomfields = [
-                    ["0008,0021",  "SeriesDate"],
-                    ["0008,0031",  "SeriesTime"],
-                    ["0008,1070",  "Operator's Name"],
-                    ["0018,1004",  "Plate ID"],
-                    ["0018,1401",  "Acquisition Device Processing Code"],
-                    ["0018,1020",  "SoftwareVersions"],
-                    ["0018,1164",  "ImagerPixelSpacing"],
-                    ["0018,6000",  "Sensitivity"]
+                    {'key':"0008,0021",  'name':"SeriesDate"},
+                    {'key':"0008,0031",  'name':"SeriesTime", 'quantity':'time', 'level':1, 'rank':offset+2},
+                    {'key':"0008,1070",  'name':"Operator's Name"},
+                    {'key':"0018,1004",  'name':"Plate ID"},
+                    {'key':"0018,1401",  'name':"Acquisition Device Processing Code", 'quantity':'processing', 'level':1, 'rank':offset+9},
+                    {'key':"0018,1020",  'name':"SoftwareVersions"},
+                    {'key':"0018,1164",  'name':"ImagerPixelSpacing"},
+                    {'key':"0018,6000",  'name':"Sensitivity",'quantity':'S','level':1,'rank':offset+12}
                 ]
             else:
                 dicomfields = [
-                    ["0008,0021",  "SeriesDate"],
-                    ["0008,0031",  "SeriesTime"],
-                    ["0008,1070",  "Operator's Name"],
-                    ["0018,0060",  "kVp"],
-                    ["0018,1000",  "DeviceSerialNumber"],
-                    ["0018,1020",  "SoftwareVersions"],
-                    ["0018,1110",  "DistanceSourceToDetector (mm)"],
-                    ["0018,1150",  "ExposureTime (ms)"],
-                    ["0018,1152",  "Exposure (mAs)"],
-                    ["0018,115E",  "ImageAreaDoseProduct"],
-                    ["0018,1160",  "FilterType"],
-                    ["0018,1190",  "FocalSpot(s)"],
-                    ["0018,1164",  "ImagerPixelSpacing"],
-                    ["0018,1166",  "Grid"],
-                    ["0018,1200",  "Date of Last Calibration"],
-                    ["0018,5021",  "Postprocessing"],
-                    ["0018,6000",  "Sensitivity"]
+                    {'key':"0008,0021",  'name':"SeriesDate"},
+                    {'key':"0008,0031",  'name':"SeriesTime", 'quantity':'time', 'level':1, 'rank':offset+2}, # spot 1 reserved for stand
+                    {'key':"0018,1110",  'name':"DistanceSourceToDetector (mm)", 'quantity':'distance', 'level':1, 'rank':offset+3},
+                    {'key':"0018,0060",  'name':"kVp", 'level':1, 'rank':offset+4},
+                    {'key':"0018,1160",  'name':"FilterType", 'quantity':'filter', 'level':1, 'rank':offset+5},
+                    {'key':"0018,1190",  'name':"FocalSpot(s)", 'quantity':'focalspot', 'level':1, 'rank':offset+6},
+                    {'key':"0018,1166",  'name':"Grid", 'quantity':'grid', 'level':1, 'rank':offset+7},
+                    {'key':"0018,5021",  'name':"Postprocessing", 'quantity':'processing', 'level':1, 'rank':offset+9}, # spot 8 reserved for rotation
+
+                    {'key':"0018,1150",  'name':"ExposureTime (ms)", 'quantity':'ms','level':1,'rank':offset+10},
+                    {'key':"0018,1152",  'name':"Exposure (mAs)", 'quantity':'mAs','level':1,'rank':offset+11},
+                    {'key':"0018,115E",  'name':"ImageAreaDoseProduct", 'quantity':'DAP','level':1,'rank':offset+12},
+                
+                    {'key':"0008,1070",  'name':"Operator's Name"},
+                    {'key':"0018,1000",  'name':"DeviceSerialNumber"},
+                    {'key':"0018,1020",  'name':"SoftwareVersions"},
+                    {'key':"0018,1164",  'name':"ImagerPixelSpacing"},
+                    {'key':"0018,1200",  'name':"Date of Last Calibration"},
+                    {'key':"0018,6000",  'name':"Sensitivity",'quantity':'S'}
                 ]
 
-
+        #labvals.append( {'name':'label','value':0, 'quantity':'columnname','level':'1:default, 2: detail','rank':missing or a number} )
         results = []
         for df in dicomfields:
-            key = df[0]
+            key = df['key']
             value = ""
             replaced = False
             if(key == "0018,1152"):
@@ -2550,7 +2555,8 @@ class XRayQC:
                 except:
                     value = ""
 
-            results.append( (df[1],value) )
+            df['value'] = value
+            results.append( df )
 
         return results
 #----------------------------------------------------------------------
@@ -2676,14 +2682,19 @@ class XRayQC:
         labvals = []
         stand = self.TableOrWall(cs)
 
-        ## Phantom orientation
-        labvals.append( ('PhantomOrientation',cs.po_rot) )
-        labvals.append( ('AlignConfidence',100.*cs.bbox_confidence) )
-        labvals.append( ('xray[N]cm',cs.xrayNSWEmm[0]/10.) )
-        labvals.append( ('xray[E]cm',cs.xrayNSWEmm[3]/10.) )
-        labvals.append( ('xray[S]cm',cs.xrayNSWEmm[1]/10.) )
-        labvals.append( ('xray[W]cm',cs.xrayNSWEmm[2]/10.) )
-        labvals.append( ('xrayDev',self.XRayDev(cs)) )
+        ## Phantom orientation; level 1 = show by default; level 2 = show in details
+        #labvals.append( {'name':'label','value':0, 'quantity':'columnname','level':'1:default, 2: detail','rank':missing or a negative number} )
+        # if no rank given, the order of addition will be used
+        # if no quantity given, 'name' will be used
+        # if no level given, the default will be used
+        offset = -25 # rank must be negative, so recalc as offset+real position
+        labvals.append( {'name':'PhantomOrientation','value':cs.po_rot, 'quantity':'rotate','level':1,'rank':offset+7} )
+        labvals.append( {'name':'AlignConfidence','value':100.*cs.bbox_confidence, 'quantity':'aligned','level':2} )
+        labvals.append( {'name':'xray[N]cm','value':cs.xrayNSWEmm[0]/10., 'quantity':'xrN','level':2} )
+        labvals.append( {'name':'xray[E]cm','value':cs.xrayNSWEmm[3]/10., 'quantity':'xrE','level':2} )
+        labvals.append( {'name':'xray[S]cm','value':cs.xrayNSWEmm[1]/10., 'quantity':'xrS','level':2} )
+        labvals.append( {'name':'xray[W]cm','value':cs.xrayNSWEmm[2]/10., 'quantity':'xrW','level':2} )
+        labvals.append( {'name':'xrayDev','value':self.XRayDev(cs), 'quantity':'xrayDev','level':1, 'rank':offset+12} )
 
         ## uniformity
         if stand == lit.stWall:
@@ -2692,34 +2703,34 @@ class XRayQC:
         else:
             label = 'ROIUniformity'
             value = 100.*cs.unif.ROIuniformity
-        labvals.append( (label,value) )
+        labvals.append( {'name':label,'value':value, 'quantity':'Uniformity','level':1,'rank':offset+13} )
 
         ## cuwedge
-        labvals.append( ('CuConfidence',cs.cuwedge.wedge_confidence*100) ) # Confidence in wedge finding
+        labvals.append( {'name':'CuConfidence','value':cs.cuwedge.wedge_confidence*100,'level':2} ) # Confidence in wedge finding
         # SNR max
-        labvals.append( ('CuSNR_'+str(cs.cuwedge.roi_mmcu[-1]),cs.cuwedge.roi_snr[-1]) )
+        labvals.append( {'name':'CuSNR_'+str(cs.cuwedge.roi_mmcu[-1]),'value':cs.cuwedge.roi_snr[-1], 'quantity':'SNR','level':1,'rank':offset+15} )
         # CNR between steps all > 1
         minCNR = cs.cuwedge.roi_cnr[0]
         for i in range(1,len(cs.cuwedge.roi_cnr)-1):
             minCNR = min (minCNR,cs.cuwedge.roi_cnr[i])
-        labvals.append( ('CuCNRmin',minCNR) )
+        labvals.append( {'name':'CuCNRmin','value':minCNR, 'quantity':'CNRmin','level':2} )
         # Dynamic Range
-        labvals.append( ('CuDR'+str(cs.cuwedge.roi_mmcu[0])+'_'+str(cs.cuwedge.roi_mmcu[-1]),cs.cuwedge.dynamicRange) )
+        labvals.append( {'name':'CuDR'+str(cs.cuwedge.roi_mmcu[0])+'_'+str(cs.cuwedge.roi_mmcu[-1]),'value':cs.cuwedge.dynamicRange, 'quantity':'DynRange','level':1,'rank':offset+14} )
         # guesskVp
-        labvals.append( ('guesskVp',cs.cuwedge.guesskVp) )
-        # approximate mAs from DOPu ntil DX info, better approx mAs
-        labvals.append( ('mAscalc',self.mAsCalc(cs)) )
+        labvals.append( {'name':'kVp_est','value':cs.cuwedge.guesskVp, 'quantity':'kVp_est','level':2} )
+        # approximate mAs from DAP until DX info, better approx mAs
+        labvals.append( {'name':'mAs_est','value':self.mAsCalc(cs), 'quantity':'mAs_est','level':2} )
 
         ## low contrast
         for i,cnr in enumerate(cs.loco.low_cnr):
-            labvals.append( ('lowCNR_'+str(i),cnr) )
+            labvals.append( {'name':'lowCNR_'+str(i),'value':cnr,'level':2} )
 
         ## mtf
-        labvals.append( ('MTFPosConfidence',cs.mtf.pos_confidence*100.) )
-        labvals.append( ('MTFFreqConfidence',cs.mtf.freq_confidence*100.) )
-        labvals.append( ('AreaContrast5',mymath.AreaUnderCurve(cs.mtf.contrast_freqs,cs.mtf.contrast_response)) )
-        labvals.append( ('AreaMTF5',mymath.AreaUnderCurve(cs.mtf.contrast_freqs,cs.mtf.ctfmtf)) )
-        labvals.append( ('MTF10',mymath.MTF10pct(cs.mtf.contrast_freqs,cs.mtf.ctfmtf)) )
+        labvals.append( {'name':'MTFPosConfidence','value':cs.mtf.pos_confidence*100.,'level':2} )
+        labvals.append( {'name':'MTFFreqConfidence','value':cs.mtf.freq_confidence*100.,'level':2} )
+        labvals.append( {'name':'AreaContrast5','value':mymath.AreaUnderCurve(cs.mtf.contrast_freqs,cs.mtf.contrast_response),'level':2} )
+        labvals.append( {'name':'AreaMTF5','value':mymath.AreaUnderCurve(cs.mtf.contrast_freqs,cs.mtf.ctfmtf),'level':2} )
+        labvals.append( {'name':'MTF10','value':mymath.MTF10pct(cs.mtf.contrast_freqs,cs.mtf.ctfmtf),'level':2} )
 
         return labvals
 
