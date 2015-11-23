@@ -1,178 +1,198 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Oct 11 10:29:57 2013
-
-AffineTransformation Originally written by Jarno Elonen <elonen@iki.fi>, November 2007, released into the Public Domain
-http://elonen.iki.fi/code/misc-notes/affine-fit/
-
-Slightly rewritten by aschilha
 """
 import numpy as np
 from scipy.optimize import curve_fit
 import scipy.ndimage as scind
 import scipy.stats
 
+class RigidTransform():
+    def getRMSE(self,inA,inB):
+        if self.rotmatrix is None or self.translation is None:
+            return
 
-class AffineTransformation:
-    """Result object that represents the transformation
-       from affine fitter."""
-    M = []
-    dim = 0
-    def __init__ (self, matrix,pdim):
-        self.M = matrix
-        self.dim = pdim
+        assert len(inA) == len(inB)
+        A = inA
+        if not isinstance(inA,np.matrix):
+            A = np.mat(inA)
+        B = inB
+        if not isinstance(inB,np.matrix):
+            B = np.mat(inB)
 
-    def To_Str(self):
-        res = ""
-        for j in range(self.dim):
-            str = "x%d' = " % j
-            for i in range(self.dim):
-                str +="x%d * %f + " % (i, self.M[i][j+self.dim+1])
-            str += "%f" % self.M[self.dim][j+self.dim+1]
-            res += str + "\n"
-        print self.SimpleMatrix()
-        return res
+        N = A.shape[0] # total points
 
-    def SimpleMatrix(self):
-        mat = []
-        for j in range(self.dim):
-            row = []
-            for i in range(self.dim):
-                row.append(self.M[i][j+self.dim+1])
-            row.append(self.M[self.dim][j+self.dim+1])
-            mat.append(row)
-        return mat
+        A2 = (self.rotmatrix*A.T) + np.tile(self.translation, (1, N))
+        A2 = A2.T
         
-    def Transform(self, pt):
-        res = [0.0 for a in range(self.dim)]
-        for j in range(self.dim):
-            for i in range(self.dim):
-                res[j] += pt[i] * self.M[i][j+self.dim+1]
-            res[j] += self.M[self.dim][j+self.dim+1]
-        return res
-
-    def getShift(self):
-        shift = [ self.M[self.dim][j+self.dim+1] for j in xrange(self.dim)]
-        return shift
+        # Find the error
+        err = A2 - B
         
-    def getScaling(self):
-        mat = self.SimpleMatrix()
-        scaling = [np.sqrt(mat[0][0]**2+mat[0][1]**2),np.sqrt(mat[1][0]**2+mat[1][1]**2)]
-        return scaling
+        err = np.multiply(err, err)
+        err = np.sum(err)
+        rmse = np.sqrt(err/N)
+        return rmse
+    
+    def apply(self,inA):
+        if self.rotmatrix is None or self.translation is None:
+            return
 
+        A = inA
+        if not isinstance(inA,np.matrix):
+            A = np.mat(inA)
+
+        N = A.shape[0] # total points
+        A2 = (self.rotmatrix*A.T) + np.tile(self.translation, (1, N))
+        A2 = A2.T
+        return A2.tolist()[0]
+    
+    def getRotationDeg(self):
+        if self.rotmatrix is None:
+            return
+
+        return 180/np.pi*np.arctan2(self.rotmatrix[0,1],self.rotmatrix[0,0])
+
+    def getRotationRad(self):
+        if self.rotmatrix is None:
+            return
+
+        return np.arctan2(self.rotmatrix[0,1],self.rotmatrix[0,0])
+        
     def getRotation(self):
-        mat = self.SimpleMatrix()
-        rot = np.arctan2(mat[0][0],mat[0][1])
-        return rot
-
-    def RigidTransform(self, pt):
-        mat = self.SimpleMatrix()
-        scaling = self.getScaling()
-        row = mat[0]
-        nx = row[0]/scaling[0]*pt[0]+row[1]/scaling[0]*pt[1]+row[2]
-        row = mat[1]
-        ny = row[0]/scaling[1]*pt[0]+row[1]/scaling[1]*pt[1]+row[2]
+        return self.getRotationRad()
+    def getShift(self):
+        return self.translation.T.tolist()[0]
+    
+    def getTranslation(self):
+        if self.translation is None:
+            return
+        return self.translation
+    
+    def __init__(self,fromA,toB):
+        self.rotmatrix = None
+        self.translation = None
         
-        return [nx,ny]
+        self.rigid_transform_3D(fromA,toB)
+        
+    def rigid_transform_3D(self,inA, inB):
+        # Input: expects Nx3 matrix of points
+        # Returns R,t
+        # R = 3x3 rotation matrix
+        # t = 3x1 column vector
 
-def Affine_Fit( from_pts, to_pts ):
-    """Fit an affine transformation to given point sets.
-      More precisely: solve (least squares fit) matrix 'A'and 't' from
-      'p ~= A*q+t', given vectors 'p' and 'q'.
-      Works with arbitrary dimensional vectors (2d, 3d, 4d...).
+        assert len(inA) == len(inB)
+        A = inA
+        if not isinstance(inA,np.matrix):
+            A = np.mat(inA)
+        B = inB
+        if not isinstance(inB,np.matrix):
+            B = np.mat(inB)
 
-      Written by Jarno Elonen <elonen@iki.fi> in 2007.
-      Placed in Public Domain.
-
-      Based on paper "Fitting affine and orthogonal transformations
-      between two sets of points, by Helmuth Spath (2003)."""
-
-    """
-    Example:
-    from_pt = ((1,1),(1,2),(2,2),(2,1)) # a 1x1 rectangle
-    to_pt = ((4,4),(6,6),(8,4),(6,2))   # scaled x 2, rotated 45 degrees and translated
+        N = A.shape[0] # total points
     
-    trn = Affine_Fit(from_pt, to_pt)
+        centroid_A = np.mean(A, axis=0)
+        centroid_B = np.mean(B, axis=0)
+        
+        # centre the points
+        AA = A - np.tile(centroid_A, (N, 1))
+        BB = B - np.tile(centroid_B, (N, 1))
     
-    print "Transformation is:"
-    print trn.To_Str()
+        # dot is matrix multiplication for array
+        H = np.transpose(AA) * BB
     
-    err = 0.0
-    for i in range(len(from_pt)):
-        fp = from_pt[i]
-        tp = to_pt[i]
-        t = trn.Transform(fp)
-        print ("%s => %s ~= %s" % (fp, tuple(t), tp))
-        err += ((tp[0] - t[0])**2 + (tp[1] - t[1])**2)**0.5
+        U, S, Vt = np.linalg.svd(H)
     
-    print "Fitting error = %f" % err
-    """
-    q = from_pts
-    p = to_pts
-    if len(q) != len(p) or len(q)<1:
-        print "from_pts and to_pts must be of same size."
-        return False
-
-    dim = len(q[0]) # num of dimensions
-    if len(q) < dim:
-        print "Too few points => under-determined system."
-        return False
-
-    # Make an empty (dim) x (dim+1) matrix and fill it
-    c = [[0.0 for a in range(dim)] for i in range(dim+1)]
-    for j in range(dim):
-        for k in range(dim+1):
-            for i in range(len(q)):
-                qt = list(q[i]) + [1]
-                c[k][j] += qt[k] * p[i][j]
-
-    # Make an empty (dim+1) x (dim+1) matrix and fill it
-    Q = [[0.0 for a in range(dim)] + [0] for i in range(dim+1)]
-    for qi in q:
-        qt = list(qi) + [1]
-        for i in range(dim+1):
-            for j in range(dim+1):
-                Q[i][j] += qt[i] * qt[j]
-
-    # Ultra simple linear system solver. Replace this if you need speed.
-    def gauss_jordan(m, eps = 1.0/(10**10)):
-      """Puts given matrix (2D array) into the Reduced Row Echelon Form.
-         Returns True if successful, False if 'm' is singular.
-         NOTE: make sure all the matrix items support fractions! Int matrix will NOT work!
-         Written by Jarno Elonen in April 2005, released into Public Domain"""
-      (h, w) = (len(m), len(m[0]))
-      for y in range(0,h):
-        maxrow = y
-        for y2 in range(y+1, h):    # Find max pivot
-          if abs(m[y2][y]) > abs(m[maxrow][y]):
-            maxrow = y2
-        (m[y], m[maxrow]) = (m[maxrow], m[y])
-        if abs(m[y][y]) <= eps:     # Singular?
-          return False
-        for y2 in range(y+1, h):    # Eliminate column y
-          c = m[y2][y] / m[y][y]
-          for x in range(y, w):
-            m[y2][x] -= m[y][x] * c
-      for y in range(h-1, 0-1, -1): # Backsubstitute
-        c  = m[y][y]
-        for y2 in range(0,y):
-          for x in range(w-1, y-1, -1):
-            m[y2][x] -=  m[y][x] * m[y2][y] / c
-        m[y][y] /= c
-        for x in range(h, w):       # Normalize row y
-          m[y][x] /= c
-      return True
-
-    # Augement Q with c and solve Q * a' = c by Gauss-Jordan
-    M = [ Q[i] + c[i] for i in range(dim+1)]
-    if not gauss_jordan(M):
-        print "Error: singular matrix. Points are probably coplanar."
-        return False
-
-    # Make a result object
-    transformation = AffineTransformation(M,dim)
-    return transformation
+        R = Vt.T * U.T
     
+        # special reflection case
+        if np.linalg.det(R) < 0:
+            print "Reflection detected"
+            Vt[2,:] *= -1
+            R = Vt.T * U.T
+    
+        t = -R*centroid_A.T + centroid_B.T
+    
+        self.translation = t
+        self.rotmatrix = R
+
+    def test(self):
+        # Test with random data
+        
+        # Random rotation and translation
+        R = np.mat(np.random.rand(3,3))
+        t = np.mat(np.random.rand(3,1))
+        
+        # make R a proper rotation matrix, force orthonormal
+        U, S, Vt = np.linalg.svd(R)
+        R = U*Vt
+        
+        # remove reflection
+        if np.linalg.det(R) < 0:
+            Vt[2,:] *= -1
+            R = U*Vt
+        
+        # number of points
+        n = 10
+        
+        A = np.mat(np.random.rand(n,3));
+        B = R*A.T + np.tile(t, (1, n))
+        B = B.T
+        
+        # recover the transformation
+        ret_R, ret_t = self.rigid_transform_3D(A, B)
+        
+        A2 = (ret_R*A.T) + np.tile(ret_t, (1, n))
+        A2 = A2.T
+        
+        # Find the error
+        err = A2 - B
+        
+        err = np.multiply(err, err)
+        err = np.sum(err)
+        rmse = np.sqrt(err/n)
+        
+        print "Points A"
+        print A
+        print ""
+        
+        print "Points B"
+        print B
+        print ""
+        
+        print "Rotation"
+        print R
+        print ""
+        
+        print "Translation"
+        print t
+        print ""
+        
+        print "RMSE:", rmse
+        print "If RMSE is near zero, the function is correct!"
+
+    def test2(self):
+        A = [[40.96, 127.5], [127.5, 215.04], [215.04, 127.5]]
+        B = [[43.210000000000001, 127.25], [129.0, 213.03999999999999], [214.53999999999999, 127.0]]
+
+        # recover the transformation
+        self.rigid_transform_3D(A, B)
+        
+        print "Points A"
+        print A
+        print ""
+
+        print "Points B"
+        print B
+        print ""
+
+        print "Rotation"
+        print self.rotmatrix
+        print ""
+        print "angle:", self.getRotationDeg()
+        print "Translation"
+        print self.translation
+        print ""
+        print 'RMSE',self.getRMSE(A, B)
+        print self.apply(A)
 
 def FindCenters2D(pts,datain,distpx,discpx,minimod=False):
     error = True
@@ -197,6 +217,7 @@ def FindCenters2D(pts,datain,distpx,discpx,minimod=False):
     
     widthpx = np.shape(data)[0] ## width/height in pixels
     heightpx = np.shape(data)[1]
+    import matplotlib.pyplot as plt
 
     for y in range(len(pts)):
         for x in range(len(pts[y])):
@@ -210,6 +231,10 @@ def FindCenters2D(pts,datain,distpx,discpx,minimod=False):
             miny = max(0,y0-searchrad)
             maxy = min(heightpx-2,y0+searchrad)
             cropped = data[minx:maxx+1,miny:maxy+1]
+            #plt.figure()
+            #plt.title(rp)
+            #plt.imshow(cropped)
+            #plt.show()
             if(minimod == True):
                 (x1,y1) = np.unravel_index(cropped.argmin(),cropped.shape)
             else:
