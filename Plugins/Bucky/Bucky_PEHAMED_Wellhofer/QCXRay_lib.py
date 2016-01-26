@@ -4,6 +4,7 @@ Warning: THIS MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED! And make su
 
 TODO:
 Changelog:
+    20151112: Bugfix in calculation of lowcontrast
     20151029: Changed output levels and descriptions etc.
     20151027: Added sign to XRayDev
     20150817: Removed hardcoded roomdefinitions. All in config files now!
@@ -271,7 +272,7 @@ class XRayStruct:
         self.maybeInvert()
 
 class XRayQC:
-    qcversion = 20151029
+    qcversion = 20151112
 
     boxradmm   = 110  # choose 11 cm or 8 cm for clean surroundings
     adjustmtfangledeg = 0. # if consistency check fails, add a little angle
@@ -2422,7 +2423,7 @@ class XRayQC:
         cs.loco.mean_sg = copy.deepcopy(mean_sg)
         cs.loco.mean_bk = copy.deepcopy(mean_bk)
         cs.loco.sdev_sg = copy.deepcopy(sdev_sg)
-        cs.loco.sdev_bk = copy.deepcopy(low_cnr)
+        cs.loco.sdev_bk = copy.deepcopy(sdev_bk)
 
         error = False
         return error

@@ -60,7 +60,7 @@ def _getRoomDefinition(params):
         roomname = params.find('roomname').text
 
         # phantom name (only pehamed or wellhofer)
-        phantoms_supported = ['pehamed','wellhofer']
+        phantoms_supported = ['pehamed','wellhofer','normi13']
         phantom = params.find('phantom').text
         if not phantom in phantoms_supported:
             raise ValueError(logTag()+' unsupported phantom %s'%phantom)
@@ -68,8 +68,8 @@ def _getRoomDefinition(params):
         # load the locations of markers on the linepair pattern. if these are not given, use the hardcoded values
         linepairmarkers = {}
         try:
-            markers = params.find('linepair_typ38')
-            mnames = ['mm1.8','mm0.6','mm1.4','mm4.6']
+            markers = params.find('linepair_typRXT02')
+            mnames = ['mm1.0','mm0.6']
             for mname in mnames:
                 marker  = markers.find(mname)
                 linepairmarkers[mname] = [ float(marker.attrib['x']), float(marker.attrib['y']) ]
@@ -83,40 +83,7 @@ def _getRoomDefinition(params):
         outvalue    = -1 # not supplied
         wallsidmm   = -1 # not supplied
         tablesidmm  = -1 # not supplied
-        try: # only for FCR
-            wallsidmm   = float(params.find('wallsidmm').text)
-            tablesidmm  = float(params.find('tablesidmm').text)
-            # pixelvalue that defines 'outside phantom' use '-1' to calculate from four cornerpoints
-            outvalue    = int(params.find('outvalue').text)
-        except:
-            pass
         
-        
-        # for fcr systems there is no dicom tag to indicate wall or table, but a hack on SD or Sensitivity is possible
-        try:
-            thresholdlist = []
-            sensitivities = params.find("sensitivities")
-            for threshold in sensitivities.findall("threshold"):
-                thresholdlist.append([int(threshold.attrib["date"]),int(threshold.attrib["value"])])
-            return QCXRay_lib.Room(roomname, outvalue=outvalue,
-                                   tablesid=tablesidmm, wallsid=wallsidmm, 
-                                   tablepid=tablepidmm, wallpid=wallpidmm,
-                                   phantom=phantom, sens_threshold = thresholdlist,
-                                   linepairmarkers=linepairmarkers)
-        except:
-            pass
-
-        # no sensitivity threshold, so try if threshOnSD exists
-        try:
-            sdthreshold = float(params.find("sdthreshold").text)
-            return QCXRay_lib.Room(roomname, outvalue=outvalue,
-                                   tablesid=tablesidmm, wallsid=wallsidmm, 
-                                   tablepid=tablepidmm, wallpid=wallpidmm,
-                                   phantom=phantom, sdthresh = sdthreshold,
-                                   linepairmarkers=linepairmarkers)
-        except:
-            pass
-
         # no artificial thresholds present or needed
         return QCXRay_lib.Room(roomname, outvalue=outvalue,
                                tablesid=tablesidmm, wallsid=wallsidmm, 
@@ -130,7 +97,6 @@ def _getRoomDefinition(params):
 def xrayqc_series(data, results, params):
     """
     QCXRay_UMCU checks:
-        Horizontal uniformity
         XRayEdges
         LowContrast
         DynamicRange

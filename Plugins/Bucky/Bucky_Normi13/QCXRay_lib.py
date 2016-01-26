@@ -36,9 +36,7 @@ class Room :
     skipFFT = True # for now 
 
     xy06mm = [] # x,y position in mm of decimal dot in 0.6 lp/mm 
-    xy14mm = [] # x,y position in mm of decimal dot in 1.4 lp/mm 
-    xy18mm = [] # x,y position in mm of decimal dot in 1.8 lp/mm 
-    xy46mm = [] # x,y position in mm of decimal dot in 4.6 lp/mm 
+    xy10mm = [] # x,y position in mm of decimal dot in 1.0 lp/mm 
     
     def __init__ (self,_name, outvalue=-1, tablesid=-1, wallsid=-1, tablepid=-1, wallpid=-1,
                   linepairmarkers = {}):
@@ -51,9 +49,7 @@ class Room :
 
         if len(linepairmarkers)>0:
             self.xy06mm = linepairmarkers['mm0.6']
-            self.xy14mm = linepairmarkers['mm1.4']
-            self.xy18mm = linepairmarkers['mm1.8']
-            self.xy46mm = linepairmarkers['mm4.6']
+            self.xy10mm = linepairmarkers['mm1.0']
         
     def setPIDs(self,_pidtable, _pidwall):
         self.pidtablemm = _pidtable
@@ -68,30 +64,6 @@ class XRayStruct:
 
     roomUnknown = Room(lit.stUnknown)
     forceRoom = roomUnknown
-
-    class UnifStruct :
-        ROIuniformity = -1 # fraction
-        LRuniformity = -1  # fraction
-        BKmean = -1 # gridless bk
-        BKsdev = -1 # gridless bk stdev
-        peakValue = -1 # max valule over uniformity line
-        posval = []
-        intens = []
-        trend = []
-        trendMin = -1
-        trendMax = -1
-        roi = []
-        verticalROI = False
-        def __init__ (self):
-            self.ROIuniformity = self.LRuniformity = 0.
-            self.BKmean = self.BKsdev = 0.
-            self.peakValue = 0.
-            self.posval = []
-            self.intens = []
-            self.trendMax = self.trendMin = 0.
-            self.trend = []
-            self.roi = []
-            self.verticalROI = False
 
     class CuStruct :
         roi_snr = []
@@ -179,9 +151,6 @@ class XRayStruct:
     xrayNSWEmm = []
     xr_roi = []
 
-    # horz. uniformity
-    unif = None
-
     # Cu Wedge
     cuwedge = None
 
@@ -222,7 +191,6 @@ class XRayStruct:
         self.xrayNSWEmm = []
         self.xr_roi = []
 
-        self.unif = self.UnifStruct()
         self.cuwedge = self.CuStruct()
         self.mtf = self.MTFStruct()
         self.loco = self.LoCoStruct()
@@ -249,12 +217,15 @@ class XRayQC:
         self.bIgnoreMTFError = False
 
     def pixToGridScale_mm(self,cs):
-        pixel_spacing_x = cs.dcmInfile.PixelSpacing[0]
-        # DX
-        sid = cs.dcmInfile.DistanceSourceToDetector # source to image distance
-        sip = cs.dcmInfile.DistanceSourceToPatient  # source to patient (=table top?!)
-
-        return  pixel_spacing_x*sip/sid
+        try:
+            pixel_spacing_x = cs.dcmInfile.ImagerPixelSpacing[0] # PixelSpacing already corrects for magnification in DX!
+            # DX
+            sid = cs.dcmInfile.DistanceSourceToDetector # source to image distance
+            sip = cs.dcmInfile.DistanceSourceToPatient  # source to patient (=table top?!)
+            return pixel_spacing_x*sip/sid
+        except:
+            pixel_spacing_x = cs.dcmInfile.PixelSpacing[0] # PixelSpacing already corrects for magnification in DX!
+            return  pixel_spacing_x
 
     def pix2phantomm(self, cs, pix):
         pix2phantommm = self.pixToGridScale_mm(cs)
@@ -362,88 +333,82 @@ class XRayQC:
         # 1.1 find approx center of phantom (screw)
         widthpx = np.shape(cs.pixeldataIn)[0] ## width/height in pixels
         heightpx = np.shape(cs.pixeldataIn)[1]
-        sqsize = min(widthpx,heightpx)
         midx = int(.5*(widthpx-1)+.5)
         midy = int(.5*(heightpx-1)+.5)
-        if cs.mustbeinverted:
-            smallimage = invertmax - wadwrapper_lib.extract(cs.pixeldataIn, [sqsize/3,sqsize/3],[midx,midy])
-        else:
-            smallimage = wadwrapper_lib.extract(cs.pixeldataIn, [sqsize/3,sqsize/3],[midx,midy])
+        
+        hlinepx = int(max(2,self.phantommm2pix(cs, 1))+.5) # don't expect a gridline to be larger than 2mm
+        # make rois starting from the center, running to N,E,S, stopping 2cm short of edge
+        seppx = self.phantommm2pix(cs, 20)# 2 cm away from edges
+        blockheight = 10 # px
+        rois = []
+        rois.append([midx,midx+blockheight,midy,seppx]) # North
+        rois.append([midx,widthpx-1-seppx,midy,midy+blockheight]) # East
+        rois.append([midx,midx+blockheight,midy,heightpx-1-seppx]) # South
+        lines = []
+        edgepos = []
+        for r in rois:
+            stepx = 1 if r[1]>r[0] else -1
+            stepy = 1 if r[3]>r[2] else -1
+            if cs.mustbeinverted:
+                smallimage = invertmax - cs.pixeldataIn[r[0]:r[1]:stepx,r[2]:r[3]:stepy]
+            else:
+                smallimage = cs.pixeldataIn[r[0]:r[1]:stepx,r[2]:r[3]:stepy]
+            axis = 0 if np.shape(smallimage)[0] < np.shape(smallimage)[1] else 1
+            
+            # turn each roi into a average line
+            line = np.average(smallimage,axis=axis)
 
-        smallimage = scind.gaussian_filter(smallimage, sigma=5)
-        cs.lastimage = smallimage
-
-        x0,y0 = np.unravel_index(smallimage.argmin(), smallimage.shape)
-        immidx = midx-smallimage.shape[0]/2+x0
-        immidy = midy-smallimage.shape[1]/2+y0
-        rad=20
-        cs.po_center_roi = [immidx,immidy,rad] # feedback for GUI
-
-        # 1.2 position 10x10phantomcm box and manipulate corner positions
-        pix2phantommm = self.pixToGridScaleCm(cs)
-        # choose 11cm each direction or 8 cm
-        if cs.forceRoom.phantom == lit.stWellhofer: 
-            self.boxradmm = 80
-        rad = 2*self.boxradmm/pix2phantommm
-        roipts = [
-            [int(immidx-rad/2+.5),int(immidy-rad/2+.5)],
-            [int(immidx-rad/2+.5),int(immidy+rad/2+.5)],
-            [int(immidx+rad/2+.5),int(immidy+rad/2+.5)],
-            [int(immidx+rad/2+.5),int(immidy-rad/2+.5)]
-        ]
-        if ebbox is not None:
-            roipts = ebbox
-            radpts = np.sqrt( (roipts[1][0]-roipts[0][0])**2. + (roipts[1][1]-roipts[0][1])**2. )
-            mindist = radpts
-            for i in [110,80,90,70,60]:
-                radtest = 2*i/pix2phantommm
-                dist = np.abs(radtest-radpts)
-                if dist < mindist:
-                    mindist = dist
-                    self.boxradmm = i
-            print "found mindist=",mindist,"rad=",self.boxradmm
-        # try to find rotation of phantom
-        if not cs.forceRoom.skipFFT:
-            error,roipts,rotangledeg = self.FieldRotationFFT(cs,roipts)
-            if error: # probably too small angle, so try again
-                error,roipts,rotangledeg = self.FieldRotationFFT(cs,roipts,10.)
-
-        else:
-            rotangledeg = 0.
-            error = False
-
-        cs.bbox_confidence = 0.
-        if not error:
-            last_attempt= False
-            radmmtests = [110,80,90,70,60]
-            if cs.forceRoom.phantom == lit.stWellhofer: 
-                radmmtests = [80,90,70,60,110]
-            for radmm in radmmtests:
-                self.boxradmm = radmm
-                rad = 2*self.boxradmm/pix2phantommm
-                roipts = [
-                    [int(immidx-rad/2+.5),int(immidy-rad/2+.5)],
-                    [int(immidx-rad/2+.5),int(immidy+rad/2+.5)],
-                    [int(immidx+rad/2+.5),int(immidy+rad/2+.5)],
-                    [int(immidx+rad/2+.5),int(immidy-rad/2+.5)] ]
-                roipts = self.RotateBoundingBox(roipts,rotangledeg)
-                error,cs.bbox_confidence = self.AlignROI(cs,roipts,"BoundingBox",last_attempt)
-                for (xa,ya) in roipts:
-                    if xa<0 or ya<0:
-                        error = True
-                    elif xa>=widthpx or ya>=heightpx:
-                        error = True
-                if error == True and np.abs(rotangledeg)<2.:
-                    roipts = [
-                        [int(immidx-rad/2+.5),int(immidy-rad/2+.5)],
-                        [int(immidx-rad/2+.5),int(immidy+rad/2+.5)],
-                        [int(immidx+rad/2+.5),int(immidy+rad/2+.5)],
-                        [int(immidx+rad/2+.5),int(immidy-rad/2+.5)] ]
-                    if radmm<61:
-                        last_attempt = True
-                    error,cs.bbox_confidence = self.AlignROI(cs,roipts,"BoundingBox",last_attempt)
-                if not error:
+            # find first position of drop
+            threshold = (np.amax(line)+np.amin(line))/2
+            threshold = (line[0]+np.amin(line))/2
+            ep = -1
+            for x in range(hlinepx,len(line)-hlinepx-1):
+                if line[x-hlinepx]>threshold and line[x]<threshold and line[x+hlinepx]> threshold:
+                    ep = x
                     break
+            edgepos.append(ep)
+            lines.append(line)
+        if cs.verbose:
+            cs.hasmadeplots = True
+            plt.figure()
+            for line,lab in zip(lines,['N','E','S']):
+                plt.plot(line,label=lab)
+            plt.plot(edgepos,[threshold,threshold,threshold],'ro')
+            print edgepos
+            plt.legend()
+        
+        for p,k in zip(edgepos,['N','E','S']):
+            print k,p,self.pix2phantomm(cs, p)   
+
+        # the twice 90 mm distance is the northedge+southedge
+        px90 = int( (edgepos[0]+edgepos[2])/2. +.5 )
+        
+        #adjust phantom center
+        midypx = int(midy -(edgepos[0]-edgepos[2])/2.+.5)
+        midxpx = int(midx +(edgepos[1]-px90))
+        print midxpx,np.shape(cs.pixeldataIn)[0]/2.
+        print midypx,np.shape(cs.pixeldataIn)[1]/2.
+
+        # define cornerpoints of 90x90cm square
+        roipts = [ 
+            [midxpx-px90,midypx-px90], # ll
+            [midxpx-px90,midypx+px90], # ul
+            [midxpx+px90,midypx+px90], # ur
+            [midxpx+px90,midypx-px90], # lr
+        ]
+
+        # true to properly locate the cornerpoints of the 90mm box
+        rotangledeg = 0.
+        error = False
+        cs.bbox_confidence = 0.
+        self.boxradmm = 90
+        roipts = self.RotateBoundingBox(roipts,rotangledeg)
+        error,cs.bbox_confidence = self.AlignROI(cs,roipts,"BoundingBox",True)
+        for (xa,ya) in roipts:
+            if xa<0 or ya<0:
+                error = True
+            elif xa>=widthpx or ya>=heightpx:
+                error = True
 
         print "using rad,conf:",self.boxradmm,cs.bbox_confidence
         cs.po_roi = roipts
@@ -470,244 +435,17 @@ class XRayQC:
             roipts.append([xp,yp])
         return roipts
 
-    def _fieldRotationFFT(self,cs,smallimage,initangle=None):
-        # also tried runmode==2, which is the DDL version (with slight mods), but this old one works far better
-        runmode = 1
-
-        # Start FFT
-        F1 = fftpack.fft2(smallimage-np.mean(smallimage))
-        # Now shift the quadrants around so that low spatial frequencies are in
-        # the center of the 2D fourier transformed image.
-        F2 = fftpack.fftshift( F1 )
-        if runmode == 1:
-            # Calculate a 2D power spectrum
-            psd2D = np.abs( F2 )**2.
-            fwid = psd2D.shape[0]
-            fhei = psd2D.shape[1]
-            cs.lastimage = psd2D
-    
-            kwart = np.zeros((fwid/2,fhei/2),dtype=float)
-            for x in range(0,fwid/2):
-                for y in range (0,fhei/2):
-                    kwart[x,y] += psd2D[fwid/2+x,fhei/2+y]
-                    kwart[x,y] += psd2D[fhei/2-y,fwid/2+x]
-    
-            kwartmax = np.max(kwart)
-            # Find local maxima
-            posxmax = []
-            posymax = []
-            kwart2 = np.zeros((fwid/2,fhei/2),dtype=float)
-            while len(posxmax)<20 and np.max(kwart)>0.05:
-                xx,yy = np.unravel_index(kwart.argmax(), kwart.shape)
-                if( not(xx<3 and yy<3) ):
-                    posxmax.append(xx)
-                    posymax.append(yy)
-                    kwart2[xx,yy] = kwart[xx,yy]
-                kwart[xx,yy] = 0
-    
-            # a bit of sorting:
-            index = range(len(posxmax))
-            index.sort(key = posxmax.__getitem__)
-            posxmax[:] = [posxmax[i] for i in index]
-            posymax[:] = [posymax[i] for i in index]
-            #for x,y in zip(posxmax,posymax):
-            #    print x,y
-    
-            maxoff = len(posxmax)-5
-            r2angleoff = []
-            r2intslope = []
-            for off in range(0,maxoff):
-                # Following kludge is needed to prevent division by zero in linregress for small angle
-                nonidentical = True
-                ssxm, ssxym, ssyxm, ssym = np.cov(posxmax[off:len(posxmax)],posymax[off:len(posxmax)], bias=1).flat
-                if ssxm == 0:
-                    nonidentical = False
-                if nonidentical:
-                    slope, intercept, r1_value, p_value, std_err = stats.linregress(posxmax[off:len(posxmax)],posymax[off:len(posxmax)])
-                    anglerad = np.arctan2(1.,slope) # needs inverse angle
-                    r2 = r1_value**2
-                    r2angleoff.append( (r2,anglerad,off) )
-                    r2intslope.append( (r2,intercept,slope,off) )
-                #print r2,anglerad,off
-                nonidentical = True
-                ssxm, ssxym, ssyxm, ssym = np.cov(posxmax[0:len(posxmax)-off],posymax[0:len(posxmax)-off], bias=1).flat
-                if ssxm == 0:
-                    nonidentical = False
-                    anglerad = np.pi*2.
-                    r1_value = 0.
-                    intercept = 0.
-                    slope = 0.
-                if nonidentical:
-                    slope, intercept, r1_value, p_value, std_err = stats.linregress(posxmax[0:len(posxmax)-off],posymax[0:len(posxmax)-off])
-                    anglerad = np.arctan2(1.,slope) # needs inverse angle
-                r2 = r1_value**2
-                r2angleoff.append( (r2,anglerad,-off) )
-                r2intslope.append( (r2,intercept,slope,-off) )
-                    
-                #print r2,anglerad,-off
-    
-            r2angleoff = sorted(r2angleoff)
-            r2,anglerad,off = r2angleoff[-1]
-    
-            if cs.verbose:
-                dummy1,intercept,slope ,dummy2 = sorted(r2intslope)[-1]
-                plt.figure()
-                plt.plot(posxmax,posymax,'bo')
-                dafit = [intercept+slope*x for x in posxmax]
-                plt.plot(posxmax,dafit,'b-')
-                plt.title("Orientation")
-                print 'orientation fit: %f + %f*x; offset=%d'%(intercept,slope,dummy2)
-                print 'angledeg=%f,initangledeg=%f;'%(anglerad/np.pi*180.,0 if initangle is None else initangle)
-                cs.hasmadeplots = True
-        else: # 'new'
-            # must yield anglerad and r2
-            #Let's log-scale the image so we're dealing with something in uint8 range.
-            # Calculate a 2D power spectrum
-            abs_data = np.abs( F2 )**2.
-            cs.lastimage = abs_data
-
-            # Threshold the lower 25% of the peak
-            max_peak = np.max(abs_data)
-            abs_data[abs_data < (max_peak * 0.25)] = 0
-            
-            # Log-scale the data
-            abs_data += 1
-            c = 255.0 / np.log(1 + max_peak)
-            log_data = c * np.log(abs_data)
-            
-            # fit data through points within 90% of the max peak of the scaled image
-            # run for both angles (horz grid and vert grid)
-            mask = np.zeros(np.shape(log_data),dtype=bool)
-            wid,hei = np.shape(log_data)
-            mask[0:wid/2,0:hei/2] = True
-            mask[wid/2:wid,hei/2:hei] = True
-            mask = ~mask
-            
-            # we will sort on number of points, as it is easier to fit to less points, but more points should be prefered
-            r2anglenum = []
-            for i in [0,1]:
-                log_data1 = log_data.copy()
-                log_data1[mask] = 0
-                max_scaled_peak = np.max(log_data1)
-
-                # Determine the angle of two high-peak points in the image
-                rows, cols = np.where(log_data1 > (max_scaled_peak * 0.90))
-                # Following kludge is needed to prevent division by zero in linregress for small angle
-                nonidentical = True
-                ssxm, ssxym, ssyxm, ssym = np.cov(rows,cols, bias=1).flat
-                if ssxm == 0:
-                    nonidentical = False
-                if nonidentical:
-                    slope, intercept, r1_value, p_value, std_err = stats.linregress(rows,cols)
-                    anglerad = np.arctan2(1.,slope) -i*np.pi/2.# needs inverse angle
-                else:
-                    anglerad = np.pi*2.
-                    r1_value = 0.
-                    intercept = 0.
-                    slope = 0.
-                print 'run %d angle: %f (%f), r2=%f, n=%d'%(i,anglerad,anglerad/np.pi*180.,r1_value**2.,len(rows))
-                r2anglenum.append( (r1_value**2.,anglerad,len(rows)))
-                mask = ~mask
-                if cs.verbose:
-                    plt.figure()
-                    plt.plot(rows,cols,'bo')
-                    dafit = [intercept+slope*x for x in rows]
-                    plt.plot(rows,dafit,'b-')
-                    plt.title("Orientation")
-                    print 'orientation fit: %f + %f*x'%(intercept,slope)
-                    print 'angledeg=%f,initangledeg=%f;'%(anglerad/np.pi*180.,0 if initangle is None else initangle)
-                    #plt.show()
-                    cs.hasmadeplots = True
-                
-            avg_angle = (r2anglenum[0][1]+r2anglenum[1][1])/2.
-            wavg_angle = (r2anglenum[0][1]*r2anglenum[0][2]+r2anglenum[1][1]*r2anglenum[1][2])/(r2anglenum[0][2]+r2anglenum[1][2])
-            avg_r2 = np.sqrt( 0.5*(r2anglenum[0][0]**2. +r2anglenum[1][0]**2.) )
-            print "avgangle: %f"%(avg_angle/np.pi*180.+(0 if initangle is None else initangle))
-            r2anglenum.sort(key=operator.itemgetter(2)) # 0 = maxr2, 2 = maxnum
-            #r2anglenum = sorted(r2anglenum)
-            r2,anglerad,num = r2anglenum[-1]
-            off = 0
-            #r2,anglerad = avg_r2,avg_angle
-            #r2,anglerad = avg_r2,wavg_angle
-        return anglerad,r2,off # must return angle in rad, confidence measure and offset if any
-
-
-    def FieldRotationFFT(self,cs,roipts_orig,initangle=None):
-        """
-        Cut out a part of the phantom that should contain only grid
-        Make a FFT, select one quadrant and find the locations of the first N maximums
-        Fit a line through the maximums
-        """
-        # inversion
-        invertmax = 2**(self.invertmaxval(cs))-1
-
-        error = True
-        xmid = 0.
-        ymid = 0.
-        for rp in roipts_orig:
-            xmid += rp[0]
-            ymid += rp[1]
-        xmid /= len(roipts_orig)
-        ymid /= len(roipts_orig)
-        xmid  = int(xmid+.5)
-        ymid  = int(ymid+.5)
-
-        boxradpx = int(self.phantommm2pix(cs,20.))
-        yoffpx = int(self.phantommm2pix(cs,10.))
-        ll = [xmid-boxradpx,ymid-yoffpx]
-        ur = [xmid+boxradpx,ymid-yoffpx-2*boxradpx]
-        cs.po_fftroi = [ ll, [ur[0],ll[1]], ur, [ll[0],ur[1]] ] # x0,wid y0,height
-
-        xlo = min(ll[0],ur[0])
-        ylo = min(ll[1],ur[1])
-        xhi = max(ll[0],ur[0])
-        yhi = max(ll[1],ur[1])
-        if not (initangle is None): # allow for extra artificial rotation of phantom
-            smallimage = scind.interpolation.rotate(cs.pixeldataIn,initangle, axes=(1, 0), reshape=True, output=None, order=3, mode='constant', cval=0.0, prefilter=True)[xlo:xhi+1,ylo:yhi+1]
-        else:
-            smallimage = cs.pixeldataIn[xlo:xhi+1,ylo:yhi+1]
-        if cs.mustbeinverted:
-            smallimage = invertmax - smallimage
-
-        cs.lastimage = smallimage
-        #return True, roipts_orig,-360
-
-        anglerad,confidence,off = self._fieldRotationFFT(cs, smallimage,initangle)
-
-        if initangle != None:
-            anglerad += initangle/180*np.pi
-        if anglerad > np.pi/4.:
-            anglerad = anglerad - np.pi/2.
-        rotangledeg = (anglerad/np.pi*180.)
-
-        if confidence<0.85:
-            label = "first try"
-            if initangle!=None:
-                label = "Error!"
-            print "FieldRotationFFT:",label,"confidence too low:",confidence,off
-            #print offanglerad
-            return error,roipts_orig,rotangledeg
-        error = False
-
-        print "rotangledegFFT:",rotangledeg,confidence,off
-
-        roipts = self.RotateBoundingBox(roipts_orig,rotangledeg)
-        return error,roipts,rotangledeg
-
     def AlignROI(self, cs, roipts, what,blast_attempt=True):
         error = True
         # inversion
         invertmax = 2**(self.invertmaxval(cs))-1
 
-        pix2phantommm = self.pixToGridScaleCm(cs)
-        # choose 11cm each direction or 8 cm
+        pix2phantommm = self.pixToGridScale_mm(cs)
         searchrad = int(2.5/pix2phantommm+.5) # 2 mm around location
 
         workimage = cs.pixeldataIn
         if what == "MTF": #
             searchrad = int(0.5/pix2phantommm+.5)
-#            workimage = self.templateMatchDisc(cs)
-#            cs.lastimage = workimage
 
         searchrad = max(1,searchrad)
         print "%s searchrad="%what,searchrad
@@ -715,7 +453,6 @@ class XRayQC:
         heightpx = np.shape(workimage)[1]
 
         conf_pts = []
-#        conf_pts.append((self.ROIConfidence(cs,roipts,what),copy.deepcopy(roipts)))
         conf_pts.append((0,copy.deepcopy(roipts))) # never not select default pointset
         roipts0 = copy.deepcopy(roipts)
         for kk in range(0,6):
@@ -728,39 +465,40 @@ class XRayQC:
                 miny = max(0,y0-searchrad)
                 maxy = min(heightpx-2,y0+searchrad)
                 if cs.mustbeinverted:
-                    cropped = workimage[minx:maxx+1,miny:maxy+1]
-                else:
                     cropped = invertmax - workimage[minx:maxx+1,miny:maxy+1]
-#                plt.figure()
-#                plt.imshow(cropped)
-#                plt.show()
+                else:
+                    cropped = workimage[minx:maxx+1,miny:maxy+1]
+
                 # smoothing to get rid of noise
                 sigma = max(1.5,cropped.shape[0]/8.)
                 cropped = scind.gaussian_filter(cropped, sigma)
+
                 # find maximum location in projections
                 xflat = np.mean(cropped,axis=0)
                 yflat = np.mean(cropped,axis=1)
-                x1 = minx+np.unravel_index(yflat.argmax(), yflat.shape)[0]
-                y1 = miny+np.unravel_index(xflat.argmax(), xflat.shape)[0]
+                if what == 'MTF':
+                    x1 = minx+np.unravel_index(yflat.argmax(), yflat.shape)[0]
+                    y1 = miny+np.unravel_index(xflat.argmax(), xflat.shape)[0]
+                else:
+                    x1 = minx+np.unravel_index(yflat.argmin(), yflat.shape)[0]
+                    y1 = miny+np.unravel_index(xflat.argmin(), xflat.shape)[0]
                 if cs.verbose:
-                    if what == "MTF" and i==2:
+                    if what == "MTF":
                         plt.figure()
                         plt.imshow(cropped)
                         plt.title('Align '+str(kk)+ ' '+what+str(i))
                         print sigma,"shift ",i," of point ",kk," =(",x1-x0,",",y1-y0,")"
+                        cs.hasmadeplots = True
 
                 rp[0] = x1
                 rp[1] = y1
-            roipts = self.ConsistencyAlign(cs,roipts0,roipts,what)
+            if not what == "MTF":
+                roipts = self.ConsistencyAlign(cs,roipts0,roipts,what)
             conf_pts.append((self.ROIConfidence(cs,roipts,what),copy.deepcopy(roipts)))
 
         # Just take the last one; should be best!
-#        conf_pts = sorted(conf_pts) #sorting orientation/distance box does worsen results
+        # conf_pts = sorted(conf_pts) #sorting orientation/distance box does worsen results
         if what == "MTF": # sorting MTF seems to help
-#            print "-------------"
-#            for i,copts in enumerate(conf_pts):
-#                print i,copts[0]
-#            print "-------------"
             conf_pts = sorted(conf_pts)
 
         for i in range(0,len(roipts)):
@@ -805,7 +543,7 @@ class XRayQC:
 #            scales.append(dist1/d0)
 #            angles.append(np.arctan2(rp1[1]-rp0[1],rp1[0]-rp0[0]))
 
-        if(what == "BoundingBox"):
+        if what == "BoundingBox":
             """
             [int(immidx-rad/2+.5),int(immidy-rad/2+.5)],
              [int(immidx-rad/2+.5),int(immidy+rad/2+.5)],
@@ -827,48 +565,6 @@ class XRayQC:
                         roiptsnew[i1][0] = roiptsnew[i0][0]+(roiptsnew[i3][0]-roiptsnew[i2][0])
                         roiptsnew[i1][1] = roiptsnew[i0][1]+(roiptsnew[i3][1]-roiptsnew[i2][1])
 
-        if(what == "MTF"):
-            """
-            roipts = [ [x18px,y18px],[x06px,y06px],[x14px,y14px],[x46px,y46px] ]
-            """
-            self.adjustmtfangledeg = 0.
-            id18 = 0
-            id06 = 1
-            id14 = 2
-            id46 = 3
-            idcmp = [ [id18,id06], [id06,id14], [id14,id46], [id46,id18] ]
-            dd18_46 = [roiptsnew[id46][0]-roiptsnew[id18][0],roiptsnew[id46][1]-roiptsnew[id18][1]]
-            dd06_14 = [roiptsnew[id14][0]-roiptsnew[id06][0],roiptsnew[id14][1]-roiptsnew[id06][1]]
-            lengthmms = [41.4298705358224,29.1192821547155,41.1481478200461,35.5992147241798 ]
-            len18_46 = lengthmms[3]
-            len06_14 = lengthmms[1]
-            for abc,l0mm in zip(idcmp,lengthmms):
-                i0 = abc[0]
-                i1 = abc[1]
-                l1 = np.sqrt( (roiptsnew[i1][0]-roiptsnew[i0][0])**2+ (roiptsnew[i1][1]-roiptsnew[i0][1])**2)
-                if(np.abs(self.pix2phantomm(cs,l1)-l0mm)>.45):
-                    alter = i1
-                    if(shiftdist[i0]>shiftdist[i1]):
-                        alter = i0
-                    if (alter == id18): #18:
-                        roiptsnew[alter][0] = int(0.5+roiptsnew[id46][0]-len18_46/len06_14*dd06_14[0])
-                        roiptsnew[alter][1] = int(0.5+roiptsnew[id46][1]-len18_46/len06_14*dd06_14[1])
-                        self.adjustmtfangledeg = 0.5
-                    elif(alter == id06): #06
-                        roiptsnew[alter][0] = int(0.5+roiptsnew[id14][0]-len06_14/len18_46*dd18_46[0])
-                        roiptsnew[alter][1] = int(0.5+roiptsnew[id14][1]-len06_14/len18_46*dd18_46[1])
-                    elif(alter == id14): #14
-                        roiptsnew[alter][0] = int(0.5+roiptsnew[id06][0]+len06_14/len18_46*dd18_46[0])
-                        roiptsnew[alter][1] = int(0.5+roiptsnew[id06][1]+len06_14/len18_46*dd18_46[1])
-                    elif(alter == id46): #46
-                        roiptsnew[alter][0] = int(0.5+roiptsnew[id18][0]+len18_46/len06_14*dd06_14[0])
-                        roiptsnew[alter][1] = int(0.5+roiptsnew[id18][1]+len18_46/len06_14*dd06_14[1])
-                        self.adjustmtfangledeg = 0.5
-            for abc,l0mm in zip(idcmp,lengthmms):
-                i0 = abc[0]
-                i1 = abc[1]
-                l1 = np.sqrt( (roiptsnew[i1][0]-roiptsnew[i0][0])**2+ (roiptsnew[i1][1]-roiptsnew[i0][1])**2)
-
         #sanity check
         widthpx = np.shape(cs.pixeldataIn)[0] ## width/height in pixels
         heightpx = np.shape(cs.pixeldataIn)[1]
@@ -882,8 +578,16 @@ class XRayQC:
     def ROIConfidence(self,cs,roipts,what):
         confidence = 0.
 
+        if what == 'MTF':
+            l0mm = 23.32
+            dx = roipts[0][0]-roipts[1][0]
+            dy = roipts[0][1]-roipts[1][1]
+            l1mm = self.pix2phantomm(cs,np.sqrt(dx*dx+dy*dy))
+
+            return min(l1mm,l0mm)/max(l1mm,l0mm)
+        
         # First the lengths of just the sides of the box
-        pix2phantommm = self.pixToGridScaleCm(cs)
+        pix2phantommm = self.pixToGridScale_mm(cs)
         redlength = self.boxradmm/pix2phantommm
         lengths = [ ]
         for i in range(0,3):
@@ -901,7 +605,7 @@ class XRayQC:
         dy = roipts[1][1]-roipts[3][1]
         lengths.append(np.sqrt(dx*dx+dy*dy))
 
-        if(what=="BoundingBox"):
+        if what=="BoundingBox":
             invertmax = 2**(self.invertmaxval(cs))-1
             """
             Calculate lengths and
@@ -950,18 +654,6 @@ class XRayQC:
                 confidence *= min(2*redlength,lengths[p])/max(2*redlength,lengths[p])
             confidence = confidence **6.
 
-        if(what == "MTF"):
-#            colimit = .1 # just a scaling for confidence
-            confidence = 1.
-            # order lengths and see if the ratio's are within proper limits
-            lengths = sorted(lengths)
-            for p in reversed(range(0,4)):
-                lengths[p] /= lengths[0]
-            #	    grlen = [1.000, 1.2281, 1.4177, 1.4302] # pehamed
-            #    grlen = [1.000, 1.2344, 1.4305, 1.4400] # wellhofer
-            grlen = [1.000, 1.2312, 1.4241, 1.4351] # avg pehamed and wellhofer
-            for p in range(0,4):
-                confidence *= (1.0 - np.abs(lengths[p]-grlen[p])/grlen[p] )
 
         print what+"Confidence = ", (confidence*100.),"%"
         return confidence
@@ -971,16 +663,18 @@ class XRayQC:
         """
         Use either min across line between box and edge, or use corner values
         """
+        workim = scind.gaussian_filter(cs.pixeldataIn, sigma=5)
+
         error = False
         if roipts is None:
             roipts = cs.po_roi
 
         cs.xrayNSWEmm = []
         # north- and southside
-        cs.xrayNSWEmm.append(self.FindXRayEdge(cs,roipts,'N'))
-        cs.xrayNSWEmm.append(self.FindXRayEdge(cs,roipts,'S'))
-        cs.xrayNSWEmm.append(self.FindXRayEdge(cs,roipts,'W'))
-        cs.xrayNSWEmm.append(self.FindXRayEdge(cs,roipts,'E'))
+        cs.xrayNSWEmm.append(self.FindXRayEdge(cs,roipts,'N',workim))
+        cs.xrayNSWEmm.append(self.FindXRayEdge(cs,roipts,'S',workim))
+        cs.xrayNSWEmm.append(self.FindXRayEdge(cs,roipts,'W',workim))
+        cs.xrayNSWEmm.append(self.FindXRayEdge(cs,roipts,'E',workim))
         if min(cs.xrayNSWEmm)<1.:
             error = True
         else:
@@ -998,17 +692,21 @@ class XRayQC:
 
         return error
 
-    def FindXRayEdge(self,cs,roipts,side):
+    def FindXRayEdge(self,cs,roipts,side,workim=None):
+        # travel from center to edges
+        if workim is None:
+            workim = cs.pixeldataIn
+            
         invertmax = 2**(self.invertmaxval(cs))-1
 
-        pix2phantommm = self.pixToGridScaleCm(cs)
-        widthpx = np.shape(cs.pixeldataIn)[0] ## width/height in pixels
-        heightpx = np.shape(cs.pixeldataIn)[1]
+        pix2phantommm = self.pixToGridScale_mm(cs)
+        widthpx  = np.shape(workim)[0] ## width/height in pixels
+        heightpx = np.shape(workim)[1]
 
         outvalue = cs.forceRoom.outvalue
         # for DiDi, just take the minimal corner value
         if outvalue<0:
-            outvalue = min(cs.pixeldataIn[0][0], cs.pixeldataIn[-1][0],cs.pixeldataIn[0][-1],cs.pixeldataIn[-1][-1])
+            outvalue = min(workim[0][0], workim[-1][0],workim[0][-1],workim[-1][-1])
         if cs.mustbeinverted:
             outvalue = invertmax-outvalue
 
@@ -1085,11 +783,11 @@ class XRayQC:
                         xa = 0 if x0<0 else widthpx-1 
                         ya = 0 if y0<0 else heightpx-1
                         posvec.append(pos)
-                        valvec.append(int(cs.pixeldataIn[xa,ya]))
+                        valvec.append(int(workim[xa,ya]))
                     break
 
-                val00 = int(cs.pixeldataIn[x0,y0])
-                val10 = int(cs.pixeldataIn[x1,y0])
+                val00 = int(workim[x0,y0])
+                val10 = int(workim[x1,y0])
                 val05 = 1.*val00+(xpos-(int)(xpos))*(val10-val00)
                 if cs.mustbeinverted:
                     val05 = invertmax-val05
@@ -1111,272 +809,29 @@ class XRayQC:
 
             found = False
             for p,v in zip(posvec,valvec):
-                if v<threshLow or (threshHigh>threshLow and v>=threshHigh):
+                if v<threshLow:
                     found = True
                     edgemm.append( p*pix2phantommm+self.boxradmm )
                     if cs.verbose:
                         plt.plot(p,v,'bo')
+                        cs.hasmadeplots = True
                     break
+
+            if not found and threshHigh>threshLow:
+                for p,v in zip(posvec,valvec):
+                    if v>=threshHigh:
+                        found = True
+                        edgemm.append( p*pix2phantommm+self.boxradmm )
+                        if cs.verbose:
+                            plt.plot(p,v,'bo')
+                            cs.hasmadeplots = True
+                        break
+                
             if not found:
                 edgemm.append(0)
         
         return max(edgemm)
 
-#----------------------------------------------------------------------
-    def HorizontalUniformity(self,cs,roipts_orig=None):
-        error = True
-        if roipts_orig is None:
-            roipts_orig = cs.po_roi
-
-        invertmax = 2**(self.invertmaxval(cs))-1
-        # Make box 1 cm from edges of x-ray E and W, from 7cm to 9cm mark on N
-
-        # box runs from (xmm,ymm) = (edgeW+10,70) to (edgeE-10,90)
-        xmidpx = 0.
-        ymidpx = 0.
-        for rp in roipts_orig:
-            xmidpx += rp[0]
-            ymidpx += rp[1]
-        xmidpx /= len(roipts_orig)
-        ymidpx /= len(roipts_orig)
-        xmidpx = int(xmidpx)
-        ymidpx = int(ymidpx)
-        yhipx = ymidpx-int(self.phantommm2pix(cs,90.))
-        ylopx = ymidpx-int(self.phantommm2pix(cs,70.))
-        seppx = int(self.phantommm2pix(cs,10.)+.5)
-        widthpx = np.shape(cs.pixeldataIn)[0] ## width/height in pixels
-
-        outvalue = cs.forceRoom.outvalue
-    # for DiDi, just take the minimal corner value
-        if outvalue<0:
-            outvalue = min(cs.pixeldataIn[0][0], cs.pixeldataIn[-1][0],cs.pixeldataIn[0][-1],cs.pixeldataIn[-1][-1])
-        if cs.mustbeinverted:
-            outvalue = invertmax-outvalue
-
-        # Try lefthand side first
-        hiyarr = []
-        loyarr = []
-        for x in range(0,xmidpx):
-            if cs.mustbeinverted:
-                hiyarr.append(invertmax-cs.pixeldataIn[x,yhipx])
-                loyarr.append(invertmax-cs.pixeldataIn[x,ylopx])
-            else:
-                hiyarr.append(cs.pixeldataIn[x,yhipx])
-                loyarr.append(cs.pixeldataIn[x,ylopx])
-        minval = min(hiyarr)
-        meanval = np.mean(hiyarr)
-        threshLow = (9.*minval+meanval)/10.
-        threshHigh = outvalue
-        for p,v in zip(reversed(range(0,xmidpx)),reversed(hiyarr)):
-            if v<=threshLow or (threshHigh>threshLow and v>=threshHigh):
-                x1px = p
-                break
-        minval = min(loyarr)
-        meanval = np.mean(loyarr)
-        threshLow = (9.*minval+meanval)/10.
-        threshHigh = outvalue
-        for p,v in zip(reversed(range(0,xmidpx)),reversed(loyarr)):
-            if v<=threshLow or (threshHigh>threshLow and v>=threshHigh):
-                x2px = p
-                break
-        xlopx = max(x1px,x2px)+seppx
-
-        # Now righthand side
-        hiyarr = []
-        loyarr = []
-        for x in range(xmidpx,widthpx):
-            if cs.mustbeinverted:
-                hiyarr.append(invertmax-cs.pixeldataIn[x,yhipx])
-                loyarr.append(invertmax-cs.pixeldataIn[x,ylopx])
-            else:
-                hiyarr.append(cs.pixeldataIn[x,yhipx])
-                loyarr.append(cs.pixeldataIn[x,ylopx])
-        minval = min(hiyarr)
-        meanval = np.mean(hiyarr)
-        threshLow = (9.*minval+meanval)/10.
-        threshHigh = outvalue
-        for p,v in zip(range(xmidpx,widthpx),hiyarr):
-            if v<=threshLow or (threshHigh>threshLow and v>=threshHigh):
-                x1px = p
-                break
-        minval = min(loyarr)
-        meanval = np.mean(loyarr)
-        threshLow = (9.*minval+meanval)/10.
-        threshHigh = outvalue
-        for p,v in zip(range(xmidpx,widthpx),loyarr):
-            if v<=threshLow or (threshHigh>threshLow and v>=threshHigh):
-                x2px = p
-                break
-        xhipx = min(x1px,x2px)-seppx
-
-        """
-	    step 2 run Uniformity check and report only roiuniformity
-        """
-        cs.unif.roi = [ [xlopx,yhipx],[xhipx,yhipx],[xhipx,ylopx],[xlopx,ylopx] ]
-        error = self.Uniformity(cs,cs.unif.roi)
-
-        return error
-
-    def Uniformity(self,cs,roipts=None,what="",bshowplot=False):
-        """ Concept:
-        1. Cut out rectangular roi
-        2. mask out the copper grid
-        3. calculate line profile
-        4. Check for difference between left and right
-        """
-        error = True
-        if roipts is None:
-            roipts = cs.unif.roi
-
-        # inversion
-        invertmax = 2**(self.invertmaxval(cs))-1
-
-        # 1. cut out roi
-        xmin=roipts[0][0]
-        xmax=roipts[1][0]
-        ymin=roipts[1][1]
-        ymax=roipts[2][1]
-        for rp in roipts:
-            xmin = min(xmin,rp[0])
-            xmax = max(xmax,rp[0])
-            ymin = min(ymin,rp[1])
-            ymax = max(ymax,rp[1])
-
-        if cs.mustbeinverted:
-            smallimage = invertmax-cs.pixeldataIn[xmin:xmax+1,ymin:ymax+1].astype(float)
-        else:
-            smallimage = cs.pixeldataIn[xmin:xmax+1,ymin:ymax+1].astype(float)
-        wid = smallimage.shape[0]
-        hei = smallimage.shape[1]
-        # 2. mask out copper grid (afterwards copper = 1)
-        mask = wadwrapper_lib.threshold_adaptive(smallimage, int(self.phantommm2pix(cs,50)), method='gaussian', offset=10, mode='reflect', param=None)
-        enhance = 3
-        if what == "lowcontrast":
-            enhance = 1
-
-        for i in range (0,enhance):
-            mask = scind.binary_erosion(mask)
-
-        if cs.verbose:
-            plt.figure()
-            plt.imshow(smallimage)
-            plt.title('Uniformity image')
-            plt.figure()
-            plt.imshow(mask)
-            plt.title('Uniformity Mask')
-
-        # 3. calculate line profile
-        posval = []
-        intens = []
-        mincount = min(9,hei/3)
-
-        mask = ~mask # masked = true = do NOT include
-        mx = ma.masked_array(smallimage,mask)
-        mx2 = ma.masked_array((smallimage.astype(float))**2,mask)
-        BKcount = mx.count()
-        BKmean  = mx.mean()*BKcount
-        BKsumsq = mx2.mean()*BKcount
-        counts = mx.count(axis=1)
-        sums   = mx.sum(axis=1).data
-        for ix in range(0,wid):
-            if counts[ix]>mincount:
-                value = sums[ix]/counts[ix]
-                intens.append(value)
-                posval.append(self.pix2phantomm(cs,ix))
-
-        if len(posval)==0:
-            print "ERROR: Uniformity: no valid pixels found."
-            return error
-
-        if BKcount>0:
-            BKmean /= BKcount
-            BKsdev = np.sqrt(BKsumsq/BKcount-BKmean*BKmean)
-        if what == "lowcontrast":
-            cs.unif.BKmean = BKmean
-            cs.unif.BKsdev = BKsdev
-            return
-
-        cufraction = 1.*(wid*hei-BKcount)/(wid*hei)
-        if cufraction<.1 or cufraction>.9:
-            print "ERROR: Uniformity: invalid Cu fraction ",cufraction
-            return error
-
-        print cufraction
-        if cs.verbose or bshowplot==True:
-            plt.figure()
-            plt.plot(posval,intens)
-            plt.title('Uniformity')
-            plt.xlabel('positon on phantom [mm]')
-            plt.ylabel('average intensity')
-            cs.hasmadeplots = True
-
-        ## line uniformity
-        intemin = np.min(intens)
-        intemax = np.max(intens)
-        inteavg = np.mean(intens)
-        overlengthuniformity = np.max([intemax-inteavg,inteavg-intemin])/inteavg
-
-        ## left/right uniformity
-        inteavgL = 0.
-        count = 0
-        cutpos = self.pix2phantomm(cs,hei)
-        for pos,val in zip(posval,intens):
-            if pos<cutpos:
-                inteavgL += val
-                count += 1
-        if count>0:
-            inteavgL /= count
-
-        inteavgR = 0.
-        count = 0
-        cutpos = self.pix2phantomm(cs,wid-hei)
-        for pos,val in zip(posval,intens):
-            if(pos>cutpos):
-                inteavgR += val
-                count += 1
-        if count>0:
-            inteavgR /= count
-        LRuniformity = 1
-        if inteavgR+inteavgL>0:
-            LRuniformity = np.abs(inteavgR-inteavgL)/(inteavgR+inteavgL)
-        ## ROI uniformity
-        inteavgROI = 0.
-        count = 0
-        cutpos1 = self.pix2phantomm(cs,(wid-hei)/2.)
-        cutpos2 = self.pix2phantomm(cs,(wid+hei)/2.)
-        for pos,val in zip(posval,intens):
-            if pos>cutpos1 and pos<cutpos2:
-                inteavgROI += val
-                count += 1
-        inteavgROI /= count
-        ROIuniformity = np.max([np.abs(inteavgR-inteavgROI),np.abs(inteavgROI-inteavgL)])/inteavgROI
-        print "LineUniformity%=",100.*overlengthuniformity
-        print "LRuniformity%=",100.*LRuniformity
-        print "ROIuniformity%=",100.*ROIuniformity
-        print "AAPMROIlimit%=",10
-
-        cs.unif.ROIuniformity = ROIuniformity
-        cs.unif.LRuniformity = LRuniformity
-        cs.unif.BKmean = BKmean
-        cs.unif.BKsdev = BKsdev
-        cs.unif.posval = copy.deepcopy(posval)
-        cs.unif.intens = copy.deepcopy(intens)
-
-        """
-		// Report
-		/* note AAPM_39 states:
-		   For film output (hard-copy), optical densities are measured in the center of each quadrant
-		   of the film and in the center position to determine absolute density and spatial uniformity.
-		   Central film density is acceptable if within 0.10 OD of the programmed OD value (usually
-		   1.20). Spatial uniformity is acceptable when all measured OD values are within ~10% of the
-		   average OD. For soft-copy evaluation of the images on a workstation, the average digital value
-		   of each ROI should be within 10% of the global average. Standard deviation should also be sim-
-		   ilar in each of the five ROIs.
-		   SD/Av < 5%
-		*/
-        """
-        error = False
-        return error
 #----------------------------------------------------------------------
     def CuWedge(self,cs, roipts_orig=None):
         # 1. Make box around wedge
@@ -1387,15 +842,10 @@ class XRayQC:
 
         # 1. Make box around wedge (-5.5; -4) to (+5.5; -5.5)
         bump = 2.
-        xmmll = -55.+bump
-        ymmur = -55.+bump
-        xmmur =  55.-bump
-        ymmll = -40.-bump
-        if cs.forceRoom.phantom == lit.stWellhofer:
-            xmmll = -55.+4.
-            ymmur = -60.+3.
-            xmmur =  55.-4.
-            ymmll = -43.-2.
+        xmmll = -63.  +bump
+        ymmur =  65.  +bump
+        xmmur =  62.  -bump
+        ymmll =  82.  -bump
 
         xpxll,ypxll = self.phantomposmm2pix(roipts_orig,xmmll,ymmll) # lowerlef
         xpxur,ypxur = self.phantomposmm2pix(roipts_orig,xmmur,ymmur) # upperright
@@ -1443,8 +893,7 @@ class XRayQC:
         # inversion
         invertmax = 2**(self.invertmaxval(cs))-1
 
-        iec_wellhofer = [0.6, 0.5,  0.4,  0.3,  0.2,  0.1,  0.]   # mm Cu; wellhofer
-#        din_pehamed   = [2.3, 1.85, 1.40, 1.00, 0.65, 0.30, 0.00] # mm Cu; IBA, Digi13, pehamed?
+        digi_13 = [2.30, 1.85, 1.40, 1.00, 0.65, 0.30, 0.00]   # mm Cu; according to DIN 6866-13; note this thickness includes backplate
         #    1. Cut out rectangular roi
         xmin = roipts_orig[0][0]
         xmax = roipts_orig[1][0]
@@ -1465,6 +914,7 @@ class XRayQC:
             plt.figure()
             plt.imshow(smallimage)
             plt.title('Cu Wedge')
+            cs.hasmadeplots = True
 
         # 2.1 make a profile
         profile = np.zeros(wid,dtype=float)
@@ -1478,11 +928,12 @@ class XRayQC:
             plt.figure()
             plt.plot(profile)
             plt.title('Cu Wedge derivative')
+            cs.hasmadeplots = True
 
         # 2.2 Find the edges between the steps
         n_edges = 6
         posedges = []
-        flatpix = int( self.phantommm2pix(cs,2.5)+.5)
+        flatpix = int( self.phantommm2pix(cs,3.0)+.5)
         for ix in range(0,n_edges):
             profminid = np.unravel_index(profile.argmax(), profile.shape)[0]
             posedges.append(profminid)
@@ -1545,7 +996,7 @@ class XRayQC:
                 cs.cuwedge.roi_cnr.append( np.abs(cs.cuwedge.roi_mean[ix]-cs.cuwedge.roi_mean[ix+1])/np.sqrt(0.5*(cs.cuwedge.roi_sdev[ix]**2+cs.cuwedge.roi_sdev[ix+1]**2)) )
             else:
                 cs.cuwedge.roi_cnr.append(0.)
-            cs.cuwedge.roi_mmcu.append( iec_wellhofer[ix] )
+            cs.cuwedge.roi_mmcu.append( digi_13[ix] )
 
         cs.cuwedge.dynamicRange = max(cs.cuwedge.roi_mean[n_edges]/cs.cuwedge.roi_mean[0],cs.cuwedge.roi_mean[0]/cs.cuwedge.roi_mean[n_edges])
 
@@ -1564,20 +1015,17 @@ class XRayQC:
         return error
 #----------------------------------------------------------------------
     def MTF(self,cs,roipts_orig=None):
-        error = True
+        error,confid = True,0.
         if roipts_orig is None:
             roipts_orig = cs.po_roi
 
-        x18px,y18px = self.phantomposmm2pix(roipts_orig,cs.forceRoom.xy18mm[0],cs.forceRoom.xy18mm[1])
         x06px,y06px = self.phantomposmm2pix(roipts_orig,cs.forceRoom.xy06mm[0],cs.forceRoom.xy06mm[1])
-        x46px,y46px = self.phantomposmm2pix(roipts_orig,cs.forceRoom.xy46mm[0],cs.forceRoom.xy46mm[1])
-        x14px,y14px = self.phantomposmm2pix(roipts_orig,cs.forceRoom.xy14mm[0],cs.forceRoom.xy14mm[1])
+        x10px,y10px = self.phantomposmm2pix(roipts_orig,cs.forceRoom.xy10mm[0],cs.forceRoom.xy10mm[1])
 
-        roipts = [ [x18px,y18px],[x06px,y06px],[x14px,y14px],[x46px,y46px] ]
-#        print roipts
-#        error = False
-#        confid = 1.
-#        cs.lastimage = self.templateMatchDisc(cs)
+        roipts = [ 
+            [x06px,y06px],
+            [x10px,y10px]
+        ]
         error, confid = self.AlignROI(cs,roipts,"MTF")
 
         cs.mtf.roi = roipts
@@ -1597,27 +1045,42 @@ class XRayQC:
 
         if roipts_orig is None:
             roipts_orig = cs.mtf.roi
+        print roipts_orig
 
-        extend18 = self.phantommm2pix(cs,2.8)  # extend bbox beyond dot in '1.8' [mm]
-        extend46 = self.phantommm2pix(cs,3.2)  # extend beyond dot in '4.6' [mm]
-        print "2.8",extend18
-        print "3.2",extend46
+        extendup = self.phantommm2pix(cs,1.5)  # extend bbox beyond dot in '1.8' [mm]
+        extenddo = self.phantommm2pix(cs,15.)  # extend beyond dot in '4.6' [mm]
+
+        # extend starting points
+        dy = roipts_orig[1][1]-roipts_orig[0][1]
+        dx = roipts_orig[1][0]-roipts_orig[0][0]
+
+        l0 = np.sqrt(dx*dx+dy*dy)
+        roipts_orig[0][0] -= extendup/l0*dx
+        roipts_orig[0][1] -= extendup/l0*dy
+        roipts_orig[1][0] += extenddo/l0*dx
+        roipts_orig[1][1] += extenddo/l0*dy
+        
+        #append points
+        l1 = self.phantommm2pix(cs,35.)
+        px = roipts_orig[1][0] - l1/l0*dy
+        py = roipts_orig[1][1] + l1/l0*dx
+        roipts_orig.append([px,py])
+
+        px = roipts_orig[0][0] - l1/l0*dy
+        py = roipts_orig[0][1] + l1/l0*dx
+        roipts_orig.append([px,py])
+        
+        cs.mtf.roi = roipts_orig
+        
+        # angle
+        rotanglerad = np.arctan2(dx,dy)
+
         # First cut out rotated roi
-        id18 = 0
-        id06 = 1
-        id14 = 2
-        id46 = 3
-        len1846 = np.sqrt((roipts_orig[id18][0]-roipts_orig[id46][0])**2+(roipts_orig[id18][1]-roipts_orig[id46][1])**2)
-        print "1846=",len1846
-        extend18 = 0.0786*len1846
-        extend46 = 0.0898*len1846
         copyimage = cs.pixeldataIn.astype(float)
-        rotanglerad = 3.*np.pi/2.-.5*(np.arctan2((roipts_orig[id18][1]-roipts_orig[id46][1]),(roipts_orig[id18][0]-roipts_orig[id46][0]))+np.arctan2((roipts_orig[id06][1]-roipts_orig[id14][1]),(roipts_orig[id06][0]-roipts_orig[id14][0])))
-        rotanglerad += self.adjustmtfangledeg/180*np.pi
         rotangledeg = (rotanglerad/np.pi*180.)
         print "MTF at",rotangledeg, "degrees"
         rotimage = scind.interpolation.rotate(copyimage, rotangledeg, axes=(1, 0), reshape=False, output=None, order=3, mode='constant', cval=0.0, prefilter=True)
-
+        
         costerm = np.cos(rotanglerad)
         sinterm = np.sin(rotanglerad)
         xc = cs.pixeldataIn.shape[0]/2.
@@ -1629,8 +1092,6 @@ class XRayQC:
             roipts.append([xp,yp])
         cs.mtf.dotxys = copy.deepcopy(roipts)
 
-        roipts[id18][1] -= extend18
-        roipts[id46][1] += extend46
         minxco = roipts[0][0]
         minyco = roipts[0][1]
         maxxco = roipts[0][0]
@@ -1645,6 +1106,7 @@ class XRayQC:
             smallimage = invertmax-rotimage[minxco:maxxco+1,minyco:maxyco+1]
         else:
             smallimage = rotimage[minxco:maxxco+1,minyco:maxyco+1]
+        cs.lastimage = smallimage
 
         for rp in roipts:
             rp[0] -= minxco
@@ -1673,9 +1135,8 @@ class XRayQC:
         contrast_bots = [0]*num_freq
         calc_freq     = [0]*num_freq
 
-        startpos = []
-        endpos = []
-        startpos,endpos = self.FillMTFBarDetails(cs,smallimage)
+        start_endpos = []
+        start_endpos = self.FillMTFBarDetails(cs,smallimage)
 
         # Find high contrast response of line patterns
         for vpi in range(1,num_freq):
@@ -1685,7 +1146,7 @@ class XRayQC:
             contrast_tops[vpi]     = 0
             contrast_bots[vpi]     = 0
             calc_freq[vpi]         = 0.
-            contrast_response[vpi],contrast_high[vpi],contrast_low[vpi],contrast_tops[vpi],contrast_bots[vpi],calc_freq[vpi] = self.AnalyseMTF_Part(cs,smallimage, startpos[vpi-1],endpos[vpi-1], vpi)
+            contrast_response[vpi],contrast_high[vpi],contrast_low[vpi],contrast_tops[vpi],contrast_bots[vpi],calc_freq[vpi] = self.AnalyseMTF_Part(cs,smallimage, start_endpos[vpi-1], vpi)
 
         if contrast_tops[0] == 0:
             contrast_response[0] = contrast_response[1]
@@ -1802,41 +1263,42 @@ class XRayQC:
         Just scale everything to a manual measurement
         Must already get inverted smallimage
         """
-        startpos = []
+        startendpos = [] # [ [x0,y0], [x1,y1] ]
         endpos = []
 
         wid = smallimage.shape[0]
         hei = smallimage.shape[1]
 
-        washeightLo = 256.
-        waswidthLo  = 438.
+        washeightLo = 287
+        waswidthLo  = 253
 
         # fill positions with manual values; x is for later
-        startpos.append([0,1])   # absolute
-        startpos.append([0,36])  # relative
-        startpos.append([0,74])  # relative
-        startpos.append([0,109]) # relative
-        startpos.append([0,148]) # relative
-        startpos.append([0,185]) # relative
-        startpos.append([0,213]) # relative
-        startpos.append([0,239]) # relative
-        startpos.append([0,264]) # relative
+        startendpos.append([[0,  1],[]]) # absolute 0.6
+        startendpos.append([[0, 45],[]]) # absolute 0.7
+        startendpos.append([[0, 85],[]]) # absolute 0.8
+        startendpos.append([[0,121],[]]) # absolute 0.9
+        startendpos.append([[0,156],[]]) # absolute 1.0
+        startendpos.append([[0,188],[]]) # absolute 1.2
+        startendpos.append([[0,216],[]]) # absolute 1.4
+        startendpos.append([[0,244],[0,268]]) # absolute 1.6
 
-        startpos.append([0,15])  # relative
-        startpos.append([0,41])  # relative
-        startpos.append([0,66])  # relative
-        startpos.append([0,99])  # relative
-        startpos.append([0,131]) # relative
-        startpos.append([0,151]) # relative
-        startpos.append([0,170]) # relative
-        startpos.append([0,197]) # relative
-        startpos.append([0,224]) # relative
-        startpos.append([0,244]) # relative
-        startpos.append([0,264]) # relative
-        startpos.append([0,hei-1]) # absolute
+        startendpos.append([[0,  5],[]]) # absolute 1.8
+        startendpos.append([[0, 31],[]]) # absolute 2.0
+        startendpos.append([[0, 54],[]]) # absolute 2.2
+        startendpos.append([[0, 76],[0, 98]]) # absolute 2.5
+        startendpos.append([[0,120],[]]) # absolute 2.8
+        startendpos.append([[0,140],[]]) # absolute 3.1
+        startendpos.append([[0,160],[]]) # absolute 3.4
+        startendpos.append([[0,181],[0,200]]) # absolute 3.7
 
-        for sp in startpos:
-            endpos.append([0,0])
+        startendpos.append([[0,214],[]]) # absolute 4.0
+        startendpos.append([[0,232],[]]) # absolute 4.3
+        startendpos.append([[0,252],[]]) # absolute 4.6
+        startendpos.append([[0,270],[0,286]]) # absolute 5.0 
+        
+        for i in range(len(startendpos)-1):
+            if len(startendpos[i][1]) == 0:
+                startendpos[i][1] = list(startendpos[i+1][0])
 
         # start with low frequencies
         ipbar = smallimage[int(0.75*wid):int(0.85*wid),0:hei]
@@ -1844,65 +1306,46 @@ class XRayQC:
             plt.figure()
             plt.imshow(ipbar)
             plt.title('low frequencies')
+            cs.hasmadeplots = True
 
-        # project all and find xmin and xmax
-        pwid = ipbar.shape[0]
-        phei = ipbar.shape[1]
-        pattern = np.zeros(phei,dtype=float)
-        for y in range(0,phei):
-            for x in range(0,pwid):
-                pattern[y]+= ipbar[x,y]
-            pattern[y] /= pwid
+        # low freqs
+        xlo0 = int(.5+160./waswidthLo*wid)
+        xlo1 = int(.5+(160.+50.)/waswidthLo*wid)
+        # high freqs
+        xhi0 = int(.5+45./waswidthLo*wid)
+        xhi1 = int(.5+(45.+50.)/waswidthLo*wid)
+        for vpi in range(len(startendpos)):
+            start = startendpos[vpi][0]
+            end  = startendpos[vpi][1]
+            if vpi < 8:
+                start[0] = xlo0
+                end[0]   = xlo1
+            else:
+                start[0] = xhi0
+                end[0]   = xhi1
+            start[1] = max(0,int(1.*hei/washeightLo*start[1]+.5))
+            end[1]   = min(hei-1,int(1.*hei/washeightLo*end[1]+.5))
+            startendpos[vpi] = [start,end]
 
-        Imin = min(pattern)
-        Imax = max(pattern)
 
-        threshold = .5*(Imin+Imax)
-        ymin = 1
-        for y in range(2,phei-1):
-            if pattern[y] <= threshold and pattern[y+1]>threshold:
-                ymin = y
-                break
-        ymax = phei-1
-        for y in reversed(range(2,phei-1)):
-            if pattern[y] <= threshold and pattern[y-1]>threshold:
-                ymax = y
-                break
-        ymax = min(ymax,phei-2)
+        return startendpos
 
-        #print "0000: w/ymin/ymax/yy = ", phei, "/",ymin,"/",ymax,"/",ymax-ymin
-
-        startpos[0][0] = int(.5+280./waswidthLo*wid)
-        endpos[0][0]   = int(.5+(280.+70.)/waswidthLo*wid)
-        # for higher: divide by %
-        for vpi in range(1,8):
-            startpos[vpi][1] = ymin+int(0.5+startpos[vpi][1]/washeightLo*(ymax-ymin))
-            endpos[vpi-1][1] = startpos[vpi][1]
-            startpos[vpi][0] = startpos[0][0]
-            endpos[vpi][0]   = endpos[0][0]
-        endpos[7][1] = ymin+int(0.5+startpos[8][1]/washeightLo*(ymax-ymin))
-
-        # for low: divide by %
-        startpos[8][0] = int(.5+100./waswidthLo*wid)
-        endpos[8][0]   = int(.5+(100.+70.)/waswidthLo*wid)
-        startpos[8][1] = startpos[0][1]
-        for vpi in range(9,20):
-            startpos[vpi][1] = ymin+int(0.5+startpos[vpi][1]/washeightLo*(ymax-ymin))
-            endpos[vpi-1][1] = startpos[vpi][1]
-            startpos[vpi][0] = startpos[8][0]
-            endpos[vpi][0]   = endpos[8][0]
-        endpos[19][1] = startpos[20][1]
-
-        return startpos,endpos
-
-    def AnalyseMTF_Part(self,cs,smallimage, startpos,endpos, vpi):
+    def AnalyseMTF_Part(self,cs,smallimage, start_endpos, vpi):
         """
         Determine contrast in one bar pattern element
             contrast_response[vpi],contrast_high[vpi],contrast_low[vpi],contrast_tops[vpi],contrast_bots[vpi],calc_freq[vpi] = self.AnalyseMTF_Part(smallimage, startpos[vpi-1],endpos[vpi-1], vpi)
         Already inverted smallimage as input
         """
+        startpos = start_endpos[0]
+        endpos   = start_endpos[1]
+        
         ipbar = smallimage[startpos[0]:endpos[0],startpos[1]:endpos[1]]
-
+        print '[AnalyseMTF_Part]',vpi,startpos,endpos
+#        cs.hasmadeplots = True
+#        plt.figure()
+#        plt.title(vpi)
+#        plt.imshow(ipbar) 
+        
         contrast_response = 0.
         contrast_high     = 0.
         contrast_low      = 0.
@@ -1958,6 +1401,7 @@ class XRayQC:
                 plt.figure()
                 plt.plot(baseline)
                 plt.title("Baseline")
+                cs.hasmadeplots = True
 
         if (mustplot == True or (len(tops)!=3 or len(bots)!=2) ) and cs.verbose:
             print "vpi=",vpi," length(pattern)=",len(pattern)
@@ -2236,7 +1680,7 @@ class XRayQC:
         for each disc, calc av in box in center and in box 1 cm above it (without Cu grid)
         Calculate CNR: (av(Cu)-av(bk))/sqrt((sd(Cu)^2+sd(bk)^2)/2)
         """
-        error =True
+        error = True
         if roipts_orig is None:
             roipts_orig = cs.po_roi
 
@@ -2247,69 +1691,91 @@ class XRayQC:
         sdev_sg = []
         sdev_bk = []
 
-        # pehamed
-        mmCu = [ [-25.,-35.], [-15.,-35.], [-05.,-35.], [05.,-35.] ]
-        CuDimmm = 04.
+        # discs are 1 cm in diameter
+        diampx = self.phantommm2pix(cs, 6.)
+        radpx  = int(diampx/2.+.5)
         yrefmm = 10. # offset to background
 
-        if cs.forceRoom.phantom == lit.stWellhofer:
-            mmCu = [ [36.4,22.8], [31.,17.5], [25.,11.9], [19.3,06.] ]
-            CuDimmm = 02.5
-            yrefmm = 5.5
-        else:
-            peha = XRayStruct(cs.dcmInfile,cs.pixeldataIn,cs.forceRoom)
+        cs.loco.lo_rois = [] # [x0,y0,rad]
+        cs.loco.lo_rois_bku = [] # [x0,y0,rad] # rois above for bk
+        cs.loco.lo_rois_bkd = [] # [x0,y0,rad] # rois below for bk
+        cs.loco.mean_sg = [] # average in object
+        cs.loco.sdev_sg = [] # average in object
+        
+        dxmm = 17. # dist in mm between loco objects
+        dypx = self.phantommm2pix(cs,11) # dist in mm between loco objects
+        for i in range(6):
+            px,py = self.phantomposmm2pix(roipts_orig,-42.5+i*dxmm,-73.)
+            cs.loco.lo_rois.append([px,py,1.*radpx])
+            cs.loco.lo_rois_bku.append([px,py-dypx,1.*radpx])
+            cs.loco.lo_rois_bkd.append([px,py+dypx,1.*radpx])
 
-        cs.loco.lo_rois = []
-        for cu in mmCu:
-            # first calculate statistics for low contrast object
-            llx,lly = self.phantomposmm2pix(roipts_orig,cu[0]-CuDimmm/2.,cu[1]-CuDimmm/2.)
-            urx,ury = self.phantomposmm2pix(roipts_orig,cu[0]+CuDimmm/2.,cu[1]+CuDimmm/2.)
-            lrx,lry = self.phantomposmm2pix(roipts_orig,cu[0]+CuDimmm/2.,cu[1]-CuDimmm/2.)
-            ulx,uly = self.phantomposmm2pix(roipts_orig,cu[0]-CuDimmm/2.,cu[1]+CuDimmm/2.)
-            xlo = int(max(llx,ulx)+.5)
-            yhi = int(max(lly,lry)+.5)
-            xhi = int(min(urx,lrx)+.5)
-            ylo = int(max(uly,ury)+.5)
-            roipts = [ [xlo,ylo],[xlo,yhi],[xhi,yhi],[xhi,ylo] ]
-            cs.loco.lo_rois.append(roipts)
+        for r in cs.loco.lo_rois:
+            [px,py,radpx] = r
+            # select data inside circle only 
             if cs.mustbeinverted:
-                smallimage = invertmax - cs.pixeldataIn[xlo:xhi+1,ylo:yhi+1].astype(float)
+                smallimage = invertmax - cs.pixeldataIn[px-radpx:px+radpx,py-radpx:py+radpx]
             else:
-                smallimage = cs.pixeldataIn[xlo:xhi+1,ylo:yhi+1].astype(float)
-            roi_mean_s = np.mean(smallimage)
-            roi_sdev_s = np.std(smallimage)
-            mean_sg.append(roi_mean_s)
-            sdev_sg.append(roi_sdev_s)
+                smallimage = cs.pixeldataIn[px-radpx:px+radpx,py-radpx:py+radpx]
+            wid = 2*radpx
+            x,y = np.indices((wid, wid))
+            mid = wid/2.
+            mask = ((x-mid)**2 + (y-mid)**2 ) < radpx**2
+            cs.loco.mean_sg.append(np.mean(smallimage[mask]))
+            cs.loco.sdev_sg.append(np.std(smallimage[mask]))
 
-            # next calculate statistics for background
-            ylo -= int(.5+self.phantommm2pix(cs,yrefmm))
-            yhi -= int(.5+self.phantommm2pix(cs,yrefmm))
-            roipts = [ [xlo,ylo],[xlo,yhi],[xhi,yhi],[xhi,ylo] ]
-            cs.loco.lo_rois.append(roipts)
-            if cs.forceRoom.phantom == lit.stWellhofer:
-                if cs.mustbeinverted:
-                    smallimage = invertmax - cs.pixeldataIn[xlo:xhi+1,ylo:yhi+1].astype(float)
-                else:
-                    smallimage = cs.pixeldataIn[xlo:xhi+1,ylo:yhi+1].astype(float)
-                roi_mean_bk = np.mean(smallimage)
-                roi_sdev_bk = np.std(smallimage)
+        mean_bku = []
+        mean_bkd = []
+        sdev_bku = []
+        sdev_bkd = []
+        for r in cs.loco.lo_rois_bku:
+            [px,py,radpx] = r
+            # select data inside circle only 
+            if cs.mustbeinverted:
+                smallimage = invertmax - cs.pixeldataIn[px-radpx:px+radpx,py-radpx:py+radpx]
             else:
-                self.Uniformity(peha,roipts,"lowcontrast")
-                roi_mean_bk = peha.unif.BKmean
-                roi_sdev_bk = peha.unif.BKsdev
+                smallimage = cs.pixeldataIn[px-radpx:px+radpx,py-radpx:py+radpx]
+            wid = 2*radpx
+            x,y = np.indices((wid, wid))
+            mid = wid/2.
+            mask = ((x-mid)**2 + (y-mid)**2 ) < radpx**2
+            mean_bku.append(np.mean(smallimage[mask]))
+            sdev_bku.append(np.std(smallimage[mask]))
 
-            mean_bk.append(roi_mean_bk)
-            sdev_bk.append(roi_sdev_bk)
-            low_cnr.append((roi_mean_s-roi_mean_bk)/np.sqrt(0.5*(roi_sdev_s**2+roi_sdev_bk**2)))
+        for r in cs.loco.lo_rois_bkd:
+            [px,py,radpx] = r
+            # select data inside circle only 
+            if cs.mustbeinverted:
+                smallimage = invertmax - cs.pixeldataIn[px-radpx:px+radpx,py-radpx:py+radpx]
+            else:
+                smallimage = cs.pixeldataIn[px-radpx:px+radpx,py-radpx:py+radpx]
+            wid = 2*radpx
+            x,y = np.indices((wid, wid))
+            mid = wid/2.
+            mask = ((x-mid)**2 + (y-mid)**2 ) < radpx**2
+            mean_bkd.append(np.mean(smallimage[mask]))
+            sdev_bkd.append(np.std(smallimage[mask]))
+
+        cs.loco.low_cnr = []
+        cs.loco.mean_bk = []
+        cs.loco.sdev_bk = []
+        # calculate for each object the max contrast to noise wrt upper or lower background. Keep the values for the max cnr
+        for i in range(len(cs.loco.lo_rois_bkd)):
+            cnr_up = (mean_bku[i]-cs.loco.mean_sg[i])/np.sqrt(0.5*(cs.loco.sdev_sg[i]**2+sdev_bku[i]**2))
+            cnr_do = (mean_bkd[i]-cs.loco.mean_sg[i])/np.sqrt(0.5*(cs.loco.sdev_sg[i]**2+sdev_bkd[i]**2))
+            if cnr_up>cnr_do:
+                cs.loco.low_cnr.append(cnr_up)
+                cs.loco.mean_bk.append(mean_bku[i])
+                cs.loco.sdev_bk.append(sdev_bku[i])
+            else:
+                cs.loco.low_cnr.append(cnr_do)
+                cs.loco.mean_bk.append(mean_bkd[i])
+                cs.loco.sdev_bk.append(sdev_bkd[i])
+
             if cs.verbose:
-                print "mean fg/bk=",roi_mean_s,"/",roi_mean_bk
-                print "sdev fg/bk=",roi_sdev_s,"/",roi_sdev_bk
-
-        cs.loco.low_cnr = copy.deepcopy(low_cnr)
-        cs.loco.mean_sg = copy.deepcopy(mean_sg)
-        cs.loco.mean_bk = copy.deepcopy(mean_bk)
-        cs.loco.sdev_sg = copy.deepcopy(sdev_sg)
-        cs.loco.sdev_bk = copy.deepcopy(low_cnr)
+                print "mean fg/bk=",cs.loco.mean_sg[i],"/",cs.loco.mean_bk[i]
+                print "sdev fg/bk=",cs.loco.sdev_sg[i],"/",cs.loco.sdev_bk[i]
+                print 'cnr = ',cs.loco.low_cnr[i]
 
         error = False
         return error
@@ -2326,101 +1792,76 @@ class XRayQC:
                 #{'key':"0008,0021",'name','value':0, 'quantity','level':,'rank':},
                 {'key':"0008,0021",  'name':"SeriesDate"},
                 {'key':"0008,0031",  'name':"SeriesTime"},
-                {'key':"0008,0070",  'name':"Manufacturer"},
                 {'key':"0008,0080",  'name':"InstitutionName"},
                 {'key':"0008,1010",  'name':"StationName"},
                 {'key':"0008,1030",  'name':"StudyDescription"},
                 {'key':"0008,103E",  'name':"SeriesDescription"},
                 {'key':"0008,1070",  'name':"Operator's Name"},
+                {'key':"0008,1090",  'name':"Modelname"},
                 {'key':"0010,0020",  'name':"PatientID"},
                 {'key':"0018,0015",  'name':"BodyPartExamined"},
                 {'key':"0018,0060",  'name':"kVp"},
                 {'key':"0018,1000",  'name':"DeviceSerialNumber"},
-                {'key':"0018,1004",  'name':"PlateID"},
                 {'key':"0018,1020",  'name':"SoftwareVersions"},
+                {'key':"0018,1030",  'name':"ProtocolName"},
                 {'key':"0018,1110",  'name':"DistanceSourceToDetector (mm)"},
-                {'key':"0018,1150",  'name':"ExposureTime (ms)"},
-                {'key':"0018,1152",  'name':"Exposure (mAs)"},
+                {'key':"0018,1111",  'name':"DistanceSourceToPatient (mm)"},
+                {'key':"0018,1153",  'name':"Exposure (uAs)"},
                 {'key':"0018,115E",  'name':"ImageAreaDoseProduct"},
-                {'key':"0018,1160",  'name':"FilterType"},
                 {'key':"0018,1164",  'name':"ImagerPixelSpacing"},
                 {'key':"0018,1166",  'name':"Grid"},
-                {'key':"0018,1190",  'name':"FocalSpot(s)"},
-                {'key':"0018,1200",  'name':"Date of Last Calibration"},
-                {'key':"0018,1260",  'name':"PlateType"},
-                {'key':"0018,1400",  'name':"AcquisitionDeviceProcessingDescription"},
-                {'key':"0018,1401",  'name':"AcquisitionDeviceProcessingCode"},
-                {'key':"0018,1403",  'name':"CassetteSize"},
-                {'key':"0018,1404",  'name':"ExposuresOnPlate"},
-                {'key':"0018,1508",  'name':"PositionerType"},
-                {'key':"0018,6000",  'name':"Sensitivity"},
-                {'key':"0020,4000",  'name':"ImageComments"},
-                {'key':"0028,0006",  'name':"PlanarConfiguration"},
-                {'key':"0028,0101",  'name':"BitsStored"}
+                {'key':"0018,1405",  'name':"RelativeXRayExposure"},
+                {'key':"0018,1702",  'name':"CollimatorLeft"},
+                {'key':"0018,1704",  'name':"CollimatorRight"},
+                {'key':"0018,1706",  'name':"CollimatorUp"},
+                {'key':"0018,1708",  'name':"CollimatorDown"},
+                {'key':"0018,7001",  'name':"DetectorTemperature"},
+                {'key':"0018,700A",  'name':"DetectorID"},
+                {'key':"0018,700C",  'name':"DateCalibration"},
+                {'key':"0018,7050",  'name':"FilterMaterial"},
+                {'key':"0018,7062",  'name':"ExposureControlMode"},
+                {'key':"0018,8150",  'name':"ExposureTime (us)"},
+                {'key':"0028,0101",  'name':"BitsStored"},
+                {'key':"0040,8302",  'name':"EntranceDose_mGy"},
+                {'key':"200B,70BA",  'name':"FocalSpot"},
+                {'key':"200B,1028",  'name':"PrivValue1"},
+                {'key':"200B,7096",  'name':"PrivStand"},
             ]
-            if 'RelativeXRayExposure' in cs.dcmInfile: #DX
-                dicomfields.append({'key':"0018,1405",'name':"Relative Exposure"})
 
-        elif(info == "qclight"):
-            dicomfields = [
-                {'key':"0008,0021",  'name':"SeriesDate"},
-                {'key':"0008,0031",  'name':"SeriesTime"},
-                {'key':"0008,1070",  'name':"Operator's Name"},
-                {'key':"0018,0060",  'name':"kVp"},
-                {'key':"0018,1000",  'name':"DeviceSerialNumber"},
-                {'key':"0018,1004",  'name':"Plate ID"},
-                {'key':"0018,1401",  'name':"Acquisition Device Processing Code"},
-                {'key':"0018,1020",  'name':"SoftwareVersions"},
-                {'key':"0018,1110",  'name':"DistanceSourceToDetector (mm)"},
-                {'key':"0018,1150",  'name':"ExposureTime (ms)"},
-                {'key':"0018,1152",  'name':"Exposure (mAs)"},
-                {'key':"0018,115E",  'name':"ImageAreaDoseProduct"},
-                {'key':"0018,1160",  'name':"FilterType"},
-                {'key':"0018,1190",  'name':"FocalSpot(s)"},
-                {'key':"0018,1164",  'name':"ImagerPixelSpacing"},
-                {'key':"0018,1166",  'name':"Grid"},
-                {'key':"0018,1200",  'name':"Date of Last Calibration"},
-                {'key':"0018,5021",  'name':"Postprocessing"},
-                {'key':"0018,6000",  'name':"Sensitivity"}
-            ]
-            if 'RelativeXRayExposure' in cs.dcmInfile: #DX
-                dicomfields.append({'key':"0018,1405",'name':"Relative Exposure"})
 
         elif(info == "qcwad"):
             offset = -25 # rank must be negative, so recalc as offset+real position
-            if not 'DistanceSourceToDetector' in cs.dcmInfile: # WKZ-like fcr
-                dicomfields = [
-                    {'key':"0008,0021",  'name':"SeriesDate"},
-                    {'key':"0008,0031",  'name':"SeriesTime", 'quantity':'time', 'level':1, 'rank':offset+2},
-                    {'key':"0008,1070",  'name':"Operator's Name"},
-                    {'key':"0018,1004",  'name':"Plate ID"},
-                    {'key':"0018,1401",  'name':"Acquisition Device Processing Code", 'quantity':'processing', 'level':1, 'rank':offset+9},
-                    {'key':"0018,1020",  'name':"SoftwareVersions"},
-                    {'key':"0018,1164",  'name':"ImagerPixelSpacing"},
-                    {'key':"0018,6000",  'name':"Sensitivity",'quantity':'S','level':1,'rank':offset+12}
-                ]
-            else:
-                dicomfields = [
-                    {'key':"0008,0021",  'name':"SeriesDate"},
-                    {'key':"0008,0031",  'name':"SeriesTime", 'quantity':'time', 'level':1, 'rank':offset+2}, # spot 1 reserved for stand
-                    {'key':"0018,1110",  'name':"DistanceSourceToDetector (mm)", 'quantity':'distance', 'level':1, 'rank':offset+3},
-                    {'key':"0018,0060",  'name':"kVp", 'level':1, 'rank':offset+4},
-                    {'key':"0018,1160",  'name':"FilterType", 'quantity':'filter', 'level':1, 'rank':offset+5},
-                    {'key':"0018,1190",  'name':"FocalSpot(s)", 'quantity':'focalspot', 'level':1, 'rank':offset+6},
-                    {'key':"0018,1166",  'name':"Grid", 'quantity':'grid', 'level':1, 'rank':offset+7},
-                    {'key':"0018,5021",  'name':"Postprocessing", 'quantity':'processing', 'level':1, 'rank':offset+9}, # spot 8 reserved for rotation
+            dicomfields = [
+                {'key':"0008,0021",  'name':"SeriesDate"},
+                {'key':"0008,0031",  'name':"SeriesTime", 'quantity':'time', 'level':1, 'rank':offset+2}, # spot 1 reserved for stand
+                {'key':"0018,1110",  'name':"DistanceSourceToDetector (mm)", 'quantity':'distance', 'level':1, 'rank':offset+3},
+                {'key':"0018,0060",  'name':"kVp", 'level':1, 'rank':offset+4},
+                {'key':"0018,7050",  'name':"FilterMaterial", 'quantity':'filter', 'level':1, 'rank':offset+5},
+                {'key':"0018,1166",  'name':"Grid", 'quantity':'grid', 'level':1, 'rank':offset+6},
+                {'key':"200B,70BA",  'name':"FocalSpot", 'quantity':'spot', 'level':1, 'rank':offset+7},
+                {'key':"0018,1702",  'name':"CollimatorLeft",'quantity':'Left','level':1, 'rank':offset+8},
+                {'key':"0018,1704",  'name':"CollimatorRight",'quantity':'Right','level':1, 'rank':offset+9},
+                {'key':"0018,1706",  'name':"CollimatorUp",'quantity':'Up','level':1, 'rank':offset+10},
+                {'key':"0018,1708",  'name':"CollimatorDown",'quantity':'Down','level':1, 'rank':offset+11},
 
-                    {'key':"0018,1150",  'name':"ExposureTime (ms)", 'quantity':'ms','level':1,'rank':offset+10},
-                    {'key':"0018,1152",  'name':"Exposure (mAs)", 'quantity':'mAs','level':1,'rank':offset+11},
-                    {'key':"0018,115E",  'name':"ImageAreaDoseProduct", 'quantity':'DAP','level':1,'rank':offset+12},
-                
-                    {'key':"0008,1070",  'name':"Operator's Name"},
-                    {'key':"0018,1000",  'name':"DeviceSerialNumber"},
-                    {'key':"0018,1020",  'name':"SoftwareVersions"},
-                    {'key':"0018,1164",  'name':"ImagerPixelSpacing"},
-                    {'key':"0018,1200",  'name':"Date of Last Calibration"},
-                    {'key':"0018,6000",  'name':"Sensitivity",'quantity':'S'}
-                ]
+                {'key':"0018,8150",  'name':"ExposureTime (us)", 'quantity':'us','level':1,'rank':offset+12},
+                {'key':"0018,1153",  'name':"Exposure (uAs)", 'quantity':'uAs','level':1,'rank':offset+13},
+                {'key':"0018,115E",  'name':"ImageAreaDoseProduct", 'quantity':'DAP','level':1,'rank':offset+14},
+            
+                {'key':"0008,1070",  'name':"Operator's Name"},
+                {'key':"0018,1000",  'name':"DeviceSerialNumber"},
+                {'key':"0018,700A",  'name':"DetectorID"},
+                {'key':"0018,700C",  'name':"DateCalibration"},
+                {'key':"0018,1020",  'name':"SoftwareVersions"},
+                {'key':"0018,1164",  'name':"ImagerPixelSpacing"},
+                {'key':"200B,7063",  'name':"Postprocessing", 'quantity':'processing'},
+                {'key':"0018,1405",  'name':"RelativeXRayExposure"},
+                {'key':"0040,8302",  'name':"EntranceDose_mGy"},
+                {'key':"200B,1028",  'name':"PrivValue1"},
+                {'key':"200B,7096",  'name':"PrivStand"},
+                {'key':"0018,0015",  'name':"BodyPartExamined"},
+                {'key':"0018,1030",  'name':"ProtocolName"},
+            ]
 
         #labvals.append( {'name':'label','value':0, 'quantity':'columnname','level':'1:default, 2: detail','rank':missing or a number} )
         results = []
@@ -2476,13 +1917,6 @@ class XRayQC:
             if error:
                 msg += "XRayField "
 
-        # 3: find horizontal uniformity
-        if not error:
-            cs.unif.verticalROI = False
-            error = self.HorizontalUniformity(cs,cs.po_roi)
-            if error:
-                msg += "HorizontalUniformity "
-
         # 4: find Cu wedge stuff
         if not error:
             error = self.CuWedge(cs,cs.po_roi)
@@ -2503,40 +1937,6 @@ class XRayQC:
                 msg += "LowContrast "
 
         return error,msg
-
-    def mAsCalc(self,cs):
-        """
-        Convenience function to calculate mAs from DOP if not DR
-        """
-        if not 'ImageAndFluoroscopyAreaDoseProduct' in cs.dcmInfile: # WKZ-like fcr 
-            return 0. # no reported DOP
-
-        stand = self.TableOrWall(cs)
-        if not 'DistanceSourceToDetector' in cs.dcmInfile:
-            if stand == lit.stTable:
-                sidmm = cs.forceRoom.sidtablemm
-            else:
-                sidmm = cs.forceRoom.sidwallmm
-        else:
-            sidmm = cs.dcmInfile.DistanceSourceToDetector
-            if sidmm<1.e-6:
-                sidmm = cs.forceRoom.sidtablemm
-                if stand == lit.stWall:
-                    sidmm = cs.forceRoom.sidwallmm
-
-        sid_m = sidmm/1000.
-        kvp = cs.dcmInfile.KVP
-        dop = cs.dcmInfile.ImageAndFluoroscopyAreaDoseProduct
-        if sid_m<1.e-6 or kvp < 1.e-6 or dop <1.e-6:
-            return 0.
-
-        factor =  8900.
-        if stand == lit.stWall: # should also adjust area 27^2 for table, but hey.
-            factor = 16790. # depends on filter used
-        xrayarea = max(1e-6,(cs.xrayNSWEmm[0]+cs.xrayNSWEmm[1])*(cs.xrayNSWEmm[2]+cs.xrayNSWEmm[3])/(1000.*1000.))
-
-        mAs_calc = (dop/np.power(kvp,2.4))*sid_m**2/xrayarea*factor
-        return mAs_calc
 
     def XRayDev(self,cs):
         """
@@ -2583,6 +1983,7 @@ class XRayQC:
         labvals.append( {'name':'xray[W]cm','value':cs.xrayNSWEmm[2]/10., 'quantity':'xrW','level':2} )
         labvals.append( {'name':'xrayDev','value':self.XRayDev(cs), 'quantity':'xrayDev','level':1, 'rank':offset+12} )
 
+        """
         ## uniformity
         if stand == lit.stWall:
             label = 'LRUniformity'
@@ -2591,7 +1992,8 @@ class XRayQC:
             label = 'ROIUniformity'
             value = 100.*cs.unif.ROIuniformity
         labvals.append( {'name':label,'value':value, 'quantity':'Uniformity','level':1,'rank':offset+13} )
-
+        """
+        
         ## cuwedge
         labvals.append( {'name':'CuConfidence','value':cs.cuwedge.wedge_confidence*100,'level':2} ) # Confidence in wedge finding
         # SNR max
@@ -2605,8 +2007,6 @@ class XRayQC:
         labvals.append( {'name':'CuDR'+str(cs.cuwedge.roi_mmcu[0])+'_'+str(cs.cuwedge.roi_mmcu[-1]),'value':cs.cuwedge.dynamicRange, 'quantity':'DynRange','level':1,'rank':offset+14} )
         # guesskVp
         labvals.append( {'name':'kVp_est','value':cs.cuwedge.guesskVp, 'quantity':'kVp_est','level':2} )
-        # approximate mAs from DAP until DX info, better approx mAs
-        labvals.append( {'name':'mAs_est','value':self.mAsCalc(cs), 'quantity':'mAs_est','level':2} )
 
         ## low contrast
         for i,cnr in enumerate(cs.loco.low_cnr):
@@ -2635,7 +2035,6 @@ class XRayQC:
         rois = []
         rois.append(cs.po_roi) # phantom orientation box
         rois.append(cs.xr_roi) # xray edges
-        rois.append(cs.unif.roi) # horizontal uniformity box
         rois.append(cs.cuwedge.roi) # Cu wedge box
         for r in cs.cuwedge.step_rois:
             rois.append(r) # Cu wedge element
@@ -2665,116 +2064,50 @@ class XRayQC:
         Concept: Try to find out if phantom is rotated over 90, 180 or 270 degrees (WKZ mostly)
         Workflow:
         1. Find center and orientation
-        2. Find most likely location of CuWedge and LinePairs
+        2. Find most likely location of CuWedge (thick)
+        3. Use location wrt center to find and undo 90 degree rotations
         """
         error = True
         msg = ""
-        #ang = 1
-        #cs.pixeldataIn = np.rot90(cs.pixeldataIn,ang)
-
+        
         # inversion
         invertmax = 2**(self.invertmaxval(cs))-1
 
-        # 1. Find center and orientation
-        ang0 = 0
-        error = self.findPhantomOrientation(cs,ebbox)
-        if error:
-            ang0 = 180
-            cs.pixeldataIn = np.rot90(cs.pixeldataIn,2) # try at 180 deg rotation
-            error = self.findPhantomOrientation(cs,ebbox)
-
-            if error:
-                msg += "NoOrientation "
-                return error,msg
-
         # 2. Make box at x-5cm and calculate avg
-        roipts_orig = cs.po_roi
-        cs.test_rois = []
-        avgs = []
-        stds = []
-        # 1. Make box around wedge (-5.5; -4) to (+5.5; -5.5)
+        seppx = self.phantommm2pix(cs, 20)# 2 cm away from edges
+        widthpx = np.shape(cs.pixeldataIn)[0] ## width/height in pixels
+        heightpx = np.shape(cs.pixeldataIn)[1]
 
-        if cs.forceRoom.phantom == lit.stWellhofer: # WKZ
-            x0 = -15.+4
-            y0 = -43.-2.
-            x1 =  15.-4
-            y1 = -60.+3.
+        if cs.mustbeinverted:
+            smallimage = invertmax - cs.pixeldataIn[seppx:widthpx-seppx:3,seppx:heightpx-seppx:3] #every third pixel
         else:
-            bump = 2.
-            x0 = -15. +bump
-            y0 = -40. -bump
-            x1 =  15. +bump
-            y1 = -50. -bump
-
-        lims = [ [[ x0, y0],[ x1, y1]], # S
-                 [[ y0, x0],[ y1, x1]], #
-                 [[ x0,-y1],[ x1,-y0]],
-                 [[-y0, x0],[-y1, x1]]
-                 ]
-        for ix,(mmll,mmur) in enumerate(lims):
-            xpxll,ypxll = self.phantomposmm2pix(roipts_orig,mmll[0],mmll[1]) # lowerlef
-            xpxur,ypxur = self.phantomposmm2pix(roipts_orig,mmur[0],mmur[1]) # upperright
-            xpxul,ypxul = self.phantomposmm2pix(roipts_orig,mmll[0],mmur[1]) # upperleft
-            xpxlr,ypxlr = self.phantomposmm2pix(roipts_orig,mmur[0],mmll[1]) # lowerright
-
-            # box needs to be horizontal
-            xlo = int(.5+ max(xpxll,xpxul))
-            xhi = int(.5+ min(xpxlr,xpxur))
-            ylo = int(.5+ max(ypxlr,ypxll))
-            yhi = int(.5+ min(ypxur,ypxul))
-            if xhi < xlo:
-                swap = xlo
-                xlo = xhi
-                xhi = swap
-            if yhi < ylo:
-                swap = ylo
-                ylo = yhi
-                yhi = swap
-
-            # 1. Make box around wedge (-5.5; -4) to (+5.5; -5.5)
-            cs.test_rois.append([ [xlo,yhi],[xhi,yhi],[xhi,ylo],[xlo,ylo] ])
-            if cs.mustbeinverted:
-                smallimage = invertmax-cs.pixeldataIn[xlo:xhi,ylo:yhi]
-            else:
-                smallimage = cs.pixeldataIn[xlo:xhi,ylo:yhi]
-
-            avg = np.mean(smallimage)
-            std = np.std(smallimage)
-            print ix,avg,std,avg/std
-            avgs.append(avg)
-            stds.append(std)
-
+            smallimage = invertmax - cs.pixeldataIn[seppx:widthpx-seppx:3,seppx:heightpx-seppx:3] #every third pixel
+        
+        smallimage = scind.gaussian_filter(smallimage, sigma=5)
+        # Find location of min transmission (max attenuation)    
+        x0,y0 = np.unravel_index(smallimage.argmin(), smallimage.shape)
+        immidx = smallimage.shape[0]/2
+        immidy = smallimage.shape[1]/2
+        cs.lastimage = smallimage
+        print x0,y0,immidx,immidy
         ang = 0
-        cs.po_rot = ang0
         msg = ""
-        if min(stds[1],stds[2]) > max(stds[0],stds[3]): # pos was goed
-            pass
-        elif min(stds[2],stds[3]) > max(stds[1],stds[0]): # pos +90rot
-            ang = 1
-        elif min(stds[3],stds[0]) > max(stds[2],stds[1]): # pos +180rot
-            ang = 2
-        elif min(stds[0],stds[1]) > max(stds[3],stds[2]): # pos +270rot
-            ang = 3
-        else:
-            # if heuristics did not work, make it more simple: cu-wedge should have smallest sd
-            min_stds = min(stds)
-            min_index = stds.index(min_stds)            
-            if min_index == 0: # south, that's fine
-                ang = 0
-            elif min_index == 1: # west
-                ang = 1
-            elif min_index == 2: # north
-                ang = 2
+        if x0 < immidx: # correct side on x
+            if y0 < immidy: # correct side on y
+                pass
             else:
                 ang = 3
-#            print "[checkPhantomRotation] ERROR! Cannot find orientation",avgs
-#            return True,"NoOrientation "
+        else:
+            if y0 < immidy: # +90rot
+                ang = 1
+            else:
+                ang = 2
 
+        cs.po_rot = ang
         if ang>0:
             cs.pixeldataIn = np.rot90(cs.pixeldataIn,-ang)
-            cs.po_rot = 90*ang+ang0
-        if ang>0 or ang0 >0:
-            msg = 'Rot'+str(cs.po_rot)+' '
+            cs.po_rot = 90*ang
+
         error = self.findPhantomOrientation(cs)
         return error,msg
 
