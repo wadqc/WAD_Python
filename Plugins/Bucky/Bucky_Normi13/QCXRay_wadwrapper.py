@@ -36,21 +36,16 @@ def logTag():
 
 # helper functions
 """
-    roomWKZ1 = Room("WKZ1",outvalue=1023,tablesid=1150,wallsid=2000, tablepid=65, wallpid=50,phantom=lit.stWellhofer)
+    roomWKZ1 = Room("WKZ1", tablepid=70,wallpid=50,linepairmarkers={'mm0.6':[-83.,-25.],'mm1.0':[-99.,-8.]})
     <params>
-      <roomname>WKZ1</roomname>
-      <phantom>wellhofer</phantom>
-      <tablesidmm>1150</tablesidmm>
-      <tablepidmm>65</tablepidmm>
-      <wallsidmm>2000</wallsidmm>
+      <roomname>WKZ</roomname>
+      <tablepidmm>70</tablepidmm>
       <wallpidmm>50</wallpidmm>
-      <outvalue>1023</outvalue>
-      
-      <sensitivities>
-        <threshold date="20100101" value="35" />
-      </sensitivities>
-      
-      <sdthreshold>40</sdthreshold>
+      <linepair_typRXT02>
+        <mm1.0 x="-99.0" y="-8.0" />
+        <mm0.6 x="-83.0" y="-25.0" />
+      </linepair_typRXT02>
+      <mm0.6>normi13</mm0.6>
     </params>
 """
 def _getRoomDefinition(params):
@@ -58,12 +53,6 @@ def _getRoomDefinition(params):
     try:
         # a name for identification
         roomname = params.find('roomname').text
-
-        # phantom name (only pehamed or wellhofer)
-        phantoms_supported = ['pehamed','wellhofer','normi13']
-        phantom = params.find('phantom').text
-        if not phantom in phantoms_supported:
-            raise ValueError(logTag()+' unsupported phantom %s'%phantom)
 
         # load the locations of markers on the linepair pattern. if these are not given, use the hardcoded values
         linepairmarkers = {}
@@ -88,7 +77,7 @@ def _getRoomDefinition(params):
         return QCXRay_lib.Room(roomname, outvalue=outvalue,
                                tablesid=tablesidmm, wallsid=wallsidmm, 
                                tablepid=tablepidmm, wallpid=wallpidmm,
-                               phantom=phantom,linepairmarkers=linepairmarkers)
+                               linepairmarkers=linepairmarkers)
     except AttributeError,e:
         raise ValueError(logTag()+" missing room definition parameter!"+str(e))
 
@@ -126,8 +115,8 @@ def xrayqc_series(data, results, params):
 
     ## 5. Build xml output
     ## Struct now contains all the results and we can write these to the WAD IQ database
-    stand = qclib.TableOrWall(cs)
-    idname = '_'+stand
+    stand,detector = qclib.TableOrWall(cs)
+    idname = '_'+stand+'_'+detector
 
     labvals = qclib.ReportEntries(cs)
     tmpdict={}
@@ -169,7 +158,8 @@ def xrayheader_series(data,results,params):
     cs = QCXRay_lib.XRayStruct(dcmInfile,None,room)
     cs.verbose = False # do not produce detailed logging
     dicominfo = qclib.DICOMInfo(cs,info)
-    idname = '_'+qclib.TableOrWall(cs)
+    stand,detector = qclib.TableOrWall(cs)
+    idname = '_'+stand+'_'+detector
 
     ## 3. Build xml output
     floatlist = [
@@ -180,7 +170,7 @@ def xrayheader_series(data,results,params):
         'Sensitivity',
         'kVp'
     ]
-    offset = -25
+    offset = -26
     results.addChar('pluginversion'+idname, str(qclib.qcversion)) # do not specify level, use default from config
     for elem in dicominfo:
         quan = elem['quantity'] if 'quantity' in elem else str(elem['name'])
@@ -192,4 +182,5 @@ def xrayheader_series(data,results,params):
             results.addChar(elem['name']+str(idname), str(elem['value'])[:min(len(str(elem['value'])),128)], quantity=quan, level=level,rank=rank)
 
     results.addChar('room'+idname, cs.forceRoom.name) # do not specify level, use default from config
-    results.addChar('stand'+idname, qclib.TableOrWall(cs), level=1,rank=offset+1) # do not specify level, use default from config
+    results.addChar('stand'+idname, stand, level=1,rank=offset+1) # do not specify level, use default from config
+    results.addChar('detector'+idname, detector, level=1,rank=offset+2) # do not specify level, use default from config

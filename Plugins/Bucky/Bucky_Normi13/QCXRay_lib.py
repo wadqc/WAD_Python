@@ -2039,8 +2039,6 @@ class XRayQC:
         for r in cs.cuwedge.step_rois:
             rois.append(r) # Cu wedge element
         rois.append(cs.mtf.roi) # MTF box
-        for r in cs.loco.lo_rois:
-            rois.append(r) # low contrast element
 
         draw = ImageDraw.Draw(im)
         for r in rois:
@@ -2048,6 +2046,17 @@ class XRayQC:
             for x,y in r:
                 roi.append( (int(x+.5),int(y+.5)))
             draw.polygon(roi,outline=0)
+        
+        # now draw all cirlerois in reserved color
+        rois = []
+        for r in cs.loco.lo_rois: # low contrast elements
+            rois.append(r)
+        for r in cs.loco.lo_rois_bku:
+            rois.append(r)
+        for r in cs.loco.lo_rois_bkd:
+            rois.append(r)
+        for x,y,r in rois: # low contrast elements
+            draw.ellipse((x-r,y-r,x+r,y+r), outline=0)
         del draw
 
         # convert to RGB for JPG, cause JPG doesn't do PALETTE and PNG is much larger
