@@ -4,6 +4,7 @@ Warning: THIS MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED! And make su
 
 TODO:
 Changelog:
+    20160202: added uniformity
     20151109: start of new module, based on QCXRay_lib of Bucky_PEHAMED_Wellhofer of 20151029
 """
 import dicom
@@ -25,6 +26,7 @@ import scipy.misc
 scipy_version = [int(v) for v in scipy.__version__ .split('.')]
 if scipy_version[1]<10 or (scipy_version[1] == 10 and scipy_version[1]<1):
     raise RuntimeError("scipy version too old. Upgrade scipy to at least 0.10.1")
+import QCUniformity_lib
 
 class Room :
     name = ""     # identifier of room
@@ -39,14 +41,15 @@ class Room :
     xy10mm = [] # x,y position in mm of decimal dot in 1.0 lp/mm 
     
     def __init__ (self,_name, outvalue=-1, tablesid=-1, wallsid=-1, tablepid=-1, wallpid=-1,
-                  linepairmarkers = {}):
+                  linepairmarkers = {},artefactborderpx=1,detectorname={}):
         self.name = _name
         self.outvalue = outvalue
         self.pidtablemm = tablepid
         self.pidwallmm  = wallpid
         self.sidtablemm = tablesid
         self.sidwallmm = wallsid
-
+        self.artefactborderpx = artefactborderpx
+        self.detector_name = detectorname # a dict of [detectorid] = name like 
         if len(linepairmarkers)>0:
             self.xy06mm = linepairmarkers['mm0.6']
             self.xy10mm = linepairmarkers['mm1.0']
@@ -104,6 +107,8 @@ class XRayStruct:
             self.sdev_sg = []
             self.sdev_bk = []
             self.lo_rois = []
+            self.lo_rois_bku = []
+            self.lo_rois_bkd = []
 
     class MTFStruct:
         dotxys = []
@@ -160,6 +165,9 @@ class XRayStruct:
     # Low Contrast
     loco = None
 
+    # Uniformity
+    unif = None
+    
     lastimage = None # GUI feedback
 
     # for matlib plotting
@@ -199,7 +207,7 @@ class XRayStruct:
         self.maybeInvert()
 
 class XRayQC:
-    qcversion = 20151109
+    qcversion = 20160202
 
     boxradmm   = 90  #
     adjustmtfangledeg = 0. # if consistency check fails, add a little angle
@@ -296,6 +304,10 @@ class XRayQC:
         if cs.knownTableOrWall is not None:
             return cs.knownTableOrWall,detectorid
 
+        if detectorid in cs.forceRoom.detector_name:
+            cs.knownTableOrWall = cs.forceRoom.detector_name[detectorid]
+            return cs.knownTableOrWall,detectorid
+            
         result = ""
         if cs.forceRoom.sidtablemm < 0. and cs.forceRoom.sidwallmm > 0.:
             result =  lit.stWall
@@ -1848,6 +1860,8 @@ class XRayQC:
                 {'key':"0018,1153",  'name':"Exposure (uAs)", 'quantity':'uAs','level':1,'rank':offset+13},
                 {'key':"0018,115E",  'name':"ImageAreaDoseProduct", 'quantity':'DAP','level':1,'rank':offset+14},
             
+                {'key':"0008,103E",  'name':"SeriesDescription"},
+                {'key':"0008,1010",  'name':"StationName"},
                 {'key':"0008,1070",  'name':"Operator's Name"},
                 {'key':"0018,1000",  'name':"DeviceSerialNumber"},
                 {'key':"0018,700A",  'name':"DetectorID"},
@@ -1888,6 +1902,26 @@ class XRayQC:
 
         return results
 #----------------------------------------------------------------------
+    def QCUnif(self,cs):
+        """
+        Separate uniformity in one step!
+        """
+
+        print '[QCUnif]',cs.dcmInfile.SeriesDescription
+        error,msg = self.Uniformity(cs)
+
+        if error:
+            msg += "Uniformity (try)) "
+            print  msg
+            return error,msg
+            
+        if cs.unif.expertmode:
+            exproi=cs.unif.expert_roipts
+            print '[Uniformity] Cropped to',exproi
+
+        return error,msg
+            
+
     def QC(self,cs):
         """
         all in one package!
@@ -1906,8 +1940,9 @@ class XRayQC:
         step6: low contrast stuff
         step7: put it in a report
         """
-
+        print '[QCNormi13]',cs.dcmInfile.SeriesDescription
         error,msg = self.checkPhantomRotation(cs)
+        ###
         if error:
             msg += "AlignROI(BoundingBox) "
 
@@ -1967,7 +2002,27 @@ class XRayQC:
         Convenience function to list all calculated items with names, only if cs completely filled
         """
         labvals = []
-        stand = self.TableOrWall(cs)
+        stand,detector = self.TableOrWall(cs)
+
+        if not cs.unif is None:
+            num_art = 0
+            if cs.unif.art_clusters != None:
+                num_art = len(cs.unif.art_clusters)
+
+            offset = -25 # rank must be negative, so recalc as offset+real position
+
+            labvals.append( {'name':'Uniformity_(%)','value':cs.unif.unif_pct, 'quantity':'Uniformity','level':1,'rank':offset+7} )
+            labvals.append( {'name':'Artefacts','value':num_art, 'quantity':'Artefacts','level':1,'rank':offset+6} )
+
+
+            for kk in range(0,len(cs.unif.means)):
+                labvals.append( {'name':'avg_'+str(kk),'value':cs.unif.means[kk], 'quantity':'Mean','level':2} )
+            for kk in range(0,len(cs.unif.stdevs)):
+                labvals.append( {'name':'sd_'+str(kk),'value':cs.unif.stdevs[kk], 'quantity':'STDev','level':2} )
+            for lab,val in zip(['xmin','xmax','ymin','ymax'],cs.unif.art_borderpx):
+                labvals.append( {'name':'crop_%s'%lab,'value':val, 'quantity':'borderpx','level':2} )
+   
+            return labvals
 
         ## Phantom orientation; level 1 = show by default; level 2 = show in details
         #labvals.append( {'name':'label','value':0, 'quantity':'columnname','level':'1:default, 2: detail','rank':missing or a negative number} )
@@ -2021,6 +2076,27 @@ class XRayQC:
 
         return labvals
 
+    def drawThickCircle(self,draw,x,y,rad,color,thick):
+        for t in range(-(thick-1)/2,(thick+1)/2):
+            r1 = rad+t
+            draw.ellipse((x-r1,y-r1,x+r1,y+r1), outline=color)
+
+    def drawThickRectangle(self,draw,roi,color,thick):
+        #[(x0,y0),(x1,y1)]
+        if len(roi) == 4:
+            x0 = roi[0]
+            y0 = roi[1]
+            x1 = roi[2]
+            y1 = roi[3]
+        else:
+            x0 = roi[0][0]
+            y0 = roi[0][1]
+            x1 = roi[1][0]
+            y1 = roi[1][1]
+
+        for t in range(-(thick-1)/2,(thick+1)/2):
+            draw.rectangle([(x0+t,y0+t),(x1-t,y1-t)],outline=color)
+
     def saveAnnotatedImage(self,cs,fname):
         # make a palette, mapping intensities to greyscale
         pal = np.arange(0,256,1,dtype=np.uint8)[:,np.newaxis] * \
@@ -2028,34 +2104,81 @@ class XRayQC:
         # but reserve the first for red for markings
         pal[0] = [255,0,0]
 
+        rectrois = []
+        polyrois = []
+        circlerois = []
+
         # convert to 8-bit palette mapped image with lowest palette value used = 1
-        im = scipy.misc.toimage(cs.pixeldataIn.transpose(),low=1,pal=pal) # MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!
+        if cs.unif is None:
+            # first the base image
+            im = scipy.misc.toimage(cs.pixeldataIn.transpose(),low=1,pal=pal) # MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!
+
+            # now add all box rois
+            if len(cs.po_roi) >0:
+                polyrois.append(cs.po_roi) # phantom orientation box
+            if len(cs.xr_roi) >0:
+                polyrois.append(cs.xr_roi) # xray edges
+            if len(cs.cuwedge.roi) >0:
+                polyrois.append(cs.cuwedge.roi) # Cu wedge box
+            for r in cs.cuwedge.step_rois:
+                polyrois.append(r) # Cu wedge element
+            if len(cs.mtf.roi) >0:
+                polyrois.append(cs.mtf.roi) # MTF box
+
+            # add circlerois
+            for r in cs.loco.lo_rois: # low contrast elements
+                circlerois.append(r)
+            for r in cs.loco.lo_rois_bku:
+                circlerois.append(r)
+            for r in cs.loco.lo_rois_bkd:
+                circlerois.append(r)
+            
+        else:
+            # first find the offset of the boxes that were defined on uncropped image
+            if cs.unif.expertmode:
+                exproi=cs.unif.expert_roipts
+            else:
+                bpx = cs.forceRoom.artefactborderpx
+                exproi=[bpx,np.shape(cs.pixeldataIn)[0]-1-bpx,bpx,np.shape(cs.pixeldataIn)[1]-1-bpx]
+
+            wid,hei = np.shape(cs.unif.art_image)
+            # first copy the artimage into the base image
+            pdCopy = np.zeros(np.shape(cs.pixeldataIn))
+            pdCopy[exproi[0]:exproi[0]+wid,exproi[2]:exproi[2]+hei] = cs.unif.art_image
+            im = scipy.misc.toimage(pdCopy.transpose(),low=1,pal=pal) # MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!
+
+            # now add all box rois
+
+            # show the box of the whole image so we can see what has been cropped
+            wid,hei = np.shape(cs.pixeldataIn)
+            #ectrois.append([(-exproi[0],-exproi[2]),(-exproi[0]+wid,-exproi[2]+hei)]) #[(x0,y0),(x1,y1)]
+            rectrois.append([(0,0),(wid-1,hei-1)]) #[(x0,y0),(x1,y1)]
+
+            # uniformity boxes
+            for r in cs.unif.unif_rois: #[x0,dx,y0,dy]
+                #rectrois.append([(r[0]-exproi[0],r[2]-exproi[2]),(r[0]-exproi[0]+r[1],r[2]-exproi[2]+r[3])])#[(x0,y0),(x1,y1)]
+                rectrois.append([(r[0],r[2]),(r[0]+r[1],r[2]+r[3])])#[(x0,y0),(x1,y1)]
+
+            # artefact circles
+            #  translate(exproi[0],exproi[2])
+            for r in cs.unif.art_rois: # x,y,r
+                circlerois.append([r[0]+exproi[0],r[1]+exproi[2],r[2]])
+
 
         # now draw all rois in reserved color
-        rois = []
-        rois.append(cs.po_roi) # phantom orientation box
-        rois.append(cs.xr_roi) # xray edges
-        rois.append(cs.cuwedge.roi) # Cu wedge box
-        for r in cs.cuwedge.step_rois:
-            rois.append(r) # Cu wedge element
-        rois.append(cs.mtf.roi) # MTF box
-
         draw = ImageDraw.Draw(im)
-        for r in rois:
+        for r in polyrois:
             roi =[]
             for x,y in r:
                 roi.append( (int(x+.5),int(y+.5)))
             draw.polygon(roi,outline=0)
         
+        for r in rectrois:
+            #draw.rectangle(r,outline=0)
+            self.drawThickRectangle(draw, r, 0, 3)
+            
         # now draw all cirlerois in reserved color
-        rois = []
-        for r in cs.loco.lo_rois: # low contrast elements
-            rois.append(r)
-        for r in cs.loco.lo_rois_bku:
-            rois.append(r)
-        for r in cs.loco.lo_rois_bkd:
-            rois.append(r)
-        for x,y,r in rois: # low contrast elements
+        for x,y,r in circlerois: # low contrast elements
             draw.ellipse((x-r,y-r,x+r,y+r), outline=0)
         del draw
 
@@ -2120,3 +2243,47 @@ class XRayQC:
         error = self.findPhantomOrientation(cs)
         return error,msg
 
+    def CropNormi13(self,cs):
+        cs_unif = QCUniformity_lib.UnifStruct(cs.dcmInfile, cs.pixeldataIn)
+        cs_unif.mustbeinverted = cs.mustbeinverted
+        qc_unif = QCUniformity_lib.Uniformity_QC()
+
+        if qc_unif.NeedsCropping2(cs_unif):
+            widthpx = np.shape(cs.pixeldataIn)[0] ## width/height in pixels
+            heightpx = np.shape(cs.pixeldataIn)[1]
+
+            bpx = 15
+            qc_unif.RestrictROI(cs_unif)
+            [xmin_px,xmax_px, ymin_px,ymax_px] = cs_unif.expert_roipts
+            xmin_px = max(0,xmin_px-bpx)
+            ymin_px = max(0,ymin_px-bpx)
+            xmax_px = min(widthpx-1,xmax_px+bpx)
+            ymax_px = min(heightpx-1,ymax_px+bpx)
+            cs.pixeldataIn = cs.pixeldataIn[xmin_px:xmax_px+1,ymin_px:ymax_px+1]
+            
+    def Uniformity(self,cs):
+        # run external QCUniformity
+        usestructure = True
+        
+        cs.unif = QCUniformity_lib.UnifStruct(cs.dcmInfile, cs.pixeldataIn)
+        cs.unif.mustbeinverted = cs.mustbeinverted
+        qc_unif = QCUniformity_lib.Uniformity_QC()
+
+        if qc_unif.NeedsCropping2(cs.unif):
+            roipts = qc_unif.RestrictROI(cs.unif)
+            cs.unif.expertmode = True
+        if usestructure:
+            qc_unif.artefactDetectorParameters(UseStructure=False, borderpx=cs.forceRoom.artefactborderpx, 
+                                               bkscale=25, fgscale=5.0, threshold=-15)
+        else:
+            qc_unif.artefactDetectorParameters(UseStructure=True, borderpx=cs.forceRoom.artefactborderpx, 
+                                               bkscale=25, fgscale=5.0, threshold=3000)
+        error = qc_unif.Uniformity(cs.unif)
+        if error:
+            return error,'error in uniformity'
+
+        
+        error = qc_unif.Artefacts(cs.unif)
+        if error:
+            return error,'error in artefacts'
+        return error,''

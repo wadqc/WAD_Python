@@ -13,7 +13,7 @@
 #
 
 
-__version__='20151027'
+__version__='20160202'
 __author__ = 'aschilha'
 import sys
 import os
@@ -36,16 +36,20 @@ def logTag():
 
 # helper functions
 """
-    roomWKZ1 = Room("WKZ1", tablepid=70,wallpid=50,linepairmarkers={'mm0.6':[-83.,-25.],'mm1.0':[-99.,-8.]})
+    roomWKZ1 = QCXRay_lib.Room('WKZ1', tablepid=70,wallpid=50,
+                               linepairmarkers={'mm0.6':[-83.,-25.],'mm1.0':[-99.,-8.]},artefactborderpx=5,
+                               detectorname={'SN152495':'Tafel', 'SN152508':'Wand', 'SN1522YG':'Klein1', 'SN151685':'Groot2'})
     <params>
-      <roomname>WKZ</roomname>
+      <roomname>WKZ1</roomname>
       <tablepidmm>70</tablepidmm>
       <wallpidmm>50</wallpidmm>
       <linepair_typRXT02>
         <mm1.0 x="-99.0" y="-8.0" />
         <mm0.6 x="-83.0" y="-25.0" />
       </linepair_typRXT02>
-      <mm0.6>normi13</mm0.6>
+      <detector_name>
+        <names SN151685="Groot2" SN1522YG="Klein1" SN152495="Tafel" SN152508="Wand" />
+      </detector_name>
     </params>
 """
 def _getRoomDefinition(params):
@@ -65,6 +69,19 @@ def _getRoomDefinition(params):
         except:
             print logTag()+' exact locations of markers on linepair pattern not supplied by config. Using empirical values; please check if these are valid here.'
             
+        # load detector names
+        detectorname = {}
+        try:
+            dets_names = params.find('detector_name')
+            print '[wadwrap] dn',dets_names
+            names = dets_names.find('names')
+            print '[wadwrap] n',names
+            for a,b in names.items():
+                print '[wadwrap] ab',a,b
+                detectorname[a] = b
+        except:
+            print logTag()+' no explicit detector_name pairs defined in config.'
+
         # Source to Detector distance and Patient to Detector distance for wall and table (both in mm)
         tablepidmm  = float(params.find('tablepidmm').text)
         wallpidmm   = float(params.find('wallpidmm').text)
@@ -77,7 +94,7 @@ def _getRoomDefinition(params):
         return QCXRay_lib.Room(roomname, outvalue=outvalue,
                                tablesid=tablesidmm, wallsid=wallsidmm, 
                                tablepid=tablepidmm, wallpid=wallpidmm,
-                               linepairmarkers=linepairmarkers)
+                               linepairmarkers=linepairmarkers,detectorname=detectorname)
     except AttributeError,e:
         raise ValueError(logTag()+" missing room definition parameter!"+str(e))
 
@@ -118,6 +135,13 @@ def xrayqc_series(data, results, params):
     stand,detector = qclib.TableOrWall(cs)
     idname = '_'+stand+'_'+detector
 
+    ## first Build artefact picture thumbnail
+    label = 'normi13'
+    filename = '%s%s.jpg'%(label,idname) # Use jpg if a thumbnail is desired
+
+    qclib.saveAnnotatedImage(cs,filename)
+    results.addObject('%s%s'%(label,idname),filename)
+
     labvals = qclib.ReportEntries(cs)
     tmpdict={}
     for elem in labvals:
@@ -130,11 +154,58 @@ def xrayqc_series(data, results, params):
         rank = elem['rank'] if 'rank' in elem else None
         results.addFloat(elem['name']+str(idname), elem['value'], quantity=quan, level=level,rank=rank)
 
-    ## 6. Build artefact picture thumbnail
-    filename = 'test'+idname+'.jpg' # Use jpg if a thumbnail is desired
+
+def xrayqc_uniformity_series(data, results, params):
+    """
+    QCXRay_uniformity checks:
+        Uniformity
+        Artefacts
+    Workflow:
+        2. Check data format
+        3. Build and populate qcstructure
+        4. Run tests
+        5. Build xml output
+        6. Build artefact picture thumbnail
+    """
+    inputfile = data.series_filelist[0]  # give me a filename
+
+    ## 2. Check data format
+    dcmInfile,pixeldataIn,dicomMode = wadwrapper_lib.prepareInput(inputfile,headers_only=False,logTag=logTag())
+
+    ## 3. Build and populate qcstructure
+    remark = ""
+    qclib = QCXRay_lib.XRayQC()
+    room = _getRoomDefinition(params)
+    cs = QCXRay_lib.XRayStruct(dcmInfile,pixeldataIn,room)
+    cs.verbose = False # do not produce detailed logging
+
+    ## 4. Run tests
+    error,msg = qclib.QCUnif(cs)
+
+    ## 5. Build xml output
+    ## Struct now contains all the results and we can write these to the WAD IQ database
+    stand,detector = qclib.TableOrWall(cs)
+    idname = '_'+stand+'_'+detector
+
+    ## First Build artefact picture thumbnail
+    label = 'unif'
+    filename = '%s%s.jpg'%(label,idname) # Use jpg if a thumbnail is desired
 
     qclib.saveAnnotatedImage(cs,filename)
-    results.addObject('AnnotatedImage'+idname,filename)
+    results.addObject('%s%s'%(label,idname),filename)
+
+    labvals = qclib.ReportEntries(cs)
+    tmpdict={}
+    for elem in labvals:
+        #labvals.append( {'name':'label','value':0, 'quantity':'columnname','level':'1:default, 2: detail','pos':missing or a number} )
+        # if no pos given, the next one will be given
+        # if no quantity given, 'name' will be used
+        # if no level given, the default will be used
+        quan = elem['quantity'] if 'quantity' in elem else str(elem['name'])
+        level = elem['level'] if 'level' in elem else None
+        rank = elem['rank'] if 'rank' in elem else None
+        results.addFloat(elem['name']+str(idname), elem['value'], quantity=quan, level=level,rank=rank)
+
 
 def xrayheader_series(data,results,params):
     """
