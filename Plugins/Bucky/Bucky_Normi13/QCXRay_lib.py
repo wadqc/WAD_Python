@@ -4,6 +4,7 @@ Warning: THIS MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED! And make su
 
 TODO:
 Changelog:
+    20160205: Distinguish between linepairs insert typ38 and RXT02
     20160202: added uniformity
     20151109: start of new module, based on QCXRay_lib of Bucky_PEHAMED_Wellhofer of 20151029
 """
@@ -41,7 +42,7 @@ class Room :
     xy10mm = [] # x,y position in mm of decimal dot in 1.0 lp/mm 
     
     def __init__ (self,_name, outvalue=-1, tablesid=-1, wallsid=-1, tablepid=-1, wallpid=-1,
-                  linepairmarkers = {},artefactborderpx=1,detectorname={}):
+                  linepairmarkers = {},artefactborderpx=[0,0,0,0],detectorname={}):
         self.name = _name
         self.outvalue = outvalue
         self.pidtablemm = tablepid
@@ -51,8 +52,19 @@ class Room :
         self.artefactborderpx = artefactborderpx
         self.detector_name = detectorname # a dict of [detectorid] = name like 
         if len(linepairmarkers)>0:
-            self.xy06mm = linepairmarkers['mm0.6']
-            self.xy10mm = linepairmarkers['mm1.0']
+            self.linepairmodel = linepairmarkers['type']
+            if self.linepairmodel == 'RXT02':
+                self.xy06mm = linepairmarkers['mm0.6']
+                self.xy10mm = linepairmarkers['mm1.0']
+            elif self.linepairmodel == '38':
+                self.xy06mm = linepairmarkers['mm0.6']
+                self.xy14mm = linepairmarkers['mm1.4']
+                self.xy18mm = linepairmarkers['mm1.8']
+                self.xy46mm = linepairmarkers['mm4.6']
+            elif self.linepairmodel == 'None':
+                pass
+            else:
+                raise ValueError('[Room] Unknown linepairmodel')
         
     def setPIDs(self,_pidtable, _pidwall):
         self.pidtablemm = _pidtable
@@ -207,7 +219,7 @@ class XRayStruct:
         self.maybeInvert()
 
 class XRayQC:
-    qcversion = 20160202
+    qcversion = 20160205
 
     boxradmm   = 90  #
     adjustmtfangledeg = 0. # if consistency check fails, add a little angle
@@ -378,6 +390,8 @@ class XRayQC:
                 if line[x-hlinepx]>threshold and line[x]<threshold and line[x+hlinepx]> threshold:
                     ep = x
                     break
+            if ep == -1:
+                print threshold,line
             edgepos.append(ep)
             lines.append(line)
         if cs.verbose:
@@ -456,7 +470,7 @@ class XRayQC:
         searchrad = int(2.5/pix2phantommm+.5) # 2 mm around location
 
         workimage = cs.pixeldataIn
-        if what == "MTF": #
+        if 'MTF' in what: #
             searchrad = int(0.5/pix2phantommm+.5)
 
         searchrad = max(1,searchrad)
@@ -488,14 +502,14 @@ class XRayQC:
                 # find maximum location in projections
                 xflat = np.mean(cropped,axis=0)
                 yflat = np.mean(cropped,axis=1)
-                if what == 'MTF':
+                if what == 'MTF_RXT02': # search for max
                     x1 = minx+np.unravel_index(yflat.argmax(), yflat.shape)[0]
                     y1 = miny+np.unravel_index(xflat.argmax(), xflat.shape)[0]
-                else:
+                else: # search for min
                     x1 = minx+np.unravel_index(yflat.argmin(), yflat.shape)[0]
                     y1 = miny+np.unravel_index(xflat.argmin(), xflat.shape)[0]
                 if cs.verbose:
-                    if what == "MTF":
+                    if 'MTF' in what:
                         plt.figure()
                         plt.imshow(cropped)
                         plt.title('Align '+str(kk)+ ' '+what+str(i))
@@ -504,13 +518,13 @@ class XRayQC:
 
                 rp[0] = x1
                 rp[1] = y1
-            if not what == "MTF":
+            if not what == 'MTF_RXT02':
                 roipts = self.ConsistencyAlign(cs,roipts0,roipts,what)
             conf_pts.append((self.ROIConfidence(cs,roipts,what),copy.deepcopy(roipts)))
 
         # Just take the last one; should be best!
         # conf_pts = sorted(conf_pts) #sorting orientation/distance box does worsen results
-        if what == "MTF": # sorting MTF seems to help
+        if 'MTF' in what: # sorting MTF seems to help
             conf_pts = sorted(conf_pts)
 
         for i in range(0,len(roipts)):
@@ -577,6 +591,47 @@ class XRayQC:
                         roiptsnew[i1][0] = roiptsnew[i0][0]+(roiptsnew[i3][0]-roiptsnew[i2][0])
                         roiptsnew[i1][1] = roiptsnew[i0][1]+(roiptsnew[i3][1]-roiptsnew[i2][1])
 
+        if what == "MTF_38":
+            """
+            roipts = [ [x18px,y18px],[x06px,y06px],[x14px,y14px],[x46px,y46px] ]
+            """
+            self.adjustmtfangledeg = 0.
+            id18 = 0
+            id06 = 1
+            id14 = 2
+            id46 = 3
+            idcmp = [ [id18,id06], [id06,id14], [id14,id46], [id46,id18] ]
+            dd18_46 = [roiptsnew[id46][0]-roiptsnew[id18][0],roiptsnew[id46][1]-roiptsnew[id18][1]]
+            dd06_14 = [roiptsnew[id14][0]-roiptsnew[id06][0],roiptsnew[id14][1]-roiptsnew[id06][1]]
+            lengthmms = [41.4298705358224,29.1192821547155,41.1481478200461,35.5992147241798 ]
+            len18_46 = lengthmms[3]
+            len06_14 = lengthmms[1]
+            for abc,l0mm in zip(idcmp,lengthmms):
+                i0 = abc[0]
+                i1 = abc[1]
+                l1 = np.sqrt( (roiptsnew[i1][0]-roiptsnew[i0][0])**2+ (roiptsnew[i1][1]-roiptsnew[i0][1])**2)
+                if(np.abs(self.pix2phantomm(cs,l1)-l0mm)>.45):
+                    alter = i1
+                    if(shiftdist[i0]>shiftdist[i1]):
+                        alter = i0
+                    if (alter == id18): #18:
+                        roiptsnew[alter][0] = int(0.5+roiptsnew[id46][0]-len18_46/len06_14*dd06_14[0])
+                        roiptsnew[alter][1] = int(0.5+roiptsnew[id46][1]-len18_46/len06_14*dd06_14[1])
+                        self.adjustmtfangledeg = 0.5
+                    elif(alter == id06): #06
+                        roiptsnew[alter][0] = int(0.5+roiptsnew[id14][0]-len06_14/len18_46*dd18_46[0])
+                        roiptsnew[alter][1] = int(0.5+roiptsnew[id14][1]-len06_14/len18_46*dd18_46[1])
+                    elif(alter == id14): #14
+                        roiptsnew[alter][0] = int(0.5+roiptsnew[id06][0]+len06_14/len18_46*dd18_46[0])
+                        roiptsnew[alter][1] = int(0.5+roiptsnew[id06][1]+len06_14/len18_46*dd18_46[1])
+                    elif(alter == id46): #46
+                        roiptsnew[alter][0] = int(0.5+roiptsnew[id18][0]+len18_46/len06_14*dd06_14[0])
+                        roiptsnew[alter][1] = int(0.5+roiptsnew[id18][1]+len18_46/len06_14*dd06_14[1])
+                        self.adjustmtfangledeg = 0.5
+            for abc,l0mm in zip(idcmp,lengthmms):
+                i0 = abc[0]
+                i1 = abc[1]
+                l1 = np.sqrt( (roiptsnew[i1][0]-roiptsnew[i0][0])**2+ (roiptsnew[i1][1]-roiptsnew[i0][1])**2)
         #sanity check
         widthpx = np.shape(cs.pixeldataIn)[0] ## width/height in pixels
         heightpx = np.shape(cs.pixeldataIn)[1]
@@ -590,7 +645,7 @@ class XRayQC:
     def ROIConfidence(self,cs,roipts,what):
         confidence = 0.
 
-        if what == 'MTF':
+        if what == 'MTF_RXT02':
             l0mm = 23.32
             dx = roipts[0][0]-roipts[1][0]
             dy = roipts[0][1]-roipts[1][1]
@@ -666,11 +721,23 @@ class XRayQC:
                 confidence *= min(2*redlength,lengths[p])/max(2*redlength,lengths[p])
             confidence = confidence **6.
 
+        if what == 'MTF_38':
+            #  colimit = .1 # just a scaling for confidence
+            confidence = 1.
+            # order lengths and see if the ratio's are within proper limits
+            lengths = sorted(lengths)
+            for p in reversed(range(0,4)):
+                lengths[p] /= lengths[0]
+            #	    grlen = [1.000, 1.2281, 1.4177, 1.4302] # pehamed
+            #    grlen = [1.000, 1.2344, 1.4305, 1.4400] # wellhofer
+            grlen = [1.000, 1.2312, 1.4241, 1.4351] # avg pehamed and wellhofer
+            for p in range(0,4):
+                confidence *= (1.0 - np.abs(lengths[p]-grlen[p])/grlen[p] )
 
         print what+"Confidence = ", (confidence*100.),"%"
         return confidence
 
-#----------------------------------------------------------------------
+    #----------------------------------------------------------------------
     def XRayField(self,cs,roipts=None):
         """
         Use either min across line between box and edge, or use corner values
@@ -1025,20 +1092,33 @@ class XRayQC:
         error = False
 
         return error
-#----------------------------------------------------------------------
+    #----------------------------------------------------------------------
     def MTF(self,cs,roipts_orig=None):
         error,confid = True,0.
         if roipts_orig is None:
             roipts_orig = cs.po_roi
 
-        x06px,y06px = self.phantomposmm2pix(roipts_orig,cs.forceRoom.xy06mm[0],cs.forceRoom.xy06mm[1])
-        x10px,y10px = self.phantomposmm2pix(roipts_orig,cs.forceRoom.xy10mm[0],cs.forceRoom.xy10mm[1])
-
-        roipts = [ 
-            [x06px,y06px],
-            [x10px,y10px]
-        ]
-        error, confid = self.AlignROI(cs,roipts,"MTF")
+        if cs.forceRoom.linepairmodel == 'RXT02':
+            x06px,y06px = self.phantomposmm2pix(roipts_orig,cs.forceRoom.xy06mm[0],cs.forceRoom.xy06mm[1])
+            x10px,y10px = self.phantomposmm2pix(roipts_orig,cs.forceRoom.xy10mm[0],cs.forceRoom.xy10mm[1])
+            roipts = [ 
+                [x06px,y06px],
+                [x10px,y10px]
+            ]
+        elif cs.forceRoom.linepairmodel == '38':
+            x18px,y18px = self.phantomposmm2pix(roipts_orig,cs.forceRoom.xy18mm[0],cs.forceRoom.xy18mm[1])
+            x06px,y06px = self.phantomposmm2pix(roipts_orig,cs.forceRoom.xy06mm[0],cs.forceRoom.xy06mm[1])
+            x46px,y46px = self.phantomposmm2pix(roipts_orig,cs.forceRoom.xy46mm[0],cs.forceRoom.xy46mm[1])
+            x14px,y14px = self.phantomposmm2pix(roipts_orig,cs.forceRoom.xy14mm[0],cs.forceRoom.xy14mm[1])
+            roipts = [ 
+                [x18px,y18px],
+                [x06px,y06px],
+                [x14px,y14px],
+                [x46px,y46px] ]
+        else:
+            raise ValueError('[MTF] Unknown linepairmodel %s'%cs.forceRoom.linepairmodel)
+        
+        error, confid = self.AlignROI(cs,roipts,'MTF_'+cs.forceRoom.linepairmodel)
 
         cs.mtf.roi = roipts
         cs.mtf.pos_confidence = confid
@@ -1048,7 +1128,81 @@ class XRayQC:
         return error
 
     def AnalyseMTF(self,cs,roipts_orig=None):
+        if cs.forceRoom.linepairmodel == 'RXT02':
+            return self._AnalyseMTF_RXT02(cs,roipts_orig)
+        else:
+            return self._AnalyseMTF_38(cs,roipts_orig)
+            
+    def _AnalyseMTF_38(self,cs,roipts_orig=None):
         """
+        For linepairs insert model 38.
+        Find rotation angle of linepairs insert. Cut out the back rotated insert.
+        For each linepair, do an analysis
+        """
+        error = True
+        invertmax = 2**(self.invertmaxval(cs))-1
+    
+        if roipts_orig is None:
+            roipts_orig = cs.mtf.roi
+    
+        extend18 = self.phantommm2pix(cs,2.8)  # extend bbox beyond dot in '1.8' [mm]
+        extend46 = self.phantommm2pix(cs,3.2)  # extend beyond dot in '4.6' [mm]
+        print "2.8",extend18
+        print "3.2",extend46
+        # First cut out rotated roi
+        id18 = 0
+        id06 = 1
+        id14 = 2
+        id46 = 3
+        len1846 = np.sqrt((roipts_orig[id18][0]-roipts_orig[id46][0])**2+(roipts_orig[id18][1]-roipts_orig[id46][1])**2)
+        print "1846=",len1846
+        extend18 = 0.0786*len1846
+        extend46 = 0.0898*len1846
+        copyimage = cs.pixeldataIn.astype(float)
+        rotanglerad = 3.*np.pi/2.-.5*(np.arctan2((roipts_orig[id18][1]-roipts_orig[id46][1]),(roipts_orig[id18][0]-roipts_orig[id46][0]))+np.arctan2((roipts_orig[id06][1]-roipts_orig[id14][1]),(roipts_orig[id06][0]-roipts_orig[id14][0])))
+        rotanglerad += self.adjustmtfangledeg/180*np.pi
+        rotangledeg = (rotanglerad/np.pi*180.)
+        print "MTF at",rotangledeg, "degrees"
+        rotimage = scind.interpolation.rotate(copyimage, rotangledeg, axes=(1, 0), reshape=False, output=None, order=3, mode='constant', cval=0.0, prefilter=True)
+    
+        costerm = np.cos(rotanglerad)
+        sinterm = np.sin(rotanglerad)
+        xc = cs.pixeldataIn.shape[0]/2.
+        yc = cs.pixeldataIn.shape[1]/2.
+        roipts = []
+        for rp in roipts_orig:
+            xp = xc +(rp[0]-xc)*costerm-(rp[1]-yc)*sinterm
+            yp = yc +(rp[0]-xc)*sinterm+(rp[1]-yc)*costerm
+            roipts.append([xp,yp])
+        cs.mtf.dotxys = copy.deepcopy(roipts)
+    
+        roipts[id18][1] -= extend18
+        roipts[id46][1] += extend46
+        minxco = roipts[0][0]
+        minyco = roipts[0][1]
+        maxxco = roipts[0][0]
+        maxyco = roipts[0][1]
+        for rp in roipts:
+            minxco = min(minxco,rp[0])
+            maxxco = max(maxxco,rp[0])
+            minyco = min(minyco,rp[1])
+            maxyco = max(maxyco,rp[1])
+    
+        if cs.mustbeinverted:
+            smallimage = invertmax-rotimage[minxco:maxxco+1,minyco:maxyco+1]
+        else:
+            smallimage = rotimage[minxco:maxxco+1,minyco:maxyco+1]
+        cs.lastimage = smallimage
+        
+        for rp in roipts:
+            rp[0] -= minxco
+            rp[1] -= minyco
+    
+        return self._MTF_smallimage(cs, smallimage)
+        
+    def _AnalyseMTF_RXT02(self,cs,roipts_orig=None):
+        """
+        For linepairs insert model RXT02.
         Find rotation angle of linepairs insert. Cut out the back rotated insert.
         For each linepair, do an analysis
         """
@@ -1124,7 +1278,13 @@ class XRayQC:
             rp[0] -= minxco
             rp[1] -= minyco
 
+        return self._MTF_smallimage(cs, smallimage)
 
+    def _MTF_smallimage(self,cs,smallimage):
+        """
+        Analysis driver of image cropped to linepairs insert
+        """
+        error = True
         if self.bShowMTFDetail or cs.verbose:
             plt.figure()
             plt.imshow(smallimage)
@@ -1281,39 +1441,74 @@ class XRayQC:
         wid = smallimage.shape[0]
         hei = smallimage.shape[1]
 
-        washeightLo = 287
-        waswidthLo  = 253
+        if cs.forceRoom.linepairmodel == 'RXT02':
+            washeightLo = 287
+            waswidthLo  = 253
+    
+            # fill positions with manual values; x is for later
+            startendpos.append([[0,  1],[]]) # absolute 0.6
+            startendpos.append([[0, 45],[]]) # absolute 0.7
+            startendpos.append([[0, 85],[]]) # absolute 0.8
+            startendpos.append([[0,121],[]]) # absolute 0.9
+            startendpos.append([[0,156],[]]) # absolute 1.0
+            startendpos.append([[0,188],[]]) # absolute 1.2
+            startendpos.append([[0,216],[]]) # absolute 1.4
+            startendpos.append([[0,244],[0,268]]) # absolute 1.6
+    
+            startendpos.append([[0,  5],[]]) # absolute 1.8
+            startendpos.append([[0, 31],[]]) # absolute 2.0
+            startendpos.append([[0, 54],[]]) # absolute 2.2
+            startendpos.append([[0, 76],[0, 98]]) # absolute 2.5
+            startendpos.append([[0,120],[]]) # absolute 2.8
+            startendpos.append([[0,140],[]]) # absolute 3.1
+            startendpos.append([[0,160],[]]) # absolute 3.4
+            startendpos.append([[0,181],[0,200]]) # absolute 3.7
+    
+            startendpos.append([[0,214],[]]) # absolute 4.0
+            startendpos.append([[0,232],[]]) # absolute 4.3
+            startendpos.append([[0,252],[]]) # absolute 4.6
+            startendpos.append([[0,270],[0,286]]) # absolute 5.0 
 
-        # fill positions with manual values; x is for later
-        startendpos.append([[0,  1],[]]) # absolute 0.6
-        startendpos.append([[0, 45],[]]) # absolute 0.7
-        startendpos.append([[0, 85],[]]) # absolute 0.8
-        startendpos.append([[0,121],[]]) # absolute 0.9
-        startendpos.append([[0,156],[]]) # absolute 1.0
-        startendpos.append([[0,188],[]]) # absolute 1.2
-        startendpos.append([[0,216],[]]) # absolute 1.4
-        startendpos.append([[0,244],[0,268]]) # absolute 1.6
-
-        startendpos.append([[0,  5],[]]) # absolute 1.8
-        startendpos.append([[0, 31],[]]) # absolute 2.0
-        startendpos.append([[0, 54],[]]) # absolute 2.2
-        startendpos.append([[0, 76],[0, 98]]) # absolute 2.5
-        startendpos.append([[0,120],[]]) # absolute 2.8
-        startendpos.append([[0,140],[]]) # absolute 3.1
-        startendpos.append([[0,160],[]]) # absolute 3.4
-        startendpos.append([[0,181],[0,200]]) # absolute 3.7
-
-        startendpos.append([[0,214],[]]) # absolute 4.0
-        startendpos.append([[0,232],[]]) # absolute 4.3
-        startendpos.append([[0,252],[]]) # absolute 4.6
-        startendpos.append([[0,270],[0,286]]) # absolute 5.0 
+            lo_xpos = [160,160+50]
+            hi_xpos = [45,45+50]
         
+        elif cs.forceRoom.linepairmodel == '38'  :
+            washeightLo = 302
+            waswidthLo  = 300
+    
+            # fill positions with manual values; x is for later
+            startendpos.append([[0,  6],[]]) # absolute 0.6
+            startendpos.append([[0, 48],[]]) # absolute 0.7
+            startendpos.append([[0, 86],[]]) # absolute 0.8
+            startendpos.append([[0,122],[]]) # absolute 0.9
+            startendpos.append([[0,160],[]]) # absolute 1.0
+            startendpos.append([[0,197],[]]) # absolute 1.2
+            startendpos.append([[0,225],[]]) # absolute 1.4
+            startendpos.append([[0,252],[0,273]]) # absolute 1.6
+    
+            startendpos.append([[0,  4],[]]) # absolute 1.8
+            startendpos.append([[0, 28],[]]) # absolute 2.0
+            startendpos.append([[0, 54],[]]) # absolute 2.2
+            startendpos.append([[0, 79],[0, 102]]) # absolute 2.5
+            startendpos.append([[0,125],[]]) # absolute 2.8
+            startendpos.append([[0,144],[]]) # absolute 3.1
+            startendpos.append([[0,163],[]]) # absolute 3.4
+            startendpos.append([[0,182],[0,202]]) # absolute 3.7
+    
+            startendpos.append([[0,218],[]]) # absolute 4.0
+            startendpos.append([[0,237],[]]) # absolute 4.3
+            startendpos.append([[0,257],[]]) # absolute 4.6
+            startendpos.append([[0,276],[0,295]]) # absolute 5.0 
+            
+            lo_xpos = [185,185+50]
+            hi_xpos = [60,60+50]
+            
         for i in range(len(startendpos)-1):
             if len(startendpos[i][1]) == 0:
                 startendpos[i][1] = list(startendpos[i+1][0])
 
         # start with low frequencies
-        ipbar = smallimage[int(0.75*wid):int(0.85*wid),0:hei]
+        ipbar = smallimage[int(.75*wid):int(.85*wid),0:hei]
         if cs.verbose:
             plt.figure()
             plt.imshow(ipbar)
@@ -1321,11 +1516,11 @@ class XRayQC:
             cs.hasmadeplots = True
 
         # low freqs
-        xlo0 = int(.5+160./waswidthLo*wid)
-        xlo1 = int(.5+(160.+50.)/waswidthLo*wid)
+        xlo0 = int(.5+1.*lo_xpos[0]/waswidthLo*wid)
+        xlo1 = int(.5+1.*lo_xpos[1]/waswidthLo*wid)
         # high freqs
-        xhi0 = int(.5+45./waswidthLo*wid)
-        xhi1 = int(.5+(45.+50.)/waswidthLo*wid)
+        xhi0 = int(.5+1.*hi_xpos[0]/waswidthLo*wid)
+        xhi1 = int(.5+1.*hi_xpos[1]/waswidthLo*wid)
         for vpi in range(len(startendpos)):
             start = startendpos[vpi][0]
             end  = startendpos[vpi][1]
@@ -1941,6 +2136,7 @@ class XRayQC:
         step7: put it in a report
         """
         print '[QCNormi13]',cs.dcmInfile.SeriesDescription
+        self.CropNormi13(cs)
         error,msg = self.checkPhantomRotation(cs)
         ###
         if error:
@@ -2139,7 +2335,7 @@ class XRayQC:
                 exproi=cs.unif.expert_roipts
             else:
                 bpx = cs.forceRoom.artefactborderpx
-                exproi=[bpx,np.shape(cs.pixeldataIn)[0]-1-bpx,bpx,np.shape(cs.pixeldataIn)[1]-1-bpx]
+                exproi=[bpx[0],np.shape(cs.pixeldataIn)[0]-1-bpx[1],bpx[2],np.shape(cs.pixeldataIn)[1]-1-bpx[3]]
 
             wid,hei = np.shape(cs.unif.art_image)
             # first copy the artimage into the base image
@@ -2248,11 +2444,13 @@ class XRayQC:
         cs_unif.mustbeinverted = cs.mustbeinverted
         qc_unif = QCUniformity_lib.Uniformity_QC()
 
-        if qc_unif.NeedsCropping2(cs_unif):
+        if qc_unif.NeedsCropping2(cs_unif,mode='normi13'):
+            print '*** Needs Cropping ***'
+            
             widthpx = np.shape(cs.pixeldataIn)[0] ## width/height in pixels
             heightpx = np.shape(cs.pixeldataIn)[1]
 
-            bpx = 15
+            bpx = 0#self.phantommm2pix(cs,10)
             qc_unif.RestrictROI(cs_unif)
             [xmin_px,xmax_px, ymin_px,ymax_px] = cs_unif.expert_roipts
             xmin_px = max(0,xmin_px-bpx)
@@ -2269,21 +2467,39 @@ class XRayQC:
         cs.unif.mustbeinverted = cs.mustbeinverted
         qc_unif = QCUniformity_lib.Uniformity_QC()
 
-        if qc_unif.NeedsCropping2(cs.unif):
+        bpx = cs.forceRoom.artefactborderpx
+        cropped = False
+        wid,hei = np.shape(cs.pixeldataIn)
+        if qc_unif.NeedsCropping2(cs.unif,mode='uniformity'):
             roipts = qc_unif.RestrictROI(cs.unif)
+
+            """
+            minx = min(r[0] for r in roipts)
+            miny = min(r[1] for r in roipts)
+            maxx = max(r[0] for r in roipts)
+            maxy = max(r[1] for r in roipts)
+            
+            if minx > 1: 
+                bpx[0] += 10 
+            if miny > 1: 
+                bpx[2] += 10 
+            if maxx < wid-1: 
+                bpx[1] += 10 
+            if maxy < hei-1: 
+                bpx[3] += 10 
+            """
             cs.unif.expertmode = True
+            cropped = True
         if usestructure:
-            qc_unif.artefactDetectorParameters(UseStructure=False, borderpx=cs.forceRoom.artefactborderpx, 
-                                               bkscale=25, fgscale=5.0, threshold=-15)
+            qc_unif.artefactDetectorParameters(UseStructure=False, bkscale=25, fgscale=5.0, threshold=15)
         else:
-            qc_unif.artefactDetectorParameters(UseStructure=True, borderpx=cs.forceRoom.artefactborderpx, 
-                                               bkscale=25, fgscale=5.0, threshold=3000)
-        error = qc_unif.Uniformity(cs.unif)
+            qc_unif.artefactDetectorParameters(UseStructure=True, bkscale=25, fgscale=5.0, threshold=3000)
+
+        error = qc_unif.Uniformity(cs.unif,cs.forceRoom.artefactborderpx)
         if error:
             return error,'error in uniformity'
 
-        
-        error = qc_unif.Artefacts(cs.unif)
+        error = qc_unif.Artefacts(cs.unif,bpx)
         if error:
             return error,'error in artefacts'
         return error,''

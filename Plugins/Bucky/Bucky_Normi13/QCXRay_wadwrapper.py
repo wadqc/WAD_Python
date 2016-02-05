@@ -13,7 +13,7 @@
 #
 
 
-__version__='20160202'
+__version__='20160205'
 __author__ = 'aschilha'
 import sys
 import os
@@ -37,16 +37,23 @@ def logTag():
 # helper functions
 """
     roomWKZ1 = QCXRay_lib.Room('WKZ1', tablepid=70,wallpid=50,
-                               linepairmarkers={'mm0.6':[-83.,-25.],'mm1.0':[-99.,-8.]},artefactborderpx=5,
+                               linepairmarkers={'type':'RXT02',mm0.6':[-83.,-25.],'mm1.0':[-99.,-8.]},artefactborderpx=[5,5,5,5],
                                detectorname={'SN152495':'Tafel', 'SN152508':'Wand', 'SN1522YG':'Klein1', 'SN151685':'Groot2'})
     <params>
       <roomname>WKZ1</roomname>
       <tablepidmm>70</tablepidmm>
       <wallpidmm>50</wallpidmm>
-      <linepair_typRXT02>
+      <linepair_type>RXT02</linepair_type>
+      <linepairs>
         <mm1.0 x="-99.0" y="-8.0" />
         <mm0.6 x="-83.0" y="-25.0" />
-      </linepair_typRXT02>
+      </linepairs>
+      <artefactborderpx>
+        <xmin px="5" />
+        <xmax px="5" />
+        <ymin px="5" />
+        <ymax px="5" />
+      </artefactborderpx>
       <detector_name>
         <names SN151685="Groot2" SN1522YG="Klein1" SN152495="Tafel" SN152508="Wand" />
       </detector_name>
@@ -58,26 +65,44 @@ def _getRoomDefinition(params):
         # a name for identification
         roomname = params.find('roomname').text
 
+        # Need to know the type of linepairs insert
+        linepair_type = params.find('linepair_type').text
+        if not linepair_type in ['None','RXT02','38']:
+            raise ValueError('Incorrect linepair type %s'%linepair_type)
+        
         # load the locations of markers on the linepair pattern. if these are not given, use the hardcoded values
         linepairmarkers = {}
         try:
-            markers = params.find('linepair_typRXT02')
-            mnames = ['mm1.0','mm0.6']
+            markers = params.find('linepairs')
+            if linepair_type == 'RXT02':
+                mnames = ['mm1.0','mm0.6']
+            elif linepair_type == '38':
+                mnames = ['mm1.8','mm0.6','mm1.4','mm4.6']
+                
             for mname in mnames:
                 marker  = markers.find(mname)
                 linepairmarkers[mname] = [ float(marker.attrib['x']), float(marker.attrib['y']) ]
         except:
             print logTag()+' exact locations of markers on linepair pattern not supplied by config. Using empirical values; please check if these are valid here.'
+        linepairmarkers['type'] = linepair_type
+        
+        # border to exclude
+        artefactborderpx = [0,0,0,0]
+        try:
+            bpxs = params.find('artefactborderpx')
+            mnames = ['xmin','xmax','ymin','ymax']
+            for i,mname in enumerate(mnames):
+                marker  = markers.find(mname)
+                artefactborderpx[i] = int(marker.attrib['px'])
+        except:
+            print logTag()+' no border supplied by config. Using [0,0,0,0].'
             
         # load detector names
         detectorname = {}
         try:
             dets_names = params.find('detector_name')
-            print '[wadwrap] dn',dets_names
             names = dets_names.find('names')
-            print '[wadwrap] n',names
             for a,b in names.items():
-                print '[wadwrap] ab',a,b
                 detectorname[a] = b
         except:
             print logTag()+' no explicit detector_name pairs defined in config.'
@@ -94,6 +119,7 @@ def _getRoomDefinition(params):
         return QCXRay_lib.Room(roomname, outvalue=outvalue,
                                tablesid=tablesidmm, wallsid=wallsidmm, 
                                tablepid=tablepidmm, wallpid=wallpidmm,
+                               artefactborderpx=artefactborderpx,
                                linepairmarkers=linepairmarkers,detectorname=detectorname)
     except AttributeError,e:
         raise ValueError(logTag()+" missing room definition parameter!"+str(e))
