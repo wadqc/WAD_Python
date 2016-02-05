@@ -92,7 +92,7 @@ def _getRoomDefinition(params):
             bpxs = params.find('artefactborderpx')
             mnames = ['xmin','xmax','ymin','ymax']
             for i,mname in enumerate(mnames):
-                marker  = markers.find(mname)
+                marker  = bpxs.find(mname)
                 artefactborderpx[i] = int(marker.attrib['px'])
         except:
             print logTag()+' no border supplied by config. Using [0,0,0,0].'

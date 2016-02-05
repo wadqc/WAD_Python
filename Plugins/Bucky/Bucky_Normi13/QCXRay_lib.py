@@ -2205,11 +2205,10 @@ class XRayQC:
             if cs.unif.art_clusters != None:
                 num_art = len(cs.unif.art_clusters)
 
-            offset = -25 # rank must be negative, so recalc as offset+real position
+            offset = -5 # rank must be negative, so recalc as offset+real position
 
-            labvals.append( {'name':'Uniformity_(%)','value':cs.unif.unif_pct, 'quantity':'Uniformity','level':1,'rank':offset+7} )
-            labvals.append( {'name':'Artefacts','value':num_art, 'quantity':'Artefacts','level':1,'rank':offset+6} )
-
+            labvals.append( {'name':'Uniformity_(%)','value':cs.unif.unif_pct, 'quantity':'Uniformity','level':1,'rank':offset} )
+            labvals.append( {'name':'Artefacts','value':num_art, 'quantity':'Artefacts','level':1,'rank':offset+1} )
 
             for kk in range(0,len(cs.unif.means)):
                 labvals.append( {'name':'avg_'+str(kk),'value':cs.unif.means[kk], 'quantity':'Mean','level':2} )
@@ -2225,7 +2224,7 @@ class XRayQC:
         # if no rank given, the order of addition will be used
         # if no quantity given, 'name' will be used
         # if no level given, the default will be used
-        offset = -25 # rank must be negative, so recalc as offset+real position
+        offset = -30 # rank must be negative, so recalc as offset+real position
         labvals.append( {'name':'PhantomOrientation','value':cs.po_rot, 'quantity':'rotate','level':1,'rank':offset+7} )
         labvals.append( {'name':'AlignConfidence','value':100.*cs.bbox_confidence, 'quantity':'aligned','level':2} )
         labvals.append( {'name':'xray[N]cm','value':cs.xrayNSWEmm[0]/10., 'quantity':'xrN','level':2} )

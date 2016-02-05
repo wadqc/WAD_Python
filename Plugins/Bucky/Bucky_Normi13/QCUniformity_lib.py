@@ -8,6 +8,7 @@ TODO:
 Warning: THIS MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!
 
 Changelog:
+    20160205: Fix integer overflow on 32bit
     20160202: Finished uniformity
     20160201: Split Uniformity/Artefact detection off from QCMammo to enable recycling; starting from v20150522
 """
@@ -28,6 +29,8 @@ try:
     import wadwrapper_lib
 except ImportError:
     from pyWADLib import wadwrapper_lib
+
+__qcversion__=20160205
 
 class UnifStruct:
     verbose = False
@@ -90,7 +93,7 @@ class UnifStruct:
         return pix_mm
 
 class Uniformity_QC:
-    qcversion = 20160202
+    qcversion = __qcversion__
 
     def __init__(self):
         self.artefactDetectorParameters() # default for non-L50 mammo
@@ -109,7 +112,7 @@ class Uniformity_QC:
     def otsu(self,hist,bins):
         currentMax = 0
         threshold = 0
-        sumTotal, sumForeground, sumBackground = 0, 0, 0
+        sumTotal, sumForeground, sumBackground = 0., 0., 0.
         weightBackground, weightForeground = 0, 0
         totalPixels = np.sum(hist)
 
@@ -131,11 +134,11 @@ class Uniformity_QC:
             sumBackground += b*h
 
             # Calculate the mean of the classes
-            meanB = sumBackground / weightBackground
-            meanF = (sumTotal - sumBackground) / weightForeground
+            meanB = 1.*sumBackground / weightBackground
+            meanF = 1.*(sumTotal - sumBackground) / weightForeground
 
             # Calculate variance between classes
-            varBetween = weightBackground*weightForeground
+            varBetween = 1.*weightBackground*weightForeground
             varBetween *= (meanB-meanF)*(meanB-meanF)
 
             # Check if the variance between classes is greater than the current best
