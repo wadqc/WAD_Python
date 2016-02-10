@@ -15,6 +15,11 @@ class RigidTransform():
         A = inA
         if not isinstance(inA,np.matrix):
             A = np.mat(inA)
+
+        if not self.scaling is None:
+            newA = self.apply_scaling(A)
+            A = np.mat(newA)
+
         B = inB
         if not isinstance(inB,np.matrix):
             B = np.mat(inB)
@@ -32,6 +37,18 @@ class RigidTransform():
         rmse = np.sqrt(err/N)
         return rmse
     
+    def apply_scaling(self,inA):
+        A = inA
+        if not isinstance(inA,np.matrix):
+            A = np.mat(inA)
+
+        if not self.scaling is None:
+            newA = []
+            for a in A:
+                newA.append( [c+self.scaling*(x-c) for x,c in zip(a.tolist()[0],self.scalingcenter)] )
+            A = np.mat(newA)
+        return A.tolist()
+        
     def apply(self,inA):
         if self.rotmatrix is None or self.translation is None:
             return
@@ -39,12 +56,20 @@ class RigidTransform():
         A = inA
         if not isinstance(inA,np.matrix):
             A = np.mat(inA)
+            
+        if self.allowscaling and not self.scaling is None:
+            newA = self.apply_scaling(A)
+            A = np.mat(newA)
+            
 
         N = A.shape[0] # total points
         A2 = (self.rotmatrix*A.T) + np.tile(self.translation, (1, N))
         A2 = A2.T
-        return A2.tolist()[0]
-    
+        if len(np.shape(inA)) == 1:
+            return A2.tolist()[0]
+        else:
+            return A2.tolist()
+        
     def getRotationDeg(self):
         if self.rotmatrix is None:
             return
@@ -67,12 +92,43 @@ class RigidTransform():
             return
         return self.translation
     
-    def __init__(self,fromA,toB):
+    def __init__(self,fromA,toB,allowscaling=False):
         self.rotmatrix = None
         self.translation = None
+        self.scaling = None
+        self.scalingcenter = None
         
-        self.rigid_transform_3D(fromA,toB)
+        self.allowscaling = allowscaling
         
+        if not fromA is None and not toB is None:
+            self.rigid_transform_3D(fromA,toB)
+        
+    def calc_scaling(self,inA,inB):
+        # Input: expects Nx3 matrix of points
+        # returns a scaling factor from A to B
+        assert len(inA) == len(inB)
+        A = inA
+        if not isinstance(inA,np.matrix):
+            A = np.mat(inA)
+        B = inB
+        if not isinstance(inB,np.matrix):
+            B = np.mat(inB)
+
+        N = A.shape[0] # total points
+    
+        centroid_A = np.mean(A, axis=0).tolist()[0]
+        centroid_B = np.mean(B, axis=0).tolist()[0]
+
+        arad = -1.
+        for a in A:
+            arad = max(arad,np.sqrt(np.sum( [(x1-x0)**2. for x1,x0 in zip(a.tolist()[0],centroid_A)] )))
+
+        brad = -1.
+        for b in B:
+            brad = max(brad,np.sqrt(np.sum( [(x1-x0)**2. for x1,x0 in zip(b.tolist()[0],centroid_B)] )))
+            
+        return brad/arad,centroid_A
+    
     def rigid_transform_3D(self,inA, inB):
         # Input: expects Nx3 matrix of points
         # Returns R,t
@@ -87,6 +143,14 @@ class RigidTransform():
         if not isinstance(inB,np.matrix):
             B = np.mat(inB)
 
+        if self.allowscaling:
+            self.scaling,self.scalingcenter = self.calc_scaling(A,B)
+            A = self.apply_scaling(A)
+            if not isinstance(A,np.matrix):
+                A = np.mat(A)
+        else:
+            self.scaling = None
+            
         N = A.shape[0] # total points
     
         centroid_A = np.mean(A, axis=0)
@@ -120,7 +184,8 @@ class RigidTransform():
         # Random rotation and translation
         R = np.mat(np.random.rand(3,3))
         t = np.mat(np.random.rand(3,1))
-        
+        #t = np.mat([[0.],[0.],[0.]])
+    
         # make R a proper rotation matrix, force orthonormal
         U, S, Vt = np.linalg.svd(R)
         R = U*Vt
@@ -138,7 +203,10 @@ class RigidTransform():
         B = B.T
         
         # recover the transformation
-        ret_R, ret_t = self.rigid_transform_3D(A, B)
+        #ret_R, ret_t = 
+        self.rigid_transform_3D(A, B)
+        ret_R = self.rotmatrix
+        ret_t = self.translation
         
         A2 = (ret_R*A.T) + np.tile(ret_t, (1, n))
         A2 = A2.T
@@ -159,15 +227,22 @@ class RigidTransform():
         print ""
         
         print "Rotation"
+        print '  true'
         print R
+        print ' found'
+        print ret_R
         print ""
         
         print "Translation"
+        print '  true'
         print t
+        print ' found'
+        print ret_t
         print ""
         
         print "RMSE:", rmse
         print "If RMSE is near zero, the function is correct!"
+        print 'SCALING:',self.calc_scaling(A,B)
 
     def test2(self):
         A = [[40.96, 127.5], [127.5, 215.04], [215.04, 127.5]]
@@ -192,6 +267,7 @@ class RigidTransform():
         print self.translation
         print ""
         print 'RMSE',self.getRMSE(A, B)
+        print 'SCALING:',self.calc_scaling(A,B)
         print self.apply(A)
 
 def FindCenters2D(pts,datain,distpx,discpx,minimod=False):
