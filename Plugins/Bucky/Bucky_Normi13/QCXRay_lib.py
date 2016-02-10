@@ -468,10 +468,11 @@ class XRayQC:
 
         pix2phantommm = self.pixToGridScale_mm(cs)
         searchrad = int(2.5/pix2phantommm+.5) # 2 mm around location
-
+        ntries = 6
         workimage = cs.pixeldataIn
         if 'MTF' in what: #
-            searchrad = int(0.5/pix2phantommm+.5)
+            searchrad = min(2,int(0.5/pix2phantommm+.5))
+            #ntries = 1
 
         searchrad = max(1,searchrad)
         print "%s searchrad="%what,searchrad
@@ -481,7 +482,7 @@ class XRayQC:
         conf_pts = []
         conf_pts.append((0,copy.deepcopy(roipts))) # never not select default pointset
         roipts0 = copy.deepcopy(roipts)
-        for kk in range(0,6):
+        for kk in range(0,ntries):
             for i in range(0, len(roipts)):
                 rp = roipts[i]
                 x0 = rp[0]
@@ -518,8 +519,8 @@ class XRayQC:
 
                 rp[0] = x1
                 rp[1] = y1
-            if not what == 'MTF_RXT02':
-                roipts = self.ConsistencyAlign(cs,roipts0,roipts,what)
+            #if not what == 'MTF_RXT02':
+            #    roipts = self.ConsistencyAlign(cs,roipts0,roipts,what)
             conf_pts.append((self.ROIConfidence(cs,roipts,what),copy.deepcopy(roipts)))
 
         # Just take the last one; should be best!
