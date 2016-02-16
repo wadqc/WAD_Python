@@ -22,7 +22,6 @@ class WADCatphan(CBCT):
             region = self.hu.rois[name]
             results.addFloat('HU region %s measured' % name, region.pixel_value)
             results.addFloat('std HU region %s measured' % name, region.std)
-            results.addFloat('HU region %s  nominal' % name, region.nominal_val)
 
         # Uniformity
         univalues = []
