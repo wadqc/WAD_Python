@@ -8,7 +8,7 @@ import numpy as np
 
 from pylinac import CBCT
 
-__version__='22122015'
+__version__='20160229'
 
 
 class WADCatphan(CBCT):
@@ -20,31 +20,31 @@ class WADCatphan(CBCT):
         # HU
         for name in self.hu.roi_names:
             region = self.hu.rois[name]
-            results.addFloat('HU region %s measured' % name, region.pixel_value)
-            results.addFloat('std HU region %s measured' % name, region.std)
+            results.addFloat('HU region %s measured' % name, region.pixel_value, level=1)
+            results.addFloat('std HU region %s measured' % name, region.std, level=2)
 
         # Uniformity
         univalues = []
         for name in self.uniformity.rois:
             region = self.uniformity.rois[name]
-            results.addFloat('Uniformity region %s measured' % name, region.pixel_value)
-            results.addFloat('std Uniformity region %s measured' % name, region.std)
+            results.addFloat('Uniformity region %s measured' % name, region.pixel_value, level=1)
+            results.addFloat('std Uniformity region %s measured' % name, region.std, level=2)
             univalues.append(region.pixel_value)
 
-        results.addFloat('Uniformity region average', np.average(univalues))
-        results.addFloat('std uniformity region average', np.nanstd(univalues))
+        results.addFloat('Uniformity region average', np.average(univalues), level=1)
+        results.addFloat('std uniformity region average', np.nanstd(univalues), level=2)
 
         # MTF
-        results.addFloat('MTF 80% (lp/mm)', self.spatialres.mtf(80))
+        results.addFloat('MTF 80% (lp/mm)', self.spatialres.mtf(80), level=1)
 
         # Geometric distances
         for key in self.geometry.lines.keys():
             line = self.geometry.lines[key]
-            results.addFloat('Line length %sl' % key, line.length_mm)
-        results.addFloat('Geometric Line Average (mm)', self.geometry.avg_line_length)
+            results.addFloat('Line length %sl' % key, line.length_mm, level=1)
+        results.addFloat('Geometric Line Average (mm)', self.geometry.avg_line_length, level=1)
 
         # Slice thickness
-        results.addFloat('Slice thickness', self.thickness.avg_slice_thickness)
+        results.addFloat('Slice thickness', self.thickness.avg_slice_thickness, level=1)
 
     def save_images_to_wad(self, results):
         """Save figures/images"""
@@ -76,4 +76,5 @@ def catphan504(data,results,**kwargs):
     catphan.analyze()
     catphan.save_numeric_results_to_wad(results)
     catphan.save_images_to_wad(results)
+
 
