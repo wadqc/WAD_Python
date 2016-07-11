@@ -1,0 +1,24 @@
+This WAD_Python folder provides a "library" of helper functions
+and analysis modules written for use with the IQC framework.
+NVKF WAD IQC software is a framework for automatic analysis of DICOM objects.
+
+Copyright 2015  
+
+Arnold Schilham / a.schilham@umcutrecht.nl
+Rob van Rooij  / rrooij3@umcutrecht.nl
+Dennis Dickerscheid / d.b.m.dickerscheid@asz.nl
+Tim de Wit / t.c.dewit@amc.uva.nl
+
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
