@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+-->
+<config>
+    <action>
+        <plugin>Plugin_development.CT.CT_Catphan_504_Varian.Analyzer</plugin>
+        <function>catphan504</function>
+        <default_level>1</default_level>
+    <limits>
+      <result description="HU region Air measured">
+	<acc_low>-1100</acc_low>
+	<acc_high>-900</acc_high>
+	<crit_low>-1100</crit_low>
+	<crit_high>-900</crit_high>
+      </result>
+      <result description="HU region PMP measured">
+	<acc_low>-250</acc_low>
+	<acc_high>-150</acc_high>
+	<crit_low>-250</crit_low>
+	<crit_high>-150</crit_high>
+      </result>
+    </limits>
+    </action>
+</config>
