@@ -46,6 +46,9 @@ class WADCatphan(CBCT):
         # Slice thickness
         results.addFloat('Slice thickness', self.thickness.avg_slice_thickness, level=1)
 
+        # Low contrast
+        results.addFloat('Low contrast', self.lowcontrast.rois_visible, level=1)
+
     def save_images_to_wad(self, results):
         """Save figures/images"""
         self.save_analyzed_subimage('hu.png', subimage='hu', show=False)
