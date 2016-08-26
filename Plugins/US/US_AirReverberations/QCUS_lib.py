@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
+
 """
 Analysis of reverberations in Air pattern.
 Workflow:
@@ -29,6 +31,7 @@ Warning: THIS MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!
 TODO:
     o Maybe put hard threshold on peak value for uniformity (is normalized, so why not?!)
 Changelog:
+    20160802: python3 compatible; fix ints
     20150626: remove division by zero for snr
     20150610: moved peakfit to wadwrapper_lib
     20150520: cleanup label
@@ -40,6 +43,9 @@ Changelog:
     20150416: Sensitivity analysis and uniformity analysis
     20150410: Initial version
 """
+__version__ = '20160802'
+__author__ = 'aschilham'
+
 import copy
 try:
     from pyWADLib import wadwrapper_lib
@@ -191,7 +197,7 @@ class USStruct:
         rev_mask = None
         
 class US_QC:
-    qcversion = 20150626
+    qcversion = __version__
     fastmode = False
     modeLocalNorm = False
 
@@ -271,7 +277,7 @@ class US_QC:
         return results
 
     #----------------------------------------------------------------------
-    def isolateReverbrations(self,cs):
+    def isolateReverbrations(self,cs,thresh=0):
         """
         Find reverbrations part of image.
         Workflow:
@@ -281,7 +287,7 @@ class US_QC:
         error = True
         # cluster connected components with pixelvalues>0
         time0 = time.time()
-        thresh = 0
+        #thresh = 0
         #work = (cs.pixeldataIn>0) * (cs.pixeldataIn<255) # must give a signal, but 255 often reserved for overlay
         work = cs.pixeldataIn>thresh
         cca = wadwrapper_lib.connectedComponents()
@@ -299,7 +305,7 @@ class US_QC:
             wid,hei = np.shape(cs.cca_image)
             # first remove very small clusters (can be located around top edge!)
             cca.removeSmallClusters(wid/10*hei/10)
-            search = cs.cca_image[0.4*wid:0.6*wid,:]
+            search = cs.cca_image[int(0.4*wid):int(0.6*wid),:]
             labs = []
             for ss in search.ravel():
                 if ss>0 and not ss in labs:
@@ -326,7 +332,7 @@ class US_QC:
         cs.rev_maxy = max(clus,key=operator.itemgetter(1))
         cs.rev_maxx = max(clus,key=operator.itemgetter(0))
         cs.rev_minx = min(clus,key=operator.itemgetter(0))
-        cs.rev_midx = np.shape(cs.rev_mask)[0]/2
+        cs.rev_midx = int(np.shape(cs.rev_mask)[0]/2)
         
         error = False
         return error
@@ -434,7 +440,7 @@ class US_QC:
 
         yran = []
         if self.fastmode: # use only first ring
-            print 'Uniformity: FASTMODE',cs.sens_basewavelength
+            print('Uniformity: FASTMODE',cs.sens_basewavelength)
             if cs.sens_basewavelength >0:
                 ylim = int(cs.sens_basewavelength/self.pixels2mm(cs,1.)+.5)
                 yran = [self.offsetVER,ylim]
@@ -485,10 +491,10 @@ class US_QC:
                             pos_right= ix
                             break
                     if pos_left == peak_pos:
-                        print 'ERROR! Could not find left point of peak',peak_ix,peak_pos,peak_val
+                        print('ERROR! Could not find left point of peak',peak_ix,peak_pos,peak_val)
                         return error
                     if pos_right == peak_pos:
-                        print 'ERROR! Could not find left point of peak',peak_ix,peak_pos,peak_val
+                        print('ERROR! Could not find left point of peak',peak_ix,peak_pos,peak_val)
                         return error
                     # check if we are looking at a strongly symmetric peak
                     if (pos_right-pos_left)>4*min(peak_pos-pos_left,pos_right-peak_pos):
@@ -498,7 +504,7 @@ class US_QC:
                     else:
                         asym = False
                 if asym:
-                    print 'ERROR! Very asymmetric peak',peak_ix,peak_pos,peak_val,peak_pos-pos_left,pos_right-peak_pos
+                    print('ERROR! Very asymmetric peak',peak_ix,peak_pos,peak_val,peak_pos-pos_left,pos_right-peak_pos)
                     continue
 
             # acceptable
@@ -524,11 +530,11 @@ class US_QC:
         ## 1. Define ROI of reverb (dependend on vertical profile)
         yran = []
         if self.fastmode:
-            print 'Uniformity: FASTMODE',cs.sens_basewavelength
+            print('Uniformity: FASTMODE',cs.sens_basewavelength)
             if cs.sens_basewavelength >0:
                 ylim = int(cs.sens_basewavelength/self.pixels2mm(cs,1.)+.5)
                 yran = [self.offsetVER,ylim]
-            print yran
+            print(yran)
         if len(yran) == 0:
             yran = [self.offsetVER,cs.sens_ylim] if cs.sens_ylim>0 else [self.offsetVER]
 
@@ -550,7 +556,7 @@ class US_QC:
         # normalized uniformity 
         if self.modeLocalNorm:
             frac = .1
-            print "Uniformity, using Local Normalization",frac
+            print("Uniformity, using Local Normalization",frac)
             normuniformity = mymath.localnormalization(uniformity, sigma=len(uniformity)*frac)
         else:
             normuniformity = ((uniformitysmoothed-meanvalue)/meanvalue)
@@ -624,8 +630,8 @@ class US_QC:
         ix_max = np.argmax(fy)
         ix_min = ix_max+np.argmin(fy[ix_max:])
         if cs.verbose:
-            print 'max @',ix_max
-            print 'min @',ix_min
+            print('max @',ix_max)
+            print('min @',ix_min)
 
         if mode == 'sensitivity':
             cs.sens_ylim2 = ix_min
@@ -659,7 +665,7 @@ class US_QC:
     
         ## 1. Calculate profile (vertically)
         wid,hei = np.shape(cs.rect_image)
-        offsetHOR= wid/4 #10 ; adjusted to remove influence of annotations through reverb data (enhancement line)
+        offsetHOR= int(wid/4) #10 ; adjusted to remove influence of annotations through reverb data (enhancement line)
 
         if offsetHOR == 0:
             offsetHOR = self.offsetHOR
@@ -687,7 +693,7 @@ class US_QC:
         noise_sd = np.std(sensitivitysmoothed[-noiseRange:])
         noise_snr = noise_av/noise_sd if noise_sd >0. else 0.
         noise_inc = False # sometimes snr starts with a local max
-        for nr in range(noiseRange+2,nx/3):
+        for nr in range(noiseRange+2,int(nx/3)):
             av = np.mean(sensitivitysmoothed[-nr:])
             sd = np.std(sensitivitysmoothed[-nr:])
             snr = av/sd if sd >0. else 0.
@@ -800,8 +806,8 @@ class US_QC:
                 import QCUS_testing as mytest
                 cs.rect_image = mytest._importNDArray(fname='ndarray.npy')
     
-            except Exception,e:
-                print e
+            except Exception as e:
+                print(e)
 
         if cs.rect_image is None:
             ## 1. CCA 
@@ -825,9 +831,9 @@ class US_QC:
 
         cs.report.append(('total',time.time()-time00))
 
-        print "#timing info#\npart seconds"
+        print("#timing info#\npart seconds")
         for r,t in cs.report:
-            print r,t
+            print(r,t)
         return error
            
     def pixels2mm(self,cs,px):

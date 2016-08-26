@@ -1,12 +1,18 @@
-# PyWAD is open-source software and consists of a set of plugins written in python for the WAD-Software medical physics quality control software. 
+from __future__ import print_function
+
+# PyWAD is open-source software and consists of a set of modules written in python for the WAD-Software medical physics quality control software. 
 # The WAD Software can be found on https://github.com/wadqc
 # 
-# The pywad package includes plugins for the automated analysis of QC images for various imaging modalities. 
+# The pywad package includes modules for the automated analysis of QC images for various imaging modalities. 
 # PyWAD has been originaly initiated by Dennis Dickerscheid (AZN), Arnold Schilham (UMCU), Rob van Rooij (UMCU) and Tim de Wit (AMC) 
 #
 #
+# Changelog:
+#   20160802: sync with wad2.0
+#
+#
 
-__version__ = '20151111'
+__version__ = '20160802'
 __author__ = 'aschilham'
 
 import sys
@@ -84,7 +90,7 @@ def mrqc_series(data,results,**kwargs):
 
     reportkeyvals = []
     for piqt in piqttests:
-        print "[mrqc]",2,piqt
+        print("[mrqc]",2,piqt)
         if "Uniformity" in piqt[0]:
             test = lit.stTestUniformity
             doTest = "SNR_ArtifactLevel_FloodFieldUniformity"
@@ -132,8 +138,6 @@ def mrqc_series(data,results,**kwargs):
             if not error:
                 idname = "_"+setname+make_idname(qclib,cs,cs.snr_slice)
                 reportkeyvals.append( ("S/N (B)"+idname,cs.snr_SNB) )
-
-
 
         if "SpatialLinearity" in doTest:
             error = qclib.SpatialLinearity(cs)
@@ -251,7 +255,7 @@ def mrheader_series(data,results,**kwargs):
         ## 1b. Run tests
         sliceno = qclib.ImageSliceNumber(cs,piqt)
         if sliceno <0:
-            print logTag()+"[mrheader]: ", piqt, "not available for given image"
+            print(logTag()+"[mrheader]: ", piqt, "not available for given image")
             sys.exit()
 
         dicominfo = qclib.DICOMInfo(cs,info,sliceno)

@@ -1,16 +1,20 @@
-# PyWAD is open-source software and consists of a set of plugins written in python for the WAD-Software medical physics quality control software. 
+from __future__ import print_function
+
+# PyWAD is open-source software and consists of a set of modules written in python for the WAD-Software medical physics quality control software. 
 # The WAD Software can be found on https://github.com/wadqc
 # 
-# The pywad package includes plugins for the automated analysis of QC images for various imaging modalities. 
+# The pywad package includes modules for the automated analysis of QC images for various imaging modalities. 
 # PyWAD has been originaly initiated by Dennis Dickerscheid (AZN), Arnold Schilham (UMCU), Rob van Rooij (UMCU) and Tim de Wit (AMC) 
 #
 #
+# Changelog:
+#   20160802: sync with wad2.0
+#
+#
 
-__version__ = '20150826'
+__version__ = '20160802'
 __author__ = 'aschilham'
 
-
-import sys
 import numpy as np
 import os
 if not 'MPLCONFIGDIR' in os.environ:

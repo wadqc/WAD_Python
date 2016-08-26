@@ -1,24 +1,20 @@
-# PyWAD is open-source software and consists of a set of plugins written in python for the WAD-Software medical physics quality control software. 
+from __future__ import print_function
+
+# PyWAD is open-source software and consists of a set of modules written in python for the WAD-Software medical physics quality control software. 
 # The WAD Software can be found on https://github.com/wadqc
 # 
-# The pywad package includes plugins for the automated analysis of QC images for various imaging modalities. 
+# The pywad package includes modules for the automated analysis of QC images for various imaging modalities. 
 # PyWAD has been originaly initiated by Dennis Dickerscheid (AZN), Arnold Schilham (UMCU), Rob van Rooij (UMCU) and Tim de Wit (AMC) 
 #
 #
 # Changelog:
+#   20160802: sync with wad2.0
 #
 #
-# Description of this plugin:
-# 
-#
 
+__version__ = '20160802'
+__author__ = 'aschilham'
 
-__version__='01062015'
-__author__ = 'aschilha'
-
-
-
-import sys
 import os
 if not 'MPLCONFIGDIR' in os.environ:
     os.environ['MPLCONFIGDIR'] = "/tmp/.matplotlib" # if this folder already exists it must be accessible by the owner of WAD_Processor 
@@ -64,7 +60,7 @@ def _getScannerDefinition(params):
         except:
             bodyHU_water    = float(params.find('bodyHU_air').text)
             
-    except AttributeError,e:
+    except AttributeError as e:
         raise ValueError(logTag()+" missing scanner definition parameter!"+str(e))
 
     return QCCT_lib.Scanner(scannername, 
@@ -164,7 +160,7 @@ def ctqc_series(data,results,params):
                     newkeys.append(str(elem))
                     newvals.append(elemval)
             except:
-                print logTag()+"error for",elem
+                print(logTag()+"error for",elem)
                 elemval = -1.
             for key,val in zip(newkeys,newvals):
                 results.addFloat(key+str(idname), val, quantity=str(key))

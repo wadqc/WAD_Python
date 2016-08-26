@@ -1,4 +1,7 @@
-__author__ = 'aschilha'
+from __future__ import print_function
+
+__author__ = 'aschilham'
+
 import scipy.ndimage as scind
 import numpy as np
 
@@ -13,7 +16,7 @@ def FiniteDifference1D(pSrc,BC="BC_MIRROR",order=0):
 
     length = pSrc.shape[0]
     if(length <2):
-        print "FiniteDifference1D: SKIP len<2:",length
+        print("FiniteDifference1D: SKIP len<2:",length)
 
 
     if(order == 1):
@@ -29,7 +32,7 @@ def FiniteDifference1D(pSrc,BC="BC_MIRROR",order=0):
 
         return pDest
 
-    print "FiniteDifference1D: ERROR: order",order,"not implemented yet!"
+    print("FiniteDifference1D: ERROR: order",order,"not implemented yet!")
     return None
 
 def linearInterExtrapolate(xarr,yarr,xpos):
@@ -62,8 +65,8 @@ def linearInterExtrapolate(xarr,yarr,xpos):
                     xref_id = ix
                     break
     if(xref_id<0):
-         print "***ERROR: Cannot linearly interpolate at ",xpos
-         return result
+        print("***ERROR: Cannot linearly interpolate at ",xpos)
+        return result
     result = (xpos-xarr[xref_id])/(xarr[xref_id+1]-xarr[xref_id])*(yarr[xref_id+1]-yarr[xref_id])+yarr[xref_id]
     return result
 

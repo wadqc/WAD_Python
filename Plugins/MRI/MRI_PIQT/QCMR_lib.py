@@ -1,15 +1,14 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
+
 """
-Created on Wed Oct  9 08:50:51 2013
-
-@author: aschilha
-
 Warning: THIS MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED! And make sure rescaling is corrected!
 
 TODO: Linearity : m/p angle
 TODO: SliceProfile: phase shift
 TODO: pixelsizes
 Changelog:
+    20160802: sync with wad2.0
     20151111: Added resultimages for all tests
     20151104: Many changes to fix QA1, QA2, QA3 agreement with Philips results; removed AffineTransform, used lowpass instead of movingaverage; changed signs
     20150629: Added feedback if MTF failed because of wrongly position phantom
@@ -29,6 +28,9 @@ Changelog:
     20131010: FFU calc of rad10 and rad20 by Euclidean distance transform
     20131009: Finished SNR; finished ArtLevel; finish FloodField Uniformity
 """
+__version__ = '20160802'
+__author__ = 'aschilham'
+
 import dicom
 import numpy as np
 import scipy.ndimage as scind
@@ -60,7 +62,7 @@ class PiQT_Struct:
 
     # for matlib plotting
     hasmadeplots = False
-    
+
     # SNR 
     snr_means  = [] # average in Center, Background
     snr_stdevs = [] # Stdev in Center, Background
@@ -74,7 +76,7 @@ class PiQT_Struct:
     artefact_max = None # Maximum mean value of ROI of 3*3 pixels in background of image. The edges of the image are masked.
     artefact_roi = [] # x0,y0,rad
     artefact_ArtLevel = -1
-    
+
     # FloodField Uniformity
     ffu_Ntot     = None
     ffu_TCm20    = -1.
@@ -110,7 +112,7 @@ class PiQT_Struct:
     lin_nema_label = []
     lin_nema = []
     lin_nema_max = 0
-    
+
     # Slice Profile
     sp_slice = -1
     sp_rois = []  # for plotting
@@ -215,7 +217,7 @@ class PiQT_Struct:
         self.resultimage = {}
 
 class PiQT_QC:
-    qcversion = 20151111
+    qcversion = __version__
 
     """
     string constants
@@ -282,7 +284,7 @@ class PiQT_QC:
         elif dicomvalue.find("SURFACE")>-1:
             result = lit.stCoilSurface
         else:
-            print "[CoilType]",dicomvalue
+            print("[CoilType]",dicomvalue)
         return result
 
     def ImageSliceNumber(self,cs,piqttest): #seqname,imagetype,slice_number,echo_time,echo_num):
@@ -295,7 +297,7 @@ class PiQT_QC:
         _seqname = str(dicomvalue).upper()
         seqid = seqname[:3] # first 3 elements QA1
         if not _seqname[:3] in seqid:
-            print "ImageSliceNumber: wrong sequence; %s != %s" %(seqid,_seqname[:3])
+            print("ImageSliceNumber: wrong sequence; %s != %s" %(seqid,_seqname[:3]))
             return result
 
         dicomfields = [
@@ -318,7 +320,7 @@ class PiQT_QC:
                 value = self.readDICOMtag(cs,key,i)
                 val+= str(value).strip()+"_"
             indices[val] = i
-            #print seqname,val,i
+            #print(seqname,val,i)
 
         lookup = "" +str(imagetype)+"_"+str(slice_number)+"_"+str(echo_num)+"_" #+str(echo_time)+"_"
         if lookup in indices:
@@ -372,7 +374,7 @@ class PiQT_QC:
         'modulus' calculations are performed.
 
         """
-        
+
         """
         Workflow:
             1. Determine slice thickness -> ramp (>=5mm) or wedge
@@ -384,21 +386,21 @@ class PiQT_QC:
         error = True
         # 0. Setup
         if cs_mr is None or cs_mr.dcmInfile is None or cs_mr.pixeldataIn is None:
-            print "[SliceProfile] Error: Not a valid PiQT struct"
+            print("[SliceProfile] Error: Not a valid PiQT struct")
             return error
 
         ## image sequence
         cs_mr.sp_slice = self.ImageSliceNumber(cs_mr,cs_mr.piqttest)
         if cs_mr.sp_slice <0:
-            print "[SliceProfile] ERROR: Test", lit.stTestSliceProfile,"not available for given image"
+            print("[SliceProfile] ERROR: Test", lit.stTestSliceProfile,"not available for given image")
             return error
 
         ## coiltype
         coiltype = self.CoilType(cs_mr,cs_mr.sp_slice)
         if coiltype == lit.stUnknown or coiltype == lit.stCoilSurface:
-            print "[SliceProfile] ERROR: coiltype not recognized"
+            print("[SliceProfile] ERROR: coiltype not recognized")
             return error
-        
+
         # 1. Determine Ramp or Wedge
         sp_object = lit.stWedge
         if cs_mr.dicomMode == wadwrapper_lib.stMode3D:
@@ -437,7 +439,7 @@ class PiQT_QC:
             sp_sliceI =  self.ImageSliceNumber(cs_mr,piqttestI)
             if(sp_sliceR <0 or sp_sliceI<0):
                 sp_method = lit.stModulus
-        print "**** Method = ",sp_method,sp_object,cs_mr.lin_slice,sp_sliceR,sp_sliceI
+        print("**** Method = ",sp_method,sp_object,cs_mr.lin_slice,sp_sliceR,sp_sliceI)
 
         # 3. in-plane rotation from 3 pins
         """
@@ -455,7 +457,7 @@ class PiQT_QC:
         defdistmm = 40.
         defdiamm  = 5.
         dxy = self.phantommm2pix(cs_mr,defdistmm)
-        
+
         # 4. angle of scan plane rotation from the double ramp
         """
         Calculate FWHM1 and FWHM2 for ramp1 and ramp2.
@@ -465,7 +467,7 @@ class PiQT_QC:
             F1 is FWHM measured for ramp1, F1 is FWHM measured for ramp2.
             Define R = 2*F1/(F1+F2)*tan(t1+t2)
             then phi = arctan[1/R*(+/- sqrt(1+F2/F1*R^2)-1)]-t1; use plus sign when t1+t2<90 deg and otherwise minus
-            
+
         Slice Integral : Integral of slice profile i.e. the energy stored in the slice.
         AS1: Kan niet kloppen, want Philips geeft waarde in mm voor integral
             waarschijnlijk som p(i)*dx, en dan delen door phi. Maar
@@ -487,11 +489,11 @@ class PiQT_QC:
             rois.append([int(2*dxy),int(wid-4*dxy), int(3*dxy)-h0,2*h0]) # x0,wid, yo,hei
         else:
             rois.append([int(2*dxy),int(wid-4*dxy), int(hei-2.5*dxy)-h0,2*h0]) # x0,wid, yo,hei
-           
+
         hwid = int(self.phantommm2pix(cs_mr,slicethickmm)/2.)
         if len(rois)>1:
             cs_mr.sp_phaseshift = []
-            
+
         for r in rois:#[rois[0]]:
             if(sp_method == lit.stMxy):
                 line = self.phase_shift1(cs_mr, r,sp_sliceR,sp_sliceI,sp_object)
@@ -511,7 +513,7 @@ class PiQT_QC:
                 line = line-line2
                 line[0] = line[1]
                 line[-1] = line[-2]
-            
+
             line_int.append(np.sum(line))
             # fit gaus to find center            
             pos = range(len(line))
@@ -550,7 +552,7 @@ class PiQT_QC:
 #                phaseshift = []
 #                for i in range(int(lpos+(rpos-lpos)/4),int(rpos-(rpos-lpos)/4)):
 #                    phaseshift.append(np.arctan(lineI[i]/lineR[i])/np.pi*180.)
-#                print "phaseshift:",np.min(phaseshift),np.max(phaseshift),np.mean(phaseshift)
+#                print("phaseshift:",np.min(phaseshift),np.max(phaseshift),np.mean(phaseshift))
             tval = 0.1*(loval+hival)
             tlpos = 0
             trpos = len(line)-1
@@ -585,7 +587,7 @@ class PiQT_QC:
         cs_mr.sp_rois = copy.deepcopy(rois)
         cs_mr.sp_mean = copy.deepcopy(mean_mm)
         cs_mr.sp_diamm = defdiamm
-        print "FWHMA!",fwhm_mm
+        print("FWHMA!",fwhm_mm)
         if len(fwhm_mm) == 1:
             cs_mr.sp_fwhm = fwhm_mm[0]
             cs_mr.sp_fwtm = fwtm_mm[0]
@@ -598,7 +600,7 @@ class PiQT_QC:
             theta2 = theta1
             R = 2.*F1/(F1+F2)*np.tan(theta1+theta2)
             phi = (np.arctan( 1./R*(np.sqrt(1.+F2/F1*R**2)-1 )) -theta1) 
-            
+
             cs_mr.sp_fwhm = [fwhm_mm[0],fwhm_mm[1]]
             cs_mr.sp_fwtm = [fwtm_mm[0],fwtm_mm[1]]
             cs_mr.sp_line_int = [line_int[0],line_int[1]]
@@ -607,8 +609,8 @@ class PiQT_QC:
             cs_mr.sp_slicewidth_fwhm = fwhm_mm[0]*np.tan(phi+theta1)
             cs_mr.sp_slicewidth_fwtm = fwtm_mm[0]*np.tan(phi+theta1)
             cs_mr.sp_slicewidth_lineint = line_int[0]*np.tan(phi+theta1)
-            print "[SP]",line_int,phi+theta1,np.tan(phi+theta1)
-        print "FWHMB!",cs_mr.sp_fwhm
+            print("[SP]",line_int,phi+theta1,np.tan(phi+theta1))
+        print("FWHMB!",cs_mr.sp_fwhm)
         # slice width = inplane FWMH*tan theta
         cs_mr.sp_phantom = sp_object 
         cs_mr.sp_method = sp_method 
@@ -656,13 +658,13 @@ class PiQT_QC:
             if 3<line_maxid<len(oneline)-3:
                 blur_phaseshift = scind.filters.gaussian_filter1d(phaseshift, line_sigma, order=0)
                 sp_phaseshift.append(blur_phaseshift[line_maxid])
-                print "phaseshift:",sp_phaseshift[-1]
+                print("phaseshift:",sp_phaseshift[-1])
             else:
-                print "phaseshift:","dunno"
+                print("phaseshift:","dunno")
                 sp_phaseshift.append(-360.)
         cs_mr.sp_phaseshift.append(sp_phaseshift[0]-sp_phaseshift[1])
-        print "dphaseshift:",cs_mr.sp_phaseshift[-1]
-        
+        print("dphaseshift:",cs_mr.sp_phaseshift[-1])
+
         if cs_mr.verbose:
             plt.figure()
             plt.title("data PhaseShift Mxy "+str(r))
@@ -673,7 +675,7 @@ class PiQT_QC:
             plt.figure()
             plt.plot(phaseshift[35:60])
         return line
-    
+
     def phase_shift(self,cs_mr,r,sp_sliceR,sp_sliceI,sp_object):
         dataR = cs_mr.pixeldataIn[sp_sliceR,r[0]:(r[0]+r[1]),r[2]:(r[2]+r[3])]
         lineR = np.mean(dataR,1) # average in y direction
@@ -700,9 +702,9 @@ class PiQT_QC:
         if 3<line_maxid<len(line)-3:
             blur_phaseshift = scind.filters.gaussian_filter1d(phaseshift, line_sigma, order=0)
             cs_mr.sp_phaseshift.append(blur_phaseshift[line_maxid])
-            print "phaseshift:",cs_mr.sp_phaseshift[-1]
+            print("phaseshift:",cs_mr.sp_phaseshift[-1])
         else:
-            print "phaseshift:","dunno"
+            print("phaseshift:","dunno")
             cs_mr.sp_phaseshift.append(-360.)
         if cs_mr.verbose:
             plt.figure()
@@ -712,7 +714,7 @@ class PiQT_QC:
             plt.plot(line,label='mag',linewidth=2.0)
             plt.legend()
         return line
-    
+
     def MTF(self,cs_mr):
         """
         The Philips phantom for measuring spatial resolution is the 'square hole' section of the
@@ -741,13 +743,13 @@ class PiQT_QC:
         error = True
         # 0. Setup
         if cs_mr is None or cs_mr.dcmInfile is None or cs_mr.pixeldataIn is None:
-            print "[MTF] Error: Not a valid PiQT struct"
+            print("[MTF] Error: Not a valid PiQT struct")
             return error
 
         ## image sequence
         cs_mr.mtf_slice = self.ImageSliceNumber(cs_mr,cs_mr.piqttest)
         if cs_mr.mtf_slice <0:
-            print "[MTF] ERROR: Test", lit.stTestMTF,"not available for given image"
+            print("[MTF] ERROR: Test", lit.stTestMTF,"not available for given image")
             return error
 
         """
@@ -820,9 +822,9 @@ class PiQT_QC:
             if coef[2]>best_r:
                 best_r = coef[2]
                 phantomangle = np.arctan(coef[0])
-#            print len(fitline),np.arctan(coef[0])/np.pi*180.,coef[2:]
+#            print(len(fitline),np.arctan(coef[0])/np.pi*180.,coef[2:])
 #        phantomangle = (90-11.3)/180.*np.pi
-        print "phantomangledeg",phantomangle/np.pi*180-90.
+        print("phantomangledeg",phantomangle/np.pi*180-90.)
 
         # 2. make 2 MTF ROIs and calculated presampled MTFs
         radsig = 5
@@ -923,7 +925,7 @@ class PiQT_QC:
                 lpos = hpos[k]+(0.-lsf[k])/(lsf[k-1]-lsf[k])*(hpos[k-1]-hpos[k])
                 break
         if lpos is None:
-            print "ERROR: lpos is None"
+            print("ERROR: lpos is None")
             return -1.
 
         # find second left zero crossing
@@ -933,7 +935,7 @@ class PiQT_QC:
                 l2pos = hpos[k]+(0.-lsf[k])/(lsf[k-1]-lsf[k])*(hpos[k-1]-hpos[k])
                 break
         if l2pos is None:
-            print "ERROR: l2pos is None"
+            print("ERROR: l2pos is None")
             return -1.
 
         # find third left zero crossing
@@ -943,7 +945,7 @@ class PiQT_QC:
                 l3pos = hpos[k]+(0.-lsf[k])/(lsf[k-1]-lsf[k])*(hpos[k-1]-hpos[k])
                 break
         if l3pos is None:
-            print "ERROR: l3pos is None"
+            print("ERROR: l3pos is None")
             return -1.
 
         # find first right zero crossing
@@ -953,7 +955,7 @@ class PiQT_QC:
                 rpos = hpos[k]+(0.-lsf[k])/(lsf[k+1]-lsf[k])*(hpos[k+1]-hpos[k])
                 break
         if rpos is None:
-            print "ERROR: right pos is None"
+            print("ERROR: right pos is None")
             return -1.
 
         # find second right zero crossing
@@ -965,7 +967,7 @@ class PiQT_QC:
         pixsize = self.pix2phantommm(cs_mr,lpos-l3pos)/2.
         #pixsize = 2./3.*self.pix2phantommm(cs_mr,abs(hpos[lsfmaxid]-hpos[lsfminid]))
         if verbose:
-            print "pixsize=",pixsize,self.pix2phantommm(cs_mr,rpos-lpos),self.pix2phantommm(cs_mr,r2pos-rpos),self.pix2phantommm(cs_mr,l2pos-lpos),self.pix2phantommm(cs_mr,l3pos-l2pos),self.pix2phantommm(cs_mr,1.)
+            print("pixsize=",pixsize,self.pix2phantommm(cs_mr,rpos-lpos),self.pix2phantommm(cs_mr,r2pos-rpos),self.pix2phantommm(cs_mr,l2pos-lpos),self.pix2phantommm(cs_mr,l3pos-l2pos),self.pix2phantommm(cs_mr,1.))
             plt.figure()
             plt.title("lsf")
             plt.plot(hpos,lsf,label='lsf')
@@ -978,8 +980,8 @@ class PiQT_QC:
         mtf = np.abs(fftpack.fft(lsf))
         # frequency axis
         freq = fftpack.fftfreq(len(lsf), d=self.pix2phantommm(cs_mr,stepsize))
-        mtf = mtf[0:len(mtf)/2-1]
-        freq = freq[0:len(freq)/2-1]
+        mtf = mtf[0:int(len(mtf)/2)-1]
+        freq = freq[0:int(len(freq)/2)-1]
 
         fnyq = .5/self.pix2phantommm(cs_mr,1.)
         if verbose:
@@ -993,7 +995,7 @@ class PiQT_QC:
             if mtf[k] >=0.5 and mtf[k+1] <=0.5:
                 mtf50 = freq[k]+(0.5-mtf[k])/(mtf[k+1]-mtf[k])*(freq[k+1]-freq[k])
                 break
-        print "mtf50/integral50",mtf50,integral50
+        print("mtf50/integral50",mtf50,integral50)
 
         return pixsize
 
@@ -1018,20 +1020,20 @@ class PiQT_QC:
         """
         error = True
         if cs_mr is None or cs_mr.dcmInfile is None or cs_mr.pixeldataIn is None:
-            print "[SNR] Error: Not a valid PiQT struct"
+            print("[SNR] Error: Not a valid PiQT struct")
             return error
 
         # 1. image sequence
         cs_mr.snr_slice = self.ImageSliceNumber(cs_mr,cs_mr.piqttest)
         if cs_mr.snr_slice <0:
             (seqname,imagetype,slice_number,echo_num,echo_time) = cs_mr.piqttest
-            print "[SNR] ERROR: Test", lit.stTestUniformity,"not available for given image",imagetype,echo_num
+            print("[SNR] ERROR: Test", lit.stTestUniformity,"not available for given image",imagetype,echo_num)
             return error
 
         # 2. coiltype
         coiltype = self.CoilType(cs_mr,cs_mr.snr_slice)
         if coiltype == lit.stUnknown or coiltype == lit.stCoilSurface:
-            print "[SNR] ERROR: coiltype not recognized"
+            print("[SNR] ERROR: coiltype not recognized")
             return error
 
         # 3. SNR
@@ -1046,7 +1048,7 @@ class PiQT_QC:
         roidx     = 4 #4
         roidy     = 4 #4
         cs_mr.snr_rois = [] # format: x0,wid, y0,hei
-        cs_mr.snr_rois.append([(wid-roiwidth)/2,roiwidth, (hei-roiheight)/2, roiheight])
+        cs_mr.snr_rois.append([int((wid-roiwidth)/2),roiwidth, int((hei-roiheight)/2), roiheight])
         cs_mr.snr_rois.append([roidx,roiwidth, roidy,roiheight])
         cs_mr.snr_rois.append([roidx,roiwidth, hei-roiheight-roidy,roiheight])
         cs_mr.snr_rois.append([wid-roiwidth-roidx,roiwidth, hei-roiheight-roidy,roiheight])
@@ -1064,7 +1066,7 @@ class PiQT_QC:
         cs_mr.snr_stdevs = cs_mr.snr_stdevs[0:2]
         cs_mr.snr_means = cs_mr.snr_means[0:2]
         cs_mr.snr_rois = cs_mr.snr_rois[0:2]
-        
+
         # report values
         cs_mr.snr_SNC = cs_mr.snr_means[0]/cs_mr.snr_stdevs[0]
         cs_mr.snr_SNB = 0.655*cs_mr.snr_means[0]/cs_mr.snr_stdevs[1]
@@ -1077,9 +1079,9 @@ class PiQT_QC:
         # apply a moving average to of window width ksize
         kernel = np.ones((ksize,ksize),dtype=float)
         kernel *= 1./(ksize*ksize)
-        
+
         return scind.convolve(data, kernel, mode='reflect')
-        
+
     def _lowpassfilter(self,data):
         # NEMA MS 3-2003
         # apply a 9 points low-pass filter
@@ -1091,7 +1093,7 @@ class PiQT_QC:
         kernel *= 1./16.
 
         return scind.convolve(data, kernel, mode='reflect')
-    
+
     def ArtifactLevel(self,cs_mr):
         """
         The artifact level is defined as: artefact level = (G-B)*100/R % with,
@@ -1114,14 +1116,14 @@ class PiQT_QC:
         cs_mr.snr_slice = self.ImageSliceNumber(cs_mr,cs_mr.piqttest)
         error = self.SNR(cs_mr)
         if error:
-            print "[Artifact] Error: Not a valid PiQT struct"
+            print("[Artifact] Error: Not a valid PiQT struct")
             return error
         signal = cs_mr.snr_means[0]
         bkgrnd = cs_mr.snr_means[1]
 
         # 3. Artifact
         edge = 6 # 6
-        
+
         # 3.1 moving average of image
         data = self._lowpassfilter(cs_mr.pixeldataIn[cs_mr.snr_slice].astype(float))
         #data = self._movingaverage(cs_mr.pixeldataIn[cs_mr.snr_slice].astype(float),3)
@@ -1147,7 +1149,7 @@ class PiQT_QC:
         cs_mr.artefact_roi = [mid+edge+dx,mid+edge+dy,rad]
         # report value
         cs_mr.artefact_ArtLevel = 100.*(cs_mr.artefact_max-bkgrnd)/signal/2.
-        #print "[ArtifactLevel] max",cs_mr.artefact_max
+        #print("[ArtifactLevel] max",cs_mr.artefact_max)
         #plt.figure()
         #data[mask] = 1500
         #plt.imshow(data.transpose())
@@ -1227,7 +1229,7 @@ class PiQT_QC:
         # Step 1
         error = self.ArtifactLevel(cs_mr)
         if error == True:
-            print "[Artifact] Error: Not a valid PiQT struct"
+            print("[Artifact] Error: Not a valid PiQT struct")
             return error
         C = cs_mr.snr_means[0]
         B = cs_mr.snr_means[1]
@@ -1403,19 +1405,19 @@ class PiQT_QC:
         """
         error = True
         if cs_mr is None or cs_mr.dcmInfile is None or cs_mr.pixeldataIn is None:
-            print "[SpatialLinearity] Error: Not a valid PiQT struct"
+            print("[SpatialLinearity] Error: Not a valid PiQT struct")
             return error
 
         # image sequence
         cs_mr.lin_slice = self.ImageSliceNumber(cs_mr,cs_mr.piqttest)
         if(cs_mr.lin_slice <0):
-            print "[SpatialLinearity] ERROR: Test", lit.stTestSpatialLinearity,"not available for given image"
+            print("[SpatialLinearity] ERROR: Test", lit.stTestSpatialLinearity,"not available for given image")
             return error
 
         # coiltype
         coiltype = self.CoilType(cs_mr,cs_mr.lin_slice)
         if coiltype == lit.stUnknown or coiltype == lit.stCoilSurface:
-            print "[SpatialLinearity] ERROR: coiltype not recognized"
+            print("[SpatialLinearity] ERROR: coiltype not recognized")
             return error
 
         # 1. grid of theoretical positions
@@ -1431,7 +1433,7 @@ class PiQT_QC:
         x0 = xmid - (ncent-1)/2*dxy
         y0 = ymid - (ncent-1)/2*dxy
         # build 2d array of px coordinates, but remove corners
-        pos_gt =[[ [x*dxy+x0,y*dxy+y0] for x in xrange(ncent)] for y in xrange(ncent)]
+        pos_gt =[[ [x*dxy+x0,y*dxy+y0] for x in range(ncent)] for y in range(ncent)]
         pos_gt[ 0][ 0] = []
         pos_gt[-1][ 0] = []
         pos_gt[-1][-1] = []
@@ -1464,7 +1466,7 @@ class PiQT_QC:
                 if len(gt)==0:
                     continue
                 pos_gt[y][x] = trn.apply(gt) # apply rigid transformation
-        
+
         # 5. do calculations
         # find shifts between groundtruth and found
         shiftx = []
@@ -1477,7 +1479,7 @@ class PiQT_QC:
                 found = pos_found[y][x]
                 shiftx.append(found[0]-gt[0])
                 shifty.append(found[1]-gt[1])
-                #print gt[0],gt[1],found[0],found[1],shiftx[-1],shifty[-1]
+                #print(gt[0],gt[1],found[0],found[1],shiftx[-1],shifty[-1])
 
         # find distances between adjacent discs
         difflinx = []
@@ -1496,7 +1498,7 @@ class PiQT_QC:
                 thdist = np.sqrt( (thpos1[0]-thpos0[0])**2+ (thpos1[1]-thpos0[1])**2)
 
                 difflinx.append(100.*(dist/thdist -1.))
-                #print x,y,dist,thdist,difflinx[-1],self.pix2phantommm(cs_mr,thdist)
+                #print(x,y,dist,thdist,difflinx[-1],self.pix2phantommm(cs_mr,thdist))
 
         diffliny = []
         for y in range(ncent-1):
@@ -1584,11 +1586,12 @@ class PiQT_QC:
         rotdeg = 180.*(trn.getRotation()/np.pi)
         cs_mr.lin_phantomrotdeg = rotdeg
         ## distance between horizontal and vertical outer discs
-        dx = pos_found[(ncent-1)/2][-1][0]-pos_found[(ncent-1)/2][0][0]
-        dy = pos_found[(ncent-1)/2][-1][1]-pos_found[(ncent-1)/2][0][1]
+        nc2 = int((ncent-1)/2)
+        dx = pos_found[nc2][-1][0]-pos_found[nc2][0][0]
+        dy = pos_found[nc2][-1][1]-pos_found[nc2][0][1]
         cs_mr.lin_sizehor = self.pix2phantommm(cs_mr,np.sqrt(dx**2+dy**2))
-        dx = pos_found[-1][(ncent-1)/2][0]-pos_found[0][(ncent-1)/2][0]
-        dy = pos_found[-1][(ncent-1)/2][1]-pos_found[0][(ncent-1)/2][1]
+        dx = pos_found[-1][nc2][0]-pos_found[0][nc2][0]
+        dy = pos_found[-1][nc2][1]-pos_found[0][nc2][1]
         cs_mr.lin_sizever = self.pix2phantommm(cs_mr,np.sqrt(dx**2+dy**2))
         ## avg of abs and stdev of abs and min/max of normal shifts
         cs_mr.lin_intshiftavg  = [self.pix2phantommm(cs_mr,np.mean([abs(x) for x in shiftx])),self.pix2phantommm(cs_mr,np.mean([abs(x) for x in shifty]))]
@@ -1612,9 +1615,9 @@ class PiQT_QC:
         sigma = self.phantommm2pix(cs_mr,defdiamm/2.)
         cs_mr.resultimage['LIN'] = scind.gaussian_filter(data.astype(float), sigma,mode='constant')
 
-#        print "NEMA"
+#        print("NEMA")
 #        for la,ne in zip(cs_mr.lin_nema_label, cs_mr.lin_nema):
-#            print la,ne
+#            print(la,ne)
         error = False
         return error
 
@@ -1628,24 +1631,24 @@ class PiQT_QC:
         #  but I don't see the relevance of these tags anymore, so set them to NO
         if info == "dicom":
             dicomfields = [
-		    ["0010,0010", "Patients Name"], # PIQT
-		    ["0018,1030", "Protocol Name"],  # QA1S:MS,SE
-		    ["0008,0021", "Series Date"],
-		    ["0008,0031", "Series Time"],# no ScanTime 0008,0032 in EnhancedDicom
-		    ["0018,1250", "Receive Coil Name"], # Q-Body
-		    ["0018,1251", "Transmit Coil Name"], # B
-		    ["0018,0095", "Pixel Bandwidth"], # 219
-		    ["0018,0020", "Scanning Sequence"], # SE
-		    ["0018,0021", "Scanning Variant"], # SS
-		    ["2005,1011", "Image_Type"], # M
-		    ["0018,0081", "Echo Time"], # 50
-		    ["0020,0012", "Acquisition Number"], # 5
-		    ["0018,0086", "Echo Number(s)"], # 1
-		    ["2001,1081", "Dyn_Scan_No"], # ?1
-		    ["0020,0013", "Instance Number"], # 1 slice no?
-		    ["2001,105f,2005,1079", "Dist_sel"], # -16.32
-		    ["2001,1083", "Central_freq"], # 63.895241 (MHz)
-		    ["0018,1020", "SoftwareVersions"], 
+                ["0010,0010", "Patients Name"], # PIQT
+                ["0018,1030", "Protocol Name"],  # QA1S:MS,SE
+                ["0008,0021", "Series Date"],
+                ["0008,0031", "Series Time"],# no ScanTime 0008,0032 in EnhancedDicom
+                ["0018,1250", "Receive Coil Name"], # Q-Body
+                ["0018,1251", "Transmit Coil Name"], # B
+                ["0018,0095", "Pixel Bandwidth"], # 219
+                ["0018,0020", "Scanning Sequence"], # SE
+                ["0018,0021", "Scanning Variant"], # SS
+                ["2005,1011", "Image_Type"], # M
+                ["0018,0081", "Echo Time"], # 50
+                ["0020,0012", "Acquisition Number"], # 5
+                ["0018,0086", "Echo Number(s)"], # 1
+                ["2001,1081", "Dyn_Scan_No"], # ?1
+                ["0020,0013", "Instance Number"], # 1 slice no?
+                ["2001,105f,2005,1079", "Dist_sel"], # -16.32
+                ["2001,1083", "Central_freq"], # 63.895241 (MHz)
+                ["0018,1020", "SoftwareVersions"], 
             ]
         elif info == "id":
             dicomfields = [
@@ -1715,7 +1718,7 @@ class PiQT_QC:
                 im = scipy.misc.toimage(cs_mr.resultimage['SLP'].transpose(),low=3,pal=pal) # MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!
             else:
                 im = scipy.misc.toimage(cs_mr.pixeldataIn[cs_mr.sp_slice].transpose(),low=3,pal=pal) # MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!
-                
+
             # add locations of detected pins
             for pos in cs_mr.sp_pins:
                 rois.append( ('circle',1,[pos[0],pos[1],self.phantommm2pix(cs_mr,cs_mr.sp_diamm/2.)]) )
@@ -1758,7 +1761,7 @@ class PiQT_QC:
 
         if im is None:
             return im
-        
+
         # now draw all rois in reserved color
         if len(rois)>0:
             draw = ImageDraw.Draw(im)
@@ -1781,7 +1784,7 @@ class PiQT_QC:
                     rad = int (r[2]+.5)
                     draw.ellipse(( x0-rad,y0-rad,x0+rad,y0+rad), outline=color)
             del draw
-        
+
         # convert to RGB for JPG, cause JPG doesn't do PALETTE and PNG is much larger
         im = im.convert("RGB")
 
@@ -1790,4 +1793,3 @@ class PiQT_QC:
             ratio = 2048./max(imsi)
             im = im.resize( (int(imsi[0]*ratio+.5), int(imsi[1]*ratio+.5)),Image.ANTIALIAS)
         im.save(fname)
-    

@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
+
 """
 """
 import numpy as np
@@ -169,7 +171,7 @@ class RigidTransform():
     
         # special reflection case
         if np.linalg.det(R) < 0:
-            print "Reflection detected"
+            print("Reflection detected")
             Vt[2,:] *= -1
             R = Vt.T * U.T
     
@@ -218,31 +220,31 @@ class RigidTransform():
         err = np.sum(err)
         rmse = np.sqrt(err/n)
         
-        print "Points A"
-        print A
-        print ""
+        print("Points A")
+        print(A)
+        print("")
         
-        print "Points B"
-        print B
-        print ""
+        print("Points B")
+        print(B)
+        print("")
         
-        print "Rotation"
-        print '  true'
-        print R
-        print ' found'
-        print ret_R
-        print ""
+        print("Rotation")
+        print('  true')
+        print(R)
+        print(' found')
+        print(ret_R)
+        print("")
         
-        print "Translation"
-        print '  true'
-        print t
-        print ' found'
-        print ret_t
-        print ""
+        print("Translation")
+        print('  true')
+        print(t)
+        print(' found')
+        print(ret_t)
+        print("")
         
-        print "RMSE:", rmse
-        print "If RMSE is near zero, the function is correct!"
-        print 'SCALING:',self.calc_scaling(A,B)
+        print("RMSE:", rmse)
+        print("If RMSE is near zero, the function is correct!")
+        print('SCALING:',self.calc_scaling(A,B))
 
     def test2(self):
         A = [[40.96, 127.5], [127.5, 215.04], [215.04, 127.5]]
@@ -251,24 +253,24 @@ class RigidTransform():
         # recover the transformation
         self.rigid_transform_3D(A, B)
         
-        print "Points A"
-        print A
-        print ""
+        print("Points A")
+        print(A)
+        print("")
 
-        print "Points B"
-        print B
-        print ""
+        print("Points B")
+        print(B)
+        print("")
 
-        print "Rotation"
-        print self.rotmatrix
-        print ""
-        print "angle:", self.getRotationDeg()
-        print "Translation"
-        print self.translation
-        print ""
-        print 'RMSE',self.getRMSE(A, B)
-        print 'SCALING:',self.calc_scaling(A,B)
-        print self.apply(A)
+        print("Rotation")
+        print(self.rotmatrix)
+        print("")
+        print("angle:", self.getRotationDeg())
+        print("Translation")
+        print(self.translation)
+        print("")
+        print('RMSE',self.getRMSE(A, B))
+        print('SCALING:',self.calc_scaling(A,B))
+        print(self.apply(A))
 
 def FindCenters2D(pts,datain,distpx,discpx,minimod=False):
     error = True
@@ -306,7 +308,7 @@ def FindCenters2D(pts,datain,distpx,discpx,minimod=False):
             y0 = multip*rp[1]
             miny = max(0,y0-searchrad)
             maxy = min(heightpx-2,y0+searchrad)
-            cropped = data[minx:maxx+1,miny:maxy+1]
+            cropped = data[int(minx):int(maxx+1),int(miny):int(maxy+1)]
             #plt.figure()
             #plt.title(rp)
             #plt.imshow(cropped)

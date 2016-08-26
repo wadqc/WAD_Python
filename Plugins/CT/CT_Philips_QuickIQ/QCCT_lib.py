@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
+
 """
-Created on Wed Oct  9 08:50:51 2014
-
-@author: aschilha
-
 Warning: THIS MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!
 
 Changelog:
+    20160802: sync with wad2.0
     20150701: updated for iPatient iCT: body and head; other tags; other body
     20150409: Removed scanner definitions; should be passed to cs or in config
     20141009: Update to use dicomMode instead of mode2D
@@ -16,6 +15,9 @@ Changelog:
     20140409: Initial split of gui/lib for pywad
 
 """
+__version__ = '20160802'
+__author__ = 'aschilham'
+
 import copy
 import QCCT_constants as lit
 try:
@@ -55,7 +57,7 @@ class CTStruct:
     # identification
     guessScanner = None
     forceScanner = None # guessScanner is old way, forceScanner passes scanner definition to struct for usage
-    
+
     anatomy = lit.stUnknown
 
     # measurements for head and body
@@ -84,7 +86,7 @@ class CTStruct:
         self.hasmadeplots = False
         self.guessScanner = None
         self.forceScanner = None
-        
+
         self.anatomy = lit.stUnknown
         self.roiavg = []
         self.roisd  = -1.
@@ -100,7 +102,7 @@ class CTStruct:
 
 
 class CT_QC:
-    qcversion = 20150701
+    qcversion = __version__
     sigma_ext = 1.5 # gaussian blur factor for extreme finder
 
     def __init__(self):
@@ -149,7 +151,7 @@ class CT_QC:
         if dicomvalue == 'unknown':
             dicomvalue = self.readDICOMtag(cs,"0008,103e") #Series Description (for iPatient)
             dicomvalue = str(dicomvalue).lower()
-            
+
         if(dicomvalue.find("head")>-1):
             cs.anatomy = lit.stHead
             error = False
@@ -177,18 +179,18 @@ class CT_QC:
         # id scanner (for base values)
         error = self.DetermineCTID(cs)
         if(error == True):
-            print "[AnalyzeCT] cannot determine CT ID"
+            print("[AnalyzeCT] cannot determine CT ID")
             return error
 
         # id anatomy of phantom (for test and ROI locations)
         error = self.HeadOrBody(cs)
         if(error == True):
-            print "[AnalyzeCT] cannot determine Anatomy"
+            print("[AnalyzeCT] cannot determine Anatomy")
             return error
 
         if not cs.dicomMode == wadwrapper_lib.stMode2D:
             dep = np.shape(cs.pixeldataIn)[0]
-            cs.unif_slice = (dep-1)/2 # take middle slice
+            cs.unif_slice = int((dep-1)/2) # take middle slice
 
         if(cs.anatomy == lit.stHead):
             error = self.AnalyseCTHead(cs)
@@ -213,7 +215,7 @@ class CT_QC:
             error,cs.shiftxypx = self.FindCenterShift2D(cs,cs.pixeldataIn[cs.unif_slice],matter=lit.stAir)
 
         if(error):
-            print "[AnalyseCTHead] cannot findcentershift"
+            print("[AnalyseCTHead] cannot findcentershift")
             return error
 
         # 2. find mean and SD in relevant regions
@@ -282,7 +284,7 @@ class CT_QC:
                     try:
                         sumv2 += val*val
                     except:
-                        print "[AnalyseCTHead] ERROR!",type(val),type(sumv),type(sumv2),val,sumv,sumv2
+                        print("[AnalyseCTHead] ERROR!",type(val),type(sumv),type(sumv2),val,sumv,sumv2)
                     #  self.pixeldataIn[iz,roix[kk]+kx,roiy[kk]+ky] = -1000
                     count += 1
         if(count>1):
@@ -334,7 +336,7 @@ class CT_QC:
 
         measured = [cs.roiavg[-1],cs.roiavg[0],cs.skull_avg]
         GT = cs.guessScanner.HeadGT
-        print "[AnalyseCTHead] x,y",GT,measured
+        print("[AnalyseCTHead] x,y",GT,measured)
         cs.linearity = self.PearsonCoef(measured,GT)
 
         maxdev = measured[0]-GT[0]
@@ -362,7 +364,7 @@ class CT_QC:
         else:
             error,cs.shiftxypx = self.FindCenterShift2D(cs,cs.pixeldataIn[cs.unif_slice],matter=lit.stAir)
         if error:
-            print "[AnalyseCTBody] cannot findcentershift"
+            print("[AnalyseCTBody] cannot findcentershift")
             return error
 
         # 2. find mean and SD in relevant regions
@@ -392,32 +394,32 @@ class CT_QC:
         roidim.append(sddimIEC)
         roix = []
         roiy = []
-        roix.append(cs.shiftxypx[0]+midx-int(roidim[0]/2)) # center
+        roix.append(int(cs.shiftxypx[0]+midx-int(roidim[0]/2))) # center
         roix.append(roix[0])            # 12 o'clock
         roix.append(roix[0]+hdiagstep)  # 1.3 o'clock
-        roix.append(cs.shiftxypx[0]+midx-int(roidim[3]/2)+diagstep) # outside
-        roiy.append(cs.shiftxypx[1]+midx-int(roidim[0]/2)) # center
+        roix.append(int(cs.shiftxypx[0]+midx-int(roidim[3]/2)+diagstep)) # outside
+        roiy.append(int(cs.shiftxypx[1]+midx-int(roidim[0]/2))) # center
         roiy.append(roiy[0]-stepx)            # 12 o'clock
         roiy.append(roiy[0]-hdiagstep)        # 1.3 o'clock
-        roiy.append(cs.shiftxypx[1]+midx-int(roidim[3]/2)-diagstep) # outside
+        roiy.append(int(cs.shiftxypx[1]+midx-int(roidim[3]/2)-diagstep)) # outside
 
         # Find Teflon plug
         stepm  = int(self.phantommm2pix(cs,82.)+.5)
         matdim = int(self.phantommm2pix(cs,55.)+.5)
-        roix.append(cs.shiftxypx[0]+midx-int(roidim[4]/2))
-        roiy.append(cs.shiftxypx[1]+midx-int(roidim[4]/2))
-        xstart = roix[4]+stepm-matdim/2
+        roix.append(int(cs.shiftxypx[0]+midx-int(roidim[4]/2)))
+        roiy.append(int(cs.shiftxypx[1]+midx-int(roidim[4]/2)))
+        xstart = int(roix[4]+stepm-matdim/2)
         xend   = xstart+matdim
-        ystart = roiy[4]-matdim/2
+        ystart = int(roiy[4]-matdim/2)
         yend   = ystart+matdim
         if cs.dicomMode == wadwrapper_lib.stMode2D:
             plugimage = cs.pixeldataIn[xstart:xend,ystart:yend]
         else:
             plugimage = cs.pixeldataIn[cs.unif_slice,xstart:xend,ystart:yend]
         error,shiftxyTeflon = self.FindCenterShift2D(cs,plugimage,matter=lit.stTeflon) ## FIXME: moet toch pixeldata toestaan en shiftxy uitspugen
-        print "[AnalyseCTBody] Teflon shift=",shiftxyTeflon
-        roix[4] = shiftxyTeflon[0]+(xstart+xend)/2-int(roidim[4]/2)+1 #  3 o'clock material
-        roiy[4] = shiftxyTeflon[1]+(ystart+yend)/2-int(roidim[4]/2)+1
+        print("[AnalyseCTBody] Teflon shift=",shiftxyTeflon)
+        roix[4] = int(shiftxyTeflon[0]+(xstart+xend)/2-int(roidim[4]/2)+1) #  3 o'clock material
+        roiy[4] = int(shiftxyTeflon[1]+(ystart+yend)/2-int(roidim[4]/2)+1)
         if(cs.verbose):
             plt.figure()
             plt.imshow(plugimage)
@@ -426,20 +428,20 @@ class CT_QC:
 
         if cs.guessScanner.BodyGT[2] >-900.: # <-900 means no water plug, so use air outside.
             # Find Water plug
-            roix.append(cs.shiftxypx[0]+midx-int(roidim[5]/2))
-            roiy.append(cs.shiftxypx[1]+midx-int(roidim[5]/2))
-            xstart = roix[5]-stepm-matdim/2
+            roix.append(int(cs.shiftxypx[0]+midx-int(roidim[5]/2)))
+            roiy.append(int(cs.shiftxypx[1]+midx-int(roidim[5]/2)))
+            xstart = int(roix[5]-stepm-matdim/2)
             xend   = xstart+matdim
-            ystart = roiy[5]-matdim/2
+            ystart = int(roiy[5]-matdim/2)
             yend   = ystart+matdim
             if cs.dicomMode == wadwrapper_lib.stMode2D:
                 plugimage = cs.pixeldataIn[xstart:xend,ystart:yend]
             else:
                 plugimage = cs.pixeldataIn[cs.unif_slice,xstart:xend,ystart:yend]
             error,shiftxyWater = self.FindCenterShift2D(cs,plugimage,matter=lit.stWater)
-            print "[AnalyseCTBody] Water shift=",shiftxyWater
-            roix[5] = shiftxyWater[0]+(xstart+xend)/2-int(roidim[5]/2)+1 #  9 o'clock material
-            roiy[5] = shiftxyWater[1]+(ystart+yend)/2-int(roidim[5]/2)+1
+            print("[AnalyseCTBody] Water shift=",shiftxyWater)
+            roix[5] = int(shiftxyWater[0]+(xstart+xend)/2-int(roidim[5]/2)+1) #  9 o'clock material
+            roiy[5] = int(shiftxyWater[1]+(ystart+yend)/2-int(roidim[5]/2)+1)
             if(cs.verbose):
                 plt.figure()
                 plt.imshow(plugimage)
@@ -447,8 +449,8 @@ class CT_QC:
                 cs.hasmadeplots = True
 
         # sd roi
-        roix.append(cs.shiftxypx[0]+midx-int(roidim[6]/2)) # center
-        roiy.append(cs.shiftxypx[1]+midx-int(roidim[6]/2)) # center
+        roix.append(int(cs.shiftxypx[0]+midx-int(roidim[6]/2))) # center
+        roiy.append(int(cs.shiftxypx[1]+midx-int(roidim[6]/2))) # center
 
         # first avg
         cs.roiavg = []
@@ -492,7 +494,7 @@ class CT_QC:
                     try:
                         sumv2 += val*val
                     except:
-                        print "ERROR!",type(val),type(sumv),type(sumv2),val,sumv,sumv2
+                        print("ERROR!",type(val),type(sumv),type(sumv2),val,sumv,sumv2)
                     #  self.pixeldataIn[iz,roix[kk]+kx,roiy[kk]+ky] = -1000
                     count += 1
         if(count>1):
@@ -516,7 +518,7 @@ class CT_QC:
         else:
             measured = [cs.roiavg[0],cs.roiavg[4],cs.roiavg[5]]
         GT = cs.guessScanner.BodyGT
-        print "[AnalyseCTBody] x,y",GT,measured
+        print("[AnalyseCTBody] x,y",GT,measured)
         cs.linearity = self.PearsonCoef(measured,GT)
         maxdev = measured[0]-GT[0]
         for m,g in zip(measured,GT):
@@ -548,7 +550,7 @@ class CT_QC:
             1. blur with object dependend scale
         """
         if(np.shape(np.shape(pixeldata))[0]!=2):
-            print "[FindCenterShift2D] Error, called with non-2D data!"
+            print("[FindCenterShift2D] Error, called with non-2D data!")
             return error
 
         wid = np.shape(pixeldata)[0] ## width/height in pixels
@@ -600,8 +602,8 @@ class CT_QC:
                 minLow = arrayLow[minLowId]
         shiftxypx[1] = minLowId
         if(cs.verbose):
-            print "[FindCenterShift] vertical "+matter,minLowId
-       # 2.2 find right first pos without voxels below threshLow
+            print("[FindCenterShift] vertical "+matter,minLowId)
+        # 2.2 find right first pos without voxels below threshLow
         minLowId = hei-1
         minLow = arrayLow[minLowId]
         for iy in reversed(range(0,hei)):
@@ -609,9 +611,9 @@ class CT_QC:
                 minLowId = iy
                 minLow = arrayLow[minLowId]
         # 2.3 mid is halfway left and right pos
-        shiftxypx[1] =(shiftxypx[1]+minLowId-(hei-1))/2
+        shiftxypx[1] =int((shiftxypx[1]+minLowId-(hei-1))/2)
         if(cs.verbose):
-            print "[FindCenterShift] vertical "+matter,minLowId,(hei-1)/2,shiftxypx[1]
+            print("[FindCenterShift] vertical "+matter,minLowId,(hei-1)/2,shiftxypx[1])
         # repeat for horizontal
         arrayLow = []
         for ix in range(0,wid):
@@ -639,7 +641,7 @@ class CT_QC:
                 minLow = arrayLow[minLowId]
         shiftxypx[0] = minLowId
         if(cs.verbose):
-            print "[FindCenterShift] horizontal "+matter,minLowId
+            print("[FindCenterShift] horizontal "+matter,minLowId)
 
         # 2.2 find right first pos without voxels below threshLow
         minLowId = wid-1
@@ -649,9 +651,9 @@ class CT_QC:
                 minLowId = iy
                 minLow = arrayLow[minLowId]
         # 2.3 mid is halfway left and right pos
-        shiftxypx[0] =(shiftxypx[0]+minLowId-(wid-1))/2
+        shiftxypx[0] =int((shiftxypx[0]+minLowId-(wid-1))/2)
         if(cs.verbose):
-            print "[FindCenterShift] horizontal "+matter,minLowId,(wid-1)/2,shiftxypx[0]
+            print("[FindCenterShift] horizontal "+matter,minLowId,(wid-1)/2,shiftxypx[0])
 
         error = False
         return error,shiftxypx
@@ -666,43 +668,43 @@ class CT_QC:
 
         if(info == "dicom"):
             dicomfields = [
-		    ["0008,0022", "Acquisition Date"],
-		    ["0008,0032", "Acquisition Time"],
-		    ["0008,0060", "Modality"],
-		    ["0008,0070", "Manufacturer"],
-		    ["0008,1010", "Station Name"],
-		    ["0008,103e", "Series Description"],
-                    ["0008,1010", "Station Name"],
-		    ["0018,0022", "Scan Options"], # Philips
-		    ["0018,0050", "Slice Thickness"],
-		    ["0018,0060", "kVp"],
-		    ["0018,0088", "Spacing Between Slices"], # Philips
-		    ["0018,0090", "Data Collection Diameter"],
-		    ["0018,1020", "Software Versions(s)"],
-		    ["0018,1030", "Protocol Name"],
-		    ["0018,1100", "Reconstruction Diameter"],
-		    ["0018,1120", "Gantry/Detector Tilt"],
-		    ["0018,1130", "Table Height"],
-		    ["0018,1140", "Rotation Direction"],
-		    ["0018,1143", "Scan Arc"], # noPhilips noSiemens
-		    ["0018,1150", "Exposure Time ms"], #Siemens
-		    ["0018,1151", "X-ray Tube Current"],
-		    ["0018,1152", "Exposure mAs"], # mA*tRot/pitch; tRot=exposure time
-		    ["0018,9345", "CTDIvol"],
-		    ["0018,1160", "Filter Type"],
-		    ["0018,1210", "Convolution Kernel"],
-		    ["0018,5100", "Patient Position"],
-		    ["0020,0013", "Image Number"],
-		    ["0020,1041", "Slice Location"],
-		    ["0028,0030", "Pixel Spacing"],
-		    ["01F1,1027", "Rotation Time"], # Philips
-		    ["01F1,104B", "Collimation"], # Philips
-		    ["01F1,104E", "Protocol"] ] # Philips
+                ["0008,0022", "Acquisition Date"],
+                ["0008,0032", "Acquisition Time"],
+                ["0008,0060", "Modality"],
+                ["0008,0070", "Manufacturer"],
+                ["0008,1010", "Station Name"],
+                ["0008,103e", "Series Description"],
+                ["0008,1010", "Station Name"],
+                ["0018,0022", "Scan Options"], # Philips
+                ["0018,0050", "Slice Thickness"],
+                ["0018,0060", "kVp"],
+                ["0018,0088", "Spacing Between Slices"], # Philips
+                ["0018,0090", "Data Collection Diameter"],
+                ["0018,1020", "Software Versions(s)"],
+                ["0018,1030", "Protocol Name"],
+                ["0018,1100", "Reconstruction Diameter"],
+                ["0018,1120", "Gantry/Detector Tilt"],
+                ["0018,1130", "Table Height"],
+                ["0018,1140", "Rotation Direction"],
+                ["0018,1143", "Scan Arc"], # noPhilips noSiemens
+                ["0018,1150", "Exposure Time ms"], #Siemens
+                ["0018,1151", "X-ray Tube Current"],
+                ["0018,1152", "Exposure mAs"], # mA*tRot/pitch; tRot=exposure time
+                ["0018,9345", "CTDIvol"],
+                ["0018,1160", "Filter Type"],
+                ["0018,1210", "Convolution Kernel"],
+                ["0018,5100", "Patient Position"],
+                ["0020,0013", "Image Number"],
+                ["0020,1041", "Slice Location"],
+                ["0028,0030", "Pixel Spacing"],
+                ["01F1,1027", "Rotation Time"], # Philips
+                ["01F1,104B", "Collimation"], # Philips
+                ["01F1,104E", "Protocol"] ] # Philips
 
         elif(info == "idose"):
             dicomfields = [
-#		    "0018,9323", "Recon",
-		    ["01F7,109B", "iDose"] ]
+                #"0018,9323", "Recon",
+                ["01F7,109B", "iDose"] ]
 
         elif(info == "id"):
             dicomfields = [

@@ -1,11 +1,14 @@
-# PyWAD is open-source software and consists of a set of plugins written in python for the WAD-Software medical physics quality control software. 
+from __future__ import print_function # python 2 and 3 compatible
+
+# PyWAD is open-source software and consists of a set of modules written in python for the WAD-Software medical physics quality control software. 
 # The WAD Software can be found on https://github.com/wadqc
 # 
-# The pywad package includes plugins for the automated analysis of QC images for various imaging modalities. 
+# The pywad package includes modules for the automated analysis of QC images for various imaging modalities. 
 # PyWAD has been originaly initiated by Dennis Dickerscheid (AZN), Arnold Schilham (UMCU), Rob van Rooij (UMCU) and Tim de Wit (AMC) 
 #
 #
 # Changelog:
+#   20160802: sync with wad2.0
 #
 #
 # Description of this plugin:
@@ -13,9 +16,8 @@
 #
 
 
-__version__='20151027'
-__author__ = 'aschilha'
-import sys
+__version__ = '20160802'
+__author__ = 'aschilham'
 import os
 if not 'MPLCONFIGDIR' in os.environ:
     os.environ['MPLCONFIGDIR'] = "/tmp/.matplotlib" # if this folder already exists it must be accessible by the owner of WAD_Processor 
@@ -72,9 +74,9 @@ def _getRoomDefinition(params):
             mnames = ['mm1.8','mm0.6','mm1.4','mm4.6']
             for mname in mnames:
                 marker  = markers.find(mname)
-                linepairmarkers[mname] = [ float(marker.attrib['x']), float(marker.attrib['y']) ]
+                linepairmarkers['xy'+mname] = [ float(marker.attrib['x']), float(marker.attrib['y']) ]
         except:
-            print logTag()+' exact locations of markers on linepair pattern not supplied by config. Using empirical values; please check if these are valid here.'
+            print(logTag()+' exact locations of markers on linepair pattern not supplied by config. Using empirical values; please check if these are valid here.')
             
         # Source to Detector distance and Patient to Detector distance for wall and table (both in mm)
         tablepidmm  = float(params.find('tablepidmm').text)
@@ -90,7 +92,6 @@ def _getRoomDefinition(params):
             outvalue    = int(params.find('outvalue').text)
         except:
             pass
-        
         
         # for fcr systems there is no dicom tag to indicate wall or table, but a hack on SD or Sensitivity is possible
         try:
@@ -122,7 +123,7 @@ def _getRoomDefinition(params):
                                tablesid=tablesidmm, wallsid=wallsidmm, 
                                tablepid=tablepidmm, wallpid=wallpidmm,
                                phantom=phantom,linepairmarkers=linepairmarkers)
-    except AttributeError,e:
+    except AttributeError as e:
         raise ValueError(logTag()+" missing room definition parameter!"+str(e))
 
 

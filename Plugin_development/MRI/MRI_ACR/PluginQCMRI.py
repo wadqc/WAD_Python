@@ -65,13 +65,13 @@ from pyWADLib import findmax
 
 def mid_phantom(image_ACR, imarray):
     # Detect edges in image
-    edges = filters.canny(imarray, sigma=3, low_threshold=200, high_threshold=1000)
+    edges = filters.canny(imarray, sigma=3, low_threshold=200/2, high_threshold=1000/2)
 
     hough_radii = np.array([190/2/image_ACR.PixelSpacing[1]])
     print type(edges)
     print type(hough_radii)
+   
     hough_res = hough_circle(edges, hough_radii)
-    
     # Detect contours and middle of phantom
     centers = []
     radii = []
@@ -578,10 +578,10 @@ def MRI_ACR_main(data,results, **kwargs):
          for child in params:
             print('Performing',child.text)
             if child.text in acr_test_dict.keys():
-                try:
+#                try:
                      acr_test_dict[child.text](tmpfile,tmpfile.pixel_array,results,label=tmpfile.SeriesDescription.replace(' ','_'))
-                except:
-                     pass
+#                except:
+#                     pass
 
 
 

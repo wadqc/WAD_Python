@@ -1,7 +1,9 @@
 #!/usr/bin/python
 """
 Changelog:
-20151015: SeedAndDestroy (patientid)
+20160803: SeekAndDownload: Series Description; rename seekandDestroy seekandAction
+20160802: SeekAndDestroy: Series Description 
+20151015: SeekAndDestroy (patientid)
 20150617: Fix crash on empty value; SeekAndDestroy (SrcAET) added; restructured SeekAndDestroy for SrcAET,Modality,StationName
 20150413: SeekAndDestroy (modality)
 20150407: SeekAndDestroy (selector); fix empty stationname
@@ -26,6 +28,8 @@ TODO:
     o Herschrijf onSeekandDestroyStation net als onSeekandDestroyGewenst
     o Bouw optie om data te corrigeren (wrong or no stationname, etc)
 """
+__version__ = "20160803"
+
 import argparse
 from collections import OrderedDict
 from pyqtgraph.Qt import QtGui,QtCore
@@ -38,6 +42,7 @@ import datetime
 import time
 import functools
 from reporter import Reporter
+import zipfile
 
 def datetime2seconds(dt):
     return time.mktime(dt.timetuple())
@@ -68,12 +73,17 @@ class reportentry:
         self.srcaet = srcaet
 
 class dbTool(QtGui.QMainWindow):
-    qcversion = 20151015
+    qcversion = __version__
     verbose = False
+
+    pacsroot = '/opt/dcm4chee-2.17.1-mysql/server/default/archive/'
 
     stModeProcessor = 'processor'
     stModeReport = 'report'
     stModeDestroy = 'destroy'
+    stModeDownload = 'download'
+
+    download_folder_per_series = True # separate folder studyid_x/series for each series, else series of same study in same folder; wad2 needs separate
 
     runmode = None
     host = None
@@ -115,6 +125,8 @@ class dbTool(QtGui.QMainWindow):
     selectedSelector = None
     selectedStatus = None
     selectedGewenst = None
+    selectedSeriesDescription = None
+    selectedAET = None
 
     selectedReportPeriod = None
     selectedReportQCPeriodicity = None
@@ -150,6 +162,7 @@ class dbTool(QtGui.QMainWindow):
     stResultNoRanges = 'No limits'
     stResultError = 'Error'
     destroylist = []
+    downloadlist = {} # {study_pk}:{series_pk}:[instance_pk]
 
     def pswdFromDialog(self):
         diag = QtGui.QInputDialog()
@@ -234,18 +247,31 @@ class dbTool(QtGui.QMainWindow):
         databaseactions = [
             ("Truncate: remove all results and datasets",self.databaseTruncatePopUp),
             ("Purge: Truncate database and remove XML files",self.popupPurge),
-            ("Seek and Destroy: remove all iqc database traces of a given Src-AET (will start reimport from dcm4chee)",functools.partial(self.seekandDestroy,mode='Src-AET')),
-            ("Seek and Destroy: remove all iqc database traces of a given StationName (will start reimport from dcm4chee)",functools.partial(self.seekandDestroy,mode='StationName')),
-            ("Seek and Destroy: remove all iqc database traces of a given GewenstID (will start reimport from dcm4chee)",functools.partial(self.seekandDestroy,mode='GewenstID')),
-            ("Seek and Destroy: remove all iqc database traces of a given Selector (will start reimport from dcm4chee)",functools.partial(self.seekandDestroy,mode='Selector')),
-            ("Seek and Destroy: remove all iqc database traces of all selectors of a given Modality (will start reimport from dcm4chee)",functools.partial(self.seekandDestroy,mode='Modality')),
-            ("Seek and Destroy: remove all iqc database traces of a PatientID (will start reimport from dcm4chee)",functools.partial(self.seekandDestroy,mode='PatientID')),
+            ("Seek and Destroy: remove all iqc database traces of a given Src-AET (will start reimport from dcm4chee)",functools.partial(self.seekandAction,mode='Src-AET',runmode=self.stModeDestroy)),
+            ("Seek and Destroy: remove all iqc database traces of a given StationName (will start reimport from dcm4chee)",functools.partial(self.seekandAction,mode='StationName',runmode=self.stModeDestroy)),
+            ("Seek and Destroy: remove all iqc database traces of a given GewenstID (will start reimport from dcm4chee)",functools.partial(self.seekandAction,mode='GewenstID',runmode=self.stModeDestroy)),
+            ("Seek and Destroy: remove all iqc database traces of a given Selector (will start reimport from dcm4chee)",functools.partial(self.seekandAction,mode='Selector',runmode=self.stModeDestroy)),
+            ("Seek and Destroy: remove all iqc database traces of all selectors of a given Modality (will start reimport from dcm4chee)",functools.partial(self.seekandAction,mode='Modality',runmode=self.stModeDestroy)),
+            ("Seek and Destroy: remove all iqc database traces of a PatientID (will start reimport from dcm4chee)",functools.partial(self.seekandAction,mode='PatientID',runmode=self.stModeDestroy)),
+            ("Seek and Destroy: remove all iqc database traces of a SeriesDescription (will start reimport from dcm4chee)",functools.partial(self.seekandAction,mode='SeriesDescription',runmode=self.stModeDestroy)),
         ]
         databaseMenu = menubar.addMenu("&Database")
         for ra in databaseactions:
             dbAction = QtGui.QAction(ra[0], self)
             dbAction.triggered.connect(ra[1])
             databaseMenu.addAction(dbAction)
+
+        downloadactions = [
+            ("all with a given Src-AET",functools.partial(self.seekandAction,mode='Src-AET',runmode=self.stModeDownload)),
+            ("all with a given StationName",functools.partial(self.seekandAction,mode='StationName',runmode=self.stModeDownload)),
+            ("all with a given Modality",functools.partial(self.seekandAction,mode='Modality',runmode=self.stModeDownload)),
+            ("all with a given SeriesDescription",functools.partial(self.seekandAction,mode='SeriesDescription',runmode=self.stModeDownload)),
+        ]
+        downloadMenu = menubar.addMenu("Download")
+        for ra in downloadactions:
+            dbAction = QtGui.QAction(ra[0], self)
+            dbAction.triggered.connect(ra[1])
+            downloadMenu.addAction(dbAction)
 
         reportactions = [
             ("Periodic status report",self.periodicStatus),
@@ -424,6 +450,30 @@ class dbTool(QtGui.QMainWindow):
             return
         if self.runmode == self.stModeDestroy:
             self.onSeekAndDestroyStation()
+            return
+        if self.runmode == self.stModeDownload:
+            self.onSeekAndDownloadSeriesTable(mode='StationName')
+            return
+
+        if self.runmode == self.stModeReport:
+            self.determineReportPeriod()
+        self.onActivatedProcessorChanged()
+        if self.runmode == self.stModeReport:
+            self.onActivatedReportChanged()
+
+    def onActivatedProcessorSeriesDescription(self,text):
+        if self.verbose:
+            print "[onActivatedProcessorSeriesDescription]",text
+        desc = str(text)
+        self.selectedSeriesDescription = desc
+
+        if self.qctable is None or self.statusLabel is None:
+            return
+        if self.runmode == self.stModeDestroy:
+            self.onSeekAndDestroyStation(mode='SeriesDescription')
+            return
+        if self.runmode == self.stModeDownload:
+            self.onSeekAndDownloadSeriesTable(mode='SeriesDescription')
             return
 
         if self.runmode == self.stModeReport:
@@ -709,6 +759,85 @@ class dbTool(QtGui.QMainWindow):
         return
 
 
+    def onSeekAndDownloadSeriesTable(self,act=None,mode='StationName'):
+        self.downloadlist = {} # study:series:instances[] 
+        if self.qctext:
+            self.qctext.clear()
+
+        QtGui.QApplication.setOverrideCursor(QtGui.QCursor(QtCore.Qt.WaitCursor))
+        ###1 open db iqc
+        con,cur,dbversion = self.connectdb(host=self.host)
+
+        """ Plan: Find all instances belonging to given criterion
+        FlowChart:
+            1. Make dict {study} of dict {series} of list [instances] 
+            2. Use 'Series': for lijst 'Instances' from instance
+        """
+        actions = {
+            'StationName': {'var': self.selectedStation, 'column':'station_name'},
+            'Modality': {'var': self.selectedModality, 'column':'modality'},
+            'SeriesDescription': {'var': self.selectedSeriesDescription, 'column':'series_desc'},
+            'SrcAET': {'var': self.selectedAET, 'column':'src_aet'},
+        }
+        if mode in actions:
+            thisthing = actions[mode]['var']
+            if thisthing == self.stNone:
+                cur.execute("SELECT * FROM %s WHERE %s IS NULL" %(self.table_series, actions[mode]['column']))
+            else:
+                cur.execute("SELECT * FROM %s WHERE %s='%s'" %(self.table_series, actions[mode]['column'], thisthing))
+            rows_processen = cur.fetchall()
+        else:
+            feedback = "Unknown mode %s"%mode
+            if self.qctext:
+                self.qctext.appendPlainText(feedback)
+            else:
+                print feedback
+            return
+
+        thisthing = '%s=%s'%(mode,thisthing)    
+        feedback = "Found %d rows in %s for %s" %(len(rows_processen),self.table_series,thisthing)
+        if self.qctext:
+            self.qctext.appendPlainText(feedback)
+        else:
+            print feedback
+
+        for row in rows_processen:
+            series_pk = row['pk']
+            study_pk = row['study_fk']
+            if not study_pk in self.downloadlist:
+                self.downloadlist[study_pk] = {}
+            if not series_pk in self.downloadlist[study_pk]:
+                self.downloadlist[study_pk][series_pk] = []
+
+            # find instanceids
+            cur.execute("SELECT * FROM %s WHERE series_fk='%s'" %(self.table_instances, series_pk))
+            rows_instances = cur.fetchall()
+            for row_i in rows_instances:
+                self.downloadlist[study_pk][series_pk].append(row_i['pk'])
+
+        nstudies = len(self.downloadlist)
+        nseries = 0
+        ninstances = 0
+        for series in self.downloadlist.values():
+            nseries += len(series)
+            for instances in series.values():
+                ninstances += len(instances)
+
+        feedback = "1. Found %d studies for %s" %(nstudies, thisthing)
+        feedback += "\n1. Found %d series for %s" %(nseries, thisthing)
+        feedback += "\n1. Found %d instances for %s" %(ninstances, thisthing)
+
+        if self.qctext:
+            self.qctext.appendPlainText(feedback)
+        else:
+            print feedback
+
+        ### close db
+        self.closedb(con)
+        QtGui.QApplication.restoreOverrideCursor()
+
+        return
+
     def onSeekAndDestroyStation(self,act=None,mode='StationName'):
         self.destroylist = [(None,None)] # fill this one up at the end with XMLfiles
         if self.qctext:
@@ -762,6 +891,13 @@ class dbTool(QtGui.QMainWindow):
                 cur.execute("SELECT * FROM %s WHERE modality='%s'" %(self.table_series,self.selectedModality))
             rows_processen = cur.fetchall()
             thisthing = self.selectedModality
+        elif mode == 'SeriesDescription': #series_desc mode
+            if self.selectedSeriesDescription == self.stNone:
+                cur.execute("SELECT * FROM %s WHERE series_desc IS NULL" %self.table_series)
+            else:
+                cur.execute("SELECT * FROM %s WHERE series_desc='%s'" %(self.table_series,self.selectedSeriesDescription))
+            rows_processen = cur.fetchall()
+            thisthing = self.selectedSeriesDescription
         elif mode == 'SrcAET': #modality mode
             if self.selectedAET == self.stNone:
                 cur.execute("SELECT * FROM %s WHERE src_aet IS NULL" %self.table_series)
@@ -793,7 +929,7 @@ class dbTool(QtGui.QMainWindow):
                 daStudies.append(row['study_fk'])
         daSeries = self.uniqifyList(daSeries)
         self.destroylist.append( (self.table_series,daSeries) )
-        feedback = "1. Found %d series for %s" %(len(daSeries),self.selectedStation)
+        feedback = "1. Found %d series for %s" %(len(daSeries),thisthing)
         feedback += "\n1. Found %d/%d studies for %s" %(len(daStudies),len(rows_processen),thisthing)
 
         #selecteer voor delete alleen studies, die geen series meer hebben na delete series
@@ -1027,6 +1163,7 @@ class dbTool(QtGui.QMainWindow):
         QtGui.QApplication.restoreOverrideCursor()
 
         return
+
 
     def onActivatedProcessorChanged(self):
         self.reportentries = {}
@@ -1578,6 +1715,75 @@ class dbTool(QtGui.QMainWindow):
 
         return error
 
+    def downloadSelected(self):
+        # download all studies/series/instances selected
+        
+        if len(self.downloadlist)<1:
+            return
+
+        # ask for filename
+        diag = QtGui.QInputDialog()
+        title = "Enter filename"
+        text = "Filename for download: "
+        zipname = None
+        while zipname is None:
+            qstring, ok = diag.getText(self, QtCore.QString(title), QtCore.QString(text), mode=QtGui.QLineEdit.Normal)
+            zipname = str(qstring)
+            if ok is False: # user pressed Cancel
+                return None
+            if not zipname.strip().lower().endswith('.zip'):
+                zipname = zipname.strip()+'.zip'
+            if zipname == '.zip':     # user entered nothing
+                zipname = None
+
+        QtGui.QApplication.setOverrideCursor(QtGui.QCursor(QtCore.Qt.WaitCursor))
+        ###1 open db iqc
+        con,cur,dbversion = self.connectdb(host=self.host)
+
+        num =0
+        # create zip file
+        with zipfile.ZipFile(zipname, 'w', zipfile.ZIP_DEFLATED) as zf:
+
+            for i_st, (study_pk, series) in enumerate(self.downloadlist.items()):
+                print 'study:',study_pk
+                for i_se, (series_pk, instances) in enumerate(series.items()):
+                    print '  series:',series_pk
+                    for i_in, instance_pk in enumerate(instances):
+                        print '    instance:',instance_pk,
+                        cur.execute("SELECT * FROM %s WHERE instance_fk='%s'" %(self.table_files, instance_pk))
+                        rows = cur.fetchall()
+                        if not len(rows) == 1:
+                            raise ValueError('Instance number is not matched with 1 file')
+                        fname = rows[0]['filepath']
+                        print fname
+                        
+                        if self.download_folder_per_series:
+                            stfolder = '%s_%s'%( ('%d'%i_st).zfill(6),('%d'%i_se).zfill(6) )
+                        else:
+                            stfolder = ('%d'%i_st).zfill(6)
+                        daf = os.path.join( stfolder, ('%d'%i_se).zfill(6), ('%d'%i_in).zfill(6))
+                        inname = os.path.join(self.pacsroot, fname)
+                        zf.write(inname, daf)
+
+                    num += len(instances)
+
+        feedback = "Downloaded %d instances from iqc database." %num
+        if self.qctext:
+            self.qctext.appendPlainText(feedback)
+        else:
+            print feedback
+        self.statusLabel.setText("%s" %(feedback))
+
+        self.downloadlist = []
+        feedback = "Done! downloaded all of %s from the iqc database."%self.selectedStation
+        if self.qctext:
+            self.qctext.appendPlainText(feedback)
+        else:
+            print feedback
+        ### close db
+        self.closedb(con)
+        QtGui.QApplication.restoreOverrideCursor()
+
     def destroySelected(self):
         if len(self.destroylist)<1:
             return
@@ -1624,8 +1830,8 @@ class dbTool(QtGui.QMainWindow):
             print feedback
         QtGui.QApplication.restoreOverrideCursor()
 
-    def seekandDestroy(self,mode):
-        self.runmode = self.stModeDestroy
+    def seekandAction(self, mode, runmode=stModeDestroy):
+        self.runmode = runmode
 
         # clear GUI
         self.clearLayout(self.layout)
@@ -1638,9 +1844,15 @@ class dbTool(QtGui.QMainWindow):
         self.qctext.setReadOnly(True) # disable editing
         self.qctext.setTextInteractionFlags(self.qctext.textInteractionFlags() | QtCore.Qt.TextSelectableByKeyboard) # keep selectable
 
-        # Reset Button
-        btnDestroy = QtGui.QPushButton("Destroy all traces of selected StationName/ID/Selector/Modality/PatientID")
-        btnDestroy.clicked.connect(self.destroySelected)
+        # Action Button
+        if self.runmode == self.stModeDestroy:
+            btnAction = QtGui.QPushButton("Destroy all traces of selected StationName/ID/Selector/Modality/PatientID/SeriesDescription")
+            btnAction.clicked.connect(self.destroySelected)
+        elif self.runmode == self.stModeDownload:
+            btnAction = QtGui.QPushButton("Download all with selected StationName/ID/Selector/Modality/PatientID/SeriesDescription")
+            btnAction.clicked.connect(self.downloadSelected)
+        else:
+            raise ValueError(self.runmode)
 
         ###1 open db iqc
         con,cur,dbversion = self.connectdb(host=self.host)
@@ -1729,6 +1941,24 @@ class dbTool(QtGui.QMainWindow):
             for ho in names:
                 cmStations.addItem(ho)
             cmStations.activated[str].connect(self.onActivatedProcessorStation)
+        elif mode == 'SeriesDescription':
+            # dropdown with stationnames
+            cmSeriesDescriptions = QtGui.QComboBox(self)
+            cmSeriesDescriptions.addItem("[SeriesDescription]")
+            self.selectedSeriesDescription = cmSeriesDescriptions.itemText(0)
+            ### fill ComboBoxes
+            selected = []
+            cur.execute("select series_desc from %s" % (self.table_series))
+            rows = cur.fetchall()
+            for row in rows:
+                if row['series_desc'] is None:
+                    selected.append(self.stNone)
+                else:
+                    selected.append(row['series_desc'])
+            names = sorted(OrderedDict.fromkeys(selected).keys())
+            for ho in names:
+                cmSeriesDescriptions.addItem(ho)
+            cmSeriesDescriptions.activated[str].connect(self.onActivatedProcessorSeriesDescription)
         else:
             # dropdown with SrcAET
             cmSrcAET = QtGui.QComboBox(self)
@@ -1760,11 +1990,13 @@ class dbTool(QtGui.QMainWindow):
             self.layout.addWidget(cmModality,0,0)
         elif mode == 'StationName':
             self.layout.addWidget(cmStations,0,1)
+        elif mode == 'SeriesDescription':
+            self.layout.addWidget(cmSeriesDescriptions,0,1)
         else:
             self.layout.addWidget(cmSrcAET,0,1)
 
         self.layout.addWidget(self.qctext,1,0,1,2)
-        self.layout.addWidget(btnDestroy,2,1)
+        self.layout.addWidget(btnAction,2,1)
         self.qw.setLayout(self.layout)
 
     def processorReset(self):
