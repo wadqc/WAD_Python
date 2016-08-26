@@ -1,16 +1,25 @@
-from __future__ import print_function
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+__author__ = 'aschilha'
 """
 Warning: THIS MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED! And make sure rescaling is corrected!
 
 TODO:
 Changelog:
-    20160802: sync with wad2.0
     20150616: better orientation module
     20150609: Initial from QCXRay_Lib
 """
-__version__ = '20160802'
-__author__ = 'aschilham'
-
 import dicom
 import numpy as np
 import scipy.ndimage as scind
@@ -34,7 +43,7 @@ if scipy_version[1]<10 or (scipy_version[1] == 10 and scipy_version[1]<1):
 class DDLStruct:
     verbose = False
     knownHorizontalOrVertical = None
-
+    
     class Room :
         name = ""       # identifier of room
         outvalue = -1   # value of pixels outside x-ray field
@@ -123,7 +132,7 @@ class DDLStruct:
             self.roi = []
             self.step_rois = []
             self.wedge_confidence = -1.
-
+            
     class LoCoStruct :
         low_cnr = []
         mean_sg = []
@@ -179,10 +188,10 @@ class DDLStruct:
         if self.dcmInfile is None:
             return
         self.mustbeinverted = False
-
+        
         if self.dcmInfile.PhotometricInterpretation == "MONOCHROME2":
             self.mustbeinverted = True
-
+            
         # somehow does not give the correct behaviour for DDL
         # hence a more pragmatic approach: 
         # if the mode of the hostogram of pixelvalues of a large part of the image > middle bin, then do invert
@@ -192,15 +201,15 @@ class DDLStruct:
         midx = int(.5*(widthpx-1)+.5)
         midy = int(.5*(heightpx-1)+.5)
         sqpart = 5 # was 3 for CR/DR
-        smallimage = wadwrapper_lib.extract(self.pixeldataIn, [int(sqsize/sqpart), int(sqsize/sqpart)],[midx,midy])
+        smallimage = wadwrapper_lib.extract(self.pixeldataIn, [sqsize/sqpart,sqsize/sqpart],[midx,midy])
         hist = np.histogram(smallimage,bins=256)
         peakpos = hist[1][np.argmax(hist[0])]
         if hist[1][-1]-peakpos<peakpos-hist[1][0]:
             self.mustbeinverted = False
         else:
             self.mustbeinverted = True
-
-        print("Must be Inverted", self.mustbeinverted)
+        
+        print "Must be Inverted",self.mustbeinverted
 
     def determineDeviceID(self):
         if self.dcmInfile is None:
@@ -219,7 +228,7 @@ class DDLStruct:
             for sn in stationnames:
                 if dicvalue.find(sn[0]) != -1:
                     self.guessroom = sn[1]
-                    print("DetermineDeviceID:", self.guessroom.name, '(', dicvalue, ')')
+                    print "DetermineDeviceID:",self.guessroom.name,'(',dicvalue,')'
                     return
         # try one of the DDLrooms;
         didiserialnumber = [
@@ -231,7 +240,7 @@ class DDLStruct:
             for sn in didiserialnumber:
                 if  dicvalue.find(sn[0]) != -1:
                     self.guessroom = sn[1]
-                    print("DetermineDeviceID:", self.guessroom.name, '(', dicvalue, ')')
+                    print "DetermineDeviceID:",self.guessroom.name,'(',dicvalue,')'
                     return
 
     def __init__ (self,dcmInfile,pixeldataIn,dicomMode):
@@ -244,10 +253,10 @@ class DDLStruct:
         self.imslice = 0
         # one name for 2D 3D
         if self.dicomMode != wadwrapper_lib.stMode2D:
-            self.imslice = 0 if pixeldataIn is None else int(len(self.pixeldataInRaw)/2)
+            self.imslice = 0 if pixeldataIn is None else len(self.pixeldataInRaw)/2
             self.dcmInfile = self.dcmInfileRaw.info
             self.pixeldataIn = None if pixeldataIn is None else self.pixeldataInRaw[self.imslice]
-
+        
         self.hasmadeplots = False
         self.expertOverridepixToGridScaleCm = None
         self.mustbeinverted = False
@@ -269,12 +278,12 @@ class DDLStruct:
             self.maybeInvert()
 
 class DDLQC:
-    qcversion = __version__
+    qcversion = 20150616
 
     boxradmm   = 110  # choose 11 cm or 8 cm for clean surroundings
     def __init__(self):
         self.boxradmm = 110
-
+        
     def readDICOMtag(self,cs,key): # slice=2 is image 3
         value = wadwrapper_lib.readDICOMtag(key,cs.dcmInfileRaw,cs.imslice)
         return value
@@ -341,7 +350,7 @@ class DDLQC:
         xpx = xmid + ymm/self.boxradmm*(dirNESW[0][0]-xmid) +xmm/self.boxradmm*(dirNESW[1][0]-xmid)
         ypx = ymid +ymm/self.boxradmm*(dirNESW[0][1]-ymid)+xmm/self.boxradmm*(dirNESW[1][1]-ymid)
 
-        return int(xpx), int(ypx)
+        return xpx,ypx
 
 #----------------------------------------------------------------------
     def invertmaxval(self,cs):
@@ -367,7 +376,7 @@ class DDLQC:
         if result != lit.stUnknown:
             cs.knownHorizontalOrVertical = result
         else:
-            print('|%s|%s|%s'%(cs.guessroom.protocolHorizontal, cs.guessroom.protocolVertical, cs.dcmInfile.ProtocolName))
+            print '|%s|%s|%s'%(cs.guessroom.protocolHorizontal,cs.guessroom.protocolVertical,cs.dcmInfile.ProtocolName)
         return result
 
 #----------------------------------------------------------------------
@@ -385,15 +394,15 @@ class DDLQC:
         midy = int(.5*(heightpx-1)+.5)
         sqpart = 5 # was 3 for CR/DR
         if cs.mustbeinverted:
-            smallimage = invertmax - wadwrapper_lib.extract(cs.pixeldataIn, [int(sqsize/sqpart),int(sqsize/sqpart)],[midx,midy])
+            smallimage = invertmax - wadwrapper_lib.extract(cs.pixeldataIn, [sqsize/sqpart,sqsize/sqpart],[midx,midy])
         else:
-            smallimage = wadwrapper_lib.extract(cs.pixeldataIn, [int(sqsize/sqpart),int(sqsize/sqpart)],[midx,midy])
+            smallimage = wadwrapper_lib.extract(cs.pixeldataIn, [sqsize/sqpart,sqsize/sqpart],[midx,midy])
         smallimage = scind.gaussian_filter(smallimage, sigma=5)
         cs.lastimage = smallimage
 
         x0,y0 = np.unravel_index(smallimage.argmin(), smallimage.shape)
-        immidx = int(midx-smallimage.shape[0]/2+x0)
-        immidy = int(midy-smallimage.shape[1]/2+y0)
+        immidx = midx-smallimage.shape[0]/2+x0
+        immidy = midy-smallimage.shape[1]/2+y0
         rad=20
         cs.po_center_roi = [immidx,immidy,rad] # feedback for GUI
 
@@ -417,7 +426,7 @@ class DDLQC:
                 if dist < mindist:
                     mindist = dist
                     self.boxradmm = i
-            print("found mindist=", mindist, "rad=", self.boxradmm)
+            print "found mindist=",mindist,"rad=",self.boxradmm
         # try to find rotation of phantom
         if not cs.guessroom.skipFFT:
             error,roipts,rotangledeg = self.FieldRotationFFT(cs,roipts)
@@ -428,13 +437,13 @@ class DDLQC:
             rotangledeg = 0.
             error = False
         cs.po_angledeg = rotangledeg
-
+        
         cs.bbox_confidence = 0.
         if not error:
             last_attempt= False
             radmmtests = [80,70,90,110,60]#[80,110,90,70,60]
             for radmm in radmmtests:
-                print('radmm=%d, '%radmm, end="")
+                print 'radmm=%d, '%radmm,
                 self.boxradmm = radmm
                 rad = 2*self.boxradmm/pix2phantommm
                 roipts = [
@@ -461,7 +470,7 @@ class DDLQC:
                 if not error:
                     break
 
-        print("using rad,conf:", self.boxradmm, cs.bbox_confidence)
+        print "using rad,conf:",self.boxradmm,cs.bbox_confidence
         cs.po_roi = roipts
         return error
 
@@ -483,7 +492,7 @@ class DDLQC:
         for rp in roipts_orig:
             xp = xmid +(rp[0]-xmid)*costerm-(rp[1]-ymid)*sinterm
             yp = ymid +(rp[0]-xmid)*sinterm+(rp[1]-ymid)*costerm
-            roipts.append([int(xp), int(yp)])
+            roipts.append([xp,yp])
         return roipts
 
     def _fieldRotationFFT(self,cs,smallimage,initangle=None):
@@ -500,18 +509,18 @@ class DDLQC:
             fwid = psd2D.shape[0]
             fhei = psd2D.shape[1]
             cs.lastimage = psd2D
-
-            kwart = np.zeros((int(fwid/2), int(fhei/2)),dtype=float)
-            for x in range(0,int(fwid/2)):
+    
+            kwart = np.zeros((fwid/2,fhei/2),dtype=float)
+            for x in range(0,fwid/2):
                 for y in range (0,fhei/2):
-                    kwart[x,y] += psd2D[int(fwid/2)+x,int(fhei/2)+y]
-                    kwart[x,y] += psd2D[int(fhei/2)-y,int(fwid/2)+x]
-
+                    kwart[x,y] += psd2D[fwid/2+x,fhei/2+y]
+                    kwart[x,y] += psd2D[fhei/2-y,fwid/2+x]
+    
             kwartmax = np.max(kwart)
             # Find local maxima
             posxmax = []
             posymax = []
-            kwart2 = np.zeros((int(fwid/2),int(fhei/2)),dtype=float)
+            kwart2 = np.zeros((fwid/2,fhei/2),dtype=float)
             while len(posxmax)<20 and np.max(kwart)>0.05:
                 xx,yy = np.unravel_index(kwart.argmax(), kwart.shape)
                 if( not(xx<3 and yy<3) ):
@@ -519,13 +528,13 @@ class DDLQC:
                     posymax.append(yy)
                     kwart2[xx,yy] = kwart[xx,yy]
                 kwart[xx,yy] = 0
-
+    
             # a bit of sorting:
             index = range(len(posxmax))
             index.sort(key = posxmax.__getitem__)
             posxmax[:] = [posxmax[i] for i in index]
             posymax[:] = [posymax[i] for i in index]
-
+    
             for i,x in enumerate(posxmax):
                 if x>posxmax[-1]/10.: # skip low 10 pct
                     posxmax = posxmax[i:]
@@ -546,7 +555,7 @@ class DDLQC:
                     r2 = r1_value**2
                     r2angleoff.append( (r2,anglerad,off) )
                     r2intslope.append( (r2,intercept,slope,off) )
-                #print(r2,anglerad,off)
+                #print r2,anglerad,off
                 nonidentical = True
                 ssxm, ssxym, ssyxm, ssym = np.cov(posxmax[0:len(posxmax)-off],posymax[0:len(posxmax)-off], bias=1).flat
                 if ssxm == 0:
@@ -557,8 +566,8 @@ class DDLQC:
                     r2 = r1_value**2
                     r2angleoff.append( (r2,anglerad,-off) )
                     r2intslope.append( (r2,intercept,slope,-off) )
-                #print(r2,anglerad,-off)
-
+                #print r2,anglerad,-off
+    
             r2angleoff = sorted(r2angleoff)
             r2,anglerad,off = r2angleoff[-1]
             if cs.verbose:
@@ -568,8 +577,8 @@ class DDLQC:
                 dafit = [intercept+slope*x for x in posxmax]
                 plt.plot(posxmax,dafit,'b-')
                 plt.title("Orientation")
-                print('orientation fit: %f + %f*x; offset=%d'%(intercept, slope, dummy2))
-                print('angledeg=%f,initangledeg=%f;'%(anglerad/np.pi*180., 0 if initangle is None else initangle))
+                print 'orientation fit: %f + %f*x; offset=%d'%(intercept,slope,dummy2)
+                print 'angledeg=%f,initangledeg=%f;'%(anglerad/np.pi*180.,0 if initangle is None else initangle)
                 cs.hasmadeplots = True
         else: # 'new'
             # must yield anglerad and r2
@@ -581,20 +590,20 @@ class DDLQC:
             # Threshold the lower 25% of the peak
             max_peak = np.max(abs_data)
             abs_data[abs_data < (max_peak * 0.25)] = 0
-
+            
             # Log-scale the data
             abs_data += 1
             c = 255.0 / np.log(1 + max_peak)
             log_data = c * np.log(abs_data)
-
+            
             # fit data through points within 90% of the max peak of the scaled image
             # run for both angles (horz grid and vert grid)
             mask = np.zeros(np.shape(log_data),dtype=bool)
             wid,hei = np.shape(log_data)
-            mask[0:int(wid/2),0:int(hei/2)] = True
-            mask[int(wid/2):wid,int(hei/2):hei] = True
+            mask[0:wid/2,0:hei/2] = True
+            mask[wid/2:wid,hei/2:hei] = True
             mask = ~mask
-
+            
             # we will sort on number of points, as it is easier to fit to less points, but more points should be prefered
             r2anglenum = []
             for i in [0,1]:
@@ -617,7 +626,7 @@ class DDLQC:
                     r1_value = 0.
                     intercept = 0.
                     slope = 0.
-                print('run %d angle: %f (%f), r2=%f'%(i, anglerad, anglerad/np.pi*180., r1_value**2.))
+                print 'run %d angle: %f (%f), r2=%f'%(i,anglerad,anglerad/np.pi*180.,r1_value**2.)
                 r2anglenum.append( (r1_value**2.,anglerad,len(rows)))
                 mask = ~mask
                 if cs.verbose:
@@ -626,15 +635,15 @@ class DDLQC:
                     dafit = [intercept+slope*x for x in rows]
                     plt.plot(rows,dafit,'b-')
                     plt.title("Orientation")
-                    print('orientation fit: %f + %f*x'%(intercept, slope))
-                    print('angledeg=%f,initangledeg=%f;'%(anglerad/np.pi*180., 0 if initangle is None else initangle))
+                    print 'orientation fit: %f + %f*x'%(intercept,slope)
+                    print 'angledeg=%f,initangledeg=%f;'%(anglerad/np.pi*180.,0 if initangle is None else initangle)
                     #plt.show()
                     cs.hasmadeplots = True
-
+                
             avg_angle = (r2anglenum[0][1]+r2anglenum[1][1])/2.
             wavg_angle = (r2anglenum[0][1]*r2anglenum[0][2]+r2anglenum[1][1]*r2anglenum[1][2])/(r2anglenum[0][2]+r2anglenum[1][2])
             avg_r2 = np.sqrt( 0.5*(r2anglenum[0][0]**2. +r2anglenum[1][0]**2.) )
-            print("avgangle: %f"%(avg_angle/np.pi*180.+(0 if initangle is None else initangle)))
+            print "avgangle: %f"%(avg_angle/np.pi*180.+(0 if initangle is None else initangle))
             r2anglenum.sort(key=operator.itemgetter(2)) # 0 = maxr2, 2 = maxnum
             #r2anglenum = sorted(r2anglenum)
             r2,anglerad,num = r2anglenum[-1]
@@ -642,7 +651,7 @@ class DDLQC:
             #r2,anglerad = avg_r2,avg_angle
             #r2,anglerad = avg_r2,wavg_angle
         return anglerad,r2,off # must return angle in rad, confidence measure and offset if any
-
+        
     def FieldRotationFFT(self,cs,roipts_orig,initangle=None):
         """
         Cut out a part of the phantom that should contain only grid
@@ -686,7 +695,7 @@ class DDLQC:
 
         cs.lastimage = smallimage
         #return True, roipts_orig,-360
-
+        
         anglerad,confidence,off = self._fieldRotationFFT(cs, smallimage,initangle)
 
         if initangle != None:
@@ -699,12 +708,12 @@ class DDLQC:
             label = "first try"
             if initangle!=None:
                 label = "Error!"
-            print("FieldRotationFFT:",label,"confidence too low:", confidence, off)
-            #print(offanglerad)
+            print "FieldRotationFFT:",label,"confidence too low:",confidence,off
+            #print offanglerad
             return error,roipts_orig,rotangledeg
         error = False
 
-        print("rotangledegFFT:", rotangledeg, confidence, off)
+        print "rotangledegFFT:",rotangledeg,confidence,off
 
         roipts = self.RotateBoundingBox(roipts_orig,rotangledeg)
         return error,roipts,rotangledeg
@@ -720,7 +729,7 @@ class DDLQC:
 
         workimage = cs.pixeldataIn
         searchrad = max(1,searchrad)
-        print("%s searchrad="%what, searchrad)
+        print "%s searchrad="%what,searchrad
         widthpx = np.shape(workimage)[0] ## width/height in pixels
         heightpx = np.shape(workimage)[1]
 
@@ -771,7 +780,7 @@ class DDLQC:
             label = ""
             if blast_attempt==True:
                 label = "Error!"
-            print("AlignRoi (",what,"):", label, ", confidence too low:", confidence)
+            print "AlignRoi (",what,"):",label,", confidence too low:",confidence
 
         return error,confidence
 
@@ -861,10 +870,10 @@ class DDLQC:
             invertmax = 2**(self.invertmaxval(cs))-1
             """
             Calculate lengths and
-		     need to check only is NS^2 == len0^2+len1^2 and EW^2=len2^2+len3^2
-		     1cm dev must lead to fail. So lengths (12cm) minus 11cm. Scaling is from (sid+10)/sid.
-		     find magnification
-		     we want a cm dev to drop confidence to 0.5, so all lengths (emperically) need to be reduced by magnified 11cm
+		    // need to check only is NS^2 == len0^2+len1^2 and EW^2=len2^2+len3^2
+		    // 1cm dev must lead to fail. So lengths (12cm) minus 11cm. Scaling is from (sid+10)/sid.
+		    // find magnification
+		    // we want a cm dev to drop confidence to 0.5, so all lengths (emperically) need to be reduced by magnified 11cm
             """
             for (x0,y0) in roipts:
                 if cs.pixeldataIn[x0][y0] == 0 or cs.pixeldataIn[x0][y0] ==invertmax: # on annotation
@@ -906,7 +915,7 @@ class DDLQC:
                 confidence *= min(2*redlength,lengths[p])/max(2*redlength,lengths[p])
             confidence = confidence **2. # 6 is too strict for deformations in DDL; power 3 is max!
 
-        print(what+"Confidence = ", (confidence*100.), "%")
+        print what+"Confidence = ", (confidence*100.),"%"
         return confidence
 
 #----------------------------------------------------------------------
@@ -950,13 +959,13 @@ class DDLQC:
             else:
                 hiyarr.append(cs.pixeldataIn[x,yhipx])
                 loyarr.append(cs.pixeldataIn[x,ylopx])
-
+        
         meanval = np.mean(hiyarr)
         for p,v in zip(range(0,xmidpx),hiyarr):
             if (outvalue>meanval and v<outvalue) or (outvalue<meanval and v>outvalue):
                 x1px = p
                 break
-
+        
         meanval = np.mean(loyarr)
         for p,v in zip(range(0,xmidpx),loyarr):
             if (outvalue>meanval and v<outvalue) or (outvalue<meanval and v>outvalue):
@@ -980,7 +989,7 @@ class DDLQC:
             if (outvalue>meanval and v<outvalue) or (outvalue<meanval and v>outvalue):
                 x1px = p
                 break
-
+        
         meanval = np.mean(loyarr)
         for p,v in zip(reversed(range(0,xmidpx)),reversed(loyarr)):
             if (outvalue>meanval and v<outvalue) or (outvalue<meanval and v>outvalue):
@@ -1058,7 +1067,7 @@ class DDLQC:
         # 3. calculate line profile
         posval = []
         intens = []
-        mincount = min(9, int(hei/3))
+        mincount = min(9,hei/3)
 
         mask = ~mask # masked = true = do NOT include
         mx = ma.masked_array(smallimage,mask)
@@ -1076,8 +1085,8 @@ class DDLQC:
                 posval.append(self.pix2phantomm(cs,ix))
 
         if len(posval)==0:
-            print(counts)
-            print("ERROR: Uniformity %s: no valid pixels found."%what)
+            print counts
+            print "ERROR: Uniformity %s: no valid pixels found."%what
             plt.figure()
             plt.imshow(smallimage)
             plt.title('Uniformity image')
@@ -1096,10 +1105,10 @@ class DDLQC:
 
         cufraction = 1.*(wid*hei-BKcount)/(wid*hei)
         if cufraction<.1 or cufraction>.9:
-            print("ERROR: Uniformity: invalid Cu fraction ", cufraction)
+            print "ERROR: Uniformity: invalid Cu fraction ",cufraction
             return error
 
-        print(cufraction)
+        print cufraction
         if  cs.verbose or bshowplot==True:
             plt.figure()
             plt.plot(posval,intens)
@@ -1148,10 +1157,10 @@ class DDLQC:
                 count += 1
         inteavgROI /= count
         ROIuniformity = np.max([np.abs(inteavgR-inteavgROI),np.abs(inteavgROI-inteavgL)])/inteavgROI
-        print("LineUniformity%=", 100.*overlengthuniformity)
-        print("LRuniformity%=", 100.*LRuniformity)
-        print("ROIuniformity%=", 100.*ROIuniformity)
-        print("AAPMROIlimit%=", 10)
+        print "LineUniformity%=",100.*overlengthuniformity
+        print "LRuniformity%=",100.*LRuniformity
+        print "ROIuniformity%=",100.*ROIuniformity
+        print "AAPMROIlimit%=",10
 
         cs.unif.LineUniformity = overlengthuniformity
         cs.unif.ROIuniformity = ROIuniformity
@@ -1162,8 +1171,8 @@ class DDLQC:
         cs.unif.intens = copy.deepcopy(intens)
 
         """
-		 Report
-		 note AAPM_39 states:
+		// Report
+		/* note AAPM_39 states:
 		   For film output (hard-copy), optical densities are measured in the center of each quadrant
 		   of the film and in the center position to determine absolute density and spatial uniformity.
 		   Central film density is acceptable if within 0.10 OD of the programmed OD value (usually
@@ -1172,7 +1181,7 @@ class DDLQC:
 		   of each ROI should be within 10% of the global average. Standard deviation should also be sim-
 		   ilar in each of the five ROIs.
 		   SD/Av < 5%
-
+		*/
         """
         error = False
         return error
@@ -1207,7 +1216,7 @@ class DDLQC:
         ylo = int(.5+ max(ypxlr,ypxll))
         yhi = int(.5+ min(ypxur,ypxul))
         if ylo>yhi:
-            print("[CuWedge]: Error, phantom angle too large, cannot sample wedge")
+            print "[CuWedge]: Error, phantom angle too large, cannot sample wedge"
             return error
 
         # 1. Make box around wedge (-5.5; -4) to (+5.5; -5.5)
@@ -1250,7 +1259,7 @@ class DDLQC:
         ymin = roipts_orig[2][1]
         ymax = roipts_orig[1][1]
         if ymin>ymax:
-            print("[AnalyseWedge]: Error, phantom angle too large, cannot sample wedge")
+            print "[AnalyseWedge]: Error, phantom angle too large, cannot sample wedge"
             return error
 
         if cs.mustbeinverted:
@@ -1293,7 +1302,7 @@ class DDLQC:
 
         posedges = sorted([x for x,y in xy_max])
         if len(posedges) < n_edges:
-            print("[AnalyseWedge]: Error, cannot find 6 edges: %d"%len(posedges))
+            print "[AnalyseWedge]: Error, cannot find 6 edges: %d"%len(posedges)
             return error
 
         cs.cuwedge.wedge_confidence = 1.
@@ -1304,9 +1313,9 @@ class DDLQC:
             cs.cuwedge.wedge_confidence *= min(avg_dist,dist)/max(avg_dist,dist)
 
         if cs.verbose:
-            print("Edge 0 at ", posedges[0])
+            print "Edge 0 at ",posedges[0]
             for ix in range(1,len(posedges)):
-                print("Edge ", ix, " at ", posedges[ix], " sep= ", posedges[ix]-posedges[ix-1])
+                print "Edge ",ix," at ",posedges[ix]," sep= ",posedges[ix]-posedges[ix-1]
         # 2.3 Calculate statistics for each step
         cs.cuwedge.roi_mean = []
         cs.cuwedge.roi_sdev = []
@@ -1314,7 +1323,7 @@ class DDLQC:
         ylo = 0   # flatpix
         yhi = hei # - flatpix
         if ylo>yhi:
-            print("[AnalyseWedge]: Error, phantom angle too large, cannot sample wedge")
+            print "[AnalyseWedge]: Error, phantom angle too large, cannot sample wedge"
             return error
 
         cs.cuwedge.step_rois = []
@@ -1352,9 +1361,9 @@ class DDLQC:
         cs.cuwedge.dynamicRange = max(cs.cuwedge.roi_mean[n_edges]/cs.cuwedge.roi_mean[0],cs.cuwedge.roi_mean[0]/cs.cuwedge.roi_mean[n_edges])
 
         if cs.verbose:
-            print("mmCu", "SNR", "CNR")
+            print "mmCu","SNR","CNR"
             for m,s,c in zip(cs.cuwedge.roi_mmcu,cs.cuwedge.roi_snr,cs.cuwedge.roi_cnr):
-                print(m, s, c)
+                print m,s,c
 
             #cu_cs.guesskVp = guesskVp
         """
@@ -1436,8 +1445,8 @@ class DDLQC:
             sdev_bk.append(roi_sdev_bk)
             low_cnr.append((roi_mean_s-roi_mean_bk)/np.sqrt(0.5*(roi_sdev_s**2+roi_sdev_bk**2)))
             if cs.verbose:
-                print("mean fg/bk=", roi_mean_s, "/", roi_mean_bk)
-                print("sdev fg/bk=", roi_sdev_s, "/", roi_sdev_bk)
+                print "mean fg/bk=",roi_mean_s,"/",roi_mean_bk
+                print "sdev fg/bk=",roi_sdev_s,"/",roi_sdev_bk
 
         cs.loco.low_cnr = copy.deepcopy(low_cnr)
         cs.loco.mean_sg = copy.deepcopy(mean_sg)
@@ -1699,7 +1708,7 @@ class DDLQC:
 
             avg = np.mean(smallimage)
             std = np.std(smallimage)
-            print(ix, avg, std, avg/std)
+            print ix,avg,std,avg/std
             avgs.append(avg)
             stds.append(std)
 
@@ -1726,7 +1735,7 @@ class DDLQC:
                 ang = 2
             else:
                 ang = 3
-#            print("[checkPhantomRotation] ERROR! Cannot find orientation",avgs)
+#            print "[checkPhantomRotation] ERROR! Cannot find orientation",avgs
 #            return True,"NoOrientation "
 
         if ang>0:

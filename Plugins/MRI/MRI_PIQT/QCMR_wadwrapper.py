@@ -1,19 +1,28 @@
-from __future__ import print_function
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-# PyWAD is open-source software and consists of a set of modules written in python for the WAD-Software medical physics quality control software. 
+# PyWAD is open-source software and consists of a set of plugins written in python for the WAD-Software medical physics quality control software. 
 # The WAD Software can be found on https://github.com/wadqc
 # 
-# The pywad package includes modules for the automated analysis of QC images for various imaging modalities. 
+# The pywad package includes plugins for the automated analysis of QC images for various imaging modalities. 
 # PyWAD has been originaly initiated by Dennis Dickerscheid (AZN), Arnold Schilham (UMCU), Rob van Rooij (UMCU) and Tim de Wit (AMC) 
 #
 #
-# Changelog:
-#   20160802: sync with wad2.0
-#
-#
 
-__version__ = '20160802'
+__version__ = '01062015'
 __author__ = 'aschilham'
+
+
 
 import sys
 import os
@@ -30,6 +39,8 @@ try:
     import wadwrapper_lib
 except ImportError:
     from pyWADLib import wadwrapper_lib
+
+import scipy.misc
 
 def logTag():
     return "[QCMR_wadwrapper] "
@@ -90,7 +101,7 @@ def mrqc_series(data,results,**kwargs):
 
     reportkeyvals = []
     for piqt in piqttests:
-        print("[mrqc]",2,piqt)
+        print "[mrqc]",2,piqt
         if "Uniformity" in piqt[0]:
             test = lit.stTestUniformity
             doTest = "SNR_ArtifactLevel_FloodFieldUniformity"
@@ -107,14 +118,23 @@ def mrqc_series(data,results,**kwargs):
         cs = QCMR_lib.PiQT_Struct(dcmInfile,pixeldataIn,dicomMode,piqt)
         cs.verbose = None
 
-        if "FloodFieldUniformity" in doTest: # FFU also contains SNR and ArtifactLevel
+        if "SNR" in doTest:
+            error = qclib.SNR(cs)
+            if not error:
+                idname = "_"+setname+make_idname(qclib,cs,cs.snr_slice)
+                reportkeyvals.append( ("S/N (B)"+idname,cs.snr_SNB) )
+
+        if "ArtifactLevel" in doTest:
+            error = qclib.ArtifactLevel(cs)
+            if not error:
+                idname = "_"+setname+make_idname(qclib,cs,cs.snr_slice)
+                reportkeyvals.append( ("Art_Level"+idname,cs.artefact_ArtLevel) )
+
+        if "FloodFieldUniformity" in doTest:
             error = qclib.FloodFieldUniformity(cs)
             if not error:
                 import numpy as np
                 idname = "_"+setname+make_idname(qclib,cs,cs.snr_slice)
-                reportkeyvals.append( ("S/N (B)"+idname,cs.snr_SNB) )
-                reportkeyvals.append( ("Art_Level"+idname,cs.artefact_ArtLevel) )
-
                 reportkeyvals.append( ("T/C-20"+idname,cs.ffu_TCm20) )
                 reportkeyvals.append( ("C-20/C-10"+idname,cs.ffu_Cm20Cm10) )
                 reportkeyvals.append( ("C-10/C+10"+idname,cs.ffu_Cm10Cp10) )
@@ -123,21 +143,9 @@ def mrqc_series(data,results,**kwargs):
                 reportkeyvals.append( ("Rad 10%"+idname,cs.ffu_rad10) )
                 reportkeyvals.append( ("Int_Unif"+idname,cs.ffu_lin_unif) )
                 ## Build thumbnail
-                filename = 'FFU'+idname+'.jpg' # Use jpg if a thumbnail is desired
-                qclib.saveResultImage(cs,'FFU',filename)
+                filename = 'test'+idname+'.jpg' # Use jpg if a thumbnail is desired
+                scipy.misc.imsave(filename,cs.lastimage.transpose()) # MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!
                 results.addObject('FFU'+'_'+idname,filename)
-                
-        elif "ArtifactLevel" in doTest: # Artifact also contains SNR
-            error = qclib.ArtifactLevel(cs)
-            if not error:
-                idname = "_"+setname+make_idname(qclib,cs,cs.snr_slice)
-                reportkeyvals.append( ("S/N (B)"+idname,cs.snr_SNB) )
-                reportkeyvals.append( ("Art_Level"+idname,cs.artefact_ArtLevel) )
-        elif "SNR" in doTest:
-            error = qclib.SNR(cs)
-            if not error:
-                idname = "_"+setname+make_idname(qclib,cs,cs.snr_slice)
-                reportkeyvals.append( ("S/N (B)"+idname,cs.snr_SNB) )
 
         if "SpatialLinearity" in doTest:
             error = qclib.SpatialLinearity(cs)
@@ -163,10 +171,6 @@ def mrqc_series(data,results,**kwargs):
                 reportkeyvals.append( ("ver_diff_dev"+idname,cs.lin_intdiffsdev[1]) )
                 reportkeyvals.append( ("ver_max"+idname,cs.lin_intdiffmax[1]) )
                 reportkeyvals.append( ("ver_min"+idname,cs.lin_intdiffmin[1]) )
-                ## Build thumbnail
-                filename = 'LIN'+idname+'.jpg' # Use jpg if a thumbnail is desired
-                qclib.saveResultImage(cs,'LIN',filename)
-                results.addObject('LIN'+'_'+idname,filename)
 
         if "SliceProfile" in doTest:
             error = qclib.SliceProfile(cs)
@@ -179,10 +183,6 @@ def mrqc_series(data,results,**kwargs):
                 reportkeyvals.append( ("Angle"+idname,cs.sp_phantomzangledeg) )
                 reportkeyvals.append( ("phant_rot"+idname,cs.sp_phantomrotdeg) )
                 reportkeyvals.append( ("Phase_Shift"+idname,cs.sp_phaseshift) )
-                ## Build thumbnail
-                filename = 'SLP'+idname+'.jpg' # Use jpg if a thumbnail is desired
-                qclib.saveResultImage(cs,'SLP',filename)
-                results.addObject('SLP'+'_'+idname,filename)
 
         if "MTF" in doTest:
             error = qclib.MTF(cs)
@@ -190,10 +190,6 @@ def mrqc_series(data,results,**kwargs):
                 idname = "_"+setname+make_idname(qclib,cs,cs.mtf_slice)
                 reportkeyvals.append( ("Hor_pxl_size"+idname,cs.mtf_pixelsize[0]) )
                 reportkeyvals.append( ("Ver_pxl_size"+idname,cs.mtf_pixelsize[1]) )
-                ## Build thumbnail
-                filename = 'MTF'+idname+'.jpg' # Use jpg if a thumbnail is desired
-                qclib.saveResultImage(cs,'MTF',filename)
-                results.addObject('MTF'+'_'+idname,filename)
 
         if error:
             raise ValueError("{} ERROR! processing error in {} {}".format(logTag(),piqt,doTest))
@@ -255,7 +251,7 @@ def mrheader_series(data,results,**kwargs):
         ## 1b. Run tests
         sliceno = qclib.ImageSliceNumber(cs,piqt)
         if sliceno <0:
-            print(logTag()+"[mrheader]: ", piqt, "not available for given image")
+            print logTag()+"[mrheader]: ", piqt, "not available for given image"
             sys.exit()
 
         dicominfo = qclib.DICOMInfo(cs,info,sliceno)

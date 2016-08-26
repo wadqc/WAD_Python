@@ -1,24 +1,33 @@
-from __future__ import print_function
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-# PyWAD is open-source software and consists of a set of modules written in python for the WAD-Software medical physics quality control software. 
+# PyWAD is open-source software and consists of a set of plugins written in python for the WAD-Software medical physics quality control software. 
 # The WAD Software can be found on https://github.com/wadqc
 # 
-# The pywad package includes modules for the automated analysis of QC images for various imaging modalities. 
+# The pywad package includes plugins for the automated analysis of QC images for various imaging modalities. 
 # PyWAD has been originaly initiated by Dennis Dickerscheid (AZN), Arnold Schilham (UMCU), Rob van Rooij (UMCU) and Tim de Wit (AMC) 
 #
 #
-# Changelog:
-#   20160802: sync with pywad1.0
 
-__version__ = '20160802'
+__version__ = '01062015'
 __author__ = 'aschilham'
 
 
 
 
-import os
 import sys
 import numpy as np
+import os
 if not 'MPLCONFIGDIR' in os.environ:
     # using a fixed folder is preferable to a tempdir, because tempdirs are not automatically removed
     os.environ['MPLCONFIGDIR'] = "/tmp/.matplotlib" # if this folder already exists it must be accessible by the owner of WAD_Processor 
@@ -54,8 +63,13 @@ def setup_series(inputfile,params,headers_only):
         except AttributeError:
             raise ValueError(logTag()+" missing phantomversion parameter!")
     
+        try:
+            modeCDCOM = (params.find("modeCDCOM").text == 'True')
+        except AttributeError:
+            raise ValueError(logTag()+" missing cdcommode parameter!")
     else:
         phantomversion = '3.2' # dummy for headers
+        modeCDCOM = False
     """
     # 2. Check data format
     dcmInfile,pixeldataIn,dicomMode = wadwrapper_lib.prepareInput(inputfile,headers_only=headers_only,logTag=logTag())

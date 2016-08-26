@@ -1,4 +1,16 @@
-from __future__ import print_function
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 
 """
 CDMam_lib: classes and routines for calculation of CDMAM scores
@@ -12,13 +24,9 @@ Some stuff that can be optimized:
  * speed up removal of grid (maybe with grid detection on lower scale?)
 
 Changelog:
-    20160802: sync with wad2.0
     20150826: reshuffling in gridremove to demand less memory (windows cannot cope)
     20150213: first working version
 """
-__version__ = '20160802'
-__author__ = 'aschilham'
-
 import subprocess
 import os
 import copy
@@ -150,7 +158,6 @@ class CDMamStruct:
         self.pixeldataIn = pixeldataIn
         self.hasmadeplots = False
 
-        self.imageFileName = None
         self.phantom = CDMamPhantom(phantomversion)
         self.gridimage = None
         self.startingroi = [] # starting box in phantom to find grid coords
@@ -174,7 +181,7 @@ class CDMam():
     """
     Class for calculation of CDMAM score
     """
-    qcversion = __version__
+    qcversion = 20150826
 
     def __init__(self,guimode=False):
         self.guimode = guimode
@@ -280,11 +287,11 @@ class CDMam():
                 for y in range(hei):
                     for x in range(wid):
                         if (gtmatrix[y][x]==0):
-                            print("", end=" ")
+                            print "",
                         else:
-                            print("%0.2f" % smoothhit[y][x], end=" ")
-                    print("")
-                print("")
+                            print "%0.2f" % smoothhit[y][x],
+                    print ""
+                print ""
   
             if(dofit == False):
                 """
@@ -342,11 +349,11 @@ class CDMam():
   
   
                 if cs.verbose:
-                    print("thicks")
-                    print(thicksarr)
-                    print("props")
-                    print(propsarr)
-                    print("done")
+                    print "thicks"
+                    print thicksarr
+                    print "props"
+                    print propsarr
+                    print "done"
   
                 # 4. try to sigmoid fit each curve
                 for y in range(len(propsarr)):
@@ -360,13 +367,13 @@ class CDMam():
                             try:
                                 popt, pcov = curve_fit(self._sigmoid, thicks, props, guess,diag=(1./np.mean(thicks), 1./np.mean(props)))
                                 if type(pcov)==float and pcov == np.inf:
-                                    print("ERROR sigmacurve fitting (pcov = inf)")
+                                    print "ERROR sigmacurve fitting (pcov = inf)"
                                 else:
                                     fitsarr.append(popt)
                                     fitidxs.append(y)
                                     limval = self._invsigmoid(thresh,*popt)
                             except:
-                                print("ERROR sigmacurve fitting (no convergence, try larger guess)")
+                                print "ERROR sigmacurve fitting (no convergence, try larger guess)"
   
                         elif(len(thicks)==1):
                             if(props[0]>=thresh): # only point already more than enough
@@ -390,10 +397,10 @@ class CDMam():
             cs.limit_um.append(t)
             
         if cs.verbose:
-            print("diam_mm","limit_um")
+            print "diam_mm","limit_um"
             for d,t in zip(diams,limit):
-                print(d,t)
-            print("iqf",cs.iqf)
+                print d,t
+            print "iqf",cs.iqf
   
         plt.figure()
         plt.plot(diams,limit,label='automatic')
@@ -515,7 +522,7 @@ class CDMam():
         if -1>0: # remove everything outside grid
             wid = dest.shape[0]
             hei = dest.shape[1]
-            mv = np.mean(dest[int(wid/4):int(3*wid/4),int(hei/4):int(3*hei/4)])
+            mv = np.mean(dest[wid/4:3*wid/4,hei/4:3*hei/4])
             dest = label_im*(dest-mv)+mv
 
         if removeGrid:
@@ -545,11 +552,11 @@ class CDMam():
                 roipts.append( [int((line[2]+line[3])/2.),y] )
                 break
         if len(roipts) == 0:
-            print("Error! Could not find starting cell. Either grid not properly detected, or phantom rotation too large!")
+            print "Error! Could not find starting cell. Either grid not properly detected, or phantom rotation too large!"
             return roipts
 
         # half the length of the hypothenusa of a 90 deg triangle of sides 1 cm
-        boxstep = int(10./pixel_spacing*np.sqrt(2.)/2)
+        boxstep = int(10./pixel_spacing*np.sqrt(2.))/2
         x0 = roipts[0][0]
         y0 = roipts[0][1]
         roipts.append([x0+boxstep,y0+boxstep])
@@ -578,25 +585,25 @@ class CDMam():
 
         #1. remove the grid for will be used to define regions of interest for observer
         removeGridFromPixelData = True # for displaying only on gridless phantom
-        print("1/4: removing grid....", end=" ")
+        print "1/4: removing grid....",
         self.removeGrid(cs,removeGridFromPixelData)
-        print("done")
-
-        print("2/4: find starting grid cell....", end=" ")
+        print "done"
+        
+        print "2/4: find starting grid cell....",
         #2. First find some coordinate system om phantom
         pixel_spacing  = self.pixDim(cs) # spacing in mm
         cs.startingroi = self.findStartingCell(cs)
-        print("done")
+        print "done"
             
         #3. Locate all gridcells
-        print("3/4: locating all grid cells....", end=" ")
+        print "3/4: locating all grid cells....",
         self.locateGridCells(cs)
-        print("done")
+        print "done"
 
         #4. Test observer on each cell
-        print("4/4: modelobserver for each grid cell....", end=" ")
+        print "4/4: modelobserver for each grid cell....",
         score = self.observerScore(cs)
-        print("done")
+        print "done"
 
         return score
     
@@ -618,7 +625,7 @@ class CDMam():
 
         # run cdcom on new file
         cmd = [os.path.join(os.path.dirname(__file__),"cdcom.exe"),cs.imageFileName]
-        print(cmd)
+        print cmd
         with open(os.devnull, "w") as fnull:
             subprocess.check_call(cmd, stdout = fnull, stderr = fnull)
 
@@ -646,11 +653,11 @@ class CDMam():
             for di in range(0,len(cs.phantom.diameter_mm)):
                 for th in range(0,len(cs.phantom.thickness_um)):
                     if (cs.phantom.groundtruth[di][th]==0):
-                        print("    ", end=" ")
+                        print "    ",
                     else:
-                        print("%0.2f" % score[di][th], end=" ")
-                print("")
-            print("")
+                        print "%0.2f" % score[di][th],
+                print ""
+            print ""
 
 
         return score
@@ -664,7 +671,7 @@ class CDMam():
           2. consistency fix of scoring sheet
         """
         if cs.verbose:
-            print('diam_mm','scale_mm2pix', 'diam_mm*scale_mm2pix', 'sigma_px','rad_px')
+            print   'diam_mm','scale_mm2pix', 'diam_mm*scale_mm2pix', 'sigma_px','rad_px'
 
         #1. is max response in cell in the correct corner?
         GT = cs.phantom.groundtruth
@@ -678,11 +685,11 @@ class CDMam():
             for di in range(0,len(cs.phantom.diameter_mm)):
                 for th in range(0,len(cs.phantom.thickness_um)):
                     if (GT[di][th]==0):
-                        print(" ", end=" ")
+                        print " ",
                     else:
-                        print(score[di][th], end=" ")
-                print("")
-            print("")
+                        print score[di][th],
+                print ""
+            print ""
 
         # 2. consistency fix of scoring sheet
         score = self.nearestNeighborCorrection(cs,score)
@@ -697,7 +704,6 @@ class CDMam():
         Returns a matrix or roicornerpoints in cs.gridrois
         """
         roipts_orig = cs.startingroi
-
         xstep_dx = (roipts_orig[1][0]-roipts_orig[0][0])
         xstep_dy = (roipts_orig[1][1]-roipts_orig[0][1])
         ystep_dx = -xstep_dy
@@ -706,7 +712,7 @@ class CDMam():
         x0 = roipts_orig[0][0]  - 1*xstep_dx-0*ystep_dx
         y0 = roipts_orig[0][1]  - 1*xstep_dx-0*ystep_dy
 
-        #print(x0,y0,xstep_dx,xstep_dy,ystep_dx,ystep_dy)
+        #print x0,y0,xstep_dx,xstep_dy,ystep_dx,ystep_dy
         """
         GT = 4 1
              3 2
@@ -793,7 +799,7 @@ class CDMam():
                 y1 += miny
                 rp[0] = x1
                 rp[1] = y1
-            searchrad = int(max(1,searchrad/2))
+            searchrad = max(1,searchrad/2)
         return roipts
 
     def nearestNeighborCorrection(self,cs,scorematrix):
@@ -848,11 +854,11 @@ class CDMam():
             for y in range(hei):
                 for x in range(wid):
                     if (gtmatrix[y][x]==0):
-                        print("    ", end=" ")
+                        print "    ",
                     else:
-                        print("%0.2f" % hitmatrix[y][x], end=" ")
-                print("")
-            print("")
+                        print "%0.2f" % hitmatrix[y][x],
+                print ""
+            print ""
         return hitmatrix
 
 
@@ -921,7 +927,7 @@ class CDMam():
             [bbox[3][0]-minx+xstep_dx-ystep_dx,bbox[3][1]-miny+xstep_dy-ystep_dy], # GT =4
         ]
         if cs.verbose:
-            print(diam_mm,scale_mm2pix, diam_mm*scale_mm2pix, sigma_px,rad_px)
+            print   diam_mm,scale_mm2pix, diam_mm*scale_mm2pix, sigma_px,rad_px
         r0 = 0.
         if(mode == 0):
             r0= 1.e6
@@ -954,9 +960,9 @@ class CDMam():
             guess = score[rindex]
 
         if(1<0 and guess != gt and cs.plotcount<15 and self.guimode):
-            print('guess',guess,gt,end=" ")
+            print 'guess',guess,gt,
             for s,r in zip(score,response):
-                print(s,':',r,end=" ")
+                print s,':',r,
             print
             plt.figure()
             if(mode == 0):

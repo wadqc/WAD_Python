@@ -1,3 +1,16 @@
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 # -*- coding: utf-8 -*-
 '''
 This plugin is an implementation of the ACR quality control protocol for MRI as specified in the following documents published by the ACR:
@@ -65,13 +78,13 @@ from pyWADLib import findmax
 
 def mid_phantom(image_ACR, imarray):
     # Detect edges in image
-    edges = filters.canny(imarray, sigma=3, low_threshold=200/2, high_threshold=1000/2)
+    edges = filters.canny(imarray, sigma=3, low_threshold=200, high_threshold=1000)
 
     hough_radii = np.array([190/2/image_ACR.PixelSpacing[1]])
     print type(edges)
     print type(hough_radii)
-   
     hough_res = hough_circle(edges, hough_radii)
+    
     # Detect contours and middle of phantom
     centers = []
     radii = []
@@ -578,10 +591,10 @@ def MRI_ACR_main(data,results, **kwargs):
          for child in params:
             print('Performing',child.text)
             if child.text in acr_test_dict.keys():
-#                try:
+                try:
                      acr_test_dict[child.text](tmpfile,tmpfile.pixel_array,results,label=tmpfile.SeriesDescription.replace(' ','_'))
-#                except:
-#                     pass
+                except:
+                     pass
 
 
 

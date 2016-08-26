@@ -1,14 +1,22 @@
-from __future__ import print_function
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+__author__ = 'aschilha'
 """
 Warning: THIS MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED! And make sure rescaling is corrected!
 
 TODO:
 Changelog:
-    20160802: sync with wad2.0
-    20151112: Bugfix in calculation of lowcontrast
-    20151029: Changed output levels and descriptions etc.
-    20151027: Added sign to XRayDev
     20150817: Removed hardcoded roomdefinitions. All in config files now!
     20150618: Tried DDL version of fftorientation, but that performs worse here. Left interface intact
     20150610: Bugfix: uniformity was calculated over copper only, instead of non-copper!; moved some math to wadwrapper_lib
@@ -28,9 +36,6 @@ Changelog:
               fix for po_box on annotation; fix for invert LowContrast
     20140623: First attempt to rewrite into WAD module; speedup and bugfix of Uniformity()
 """
-__version__ = '20160802'
-__author__ = 'aschilham'
-
 import dicom
 import numpy as np
 import scipy.ndimage as scind
@@ -83,10 +88,10 @@ class Room :
         if(phantom == lit.stWellhofer):
             self.skipFFT = True
         if len(linepairmarkers)>0:
-            self.xy06mm = linepairmarkers['xymm0.6']
-            self.xy14mm = linepairmarkers['xymm1.4']
-            self.xy18mm = linepairmarkers['xymm1.8']
-            self.xy46mm = linepairmarkers['xymm4.6']
+            self.xy06mm = linepairmarkers['mm0.6']
+            self.xy14mm = linepairmarkers['mm1.4']
+            self.xy18mm = linepairmarkers['mm1.8']
+            self.xy46mm = linepairmarkers['mm4.6']
         elif phantom == lit.stWellhofer:
             # wellhofer WKZ
             self.xy18mm = [53.7, 27.1] # x,y position in mm of decimal dot in 1.8 lp/mm 
@@ -247,7 +252,7 @@ class XRayStruct:
         self.mustbeinverted = False
         if self.dcmInfile.PhotometricInterpretation == "MONOCHROME2":
             self.mustbeinverted = True
-        print("Must be Inverted",self.mustbeinverted)
+        print "Must be Inverted",self.mustbeinverted
 
 
     def __init__ (self,dcmInfile,pixeldataIn,room):
@@ -277,7 +282,7 @@ class XRayStruct:
         self.maybeInvert()
 
 class XRayQC:
-    qcversion = __version__
+    qcversion = 20150817
 
     boxradmm   = 110  # choose 11 cm or 8 cm for clean surroundings
     adjustmtfangledeg = 0. # if consistency check fails, add a little angle
@@ -439,6 +444,8 @@ class XRayQC:
             result =  lit.stTable
         elif cs.forceRoom.sdthresh>0.:
             result =  self.TableOrWallFromSTDEV(cs)
+            print result
+
         elif len(cs.forceRoom.sens_threshold) > 0:
             # check on sensitivity
             sens = cs.dcmInfile.Sensitivity
@@ -462,11 +469,11 @@ class XRayQC:
                 result = lit.stWall
             else:
                 result = lit.stTable
-#        print("[TableOrWall] %s %d %d (%d): %s" %(cs.forceRoom.name,int(cs.dcmInfile.SeriesDate),sens,thresh,result))
+#        print "[TableOrWall] %s %d %d (%d): %s" %(cs.forceRoom.name,int(cs.dcmInfile.SeriesDate),sens,thresh,result)
         if result != lit.stUnknown:
             cs.knownTableOrWall = result
         else:
-            print("ERROR! Cannot determine if Wall or Table is used!")
+            print "ERROR! Cannot determine if Wall or Table is used!"
         return result
 
 #----------------------------------------------------------------------
@@ -482,11 +489,10 @@ class XRayQC:
         sqsize = min(widthpx,heightpx)
         midx = int(.5*(widthpx-1)+.5)
         midy = int(.5*(heightpx-1)+.5)
-        sqsize3 = int(sqsize/3)
         if cs.mustbeinverted:
-            smallimage = invertmax - wadwrapper_lib.extract(cs.pixeldataIn, [sqsize3,sqsize3],[midx,midy])
+            smallimage = invertmax - wadwrapper_lib.extract(cs.pixeldataIn, [sqsize/3,sqsize/3],[midx,midy])
         else:
-            smallimage = wadwrapper_lib.extract(cs.pixeldataIn, [sqsize3,sqsize3],[midx,midy])
+            smallimage = wadwrapper_lib.extract(cs.pixeldataIn, [sqsize/3,sqsize/3],[midx,midy])
 
         smallimage = scind.gaussian_filter(smallimage, sigma=5)
         cs.lastimage = smallimage
@@ -519,7 +525,7 @@ class XRayQC:
                 if dist < mindist:
                     mindist = dist
                     self.boxradmm = i
-            print("found mindist=",mindist,"rad=",self.boxradmm)
+            print "found mindist=",mindist,"rad=",self.boxradmm
         # try to find rotation of phantom
         if not cs.forceRoom.skipFFT:
             error,roipts,rotangledeg = self.FieldRotationFFT(cs,roipts)
@@ -563,7 +569,7 @@ class XRayQC:
                 if not error:
                     break
 
-        print("using rad,conf:",self.boxradmm,cs.bbox_confidence)
+        print "using rad,conf:",self.boxradmm,cs.bbox_confidence
         cs.po_roi = roipts
         return error
 
@@ -591,6 +597,7 @@ class XRayQC:
     def _fieldRotationFFT(self,cs,smallimage,initangle=None):
         # also tried runmode==2, which is the DDL version (with slight mods), but this old one works far better
         runmode = 1
+
         # Start FFT
         F1 = fftpack.fft2(smallimage-np.mean(smallimage))
         # Now shift the quadrants around so that low spatial frequencies are in
@@ -603,19 +610,17 @@ class XRayQC:
             fhei = psd2D.shape[1]
             cs.lastimage = psd2D
     
-            fwid2 = int(fwid/2)
-            fhei2 = int(fhei/2)
-            kwart = np.zeros((fwid2,fhei2),dtype=float)
-            for x in range(0,fwid2):
-                for y in range (0,fhei2):
-                    kwart[x,y] += psd2D[fwid2+x,fhei2+y]
-                    kwart[x,y] += psd2D[fhei2-y,fwid2+x]
+            kwart = np.zeros((fwid/2,fhei/2),dtype=float)
+            for x in range(0,fwid/2):
+                for y in range (0,fhei/2):
+                    kwart[x,y] += psd2D[fwid/2+x,fhei/2+y]
+                    kwart[x,y] += psd2D[fhei/2-y,fwid/2+x]
     
             kwartmax = np.max(kwart)
             # Find local maxima
             posxmax = []
             posymax = []
-            kwart2 = np.zeros((fwid2,fhei2),dtype=float)
+            kwart2 = np.zeros((fwid/2,fhei/2),dtype=float)
             while len(posxmax)<20 and np.max(kwart)>0.05:
                 xx,yy = np.unravel_index(kwart.argmax(), kwart.shape)
                 if( not(xx<3 and yy<3) ):
@@ -625,12 +630,12 @@ class XRayQC:
                 kwart[xx,yy] = 0
     
             # a bit of sorting:
-            index = list(range(len(posxmax)))
+            index = range(len(posxmax))
             index.sort(key = posxmax.__getitem__)
             posxmax[:] = [posxmax[i] for i in index]
             posymax[:] = [posymax[i] for i in index]
             #for x,y in zip(posxmax,posymax):
-            #    print(x,y)
+            #    print x,y
     
             maxoff = len(posxmax)-5
             r2angleoff = []
@@ -647,7 +652,7 @@ class XRayQC:
                     r2 = r1_value**2
                     r2angleoff.append( (r2,anglerad,off) )
                     r2intslope.append( (r2,intercept,slope,off) )
-                #print(r2,anglerad,off)
+                #print r2,anglerad,off
                 nonidentical = True
                 ssxm, ssxym, ssyxm, ssym = np.cov(posxmax[0:len(posxmax)-off],posymax[0:len(posxmax)-off], bias=1).flat
                 if ssxm == 0:
@@ -663,7 +668,7 @@ class XRayQC:
                 r2angleoff.append( (r2,anglerad,-off) )
                 r2intslope.append( (r2,intercept,slope,-off) )
                     
-                #print(r2,anglerad,-off)
+                #print r2,anglerad,-off
     
             r2angleoff = sorted(r2angleoff)
             r2,anglerad,off = r2angleoff[-1]
@@ -675,8 +680,8 @@ class XRayQC:
                 dafit = [intercept+slope*x for x in posxmax]
                 plt.plot(posxmax,dafit,'b-')
                 plt.title("Orientation")
-                print('orientation fit: %f + %f*x; offset=%d'%(intercept,slope,dummy2))
-                print('angledeg=%f,initangledeg=%f;'%(anglerad/np.pi*180.,0 if initangle is None else initangle))
+                print 'orientation fit: %f + %f*x; offset=%d'%(intercept,slope,dummy2)
+                print 'angledeg=%f,initangledeg=%f;'%(anglerad/np.pi*180.,0 if initangle is None else initangle)
                 cs.hasmadeplots = True
         else: # 'new'
             # must yield anglerad and r2
@@ -698,10 +703,8 @@ class XRayQC:
             # run for both angles (horz grid and vert grid)
             mask = np.zeros(np.shape(log_data),dtype=bool)
             wid,hei = np.shape(log_data)
-            wid2 = int(wid/2)
-            hei2 = int(hei/2)
-            mask[0:wid2,0:hei2] = True
-            mask[wid2:wid,hei2:hei] = True
+            mask[0:wid/2,0:hei/2] = True
+            mask[wid/2:wid,hei/2:hei] = True
             mask = ~mask
             
             # we will sort on number of points, as it is easier to fit to less points, but more points should be prefered
@@ -726,7 +729,7 @@ class XRayQC:
                     r1_value = 0.
                     intercept = 0.
                     slope = 0.
-                print('run %d angle: %f (%f), r2=%f, n=%d'%(i,anglerad,anglerad/np.pi*180.,r1_value**2.,len(rows)))
+                print 'run %d angle: %f (%f), r2=%f, n=%d'%(i,anglerad,anglerad/np.pi*180.,r1_value**2.,len(rows))
                 r2anglenum.append( (r1_value**2.,anglerad,len(rows)))
                 mask = ~mask
                 if cs.verbose:
@@ -735,15 +738,15 @@ class XRayQC:
                     dafit = [intercept+slope*x for x in rows]
                     plt.plot(rows,dafit,'b-')
                     plt.title("Orientation")
-                    print('orientation fit: %f + %f*x'%(intercept,slope))
-                    print('angledeg=%f,initangledeg=%f;'%(anglerad/np.pi*180.,0 if initangle is None else initangle))
+                    print 'orientation fit: %f + %f*x'%(intercept,slope)
+                    print 'angledeg=%f,initangledeg=%f;'%(anglerad/np.pi*180.,0 if initangle is None else initangle)
                     #plt.show()
                     cs.hasmadeplots = True
                 
             avg_angle = (r2anglenum[0][1]+r2anglenum[1][1])/2.
             wavg_angle = (r2anglenum[0][1]*r2anglenum[0][2]+r2anglenum[1][1]*r2anglenum[1][2])/(r2anglenum[0][2]+r2anglenum[1][2])
             avg_r2 = np.sqrt( 0.5*(r2anglenum[0][0]**2. +r2anglenum[1][0]**2.) )
-            print("avgangle: %f"%(avg_angle/np.pi*180.+(0 if initangle is None else initangle)))
+            print "avgangle: %f"%(avg_angle/np.pi*180.+(0 if initangle is None else initangle))
             r2anglenum.sort(key=operator.itemgetter(2)) # 0 = maxr2, 2 = maxnum
             #r2anglenum = sorted(r2anglenum)
             r2,anglerad,num = r2anglenum[-1]
@@ -805,12 +808,12 @@ class XRayQC:
             label = "first try"
             if initangle!=None:
                 label = "Error!"
-            print("FieldRotationFFT:",label,"confidence too low:",confidence,off)
-            #print(offanglerad)
+            print "FieldRotationFFT:",label,"confidence too low:",confidence,off
+            #print offanglerad
             return error,roipts_orig,rotangledeg
         error = False
 
-        print("rotangledegFFT:",rotangledeg,confidence,off)
+        print "rotangledegFFT:",rotangledeg,confidence,off
 
         roipts = self.RotateBoundingBox(roipts_orig,rotangledeg)
         return error,roipts,rotangledeg
@@ -831,7 +834,7 @@ class XRayQC:
 #            cs.lastimage = workimage
 
         searchrad = max(1,searchrad)
-        print("%s searchrad="%what,searchrad)
+        print "%s searchrad="%what,searchrad
         widthpx = np.shape(workimage)[0] ## width/height in pixels
         heightpx = np.shape(workimage)[1]
 
@@ -843,11 +846,11 @@ class XRayQC:
             for i in range(0, len(roipts)):
                 rp = roipts[i]
                 x0 = rp[0]
-                minx = int(max(0,x0-searchrad))
-                maxx = int(min(widthpx-2,x0+searchrad))
+                minx = max(0,x0-searchrad)
+                maxx = min(widthpx-2,x0+searchrad)
                 y0 = rp[1]
-                miny = int(max(0,y0-searchrad))
-                maxy = int(min(heightpx-2,y0+searchrad))
+                miny = max(0,y0-searchrad)
+                maxy = min(heightpx-2,y0+searchrad)
                 if cs.mustbeinverted:
                     cropped = workimage[minx:maxx+1,miny:maxy+1]
                 else:
@@ -868,7 +871,7 @@ class XRayQC:
                         plt.figure()
                         plt.imshow(cropped)
                         plt.title('Align '+str(kk)+ ' '+what+str(i))
-                        print(sigma,"shift ",i," of point ",kk," =(",x1-x0,",",y1-y0,")")
+                        print sigma,"shift ",i," of point ",kk," =(",x1-x0,",",y1-y0,")"
 
                 rp[0] = x1
                 rp[1] = y1
@@ -878,10 +881,10 @@ class XRayQC:
         # Just take the last one; should be best!
 #        conf_pts = sorted(conf_pts) #sorting orientation/distance box does worsen results
         if what == "MTF": # sorting MTF seems to help
-#            print("-------------")
+#            print "-------------"
 #            for i,copts in enumerate(conf_pts):
-#                print(i,copts[0])
-#            print("-------------")
+#                print i,copts[0]
+#            print "-------------"
             conf_pts = sorted(conf_pts)
 
         for i in range(0,len(roipts)):
@@ -894,7 +897,7 @@ class XRayQC:
             label = ""
             if blast_attempt==True:
                 label = "Error!"
-            print("AlignRoi (",what,"):",label,", confidence too low:",confidence)
+            print "AlignRoi (",what,"):",label,", confidence too low:",confidence
 
         return error,confidence
 
@@ -1032,7 +1035,7 @@ class XRayQC:
 		    // we want a cm dev to drop confidence to 0.5, so all lengths (emperically) need to be reduced by magnified 11cm
             """
             for (x0,y0) in roipts:
-                if cs.pixeldataIn[int(x0)][int(y0)] == 0 or cs.pixeldataIn[int(x0)][int(y0)] ==invertmax: # on annotation
+                if cs.pixeldataIn[x0][y0] == 0 or cs.pixeldataIn[x0][y0] ==invertmax: # on annotation
                     return 0
 
             confidence = 1.
@@ -1084,7 +1087,7 @@ class XRayQC:
             for p in range(0,4):
                 confidence *= (1.0 - np.abs(lengths[p]-grlen[p])/grlen[p] )
 
-        print(what+"Confidence = ", (confidence*100.),"%")
+        print what+"Confidence = ", (confidence*100.),"%"
         return confidence
 
 #----------------------------------------------------------------------
@@ -1106,7 +1109,7 @@ class XRayQC:
             error = True
         else:
             error = False
-        print('Edge [N/S/W/E] cm = %.1f %.1f %.1f %.1f' % (cs.xrayNSWEmm[0]/10., cs.xrayNSWEmm[1]/10., cs.xrayNSWEmm[2]/10., cs.xrayNSWEmm[3]/10. ))
+        print 'Edge [N/S/W/E] cm = %.1f %.1f %.1f %.1f' % (cs.xrayNSWEmm[0]/10., cs.xrayNSWEmm[1]/10., cs.xrayNSWEmm[2]/10., cs.xrayNSWEmm[3]/10. )
         cs.xr_roi = []
         xco,yco = self.phantomposmm2pix(roipts,-cs.xrayNSWEmm[2],cs.xrayNSWEmm[0])
         cs.xr_roi.append([xco,yco])
@@ -1209,8 +1212,8 @@ class XRayQC:
                         valvec.append(int(cs.pixeldataIn[xa,ya]))
                     break
 
-                val00 = int(cs.pixeldataIn[int(x0),int(y0)])
-                val10 = int(cs.pixeldataIn[int(x1),int(y0)])
+                val00 = int(cs.pixeldataIn[x0,y0])
+                val10 = int(cs.pixeldataIn[x1,y0])
                 val05 = 1.*val00+(xpos-(int)(xpos))*(val10-val00)
                 if cs.mustbeinverted:
                     val05 = invertmax-val05
@@ -1406,7 +1409,7 @@ class XRayQC:
                 posval.append(self.pix2phantomm(cs,ix))
 
         if len(posval)==0:
-            print("ERROR: Uniformity: no valid pixels found.")
+            print "ERROR: Uniformity: no valid pixels found."
             return error
 
         if BKcount>0:
@@ -1419,10 +1422,10 @@ class XRayQC:
 
         cufraction = 1.*(wid*hei-BKcount)/(wid*hei)
         if cufraction<.1 or cufraction>.9:
-            print("ERROR: Uniformity: invalid Cu fraction ",cufraction)
+            print "ERROR: Uniformity: invalid Cu fraction ",cufraction
             return error
 
-        print(cufraction)
+        print cufraction
         if cs.verbose or bshowplot==True:
             plt.figure()
             plt.plot(posval,intens)
@@ -1471,10 +1474,10 @@ class XRayQC:
                 count += 1
         inteavgROI /= count
         ROIuniformity = np.max([np.abs(inteavgR-inteavgROI),np.abs(inteavgROI-inteavgL)])/inteavgROI
-        print("LineUniformity%=",100.*overlengthuniformity)
-        print("LRuniformity%=",100.*LRuniformity)
-        print("ROIuniformity%=",100.*ROIuniformity)
-        print("AAPMROIlimit%=",10)
+        print "LineUniformity%=",100.*overlengthuniformity
+        print "LRuniformity%=",100.*LRuniformity
+        print "ROIuniformity%=",100.*ROIuniformity
+        print "AAPMROIlimit%=",10
 
         cs.unif.ROIuniformity = ROIuniformity
         cs.unif.LRuniformity = LRuniformity
@@ -1529,7 +1532,7 @@ class XRayQC:
         ylo = int(.5+ max(ypxlr,ypxll))
         yhi = int(.5+ min(ypxur,ypxul))
         if ylo>yhi:
-            print("[CuWedge]: Error, phantom angle too large, cannot sample wedge")
+            print "[CuWedge]: Error, phantom angle too large, cannot sample wedge"
             return error
 
         # 1. Make box around wedge (-5.5; -4) to (+5.5; -5.5)
@@ -1572,7 +1575,7 @@ class XRayQC:
         ymin = roipts_orig[2][1]
         ymax = roipts_orig[1][1]
         if ymin>ymax:
-            print("[AnalyseWedge]: Error, phantom angle too large, cannot sample wedge")
+            print "[AnalyseWedge]: Error, phantom angle too large, cannot sample wedge"
             return error
 
         if cs.mustbeinverted:
@@ -1622,9 +1625,9 @@ class XRayQC:
             cs.cuwedge.wedge_confidence *= min(avg_dist,dist)/max(avg_dist,dist)
 
         if cs.verbose:
-            print("Edge 0 at ",posedges[0])
+            print "Edge 0 at ",posedges[0]
             for ix in range(1,n_edges):
-                print("Edge ",ix," at ",posedges[ix]," sep= ",posedges[ix]-posedges[ix-1])
+                print "Edge ",ix," at ",posedges[ix]," sep= ",posedges[ix]-posedges[ix-1]
 
         # 2.3 Calculate statistics for each step
         cs.cuwedge.roi_mean = []
@@ -1634,7 +1637,7 @@ class XRayQC:
         ylo = 0   # flatpix
         yhi = hei # - flatpix
         if ylo>yhi:
-            print("[AnalyseWedge]: Error, phantom angle too large, cannot sample wedge")
+            print "[AnalyseWedge]: Error, phantom angle too large, cannot sample wedge"
             return error
 
         cs.cuwedge.step_rois = []
@@ -1671,9 +1674,9 @@ class XRayQC:
         cs.cuwedge.dynamicRange = max(cs.cuwedge.roi_mean[n_edges]/cs.cuwedge.roi_mean[0],cs.cuwedge.roi_mean[0]/cs.cuwedge.roi_mean[n_edges])
 
         if cs.verbose:
-            print("mmCu","SNR","CNR")
+            print "mmCu","SNR","CNR"
             for m,s,c in zip(cs.cuwedge.roi_mmcu,cs.cuwedge.roi_snr,cs.cuwedge.roi_cnr):
-                print(m,s,c)
+                print m,s,c
 
             #cu_cs.guesskVp = guesskVp
         """
@@ -1695,7 +1698,7 @@ class XRayQC:
         x14px,y14px = self.phantomposmm2pix(roipts_orig,cs.forceRoom.xy14mm[0],cs.forceRoom.xy14mm[1])
 
         roipts = [ [x18px,y18px],[x06px,y06px],[x14px,y14px],[x46px,y46px] ]
-#        print(roipts)
+#        print roipts
 #        error = False
 #        confid = 1.
 #        cs.lastimage = self.templateMatchDisc(cs)
@@ -1721,22 +1724,22 @@ class XRayQC:
 
         extend18 = self.phantommm2pix(cs,2.8)  # extend bbox beyond dot in '1.8' [mm]
         extend46 = self.phantommm2pix(cs,3.2)  # extend beyond dot in '4.6' [mm]
-        print("2.8",extend18)
-        print("3.2",extend46)
+        print "2.8",extend18
+        print "3.2",extend46
         # First cut out rotated roi
         id18 = 0
         id06 = 1
         id14 = 2
         id46 = 3
         len1846 = np.sqrt((roipts_orig[id18][0]-roipts_orig[id46][0])**2+(roipts_orig[id18][1]-roipts_orig[id46][1])**2)
-        print("1846=",len1846)
+        print "1846=",len1846
         extend18 = 0.0786*len1846
         extend46 = 0.0898*len1846
         copyimage = cs.pixeldataIn.astype(float)
         rotanglerad = 3.*np.pi/2.-.5*(np.arctan2((roipts_orig[id18][1]-roipts_orig[id46][1]),(roipts_orig[id18][0]-roipts_orig[id46][0]))+np.arctan2((roipts_orig[id06][1]-roipts_orig[id14][1]),(roipts_orig[id06][0]-roipts_orig[id14][0])))
         rotanglerad += self.adjustmtfangledeg/180*np.pi
         rotangledeg = (rotanglerad/np.pi*180.)
-        print("MTF at",rotangledeg, "degrees")
+        print "MTF at",rotangledeg, "degrees"
         rotimage = scind.interpolation.rotate(copyimage, rotangledeg, axes=(1, 0), reshape=False, output=None, order=3, mode='constant', cval=0.0, prefilter=True)
 
         costerm = np.cos(rotanglerad)
@@ -1763,9 +1766,9 @@ class XRayQC:
             maxyco = max(maxyco,rp[1])
 
         if cs.mustbeinverted:
-            smallimage = invertmax-rotimage[int(minxco):int(maxxco)+1,int(minyco):int(maxyco)+1]
+            smallimage = invertmax-rotimage[minxco:maxxco+1,minyco:maxyco+1]
         else:
-            smallimage = rotimage[int(minxco):int(maxxco)+1,int(minyco):int(maxyco)+1]
+            smallimage = rotimage[minxco:maxxco+1,minyco:maxyco+1]
 
         for rp in roipts:
             rp[0] -= minxco
@@ -1833,7 +1836,7 @@ class XRayQC:
                 contrast_response[vpi] = (contrast_response[vpi-1] + contrast_response[vpi+1])/2.
 
         if contrast_response[0]<1.e-6:
-            print("Error in MTF: Rotated image?")
+            print "Error in MTF: Rotated image?"
             return error
 
         ctfmtf = self.CTFtoMTF(cs,contrast_freqs,contrast_response)
@@ -1859,20 +1862,20 @@ class XRayQC:
             #if( (calc_freq[id]<1e-6 or np.abs(calc_freq[id]- calc_freq[id-1])<1.e-6) ):
             if calc_freq[id]<1e-6:
                 maxid = id
-        print("maxid:",maxid)
+        print "maxid:",maxid
         if maxid<5 and not self.bIgnoreMTFError:
-            print("Error in MTF: Rotated image?")
+            print "Error in MTF: Rotated image?"
             return error
         slope, intercept, r_value, p_value, std_err = stats.linregress(contrast_freqs[0:maxid],calc_freq[0:maxid])
         if r_value**2<0.7:
-            print("maxid:",maxid)
+            print "maxid:",maxid
             for co,ca in zip(contrast_freqs,calc_freq):
-                print(co,ca)
+                print co,ca
         # To get coefficient of determination (r_squared)
-#        print("slope:",slope)
-#        print("intercept:",intercept)
-#        print("maxid:",maxid)
-#        print("r-squared:", r_value**2)
+#        print "slope:",slope
+#        print "intercept:",intercept
+#        print "maxid:",maxid
+#        print "r-squared:", r_value**2
         mtf_freq_confidence = 1.*min(slope,1.)/max(slope,1.)*r_value**2
         # at least 10 freqs must be found
         needfound = 10
@@ -1893,17 +1896,17 @@ class XRayQC:
                 first_error = i
                 break
         mtf_freq_confidence *= 1.*min(first_error,needfound)/needfound
-        print("mtf_freq_confidence:",mtf_freq_confidence)
+        print "mtf_freq_confidence:",mtf_freq_confidence
         if mtf_freq_confidence<.7:
-            print("found/first_error/needfound:",found,first_error,needfound)
-            print("slope/r2:",slope,r_value**2)
+            print "found/first_error/needfound:",found,first_error,needfound
+            print "slope/r2:",slope,r_value**2
             if cs.verbose:
                 plt.figure()
                 plt.plot(contrast_freqs[0:maxid],calc_freq[0:maxid],'bo')
                 plt.title("found vs given freq")
                 cs.hasmadeplots = True
 
-    #       print("confid:",mtf_found_confidence)
+    #       print "confid:",mtf_found_confidence
         cs.mtf.mtf_aapm = mtf_aapm
         cs.mtf.contrast_freqs    = copy.deepcopy(contrast_freqs)
         cs.mtf.contrast_response = copy.deepcopy(contrast_response)
@@ -1991,7 +1994,7 @@ class XRayQC:
                 break
         ymax = min(ymax,phei-2)
 
-        #print("0000: w/ymin/ymax/yy = ", phei, "/",ymin,"/",ymax,"/",ymax-ymin)
+        #print "0000: w/ymin/ymax/yy = ", phei, "/",ymin,"/",ymax,"/",ymax-ymin
 
         startpos[0][0] = int(.5+280./waswidthLo*wid)
         endpos[0][0]   = int(.5+(280.+70.)/waswidthLo*wid)
@@ -2041,7 +2044,7 @@ class XRayQC:
             pattern[y] /= pwid
 
         if pattern.shape[0]<2:
-            print("[AnalyseMTF_Part] SKIP: no pattern left")
+            print "[AnalyseMTF_Part] SKIP: no pattern left"
             return contrast_response,contrast_high,contrast_low,contrast_tops,contrast_bots,calc_freq
 
         # 1. find abs min and max
@@ -2056,7 +2059,7 @@ class XRayQC:
             ytop = tops[0]+startpos[1]
             hsize = max(1,int(.5+self.phantommm2pix(cs,0.75)/2.)  )
             if((ytop+hsize)>(smallimage.shape[1]-1)):
-                print("[AnalyseMTF_Part] ERROR: cannot find baseline")
+                print "[AnalyseMTF_Part] ERROR: cannot find baseline"
                 return contrast_response,contrast_high,contrast_low,contrast_tops,contrast_bots,calc_freq
 
             baseline = []
@@ -2081,7 +2084,7 @@ class XRayQC:
                 plt.title("Baseline")
 
         if (mustplot == True or (len(tops)!=3 or len(bots)!=2) ) and cs.verbose:
-            print("vpi=",vpi," length(pattern)=",len(pattern))
+            print "vpi=",vpi," length(pattern)=",len(pattern)
             ybots = []
             for b in bots:
                 ybots.append(pattern[b])
@@ -2130,8 +2133,8 @@ class XRayQC:
                 halflambda = 0.25*(tops[2]-tops[0])
                 calc_freq = .5/self.pix2phantomm(cs,halflambda)
         if cs.verbose:
-            print("Found",len(tops)," tops and",len(bots)," bottoms. Contrast=",contrast_response)
-#        print(vpi,contrast_response,contrast_high,contrast_low,contrast_tops,contrast_bots,calc_freq)
+            print "Found",len(tops)," tops and",len(bots)," bottoms. Contrast=",contrast_response
+#        print vpi,contrast_response,contrast_high,contrast_low,contrast_tops,contrast_bots,calc_freq
         return contrast_response,contrast_high,contrast_low,contrast_tops,contrast_bots,calc_freq
 
     def FindExtrema(self,cs,pattern):
@@ -2180,7 +2183,7 @@ class XRayQC:
         goon = False
         while( ( len(tops)>3 or len(bots)>2 ) and goon == False):
             if cs.verbose:
-                print("Too many extrema; rerun with larger sigma")
+                print "Too many extrema; rerun with larger sigma"
             tops_bk = copy.deepcopy(tops)
             bots_bk = copy.deepcopy(bots)
             mustplot_bk = mustplot
@@ -2202,7 +2205,7 @@ class XRayQC:
         goon = False
         while( ( len(tops)<3 or len(bots)<2 ) and goon == False):
             if cs.verbose:
-                print("Too few extrema; rerun with smaller sigma")
+                print "Too few extrema; rerun with smaller sigma"
             tops_bk = copy.deepcopy(tops)
             bots_bk = copy.deepcopy(bots)
             mustplot_bk = mustplot
@@ -2223,7 +2226,7 @@ class XRayQC:
                 goon = True  # break from loop
 
         if cs.verbose:
-            print("[FindExtrema]C ntops/nbots = ",len(tops),"/",len(bots))
+            print "[FindExtrema]C ntops/nbots = ",len(tops),"/",len(bots)
         return mustplot,tops,bots
 
     def FindAllExtrema(self,cs,pattern,xderiv1,yminmax):
@@ -2242,7 +2245,7 @@ class XRayQC:
                 else:
                     tops.append(y)
                 if(len(tops)>3):
-                    print("[FindAllExtrema] ntops>3! Using only first 3.")
+                    print "[FindAllExtrema] ntops>3! Using only first 3."
                     mustplot = True
             if(xderiv1[y]<=0. and xderiv1[y+1]>0.):
                 if(pattern[y+1]<pattern[y]):
@@ -2252,7 +2255,7 @@ class XRayQC:
                     if(len(tops)>0):
                         bots.append(y)
                 if(len(bots)>2):
-                    print("[FindAllExtrema] nbots>2! Using only first 2.")
+                    print "[FindAllExtrema] nbots>2! Using only first 2."
                     mustplot = True
 
         if mustplot: # SOMETHING WRONG, INGORE XDERIV AND JUST LOOK AT MIN/MAX
@@ -2264,13 +2267,13 @@ class XRayQC:
                 if(pattern[y]>pattern[y+1] and pattern[y]>pattern[y-1]):
                     tops.append(y)
                     if(len(tops)>3):
-                        print("[FindAllExtrema] ntops2>3! Using only first 3.")
+                        print "[FindAllExtrema] ntops2>3! Using only first 3."
                         mustplot = True
                 if(pattern[y]<pattern[y+1] and pattern[y]<pattern[y-1]):
                     if(len(tops)>0):
                         bots.append(y)
                     if(len(bots)>2):
-                        print("[FindAllExtrema] nbots2>2! Using only first 2.")
+                        print "[FindAllExtrema] nbots2>2! Using only first 2."
                         mustplot = True
 
         return mustplot,tops,bots
@@ -2291,7 +2294,7 @@ class XRayQC:
         # fit a 3rd order polynomial to CTF:
         coeffs = np.polyfit(freq, ctf, deg=3)
         poly = np.poly1d(coeffs)
-        #        print(poly)
+        #        print poly
         mtf = copy.deepcopy(ctf)
         zerocor = mtf[1]
         fnyq = (0.5/self.pix2phantomm(cs,1.)) # cut-off frequencies > Nyquist
@@ -2303,7 +2306,7 @@ class XRayQC:
             prev_harm =mtf[0]
             while True:
                 if cs.verbose:
-                    print(freq[i],i,j,factor*freq[i],fnyq)
+                    print freq[i],i,j,factor*freq[i],fnyq
                 harmonic = np.polyval(poly, factor*freq[i])
                 if(harmonic <=0. or harmonic>prev_harm or factor*freq[i]>fnyq ):
                     break
@@ -2423,14 +2426,14 @@ class XRayQC:
             sdev_bk.append(roi_sdev_bk)
             low_cnr.append((roi_mean_s-roi_mean_bk)/np.sqrt(0.5*(roi_sdev_s**2+roi_sdev_bk**2)))
             if cs.verbose:
-                print("mean fg/bk=",roi_mean_s,"/",roi_mean_bk)
-                print("sdev fg/bk=",roi_sdev_s,"/",roi_sdev_bk)
+                print "mean fg/bk=",roi_mean_s,"/",roi_mean_bk
+                print "sdev fg/bk=",roi_sdev_s,"/",roi_sdev_bk
 
         cs.loco.low_cnr = copy.deepcopy(low_cnr)
         cs.loco.mean_sg = copy.deepcopy(mean_sg)
         cs.loco.mean_bk = copy.deepcopy(mean_bk)
         cs.loco.sdev_sg = copy.deepcopy(sdev_sg)
-        cs.loco.sdev_bk = copy.deepcopy(sdev_bk)
+        cs.loco.sdev_bk = copy.deepcopy(low_cnr)
 
         error = False
         return error
@@ -2444,109 +2447,105 @@ class XRayQC:
 
         if(info == "dicom"):
             dicomfields = [
-                #{'key':"0008,0021",'name','value':0, 'quantity','level':,'rank':},
-                {'key':"0008,0021",  'name':"SeriesDate"},
-                {'key':"0008,0031",  'name':"SeriesTime"},
-                {'key':"0008,0070",  'name':"Manufacturer"},
-                {'key':"0008,0080",  'name':"InstitutionName"},
-                {'key':"0008,1010",  'name':"StationName"},
-                {'key':"0008,1030",  'name':"StudyDescription"},
-                {'key':"0008,103E",  'name':"SeriesDescription"},
-                {'key':"0008,1070",  'name':"Operator's Name"},
-                {'key':"0010,0020",  'name':"PatientID"},
-                {'key':"0018,0015",  'name':"BodyPartExamined"},
-                {'key':"0018,0060",  'name':"kVp"},
-                {'key':"0018,1000",  'name':"DeviceSerialNumber"},
-                {'key':"0018,1004",  'name':"PlateID"},
-                {'key':"0018,1020",  'name':"SoftwareVersions"},
-                {'key':"0018,1110",  'name':"DistanceSourceToDetector (mm)"},
-                {'key':"0018,1150",  'name':"ExposureTime (ms)"},
-                {'key':"0018,1152",  'name':"Exposure (mAs)"},
-                {'key':"0018,115E",  'name':"ImageAreaDoseProduct"},
-                {'key':"0018,1160",  'name':"FilterType"},
-                {'key':"0018,1164",  'name':"ImagerPixelSpacing"},
-                {'key':"0018,1166",  'name':"Grid"},
-                {'key':"0018,1190",  'name':"FocalSpot(s)"},
-                {'key':"0018,1200",  'name':"Date of Last Calibration"},
-                {'key':"0018,1260",  'name':"PlateType"},
-                {'key':"0018,1400",  'name':"AcquisitionDeviceProcessingDescription"},
-                {'key':"0018,1401",  'name':"AcquisitionDeviceProcessingCode"},
-                {'key':"0018,1403",  'name':"CassetteSize"},
-                {'key':"0018,1404",  'name':"ExposuresOnPlate"},
-                {'key':"0018,1508",  'name':"PositionerType"},
-                {'key':"0018,6000",  'name':"Sensitivity"},
-                {'key':"0020,4000",  'name':"ImageComments"},
-                {'key':"0028,0006",  'name':"PlanarConfiguration"},
-                {'key':"0028,0101",  'name':"BitsStored"}
+                ["0008,0021",  "SeriesDate"],
+                ["0008,0031",  "SeriesTime"],
+                ["0008,0070",  "Manufacturer"],
+                ["0008,0080",  "InstitutionName"],
+                ["0008,1010",  "StationName"],
+                ["0008,1030",  "StudyDescription"],
+                ["0008,103E",  "SeriesDescription"],
+                ["0008,1070",  "Operator's Name"],
+                ["0010,0020",  "PatientID"],
+                ["0018,0015",  "BodyPartExamined"],
+                ["0018,0060",  "kVp"],
+                ["0018,1000",  "DeviceSerialNumber"],
+                ["0018,1004",  "PlateID"],
+                ["0018,1020",  "SoftwareVersions"],
+                ["0018,1110",  "DistanceSourceToDetector (mm)"],
+                ["0018,1150",  "ExposureTime (ms)"],
+                ["0018,1152",  "Exposure (mAs)"],
+                ["0018,115E",  "ImageAreaDoseProduct"],
+                ["0018,1160",  "FilterType"],
+                ["0018,1164",  "ImagerPixelSpacing"],
+                ["0018,1166",  "Grid"],
+                ["0018,1190",  "FocalSpot(s)"],
+                ["0018,1200",  "Date of Last Calibration"],
+                ["0018,1260",  "PlateType"],
+                ["0018,1400",  "AcquisitionDeviceProcessingDescription"],
+                ["0018,1401",  "AcquisitionDeviceProcessingCode"],
+                ["0018,1403",  "CassetteSize"],
+                ["0018,1404",  "ExposuresOnPlate"],
+                ["0018,1508",  "PositionerType"],
+                ["0018,6000",  "Sensitivity"],
+                ["0020,4000",  "ImageComments"],
+                ["0028,0006",  "PlanarConfiguration"],
+                ["0028,0101",  "BitsStored"]
             ]
             if 'RelativeXRayExposure' in cs.dcmInfile: #DX
-                dicomfields.append({'key':"0018,1405",'name':"Relative Exposure"})
+                dicomfields.append(["0018,1405","Relative Exposure"])
 
         elif(info == "qclight"):
             dicomfields = [
-                {'key':"0008,0021",  'name':"SeriesDate"},
-                {'key':"0008,0031",  'name':"SeriesTime"},
-                {'key':"0008,1070",  'name':"Operator's Name"},
-                {'key':"0018,0060",  'name':"kVp"},
-                {'key':"0018,1000",  'name':"DeviceSerialNumber"},
-                {'key':"0018,1004",  'name':"Plate ID"},
-                {'key':"0018,1401",  'name':"Acquisition Device Processing Code"},
-                {'key':"0018,1020",  'name':"SoftwareVersions"},
-                {'key':"0018,1110",  'name':"DistanceSourceToDetector (mm)"},
-                {'key':"0018,1150",  'name':"ExposureTime (ms)"},
-                {'key':"0018,1152",  'name':"Exposure (mAs)"},
-                {'key':"0018,115E",  'name':"ImageAreaDoseProduct"},
-                {'key':"0018,1160",  'name':"FilterType"},
-                {'key':"0018,1190",  'name':"FocalSpot(s)"},
-                {'key':"0018,1164",  'name':"ImagerPixelSpacing"},
-                {'key':"0018,1166",  'name':"Grid"},
-                {'key':"0018,1200",  'name':"Date of Last Calibration"},
-                {'key':"0018,5021",  'name':"Postprocessing"},
-                {'key':"0018,6000",  'name':"Sensitivity"}
+                ["0008,0021",  "SeriesDate"],
+                ["0008,0031",  "SeriesTime"],
+                ["0008,1070",  "Operator's Name"],
+                ["0018,0060",  "kVp"],
+                ["0018,1000",  "DeviceSerialNumber"],
+                ["0018,1004",  "Plate ID"],
+                ["0018,1401",  "Acquisition Device Processing Code"],
+                ["0018,1020",  "SoftwareVersions"],
+                ["0018,1110",  "DistanceSourceToDetector (mm)"],
+                ["0018,1150",  "ExposureTime (ms)"],
+                ["0018,1152",  "Exposure (mAs)"],
+                ["0018,115E",  "ImageAreaDoseProduct"],
+                ["0018,1160",  "FilterType"],
+                ["0018,1190",  "FocalSpot(s)"],
+                ["0018,1164",  "ImagerPixelSpacing"],
+                ["0018,1166",  "Grid"],
+                ["0018,1200",  "Date of Last Calibration"],
+                ["0018,5021",  "Postprocessing"],
+                ["0018,6000",  "Sensitivity"]
             ]
             if 'RelativeXRayExposure' in cs.dcmInfile: #DX
-                dicomfields.append({'key':"0018,1405",'name':"Relative Exposure"})
+                dicomfields.append(["0018,1405","Relative Exposure"])
 
         elif(info == "qcwad"):
-            offset = -25 # rank must be negative, so recalc as offset+real position
             if not 'DistanceSourceToDetector' in cs.dcmInfile: # WKZ-like fcr
                 dicomfields = [
-                    {'key':"0008,0021",  'name':"SeriesDate"},
-                    {'key':"0008,0031",  'name':"SeriesTime", 'quantity':'time', 'level':1, 'rank':offset+2},
-                    {'key':"0008,1070",  'name':"Operator's Name"},
-                    {'key':"0018,1004",  'name':"Plate ID"},
-                    {'key':"0018,1401",  'name':"Acquisition Device Processing Code", 'quantity':'processing', 'level':1, 'rank':offset+9},
-                    {'key':"0018,1020",  'name':"SoftwareVersions"},
-                    {'key':"0018,1164",  'name':"ImagerPixelSpacing"},
-                    {'key':"0018,6000",  'name':"Sensitivity",'quantity':'S','level':1,'rank':offset+12}
+                    ["0008,0021",  "SeriesDate"],
+                    ["0008,0031",  "SeriesTime"],
+                    ["0008,1070",  "Operator's Name"],
+                    ["0018,1004",  "Plate ID"],
+                    ["0018,1401",  "Acquisition Device Processing Code"],
+                    ["0018,1020",  "SoftwareVersions"],
+                    ["0018,1164",  "ImagerPixelSpacing"],
+                    ["0018,6000",  "Sensitivity"]
                 ]
             else:
                 dicomfields = [
-                    {'key':"0008,0021",  'name':"SeriesDate"},
-                    {'key':"0008,0031",  'name':"SeriesTime", 'quantity':'time', 'level':1, 'rank':offset+2}, # spot 1 reserved for stand
-                    {'key':"0018,1110",  'name':"DistanceSourceToDetector (mm)", 'quantity':'distance', 'level':1, 'rank':offset+3},
-                    {'key':"0018,0060",  'name':"kVp", 'level':1, 'rank':offset+4},
-                    {'key':"0018,1160",  'name':"FilterType", 'quantity':'filter', 'level':1, 'rank':offset+5},
-                    {'key':"0018,1190",  'name':"FocalSpot(s)", 'quantity':'focalspot', 'level':1, 'rank':offset+6},
-                    {'key':"0018,1166",  'name':"Grid", 'quantity':'grid', 'level':1, 'rank':offset+7},
-                    {'key':"0018,5021",  'name':"Postprocessing", 'quantity':'processing', 'level':1, 'rank':offset+9}, # spot 8 reserved for rotation
-
-                    {'key':"0018,1150",  'name':"ExposureTime (ms)", 'quantity':'ms','level':1,'rank':offset+10},
-                    {'key':"0018,1152",  'name':"Exposure (mAs)", 'quantity':'mAs','level':1,'rank':offset+11},
-                    {'key':"0018,115E",  'name':"ImageAreaDoseProduct", 'quantity':'DAP','level':1,'rank':offset+12},
-                
-                    {'key':"0008,1070",  'name':"Operator's Name"},
-                    {'key':"0018,1000",  'name':"DeviceSerialNumber"},
-                    {'key':"0018,1020",  'name':"SoftwareVersions"},
-                    {'key':"0018,1164",  'name':"ImagerPixelSpacing"},
-                    {'key':"0018,1200",  'name':"Date of Last Calibration"},
-                    {'key':"0018,6000",  'name':"Sensitivity",'quantity':'S'}
+                    ["0008,0021",  "SeriesDate"],
+                    ["0008,0031",  "SeriesTime"],
+                    ["0008,1070",  "Operator's Name"],
+                    ["0018,0060",  "kVp"],
+                    ["0018,1000",  "DeviceSerialNumber"],
+                    ["0018,1020",  "SoftwareVersions"],
+                    ["0018,1110",  "DistanceSourceToDetector (mm)"],
+                    ["0018,1150",  "ExposureTime (ms)"],
+                    ["0018,1152",  "Exposure (mAs)"],
+                    ["0018,115E",  "ImageAreaDoseProduct"],
+                    ["0018,1160",  "FilterType"],
+                    ["0018,1190",  "FocalSpot(s)"],
+                    ["0018,1164",  "ImagerPixelSpacing"],
+                    ["0018,1166",  "Grid"],
+                    ["0018,1200",  "Date of Last Calibration"],
+                    ["0018,5021",  "Postprocessing"],
+                    ["0018,6000",  "Sensitivity"]
                 ]
 
-        #labvals.append( {'name':'label','value':0, 'quantity':'columnname','level':'1:default, 2: detail','rank':missing or a number} )
+
         results = []
         for df in dicomfields:
-            key = df['key']
+            key = df[0]
             value = ""
             replaced = False
             if(key == "0018,1152"):
@@ -2563,8 +2562,7 @@ class XRayQC:
                 except:
                     value = ""
 
-            df['value'] = value
-            results.append( df )
+            results.append( (df[1],value) )
 
         return results
 #----------------------------------------------------------------------
@@ -2679,8 +2677,6 @@ class XRayQC:
                 if stand == lit.stWall:
                     sidmm = cs.forceRoom.sidwallmm
         devedge = 100.*max(np.abs(minedge-meanedge),np.abs(maxedge-meanedge))/sidmm
-        if maxedge-meanedge < meanedge-minedge:
-            devedge *= -1
         return devedge
 
     def ReportEntries(self,cs):
@@ -2690,19 +2686,14 @@ class XRayQC:
         labvals = []
         stand = self.TableOrWall(cs)
 
-        ## Phantom orientation; level 1 = show by default; level 2 = show in details
-        #labvals.append( {'name':'label','value':0, 'quantity':'columnname','level':'1:default, 2: detail','rank':missing or a negative number} )
-        # if no rank given, the order of addition will be used
-        # if no quantity given, 'name' will be used
-        # if no level given, the default will be used
-        offset = -25 # rank must be negative, so recalc as offset+real position
-        labvals.append( {'name':'PhantomOrientation','value':cs.po_rot, 'quantity':'rotate','level':1,'rank':offset+7} )
-        labvals.append( {'name':'AlignConfidence','value':100.*cs.bbox_confidence, 'quantity':'aligned','level':2} )
-        labvals.append( {'name':'xray[N]cm','value':cs.xrayNSWEmm[0]/10., 'quantity':'xrN','level':2} )
-        labvals.append( {'name':'xray[E]cm','value':cs.xrayNSWEmm[3]/10., 'quantity':'xrE','level':2} )
-        labvals.append( {'name':'xray[S]cm','value':cs.xrayNSWEmm[1]/10., 'quantity':'xrS','level':2} )
-        labvals.append( {'name':'xray[W]cm','value':cs.xrayNSWEmm[2]/10., 'quantity':'xrW','level':2} )
-        labvals.append( {'name':'xrayDev','value':self.XRayDev(cs), 'quantity':'xrayDev','level':1, 'rank':offset+12} )
+        ## Phantom orientation
+        labvals.append( ('PhantomOrientation',cs.po_rot) )
+        labvals.append( ('AlignConfidence',100.*cs.bbox_confidence) )
+        labvals.append( ('xray[N]cm',cs.xrayNSWEmm[0]/10.) )
+        labvals.append( ('xray[E]cm',cs.xrayNSWEmm[3]/10.) )
+        labvals.append( ('xray[S]cm',cs.xrayNSWEmm[1]/10.) )
+        labvals.append( ('xray[W]cm',cs.xrayNSWEmm[2]/10.) )
+        labvals.append( ('xrayDev',self.XRayDev(cs)) )
 
         ## uniformity
         if stand == lit.stWall:
@@ -2711,34 +2702,34 @@ class XRayQC:
         else:
             label = 'ROIUniformity'
             value = 100.*cs.unif.ROIuniformity
-        labvals.append( {'name':label,'value':value, 'quantity':'Uniformity','level':1,'rank':offset+13} )
+        labvals.append( (label,value) )
 
         ## cuwedge
-        labvals.append( {'name':'CuConfidence','value':cs.cuwedge.wedge_confidence*100,'level':2} ) # Confidence in wedge finding
+        labvals.append( ('CuConfidence',cs.cuwedge.wedge_confidence*100) ) # Confidence in wedge finding
         # SNR max
-        labvals.append( {'name':'CuSNR_'+str(cs.cuwedge.roi_mmcu[-1]),'value':cs.cuwedge.roi_snr[-1], 'quantity':'SNR','level':1,'rank':offset+15} )
+        labvals.append( ('CuSNR_'+str(cs.cuwedge.roi_mmcu[-1]),cs.cuwedge.roi_snr[-1]) )
         # CNR between steps all > 1
         minCNR = cs.cuwedge.roi_cnr[0]
         for i in range(1,len(cs.cuwedge.roi_cnr)-1):
             minCNR = min (minCNR,cs.cuwedge.roi_cnr[i])
-        labvals.append( {'name':'CuCNRmin','value':minCNR, 'quantity':'CNRmin','level':2} )
+        labvals.append( ('CuCNRmin',minCNR) )
         # Dynamic Range
-        labvals.append( {'name':'CuDR'+str(cs.cuwedge.roi_mmcu[0])+'_'+str(cs.cuwedge.roi_mmcu[-1]),'value':cs.cuwedge.dynamicRange, 'quantity':'DynRange','level':1,'rank':offset+14} )
+        labvals.append( ('CuDR'+str(cs.cuwedge.roi_mmcu[0])+'_'+str(cs.cuwedge.roi_mmcu[-1]),cs.cuwedge.dynamicRange) )
         # guesskVp
-        labvals.append( {'name':'kVp_est','value':cs.cuwedge.guesskVp, 'quantity':'kVp_est','level':2} )
-        # approximate mAs from DAP until DX info, better approx mAs
-        labvals.append( {'name':'mAs_est','value':self.mAsCalc(cs), 'quantity':'mAs_est','level':2} )
+        labvals.append( ('guesskVp',cs.cuwedge.guesskVp) )
+        # approximate mAs from DOPu ntil DX info, better approx mAs
+        labvals.append( ('mAscalc',self.mAsCalc(cs)) )
 
         ## low contrast
         for i,cnr in enumerate(cs.loco.low_cnr):
-            labvals.append( {'name':'lowCNR_'+str(i),'value':cnr,'level':2} )
+            labvals.append( ('lowCNR_'+str(i),cnr) )
 
         ## mtf
-        labvals.append( {'name':'MTFPosConfidence','value':cs.mtf.pos_confidence*100.,'level':2} )
-        labvals.append( {'name':'MTFFreqConfidence','value':cs.mtf.freq_confidence*100.,'level':2} )
-        labvals.append( {'name':'AreaContrast5','value':mymath.AreaUnderCurve(cs.mtf.contrast_freqs,cs.mtf.contrast_response),'level':2} )
-        labvals.append( {'name':'AreaMTF5','value':mymath.AreaUnderCurve(cs.mtf.contrast_freqs,cs.mtf.ctfmtf),'level':2} )
-        labvals.append( {'name':'MTF10','value':mymath.MTF10pct(cs.mtf.contrast_freqs,cs.mtf.ctfmtf),'level':2} )
+        labvals.append( ('MTFPosConfidence',cs.mtf.pos_confidence*100.) )
+        labvals.append( ('MTFFreqConfidence',cs.mtf.freq_confidence*100.) )
+        labvals.append( ('AreaContrast5',mymath.AreaUnderCurve(cs.mtf.contrast_freqs,cs.mtf.contrast_response)) )
+        labvals.append( ('AreaMTF5',mymath.AreaUnderCurve(cs.mtf.contrast_freqs,cs.mtf.ctfmtf)) )
+        labvals.append( ('MTF10',mymath.MTF10pct(cs.mtf.contrast_freqs,cs.mtf.ctfmtf)) )
 
         return labvals
 
@@ -2861,7 +2852,7 @@ class XRayQC:
 
             avg = np.mean(smallimage)
             std = np.std(smallimage)
-            print(ix,avg,std,avg/std)
+            print ix,avg,std,avg/std
             avgs.append(avg)
             stds.append(std)
 
@@ -2888,7 +2879,7 @@ class XRayQC:
                 ang = 2
             else:
                 ang = 3
-#            print("[checkPhantomRotation] ERROR! Cannot find orientation",avgs)
+#            print "[checkPhantomRotation] ERROR! Cannot find orientation",avgs
 #            return True,"NoOrientation "
 
         if ang>0:
