@@ -19,10 +19,11 @@
 #
 #
 # Changelog:
+#   20160825: added extra config parameters (PvH)
 #   20160802: sync with pywad1.0
 from __future__ import print_function
 
-__version__ = '20160802'
+__version__ = '20160825'
 __author__ = 'aschilham'
 
 import os
@@ -73,6 +74,18 @@ def setup_series(inputfile,params,headers_only):
     qclib = QCUS_lib.US_QC(guimode=False)
     cs = QCUS_lib.USStruct(dcmInfile,pixeldataIn,dicomMode)
     cs.verbose = False # do not produce detailed logging
+    cs.uni_filter = int(params.find("uni_filter").text)
+    cs.uni_delta = float(params.find("uni_delta").text)
+    cs.uni_low = float(params.find("uni_low").text)
+    cs.sen_filter = int(params.find("sen_filter").text)
+    cs.sen_delta = float(params.find("sen_delta").text)
+    cs.ver_offset = int(params.find("ver_offset").text)
+    cs.hor_offset = int(params.find("hor_offset").text)
+    cs.fitcircle_frac = float(params.find("fitcircle_frac").text)
+    try:
+        cs.verbose = bool(params.find("verbose").text)
+    except:
+        pass
     return qclib,cs
 
 def qc_series(data, results, params):
