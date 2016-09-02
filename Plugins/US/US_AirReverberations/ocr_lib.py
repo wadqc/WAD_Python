@@ -99,6 +99,19 @@ def OCR(pixeldata, xywh, zpos=0, zoom=10):
     else:
         raise ValueError('[ocr_lib] Unknown dataformat of %d dimensions'%len(np.shape(pixeldata)))
 
+    # heuristic contrast enhancement: want white is txt, background = 0
+    # invert if needed
+    edgeval = (np.mean(part[0,:])+np.mean(part[-1,:]))/2
+    if edgeval > 128:
+        part = edgeval-part
+        part[part<0] = 0
+
+    # enhance contrast
+    minval = np.min(part)
+    maxval = np.max(part)
+    if (maxval-minval)<128:
+        part = (part-minval)*(255/(maxval-minval))
+
     part = np.transpose(part) # input was pyqtgraph-like
 
     # enlarge to prevent OCR mismatches; below 20px font height accuracy drops off
