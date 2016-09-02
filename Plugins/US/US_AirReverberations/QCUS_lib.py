@@ -69,6 +69,8 @@ import scipy
 import time
 import os
 import QCUS_math as mymath
+from PIL import Image # image from pillow is needed
+from PIL import ImageDraw # imagedraw from pillow is needed, not pil
 
 # First try if we are running wad1.0, since in wad2 libs are installed systemwide
 try: 
@@ -160,6 +162,7 @@ class USStruct:
     hasmadeplots = False
 
     # reverbrations
+    cluster_fminsize = 10*10*3 # ignore clusters of size smaller than imwidth*imheigth/minsizefactor (wid/10*hei/10)/3
     reverb_image  = None # isolated reverbrations (by largest connected component)
     rect_image    = None # straightend image for curvilinear probes
     curve_xyr     = None # center and radius [x,y,r] of curvilinear probe
@@ -237,6 +240,7 @@ class USStruct:
         self.report = []
 
         self.cca_image = None
+        self.cluster_fminsize = 10*10*3 # ignore clusters of size smaller than imwidth*imheigth/minsizefactor (wid/10*hei/10)/3
         self.reverb_image = None
         self.rect_image = None
         self.curve_xyr = [0,0,0]
@@ -397,7 +401,7 @@ class US_QC:
             # select all clusters present in vertical middle area of image, excluding top and 0
             wid,hei = np.shape(cs.cca_image)
             # first remove very small clusters (can be located around top edge!)
-            minsize = wid/10*hei/10
+            minsize = wid*hei*cs.cluster_fminsize #(wid/10*hei/10)/3
             while sum(cca.clusterSizes()> minsize)<2 and minsize>100:
                 minsize = int(minsize/10)
             #cca.removeSmallClusters(wid/10*hei/10)
@@ -1132,3 +1136,94 @@ class US_QC:
         ]
 
         return cs_items
+
+
+    def saveAnnotatedImage(self, cs, fname, what='overview', xtra={}):
+        """
+        Make an jpg of the original image, indicating all analyzed and interesting parts
+        """
+        # make a palette, mapping intensities to greyscale
+        pal = np.arange(0,256,1,dtype=np.uint8)[:,np.newaxis] * \
+            np.ones((3,),dtype=np.uint8)[np.newaxis,:]
+        # but reserve the first for red for markings
+        pal[0] = [255,0,0]
+
+        rectrois = []
+        polyrois = []
+        circlerois = []
+
+        # convert to 8-bit palette mapped image with lowest palette value used = 1
+        if what == 'overview':
+            # first the base image
+            work = cs.pixeldataIn
+            work[cs.pixeldataIn ==0] = 1
+            im = scipy.misc.toimage(work.transpose(),low=1, pal=pal) # MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!
+
+            # add box around isolated reverb pattern
+            minx = min([x for x,y in [cs.rev_minx, cs.rev_miny, cs.rev_maxx, cs.rev_maxy]])
+            maxx = max([x for x,y in [cs.rev_minx, cs.rev_miny, cs.rev_maxx, cs.rev_maxy]])
+            miny = min([y for x,y in [cs.rev_minx, cs.rev_miny, cs.rev_maxx, cs.rev_maxy]])
+            maxy = max([y for x,y in [cs.rev_minx, cs.rev_miny, cs.rev_maxx, cs.rev_maxy]])
+
+            # add box around reverb region
+            rectrois.append( [(minx, miny),(maxx, maxy)] )
+
+        elif what == 'reverb':
+            # first the base image
+            work = cs.rect_image
+            work[cs.rect_image <.1] = 1
+            im = scipy.misc.toimage(work.transpose(),low=1, pal=pal) # MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!
+
+            minx = 0
+            miny = 0
+            wid,hei = np.shape(cs.rect_image)
+
+            # add box around analysed uniformity (only meaningfull on linear probe image)
+            rectrois.append( [(minx, miny+cs.unif_yrange[0]),(wid-1, miny+cs.unif_yrange[1])] )
+            parts = [ [0,.1], [.1,.3], [.3,.7], [.7,.9], [.9,1] ]
+            for p0,p1 in parts:
+                rectrois.append( [(int(p0*wid), miny+cs.unif_yrange[0]),(int(p1*wid), miny+cs.unif_yrange[1])] )
+        
+            # add box around sensitivity part (only meaningfull on linear probe image)
+            rectrois.append( [(minx,miny),(wid-1, miny+cs.sens_ylim)] )
+
+        # add extra rois if provided
+        if 'circlerois' in xtra:
+            for r in xtra['circlerois']:
+                circlerois.append(r)
+        if 'polyrois' in xtra:
+            for r in xtra['polyrois']:
+                polyrois.append(r)
+        if 'rectrois' in xtra:
+            for r in xtra['rectrois']:
+                rectrois.append(r)
+
+        # now draw all rois in reserved color
+        draw = ImageDraw.Draw(im)
+        for r in polyrois:
+            #[ [ (x,y) ] ]
+            roi =[]
+            for x,y in r:
+                roi.append( (int(x+.5),int(y+.5)))
+            draw.polygon(roi,outline=0)
+
+        for r in rectrois:
+            # [ (x0,y0),(x1,y1) ]
+            (x0,y0),(x1,y1) = r
+            draw.rectangle(((x0,y0),(x1,y1)),outline=0)
+
+        # now draw all cirlerois in reserved color
+        for x,y,r in circlerois:
+            # [ (x,y,r) ]
+            draw.ellipse((x-r,y-r,x+r,y+r), outline=0)
+        del draw
+
+        # convert to RGB for JPG, cause JPG doesn't do PALETTE and PNG is much larger
+        im = im.convert("RGB")
+
+        imsi = im.size
+        if max(imsi)>2048:
+            ratio = 2048./max(imsi)
+            im = im.resize( (int(imsi[0]*ratio+.5), int(imsi[1]*ratio+.5)),Image.ANTIALIAS)
+        im.save(fname)
+
