@@ -510,6 +510,9 @@ class dbTool(QtGui.QMainWindow):
         if self.runmode == self.stModeDestroy:
             self.onSeekAndDestroyStation(mode='Modality')
             return
+        if self.runmode == self.stModeDownload:
+            self.onSeekAndDownloadSeriesTable(mode='Modality')
+            return
 
         if self.runmode == self.stModeReport:
             self.determineReportPeriod()
@@ -1775,7 +1778,7 @@ class dbTool(QtGui.QMainWindow):
         self.statusLabel.setText("%s" %(feedback))
 
         self.downloadlist = []
-        feedback = "Done! downloaded all of %s from the iqc database."%self.selectedStation
+        feedback = "Done! downloaded all for selection from the iqc database."
         if self.qctext:
             self.qctext.appendPlainText(feedback)
         else:
