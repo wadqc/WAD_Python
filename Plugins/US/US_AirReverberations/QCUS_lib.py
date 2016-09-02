@@ -775,7 +775,10 @@ class US_QC:
             dd = np.median(dist)/2 #at least start with top
             for i,yy in enumerate(cs.sens_bots):
                 if yy<dd: continue
-                yran = [yy, cs.sens_bots[i+1]]
+                if i<len(cs.sens_bots)-1:
+                    yran = [yy, cs.sens_bots[i+1]]
+                else:
+                    yran = [yy, cs.sens_ylim-1]
                 break
 
         cs.unif_yrange   = yran # Range in y that is analyzed for uniformity
