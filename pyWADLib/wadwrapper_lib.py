@@ -1,4 +1,6 @@
 # wadwrapper_lib.py
+from __future__ import print_function
+
 """
 This provides a number of DICOM handling and math routines
 which are often used in plugins developed at UMCU.
@@ -11,6 +13,7 @@ This includes:
 
 """
 # Changelog:
+# 20160902: python3 compatible
 # 20160826: for RGB US default to use only red channel
 # 20150420: Added scipy connectedComponents
 # 20150203: Added docstrings; added raise exceptions; clean-up of code
@@ -91,11 +94,11 @@ def testIfEnhancedDICOM(filename):
         # some other kind of dicom file and no reason to exclude it
         return False
     if sopclass == 'Enhanced MR Image Storage': #'1.2.840.10008.5.1.4.1.1.66'
-        print 'Image is Enhanced MR'
+        print('Image is Enhanced MR')
         return True
     else:
         if sopclass == 'Breast Tomosynthesis Image Storage' or sopclass == '1.2.840.10008.5.1.4.1.1.13.1.3':
-            print 'Image is BTO'
+            print('Image is BTO')
         return False
 
 def _readGroupSequenceTag(sequencetags,keytag):
@@ -146,10 +149,10 @@ def readDICOMtag(key,dcmInfile,imslice=0): # slice=2 is image 3
                 value = _readGroupSequenceTag(dcmInfile.PerFrameFunctionalGroupsSequence[imslice],keytag)
 
             if value == '': # not found, look for it in perframetags
-                print "[ww_readDICOMtag] key",key,"not found"
+                print("[ww_readDICOMtag] key",key,"not found")
 
     except:
-        print "[ww_readDICOMtag] Exception for key",key
+        print("[ww_readDICOMtag] Exception for key",key)
         value = ""
     return value
 
@@ -190,7 +193,7 @@ def readNestedDICOMtag(key,dcmInfile,imslice): # slice=2 is image 3
 
 
     except:
-        print "[ww_readNestedDICOMtag] Exception for key",key,dicomMode
+        print("[ww_readNestedDICOMtag] Exception for key",key,dicomMode)
         value = ""
     return value
 
@@ -215,7 +218,7 @@ def removeBogusDICOMfiles(instancedict):
             results.append(fname)
             continue
         if sopclass == 'Raw Data Storage': #'1.2.840.10008.5.1.4.1.1.66'
-            print 'Skipping RAW file %s' %fname
+            print('Skipping RAW file %s' %fname)
             continue
         else:
             results.append(fname)
@@ -302,7 +305,7 @@ def prepareInput(instancedict,headers_only,logTag="[prepareInput] "):
                     intercept = dcmInfile.RescaleIntercept
                     pixeldataIn = intercept + slope*pixeldataIn
                 elif modality == 'MG' and getDICOMMode(dcmInfile) == stModeBTO:
-                    print '!WARNING! MG BTO dataset! DICOM info is NOT properly adjusted, no scaling applied yet!'
+                    print('!WARNING! MG BTO dataset! DICOM info is NOT properly adjusted, no scaling applied yet!')
                     pixeldataIn = np.transpose(dcmInfile.pixel_array,(0,2,1))
                 elif modality == 'MG' or modality == 'CR' or modality == 'DX':
                     pixeldataIn = dcmInfile.pixel_array.transpose()
@@ -327,34 +330,34 @@ def prepareInput(instancedict,headers_only,logTag="[prepareInput] "):
                         else:
                             pixel_array = dcmInfile.pixel_array.reshape(dcmInfile.SamplesPerPixel, nofframes, dcmInfile.Rows, dcmInfile.Columns)
 
-                        # force using only the RED channel in RGB.
-                        if US_RGB_USE_RED == True:
-                            if len(np.shape(pixel_array)) == 3: #2d rgb
-                                pixeldataIn = pixel_array[:,:,0].transpose()
-                            elif len(np.shape(pixel_array)) == 4: #3d rgb
-                                pixeldataIn = (pixel_array[-1,:,:,0]).transpose()
-                        else:
-                            # remove all data where there is a difference between R,G,B
-                            if len(np.shape(pixel_array)) == 3: #2d rgb
-                                pixeldataIn = pixel_array[:,:,0].transpose()
-                                pixeldataInR = (pixel_array[:,:,0]).transpose()
-                                pixeldataInG = (pixel_array[:,:,1]).transpose()
-                                pixeldataInB = (pixel_array[:,:,2]).transpose()
-                            elif len(np.shape(pixel_array)) == 4: #3d rgb
-                                pixeldataIn = (pixel_array[-1,:,:,0]).transpose()
-                                pixeldataInR = (pixel_array[-1,:,:,0]).transpose()
-                                pixeldataInG = (pixel_array[-1,:,:,1]).transpose()
-                                pixeldataInB = (pixel_array[-1,:,:,2]).transpose()
-                            # remove rgb info
-                            for y in range(dcmInfile.Rows):
-                                for x in range(dcmInfile.Columns):
-                                    r = pixeldataInR[x,y]
-                                    g = pixeldataInG[x,y]
-                                    b = pixeldataInB[x,y]
-                                    ma = max(r,g,b)
-                                    mi = min(r,g,b)
-                                    if ma != mi:
-                                        pixeldataIn[x,y] = 0
+                            # force using only the RED channel in RGB.
+                            if US_RGB_USE_RED == True:
+                                if len(np.shape(pixel_array)) == 3: #2d rgb
+                                    pixeldataIn = pixel_array[:,:,0].transpose()
+                                elif len(np.shape(pixel_array)) == 4: #3d rgb
+                                    pixeldataIn = (pixel_array[-1,:,:,0]).transpose()
+                            else:
+                                # remove all data where there is a difference between R,G,B
+                                if len(np.shape(pixel_array)) == 3: #2d rgb
+                                    pixeldataIn = pixel_array[:,:,0].transpose()
+                                    pixeldataInR = (pixel_array[:,:,0]).transpose()
+                                    pixeldataInG = (pixel_array[:,:,1]).transpose()
+                                    pixeldataInB = (pixel_array[:,:,2]).transpose()
+                                elif len(np.shape(pixel_array)) == 4: #3d rgb
+                                    pixeldataIn = (pixel_array[-1,:,:,0]).transpose()
+                                    pixeldataInR = (pixel_array[-1,:,:,0]).transpose()
+                                    pixeldataInG = (pixel_array[-1,:,:,1]).transpose()
+                                    pixeldataInB = (pixel_array[-1,:,:,2]).transpose()
+                                # remove rgb info
+                                for y in range(dcmInfile.Rows):
+                                    for x in range(dcmInfile.Columns):
+                                        r = pixeldataInR[x,y]
+                                        g = pixeldataInG[x,y]
+                                        b = pixeldataInB[x,y]
+                                        ma = max(r,g,b)
+                                        mi = min(r,g,b)
+                                        if ma != mi:
+                                            pixeldataIn[x,y] = 0
 
     else:
         path = os.path.dirname(instancedict[0])
@@ -367,7 +370,7 @@ def prepareInput(instancedict,headers_only,logTag="[prepareInput] "):
             if not headers_only: # NOTE: Rescaling is already done pydicom_series, but maybe not for stupid MR
                 pixeldataIn = np.transpose(dcmInfile.get_pixel_array(),(0,2,1))
 
-        except:
+        except Exception as e:
             raise ValueError("{} ERROR! {} is not a valid non-Enhanced DICOM series".format(logTag, path))
 
     return dcmInfile,pixeldataIn,getDICOMMode(dcmInfile)
