@@ -330,34 +330,34 @@ def prepareInput(instancedict,headers_only,logTag="[prepareInput] "):
                         else:
                             pixel_array = dcmInfile.pixel_array.reshape(dcmInfile.SamplesPerPixel, nofframes, dcmInfile.Rows, dcmInfile.Columns)
 
-                            # force using only the RED channel in RGB.
-                            if US_RGB_USE_RED == True:
-                                if len(np.shape(pixel_array)) == 3: #2d rgb
-                                    pixeldataIn = pixel_array[:,:,0].transpose()
-                                elif len(np.shape(pixel_array)) == 4: #3d rgb
-                                    pixeldataIn = (pixel_array[-1,:,:,0]).transpose()
-                            else:
-                                # remove all data where there is a difference between R,G,B
-                                if len(np.shape(pixel_array)) == 3: #2d rgb
-                                    pixeldataIn = pixel_array[:,:,0].transpose()
-                                    pixeldataInR = (pixel_array[:,:,0]).transpose()
-                                    pixeldataInG = (pixel_array[:,:,1]).transpose()
-                                    pixeldataInB = (pixel_array[:,:,2]).transpose()
-                                elif len(np.shape(pixel_array)) == 4: #3d rgb
-                                    pixeldataIn = (pixel_array[-1,:,:,0]).transpose()
-                                    pixeldataInR = (pixel_array[-1,:,:,0]).transpose()
-                                    pixeldataInG = (pixel_array[-1,:,:,1]).transpose()
-                                    pixeldataInB = (pixel_array[-1,:,:,2]).transpose()
-                                # remove rgb info
-                                for y in range(dcmInfile.Rows):
-                                    for x in range(dcmInfile.Columns):
-                                        r = pixeldataInR[x,y]
-                                        g = pixeldataInG[x,y]
-                                        b = pixeldataInB[x,y]
-                                        ma = max(r,g,b)
-                                        mi = min(r,g,b)
-                                        if ma != mi:
-                                            pixeldataIn[x,y] = 0
+                        # force using only the RED channel in RGB.
+                        if US_RGB_USE_RED == True:
+                            if len(np.shape(pixel_array)) == 3: #2d rgb
+                                pixeldataIn = pixel_array[:,:,0].transpose()
+                            elif len(np.shape(pixel_array)) == 4: #3d rgb
+                                pixeldataIn = (pixel_array[-1,:,:,0]).transpose()
+                        else:
+                            # remove all data where there is a difference between R,G,B
+                            if len(np.shape(pixel_array)) == 3: #2d rgb
+                                pixeldataIn = pixel_array[:,:,0].transpose()
+                                pixeldataInR = (pixel_array[:,:,0]).transpose()
+                                pixeldataInG = (pixel_array[:,:,1]).transpose()
+                                pixeldataInB = (pixel_array[:,:,2]).transpose()
+                            elif len(np.shape(pixel_array)) == 4: #3d rgb
+                                pixeldataIn = (pixel_array[-1,:,:,0]).transpose()
+                                pixeldataInR = (pixel_array[-1,:,:,0]).transpose()
+                                pixeldataInG = (pixel_array[-1,:,:,1]).transpose()
+                                pixeldataInB = (pixel_array[-1,:,:,2]).transpose()
+                            # remove rgb info
+                            for y in range(dcmInfile.Rows):
+                                for x in range(dcmInfile.Columns):
+                                    r = pixeldataInR[x,y]
+                                    g = pixeldataInG[x,y]
+                                    b = pixeldataInB[x,y]
+                                    ma = max(r,g,b)
+                                    mi = min(r,g,b)
+                                    if ma != mi:
+                                        pixeldataIn[x,y] = 0
 
     else:
         path = os.path.dirname(instancedict[0])
