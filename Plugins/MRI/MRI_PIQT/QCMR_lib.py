@@ -20,7 +20,7 @@ TODO: Linearity : m/p angle
 TODO: SliceProfile: phase shift
 TODO: pixelsizes
 Changelog:
-    20160802: sync with wad2.0
+    20160902: sync with wad2.0; Unified pywad1.0 and wad2.0
     20151111: Added resultimages for all tests
     20151104: Many changes to fix QA1, QA2, QA3 agreement with Philips results; removed AffineTransform, used lowpass instead of movingaverage; changed signs
     20150629: Added feedback if MTF failed because of wrongly position phantom
@@ -40,20 +40,50 @@ Changelog:
     20131010: FFU calc of rad10 and rad20 by Euclidean distance transform
     20131009: Finished SNR; finished ArtLevel; finish FloodField Uniformity
 """
-__version__ = '20160802'
+__version__ = '20160902'
 __author__ = 'aschilham'
 
 import dicom
 import numpy as np
 import scipy.ndimage as scind
-import QCMR_constants as lit
 import matplotlib.pyplot as plt
 import copy
-import QCMR_math as mymath
+
 try:
+    # wad2.0 runs each module stand alone
+    import QCMR_constants as lit
+    import QCMR_math as mymath
+except ImportError:
+    from . import QCMR_constants as lit
+    from . import QCMR_math as mymath
+
+# First try if we are running wad1.0, since in wad2 libs are installed systemwide
+try: 
+    # try local folder
     import wadwrapper_lib
 except ImportError:
-    from pyWADLib import wadwrapper_lib
+    # try pyWADlib from plugin.py.zip
+    try: 
+        from pyWADLib import wadwrapper_lib
+
+    except ImportError: 
+        # wad1.0 solutions failed, try wad2.0
+        try: 
+            # try system package wad_qc
+            from wad_qc.modulelibs import wadwrapper_lib
+        except ImportError: 
+            # use parent wad_qc folder, and add it to search path
+            import sys
+            # add root folder of WAD_QC to search path for modules
+            _modpath = os.path.dirname(os.path.abspath(__file__))
+            while(not os.path.basename(_modpath) == 'Modules'):
+                _new_modpath = os.path.dirname(_modpath)
+                if _new_modpath == _modpath:
+                    raise
+                _modpath = _new_modpath
+            sys.path.append(os.path.dirname(_modpath))
+            from wad_qc.modulelibs import wadwrapper_lib
+
 # for image results
 from PIL import Image # image from pillow is needed
 from PIL import ImageDraw # imagedraw from pillow is needed, not pil

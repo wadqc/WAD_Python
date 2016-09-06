@@ -34,7 +34,7 @@ if not 'MPLCONFIGDIR' in os.environ:
 import matplotlib
 matplotlib.use('Agg') # Force matplotlib to not use any Xwindows backend.
 
-import CDMam_lib
+from . import CDMam_lib
 try:
     import wadwrapper_lib
 except ImportError:

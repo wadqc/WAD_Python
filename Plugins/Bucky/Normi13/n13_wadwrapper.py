@@ -35,7 +35,7 @@ import matplotlib
 matplotlib.use('Agg') # Force matplotlib to not use any Xwindows backend.
 
 import dicom
-import n13_lib
+from . import n13_lib
 
 try: 
     # try local folder

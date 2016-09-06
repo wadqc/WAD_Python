@@ -26,8 +26,13 @@ import scipy.ndimage as scind
 from scipy import stats
 import copy
 import matplotlib.pyplot as plt
-from n13_geometry import MTFAlignROI, ValidateROI
-import n13_math as mymath
+try:
+    # wad2.0 runs each module stand alone
+    from n13_geometry import MTFAlignROI, ValidateROI
+    import n13_math as mymath
+except ImportError:
+    from .n13_geometry import MTFAlignROI, ValidateROI
+    from . import n13_math as mymath
 
 class MTFStruct:
     crLimit = 0.1 # contrast limit for MTF

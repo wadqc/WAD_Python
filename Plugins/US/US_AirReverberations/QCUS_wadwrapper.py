@@ -34,8 +34,9 @@ if not 'MPLCONFIGDIR' in os.environ:
 import matplotlib
 matplotlib.use('Agg') # Force matplotlib to not use any Xwindows backend.
 
-import QCUS_lib
-import ocr_lib
+from . import QCUS_lib
+from . import ocr_lib
+
 try:
     import wadwrapper_lib
 except ImportError:

@@ -34,8 +34,6 @@ __author__ = 'aschilham'
 import dicom
 import numpy as np
 import scipy.ndimage as scind
-import n13_constants as lit
-import n13_math as mymath
 
 import matplotlib.pyplot as plt
 from PIL import Image # image from pillow is needed
@@ -46,12 +44,24 @@ scipy_version = [int(v) for v in scipy.__version__ .split('.')]
 if scipy_version[1]<10 or (scipy_version[1] == 10 and scipy_version[1]<1):
     raise RuntimeError("scipy version too old. Upgrade scipy to at least 0.10.1")
 
-import n13_geometry as Geometry
-import n13_cuwedge as CuWedge
-import n13_lowcontrast as LowContrast
-import n13_resolution as Resolution
-import unif_lib
-
+try:
+    # wad2.0 runs each module stand alone
+    import n13_constants as lit
+    import n13_math as mymath
+    import n13_geometry as Geometry
+    import n13_cuwedge as CuWedge
+    import n13_lowcontrast as LowContrast
+    import n13_resolution as Resolution
+    import unif_lib
+except ImportError:
+    from . import n13_constants as lit
+    from . import n13_math as mymath
+    from . import n13_geometry as Geometry
+    from . import n13_cuwedge as CuWedge
+    from . import n13_lowcontrast as LowContrast
+    from . import n13_resolution as Resolution
+    from . import unif_lib
+    
 class Room:
     name = ""     # identifier of room
     outvalue = -1 # value of pixels outside x-ray field

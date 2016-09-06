@@ -26,8 +26,12 @@ import scipy.ndimage as scind
 from scipy.signal import medfilt
 import matplotlib.pyplot as plt
 
-import unif_lib
-
+try:
+    # wad2.0 runs each module stand alone
+    import unif_lib
+except ImportError:
+    from . import unif_lib
+    
 class GeomStruct:
     crop_ranges = None # [xmin_px,ymin_px, xmax_px,ymax_px]
     crop_frac = 1. #area_in/area_all

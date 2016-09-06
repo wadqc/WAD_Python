@@ -24,11 +24,11 @@ Some stuff that can be optimized:
  * speed up removal of grid (maybe with grid detection on lower scale?)
 
 Changelog:
-    20160802: sync with wad2.0
+    20160902: sync with wad2.0; Unified pywad1.0 and wad2.0;
     20150826: reshuffling in gridremove to demand less memory (windows cannot cope)
     20150213: first working version
 """
-__version__ = '20160802'
+__version__ = '20160902'
 __author__ = 'aschilham'
 
 import subprocess
@@ -39,13 +39,39 @@ import scipy.ndimage as scind
 from scipy.optimize import curve_fit
 
 import matplotlib.pyplot as plt
-try:
+# First try if we are running wad1.0, since in wad2 libs are installed systemwide
+try: 
+    # try local folder
     import wadwrapper_lib
 except ImportError:
-    from pyWADLib import wadwrapper_lib
+    # try pyWADlib from plugin.py.zip
+    try: 
+        from pyWADLib import wadwrapper_lib
 
-import CDMam_constants as lit
+    except ImportError: 
+        # wad1.0 solutions failed, try wad2.0
+        try: 
+            # try system package wad_qc
+            from wad_qc.modulelibs import wadwrapper_lib
+        except ImportError: 
+            # use parent wad_qc folder, and add it to search path
+            import sys
+            # add root folder of WAD_QC to search path for modules
+            _modpath = os.path.dirname(os.path.abspath(__file__))
+            while(not os.path.basename(_modpath) == 'Modules'):
+                _new_modpath = os.path.dirname(_modpath)
+                if _new_modpath == _modpath:
+                    raise
+                _modpath = _new_modpath
+            sys.path.append(os.path.dirname(_modpath))
+            from wad_qc.modulelibs import wadwrapper_lib
 
+try:
+    # wad2.0 runs each module stand alone
+    import CDMam_constants as lit
+except:
+    from . import CDMam_constants as lit
+    
 class CDMamPhantom:
     """
     Description of the CDMAM Phantom. For now version 3.2 and 3.4 are implemented

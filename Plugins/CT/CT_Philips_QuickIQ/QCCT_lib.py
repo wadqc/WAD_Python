@@ -17,7 +17,7 @@ from __future__ import print_function
 Warning: THIS MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!
 
 Changelog:
-    20160802: sync with wad2.0
+    20160902: sync with wad2.0; Unified pywad1.0 and wad2.0
     20150701: updated for iPatient iCT: body and head; other tags; other body
     20150409: Removed scanner definitions; should be passed to cs or in config
     20141009: Update to use dicomMode instead of mode2D
@@ -27,15 +27,43 @@ Changelog:
     20140409: Initial split of gui/lib for pywad
 
 """
-__version__ = '20160802'
+__version__ = '20160902'
 __author__ = 'aschilham'
 
 import copy
-import QCCT_constants as lit
 try:
+    # wad2.0 runs each module stand alone
+    import QCCT_constants as lit
+except ImportError:
+    from . import QCCT_constants as lit
+
+# First try if we are running wad1.0, since in wad2 libs are installed systemwide
+try: 
+    # try local folder
     import wadwrapper_lib
 except ImportError:
-    from pyWADLib import wadwrapper_lib
+    # try pyWADlib from plugin.py.zip
+    try: 
+        from pyWADLib import wadwrapper_lib
+
+    except ImportError: 
+        # wad1.0 solutions failed, try wad2.0
+        try: 
+            # try system package wad_qc
+            from wad_qc.modulelibs import wadwrapper_lib
+        except ImportError: 
+            # use parent wad_qc folder, and add it to search path
+            import sys
+            # add root folder of WAD_QC to search path for modules
+            _modpath = os.path.dirname(os.path.abspath(__file__))
+            while(not os.path.basename(_modpath) == 'Modules'):
+                _new_modpath = os.path.dirname(_modpath)
+                if _new_modpath == _modpath:
+                    raise
+                _modpath = _new_modpath
+            sys.path.append(os.path.dirname(_modpath))
+            from wad_qc.modulelibs import wadwrapper_lib
+
 import numpy as np
 from scipy import stats
 import scipy.ndimage

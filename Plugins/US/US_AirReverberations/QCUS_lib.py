@@ -68,7 +68,13 @@ import operator
 import scipy
 import time
 import os
-import QCUS_math as mymath
+
+try:
+    # wad2.0 runs each module stand alone
+    import QCUS_math as mymath
+except ImportError:
+    from . import QCUS_math as mymath
+    
 from PIL import Image # image from pillow is needed
 from PIL import ImageDraw # imagedraw from pillow is needed, not pil
 

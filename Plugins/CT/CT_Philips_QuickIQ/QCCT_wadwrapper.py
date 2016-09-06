@@ -34,8 +34,8 @@ import matplotlib
 matplotlib.use('Agg') # Force matplotlib to not use any Xwindows backend.
 
 import dicom
-import QCCT_lib
-import QCCT_constants as lit
+from . import QCCT_lib
+from . import QCCT_constants as lit
 
 try:
     import wadwrapper_lib

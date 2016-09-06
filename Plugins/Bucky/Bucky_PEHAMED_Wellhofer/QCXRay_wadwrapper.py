@@ -36,7 +36,7 @@ import matplotlib
 matplotlib.use('Agg') # Force matplotlib to not use any Xwindows backend.
 
 import dicom
-import QCXRay_lib
+from . import QCXRay_lib
 try:
     import wadwrapper_lib
 except ImportError:

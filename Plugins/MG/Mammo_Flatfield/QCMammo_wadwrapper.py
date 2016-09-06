@@ -34,7 +34,7 @@ import matplotlib
 matplotlib.use('Agg') # Force matplotlib to not use any Xwindows backend.
 
 import dicom
-import QCMammo_lib
+from . import QCMammo_lib
 try:
     import wadwrapper_lib
 except ImportError:
