@@ -29,7 +29,7 @@ class PluginResults(object):
     def __len__(self):
         return len(self._results)
 
-    def addBool(self, description, value, level=None, quantity='', units=''):
+    def addBool(self, description, value, level=None, quantity='', units='', criterium=None, rank=None):
         """Add '0' or '1' to results depending on `value` (bool).
         Raise exception if `value` is not of type 'bool'.
         """
@@ -39,16 +39,20 @@ class PluginResults(object):
             raise TypeError(error)
 
         value_str = '1' if value else '0'
-        self._addResult('boolean', description, value_str, level, quantity, units)
+        
+        acc_low, acc_high, crit_low, crit_high = None, None, None, None
+        self._addResult('boolean', description, value_str, level, quantity, units, acc_low, acc_high, crit_low, crit_high, criterium, rank)
 
-    def addFloat(self, description, value, level=None, quantity='', units=''):
+    def addFloat(self, description, value, level=None, quantity='', units='', acc_low=None, acc_high=None, crit_low=None, crit_high=None, rank=None):
         """Add string representation of `value` (float) to results.
         Raise exception if `value` can not be cast to float.
         """
         value_str = str(float(value))  # Test if value represents a number
-        self._addResult('float', description, value_str, level, quantity, units)
+        
+        criterium = None
+        self._addResult('float', description, value_str, level, quantity, units, acc_low, acc_high, crit_low, crit_high, criterium, rank)
 
-    def addChar(self, description, value, level=None, quantity='', units=''):
+    def addChar(self, description, value, level=None, quantity='', units='', criterium=None, rank=None):
         """Add `value` (str) to results.
         Raise exception if `value` is longer than 128 (limited by WAD MySQL)
         """
@@ -56,15 +60,19 @@ class PluginResults(object):
         if len(value) > 128:
             error = "({}) longer than 128 chars: {}".format(description, value)
             raise ValueError(error)
-        self._addResult('char', description, value, level, quantity, units)
+        
+        acc_low, acc_high, crit_low, crit_high = None, None, None, None
+        self._addResult('char', description, value, level, quantity, units, acc_low, acc_high, crit_low, crit_high, criterium, rank)
 
-    def addObject(self, description, value, level=None, quantity='', units=''):
+    def addObject(self, description, value, level=None, quantity= '',units= ''):
         """Add `value` (str) to results if it represents an accessible filepath.
         Raise exception if the file cannot be accessed.
         """
         path = os.path.abspath(value)
         open(path).close()  # Test if file can be accessed
-        self._addResult('object', description, path, level, quantity, units)
+        
+        acc_low, acc_high, crit_low, crit_high, criterium, rank = None, None, None, None, None, None
+        self._addResult('object', description, path, level, quantity, units, acc_low, acc_high, crit_low, crit_high, criterium, rank)
 
     def _getLevel(self, level):
         """Return `level` if it is specified, otherwise return the
@@ -82,33 +90,47 @@ class PluginResults(object):
             error = "`level` must be an integer, received {} {}"
             raise ValueError(error.format(type(level), level))
 
-    def _addResult(self, category, description, value, level, quantity, units):
+    def _addResult(self, category, description, value, level, quantity, units, acc_low, acc_high, crit_low, crit_high, criterium, rank):
         """Instantiate a SingleResult object and append to self._results list.
         """
         level = self._getLevel(level)
         self._results.append(
-            SingleResult(category, description, value, level, quantity, units))
+            SingleResult(category, description, value, level, quantity, units,
+                acc_low, acc_high, crit_low, crit_high, criterium, rank)
+        )
 
 
 class SingleResult(object):
     """Object to store a single plugin result."""
     resultCounter = 0
 
-    def __init__(self, category, description, value, level, quantity, units):
+    def __init__(self, category, description, value, level, quantity, units, acc_low, acc_high, crit_low, crit_high, criterium, rank):
         """Store result. `resultCounter` is incremented to keep track of the
         order in which SingleResult objects are stored amongst PluginResults
         objects (one PluginResults object is created for each action as
         specified in the config XML.
         """
         SingleResult.resultCounter += 1
-
-        self.id = SingleResult.resultCounter
+        
+        if rank is None:
+            self.rank = SingleResult.resultCounter
+        elif rank >= 0 or not isinstance(rank, int):
+            raise ValueError("Rank must be a negative integer or None {}:{}".format(description,rank))
+        else:
+            self.rank = rank
+        
         self.category = category
         self.value = value
         self.description = description
         self.quantity = quantity
         self.units = units
         self.level = level
+        
+        self.acc_low = acc_low
+        self.acc_high = acc_high
+        self.crit_low = crit_low
+        self.crit_high = crit_high
+        self.criterium = criterium
 
     def __repr__(self):
         """Return a human-readable string"""

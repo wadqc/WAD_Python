@@ -3,6 +3,7 @@
 Module for query/maintenance of the dcm4chee and icq databases.
 
 Changelog:
+20150901: Fixed crash if min empty
 20150617: Fixed crash on empty value
 20150408: Status string clean up
 20150401: Ignore pps_start, always prefer series_date; option to ignore pps_start, which makes a difference for MR
@@ -309,8 +310,9 @@ class DBIO:
             if entry.date is None:
                 cur.execute("SELECT content_datetime FROM %s WHERE series_fk=%d" % (Lit.table_instances,entry.seriesid))
                 instance_rows = cur.fetchall()
-                seriesdate = min ( [ row['content_datetime'] for row in instance_rows] )
-                entry.date = seriesdate
+                if len(instance_rows) >0 :
+                    seriesdate = min ( [ row['content_datetime'] for row in instance_rows] )
+                    entry.date = seriesdate
             if entry.date is None:
                 cur.execute("SELECT study_datetime FROM %s WHERE pk=%d" % (Lit.table_studies,entry.studyid))
                 row = cur.fetchone()

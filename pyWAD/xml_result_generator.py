@@ -37,7 +37,7 @@ def getResultsXML(result):
             result.description,
             result.value,
             result.level,
-            result.id,
+            result.rank,
         )
     else:
         out_xml = default_xml.format(
@@ -47,7 +47,7 @@ def getResultsXML(result):
             result.quantity,
             result.units,
             result.level,
-            result.id,
+            result.rank,
         )
 
     return out_xml
@@ -61,9 +61,16 @@ def getXMLFromResult(result, limits):
         #Check if a result has corresponding limits and gather the XML tags.
         if element.attrib["description"] == result.description:
             for child in element:
-                #Translate config XML tag to result XML tag
-                label = translate_limit_tags[child.tag]
-                bound_xml += "\t<{0}>{1}</{0}>\n".format(label, child.text)
+                if getattr(result, child.tag) is None: #Only add if it isn't explicitly added to the result by the plugin
+                    #Translate config XML tag to result XML tag
+                    label = translate_limit_tags[child.tag]
+                    bound_xml += "\t<{0}>{1}</{0}>\n".format(label, child.text)
+    
+    #Add bounds which are explicitly added to the result by the plugin
+    for bound in "acc_low", "acc_high", "crit_low", "crit_high", "criterium":
+        if getattr(result, bound) is not None:
+            label = translate_limit_tags[bound]
+            bound_xml += "\t<{0}>{1}</{0}>\n".format(label, getattr(result, bound))    
 
     xml_str = "<results>\n"
     xml_str += getResultsXML(result)

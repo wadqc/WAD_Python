@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -10,17 +11,13 @@
 # 
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from __future__ import print_function
 
-# -*- coding: utf-8 -*-
 """
-Created on Wed Oct  9 08:50:51 2014
-
-@author: aschilha
-TODO:
-
 Warning: THIS MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!
 
 Changelog:
+    20160902: sync with wad2.0
     20150522: Force scipy version at least 0.10.1 to avoid problems with PIL/Pillow mixing
     20150430: allow crash if no PIL.ImageDraw available
     20150428: prefer ImageDraw from PIL to fix error
@@ -42,12 +39,21 @@ Changelog:
     20131010: FFU calc of rad10 and rad20 by Euclidan distance transform
     20131009: Finished SNR; finished ArtLevel; finish FloodField Uniformity
 """
+__version__ = '20160902'
+__author__ = 'aschilham'
+
 import dicom
 import numpy as np
 from math import pi
 import copy
 import scipy.ndimage as scind
-import QCMammo_constants as lit
+
+try:
+    # wad2.0 runs each module stand alone
+    import QCMammo_constants as lit
+except ImportError:
+    from . import QCMammo_constants as lit
+    
 import matplotlib.pyplot as plt
 from PIL import Image # image from pillow is needed
 from PIL import ImageDraw # imagedraw from pillow is needed, not pil
@@ -56,10 +62,32 @@ import scipy.misc
 scipy_version = [int(v) for v in scipy.__version__ .split('.')]
 if scipy_version[1]<10 or (scipy_version[1] == 10 and scipy_version[1]<1):
     raise RuntimeError("scipy version too old. Upgrade scipy to at least 0.10.1")
-try:
+# First try if we are running wad1.0, since in wad2 libs are installed systemwide
+try: 
+    # try local folder
     import wadwrapper_lib
 except ImportError:
-    from pyWADLib import wadwrapper_lib
+    # try pyWADlib from plugin.py.zip
+    try: 
+        from pyWADLib import wadwrapper_lib
+
+    except ImportError: 
+        # wad1.0 solutions failed, try wad2.0
+        try: 
+            # try system package wad_qc
+            from wad_qc.modulelibs import wadwrapper_lib
+        except ImportError: 
+            # use parent wad_qc folder, and add it to search path
+            import sys
+            # add root folder of WAD_QC to search path for modules
+            _modpath = os.path.dirname(os.path.abspath(__file__))
+            while(not os.path.basename(_modpath) == 'Modules'):
+                _new_modpath = os.path.dirname(_modpath)
+                if _new_modpath == _modpath:
+                    raise
+                _modpath = _new_modpath
+            sys.path.append(os.path.dirname(_modpath))
+            from wad_qc.modulelibs import wadwrapper_lib
 
 
 class MammoStruct:
@@ -201,7 +229,7 @@ class Mammo_QC:
             widthpx = np.shape(cs_mam.pixeldataIn)[0] ## width/height in pixels
             heightpx = np.shape(cs_mam.pixeldataIn)[1]
             # check histogram
-            ypos = heightpx/2
+            ypos = int(heightpx/2)
             xmin_px = 0
             xmax_px = widthpx-1
             hist,bins = np.histogram(cs_mam.pixeldataIn[::3, ypos], bins=500,density=False)
@@ -209,7 +237,7 @@ class Mammo_QC:
             hist[bins[:-1]<=thresh] = 0 # ignore background peak
             thresh = .95*bins[hist.argmax()] # find foreground peak
             if cs_mam.verbose:
-                print "[RestrictRoi] htresh=",thresh
+                print("[RestrictRoi] htresh=",thresh)
             for ix in range(0,widthpx):
                 if(cs_mam.pixeldataIn[ix,ypos]>thresh):
                     xmin_px = ix+small_offset_px
@@ -218,7 +246,7 @@ class Mammo_QC:
                 if(cs_mam.pixeldataIn[ix,ypos]>thresh):
                     xmax_px = ix-small_offset_px
                     break
-            xpos = widthpx/2
+            xpos = int(widthpx/2)
             ymin_px = border_offset_px
             ymax_px = heightpx-border_offset_px -1
             hist,bins = np.histogram(cs_mam.pixeldataIn[xpos,border_offset_px:heightpx-border_offset_px:3], bins=500,density=False)
@@ -226,7 +254,7 @@ class Mammo_QC:
             hist[bins[:-1]<=thresh] = 0
             thresh = .95*bins[hist.argmax()]
             if cs_mam.verbose:
-                print "[RestrictRoi] vtresh=",thresh
+                print("[RestrictRoi] vtresh=",thresh)
             for iy in range(border_offset_px,heightpx-border_offset_px):
                 if(cs_mam.pixeldataIn[xpos,iy]>thresh):
                     ymin_px = iy+small_offset_px
@@ -236,10 +264,10 @@ class Mammo_QC:
                     ymax_px = iy-small_offset_px
                     break
             roipts = [
-            [xmin_px,ymin_px],
-            [xmax_px,ymin_px],
-            [xmax_px,ymax_px],
-            [xmin_px,ymax_px ]]
+                [xmin_px,ymin_px],
+                [xmax_px,ymin_px],
+                [xmax_px,ymax_px],
+                [xmin_px,ymax_px ]]
             cs_mam.expert_roipts = [xmin_px,xmax_px, ymin_px,ymax_px]
             cs_mam.expert_frac = 1.*(xmax_px-xmin_px)*(ymax_px-ymin_px)/(widthpx*(heightpx-2*border_offset_px))
             area_in = 1.*(xmax_px-xmin_px)*(ymax_px-ymin_px)
@@ -250,7 +278,7 @@ class Mammo_QC:
             mean_out = (area_all*mean_all-area_in*mean_in)/area_out
             cs_mam.expert_inoutoverin = (mean_in-mean_out)/mean_in
         except:
-            print "EXCEPTION!"
+            print("EXCEPTION!")
             pass
         return roipts
 
@@ -262,15 +290,15 @@ class Mammo_QC:
         """
         cs_test = copy.deepcopy(cs_mam)
         self.RestrictROI(cs_test)
-#        print "[NeedsCropping] frac=",cs_test.expert_frac
+#        print("[NeedsCropping] frac=",cs_test.expert_frac)
         cs_mam.expert_frac        = cs_test.expert_frac
         cs_mam.expert_inoutoverin = cs_test.expert_inoutoverin
 #        if cs_test.expert_frac < .75:
 #            return True
 #        return False
-#        print "[NeedsCropping] ratio=",cs_test.expert_inoutoverin
+#        print("[NeedsCropping] ratio=",cs_test.expert_inoutoverin)
         if cs_test.expert_inoutoverin > .5:
-            print "[NeedsCropping] frac,ratio=",cs_test.expert_frac,cs_test.expert_inoutoverin
+            print("[NeedsCropping] frac,ratio=",cs_test.expert_frac,cs_test.expert_inoutoverin)
             return True
         return False
 
@@ -341,7 +369,7 @@ class Mammo_QC:
                         try:
                             sumv2 += val*val
                         except:
-                            print "[L50Contrast] ERROR!",type(val),type(sumv),type(sumv2),val,sumv,sumv2,count
+                            print("[L50Contrast] ERROR!",type(val),type(sumv),type(sumv2),val,sumv,sumv2,count)
 
                         count += 1
             if count>0:
@@ -366,7 +394,7 @@ class Mammo_QC:
                         try:
                             sumv2 += val*val
                         except:
-                            print "[L50Contrast] ERROR!",type(val),type(sumv),type(sumv2),val,sumv,sumv2,count
+                            print("[L50Contrast] ERROR!",type(val),type(sumv),type(sumv2),val,sumv,sumv2,count)
 
                         count += 1
             if count>0:
@@ -406,12 +434,12 @@ class Mammo_QC:
 
         """
         if(np.shape(np.shape(pixeldata))[0]!=2):
-            print "[FindCenterShift2D] Error, called with non-2D data!"
+            print("[FindCenterShift2D] Error, called with non-2D data!")
             return error
 
         wid = np.shape(pixeldata)[0] ## width/height in pixels
         hei = np.shape(pixeldata)[1]
-        borderpx = max(2,min(wid,hei)/20)
+        borderpx = int(max(2,min(wid,hei)/20))
 
         dscale = 25.0
 
@@ -420,15 +448,15 @@ class Mammo_QC:
 
         # 2. Find bk value and fg value:
         bkval = np.average((np.average(pixeldata[0:borderpx,:]),
-                           np.average(pixeldata[-borderpx:,:]),
-                           np.average(pixeldata[:,0:borderpx,]),
-                           np.average(pixeldata[:,-borderpx:])
-        ))
-        fgval = np.average(pixeldata[wid/2-borderpx:wid/2+borderpx,hei/2-borderpx:hei/2+borderpx])
+                            np.average(pixeldata[-borderpx:,:]),
+                            np.average(pixeldata[:,0:borderpx,]),
+                            np.average(pixeldata[:,-borderpx:])
+                            ))
+        fgval = np.average(pixeldata[int(wid/2)-borderpx:int(wid/2)+borderpx,int(hei/2)-borderpx:int(hei/2)+borderpx])
 
         thresh = (fgval*2.+bkval)/3.
         if cs.verbose:
-            print "[FindCenterShift] bpix/bkval/fgval/thresh",borderpx,bkval,fgval,thresh
+            print("[FindCenterShift] bpix/bkval/fgval/thresh",borderpx,bkval,fgval,thresh)
         if bkval>fgval:
             lowmode = True
         else:
@@ -461,8 +489,8 @@ class Mammo_QC:
                 minLow = arrayLow[minLowId]
         shiftxypx[1] = minLowId
         if(cs.verbose):
-            print "[FindCenterShift] vertical ",minLowId
-       # 2.2 find right first pos without voxels below threshLow
+            print("[FindCenterShift] vertical ",minLowId)
+        # 2.2 find right first pos without voxels below threshLow
         minLowId = hei-1
         minLow = arrayLow[minLowId]
         for iy in reversed(range(0,hei)):
@@ -472,7 +500,7 @@ class Mammo_QC:
         # 2.3 mid is halfway left and right pos
         shiftxypx[1] =(shiftxypx[1]+minLowId-(hei-1))/2
         if(cs.verbose):
-            print "[FindCenterShift] vertical ",minLowId,(hei-1)/2,shiftxypx[1]
+            print("[FindCenterShift] vertical ",minLowId,(hei-1)/2,shiftxypx[1])
         # repeat for horizontal
         arrayLow = []
         for ix in range(0,wid):
@@ -500,7 +528,7 @@ class Mammo_QC:
                 minLow = arrayLow[minLowId]
         shiftxypx[0] = minLowId
         if(cs.verbose):
-            print "[FindCenterShift] horizontal ",minLowId
+            print("[FindCenterShift] horizontal ",minLowId)
 
         # 2.2 find right first pos without voxels below threshLow
         minLowId = wid-1
@@ -512,7 +540,7 @@ class Mammo_QC:
         # 2.3 mid is halfway left and right pos
         shiftxypx[0] =(shiftxypx[0]+minLowId-(wid-1))/2
         if(cs.verbose):
-            print "[FindCenterShift] horizontal ",minLowId,(wid-1)/2,shiftxypx[0]
+            print("[FindCenterShift] horizontal ",minLowId,(wid-1)/2,shiftxypx[0])
 
         error = False
         return error,shiftxypx
@@ -549,7 +577,7 @@ class Mammo_QC:
         border_offset_mm = 10.0 #this is the
         border_offset_px = int(border_offset_mm/pixel_spacing)
         ## According to EUREF_DMWG_Protocol_2003 the areas need to be 4cm^2
-    	
+
         ## ROI definitions:
 
         ## 0    1
@@ -572,10 +600,10 @@ class Mammo_QC:
         cs_mam.unif_rois.append([x1,width_roi_px, y0,height_roi_px])
         cs_mam.unif_rois.append([x0,width_roi_px, y1,height_roi_px])
         cs_mam.unif_rois.append([x1,width_roi_px, y1,height_roi_px])
-        x0 = field_min_x_px+(field_max_x_px-field_min_x_px)/2
-        y0 = field_min_y_px+(field_max_y_px-field_min_y_px)/2
+        x0 = int(field_min_x_px+(field_max_x_px-field_min_x_px)/2)
+        y0 = int(field_min_y_px+(field_max_y_px-field_min_y_px)/2)
         if cs_mam.scannername == lit.stL50:
-            cs_mam.unif_rois.append([x0,width_roi_px, y0-3.5*border_offset_px,height_roi_px])
+            cs_mam.unif_rois.append([x0,width_roi_px, y0-int(3.5*border_offset_px),height_roi_px])
         else:
             cs_mam.unif_rois.append([x0,width_roi_px, y0,height_roi_px])
         cs_mam.unif_rois.append([x1,width_roi_px, y0,height_roi_px])
@@ -648,7 +676,7 @@ class Mammo_QC:
                 slope  = 0.0276049841785717
                 offset = -10.225707588108031
             else:
-                print "[DoseRatio] Error! Unknown device model "+model
+                print("[DoseRatio] Error! Unknown device model "+model)
                 cs_mam.doseratio = -1
                 return False
         elif filt == "MOLYBDENUM":
@@ -674,7 +702,7 @@ class Mammo_QC:
             offset = -9.738774100294515
             cs_mam.filtername = "AG"
         else:
-            print "[DoseRatio] Error! Unknown filtermaterial "+(filt)
+            print("[DoseRatio] Error! Unknown filtermaterial "+(filt))
             cs_mam.doseratio = -1
             cs_mam.filtername = filt
             return False
@@ -684,7 +712,7 @@ class Mammo_QC:
         # Divide EntranceDose by Disc Integral
         cs_mam.doseratio = entdose/pred
         error = False
-#        print model,cs_mam.filtername,L0,thick,relR2,umAs,pred,entdose
+#        print(model,cs_mam.filtername,L0,thick,relR2,umAs,pred,entdose)
         return error
 
 #----------------------------------------------------------------------
@@ -705,25 +733,26 @@ class Mammo_QC:
         rows = np.shape(inImage)[0] ## width/height in pixels
         cols = np.shape(inImage)[1]
 
-#        print "[SplitMergeStructureDetector] inImage first/last/rows",0,rows-1,rows
+#        print("[SplitMergeStructureDetector] inImage first/last/rows",0,rows-1,rows)
 
         # 1. start with an empty result LIST
         result = np.empty_like(inImage, dtype=float)
         overlap = 4*(5+2)+1 #4*(iscale+dscale)+1; filter is 4 sigma wide
+        rows2 = int(rows/2)
         xparts = [ # first last keepfirst keeplast
-            [0,             rows/2 +overlap,  0,     rows/2-1],
-            [rows/2-overlap,rows,             rows/2,rows-1]
-        ]
+                   [0,             rows2 +overlap,  0,     rows2-1],
+                   [rows2-overlap,rows,             rows2,rows-1]
+                ]
 
         for xpart in xparts:
             pdCopy = (inImage[xpart[0]:xpart[1]:]).astype(float)
-#            print "[SplitMergeStructureDetector] pdCopy first/last/rows",xpart[0],xpart[1]-1,np.shape(pdCopy)[0]
+#            print("[SplitMergeStructureDetector] pdCopy first/last/rows",xpart[0],xpart[1]-1,np.shape(pdCopy)[0])
             pdProc = self.StructureDetector(pdCopy, None,uiobject)
 
             firstkeep = xpart[2]-xpart[0]
             lastkeep  = xpart[3]-xpart[0]
             offset    = xpart[2]-firstkeep
-#            print "[SplitMergeStructureDetector] Restore first/last",firstkeep+offset,lastkeep+offset
+#            print("[SplitMergeStructureDetector] Restore first/last",firstkeep+offset,lastkeep+offset)
             for i,row in enumerate(pdProc):
                 if i<firstkeep or i>lastkeep:
                     continue
@@ -733,7 +762,7 @@ class Mammo_QC:
             blurRes = scind.gaussian_filter(result,bksigma,order=[0,0])
             result -= blurRes
             if uiobject:
-                print "[SplitMergeStructureDetector] 5/4 trend removed"
+                print("[SplitMergeStructureDetector] 5/4 trend removed")
 
         return result
 
@@ -742,7 +771,7 @@ class Mammo_QC:
         Code is helaas slecht leesbaar geworden, maar gebruikte teveel geheugen.
         """
 #        import resource
-#        print "[Structure] resMB",1,(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000) # max usage so far
+#        print("[Structure] resMB",1,(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000) # max usage so far)
 
         """
         Return numpy array with largest eigenvalues of Structure Tensor
@@ -772,21 +801,21 @@ class Mammo_QC:
             uiobject.pbar.doProgress("...calculating Lx**2")
         except:
             pass
-       #except:
-        #  print "Cannot do progress"
+        #except:
+        #  print("Cannot do progress")
         #  pass
         Lx = (scind.gaussian_filter(pdCopy,dscale,order=[1,0]))
         Lxx = Lx**2
         try:
-          uiobject.pbar.doProgress("...calculating Ly**2")
+            uiobject.pbar.doProgress("...calculating Ly**2")
         except:
-          pass
+            pass
         Ly = (scind.gaussian_filter(pdCopy,dscale,order=[0,1]))
         Lyy = Ly**2
         try:
-          uiobject.pbar.doProgress("...calculating Lx*Ly")
+            uiobject.pbar.doProgress("...calculating Lx*Ly")
         except:
-          pass
+            pass
 
         # optimize copies in mem: 4 in use
         Lx *= Ly # actually LxLy Lxy = Lx*Ly
@@ -794,28 +823,28 @@ class Mammo_QC:
 
         #Step 3 Integrate over iscale
         try:
-          uiobject.pbar.doProgress("...smoothing Lx**2")
+            uiobject.pbar.doProgress("...smoothing Lx**2")
         except:
-          pass
+            pass
         Lxx = scind.gaussian_filter(Lxx,iscale,order=[0,0])
         try:
-          uiobject.pbar.doProgress("...smoothing Ly**2")
+            uiobject.pbar.doProgress("...smoothing Ly**2")
         except:
-          pass
+            pass
         Lyy = scind.gaussian_filter(Lyy,iscale,order=[0,0])
         try:
-          uiobject.pbar.doProgress("...smoothing Lx*Ly")
+            uiobject.pbar.doProgress("...smoothing Lx*Ly")
         except:
-          pass
+            pass
         Lx = scind.gaussian_filter(Lx,iscale,order=[0,0]) # Lxy = scind.gaussian_filter(Lxy,iscale,order=[0,0]); 3 in use
 
         # Step 2: calculate the eigenvalues of the Hessian matrix:
         #  Lpp = 0.5*(Lyy+Lxx- sqrt((Lyy+Lxx)**2-4*(LyyLxx-Lyx**2)))
         #  Lqq = 0.5*(Lyy+Lxx+ sqrt((Lyy+Lxx)**2-4*(LyyLxx-Lyx**2)))
         try:
-          uiobject.pbar.doProgress("...calculating ev")
+            uiobject.pbar.doProgress("...calculating ev")
         except:
-          pass
+            pass
 
         Lxx += Lyy                # Ma= Lyy+Lxx ; 3 in use
         Lyy = (Lxx-Lyy)*Lyy # Lyy*Lxx-Lxy**2: 3 in use
@@ -833,12 +862,12 @@ class Mammo_QC:
             Lyy = scind.gaussian_filter(Lxx,bksigma,order=[0,0])
             Lxx -= Lyy
             if uiobject:
-                print "[StructureDetector] 5/4 trend removed"
+                print("[StructureDetector] 5/4 trend removed")
 
         try:
-          uiobject.pbar.endProgress()
+            uiobject.pbar.endProgress()
         except:
-          pass
+            pass
 
         return Lxx
 
@@ -851,24 +880,24 @@ class Mammo_QC:
             uiobject.pbar.startProgress(3,"Calculating LocSNR")
         blurIm = scind.gaussian_filter(pSrc,sigma,order=[0,0])
         if uiobject:
-            print "[LocalSNR] 1/4 blur'd"
+            print("[LocalSNR] 1/4 blur'd")
         devIm = pSrc-blurIm
         if uiobject:
             uiobject.pbar.doProgress("dev'd")
-            print "[LocalSNR] 2/4 dev'd"
+            print("[LocalSNR] 2/4 dev'd")
         sdIm  = np.sqrt(scind.gaussian_filter(devIm**2,sigma,order=[0,0]))
         sdIm[sdIm<1.e-6]=1. # prevent div by zero
         if uiobject:
             uiobject.pbar.doProgress("std'd")
-            print "[LocalSNR] 3/4 std'd"
+            print("[LocalSNR] 3/4 std'd")
         locnormIm = blurIm/sdIm
         if uiobject:
-            print "[LocalSNR] 4/4 snr'd"
+            print("[LocalSNR] 4/4 snr'd")
         if bksigma is not None:
             blurIm = scind.gaussian_filter(locnormIm,bksigma,order=[0,0])
             locnormIm -= blurIm
             if uiobject:
-                print "[LocalSNR] 5/4 trend removed"
+                print("[LocalSNR] 5/4 trend removed")
         if uiobject:
             uiobject.pbar.endProgress()
 #        blurIm = scind.gaussian_filter(locnormIm,sigma,order=[2,0])**2+scind.gaussian_filter(locnormIm,sigma,order=[0,2])**2
@@ -903,18 +932,18 @@ class Mammo_QC:
             # To detect the later, the slower "structure" is needed
             dscale = 25.0
 ###            import resource
-###            print "[Structure] resMB",1,(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000) # max usage so far
+###            print("[Structure] resMB",1,(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000) # max usage so far)
 #            cs_mam.art_image = self.StructureDetector(pdCopy,bksigma=dscale,uiobject=uiobject) # remove background trend
             cs_mam.art_image = self.SplitMergeStructureDetector(pdCopy,bksigma=dscale,uiobject=uiobject) # remove background trend
-###            print "[Structure] resMB",1,(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000) # max usage so far
+###            print("[Structure] resMB",1,(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000) # max usage so far)
 ###            return
             thresh = 3000 # with bk removal, lower value required
 ##            cs_mam.art_image = self.StructureDetector(pdCopy,uiobject=uiobject) # do not remove background trend
 ##            thresh = 4000
         else:
             if doUseStructureAlways:
-#                cs_mam.art_image = self.StructureDetector(pdCopy,uiobject=uiobject)
-#                thresh = 5
+                #cs_mam.art_image = self.StructureDetector(pdCopy,uiobject=uiobject)
+                #thresh = 5
                 dscale = 25.0
                 cs_mam.art_image = self.StructureDetector(pdCopy,bksigma=dscale,uiobject=uiobject) # remove background trend
                 thresh = 10 # less sensitive 5
@@ -923,8 +952,8 @@ class Mammo_QC:
                 iscale = 5.0
                 dscale = 25.0
                 cs_mam.art_image = self.LocalSNR(pdCopy,sigma=iscale,bksigma=dscale,uiobject=uiobject)# remove background trend
-          #      cs_mam.art_image = self.LocalSNR(pdCopy,sigma=iscale,uiobject=uiobject)# do not remove background trend
-          #      return error
+                #cs_mam.art_image = self.LocalSNR(pdCopy,sigma=iscale,uiobject=uiobject)# do not remove background trend
+                #return error
                 thresh = -15. # more sensitive -20.
 
         """
@@ -991,7 +1020,7 @@ class Mammo_QC:
             if uiobject:
                 uiobject.pbar.endProgress()
                 uiobject.pbar.label.setText("Corrupt image!")
-            print "[SNRArtefacts] ERROR! Corrupt image!",hist
+            print("[SNRArtefacts] ERROR! Corrupt image!",hist)
             if uiobject:
                 uiobject.pbar.label.setText("Finished.")
             return error
@@ -1009,12 +1038,12 @@ class Mammo_QC:
 
         nc = len(clusters)
         if cs_mam.verbose:
-            print "[Artefacts] found",npix ," artefact pixels in",nc,"clusters"
+            print("[Artefacts] found",npix ," artefact pixels in",nc,"clusters")
 
         if uiobject:
             uiobject.pbar.endProgress()
         if cs_mam.verbose:
-            print "[Artefacts] Found",len(clusters),"clusters"
+            print("[Artefacts] Found",len(clusters),"clusters")
 
         cs_mam.art_rois = []
         for c in clusters:
@@ -1029,7 +1058,7 @@ class Mammo_QC:
             cs_mam.art_rois.append([(maxx+minx+1)/2.,(maxy+miny+1)/2., rad])
 
             if cs_mam.verbose:
-                print "[Artefacts]...size",len(c)
+                print("[Artefacts]...size",len(c))
 
         if cs_mam is not None:
             cs_mam.art_clusters = copy.deepcopy(clusters)
@@ -1052,69 +1081,69 @@ class Mammo_QC:
         self.DetermineScannerID(cs)
         if(info == "dicom"):
             dicomfields = [ ["0008,0021",  "Series Date"],
-                           ["0008,0031",  "Series Time"],
-        		    ["0008,0070",  "Manufacturer"],
-        		    ["0008,0080",  "InstitutionName"],
-        		    ["0008,1010",  "StationName"],
-        		    ["0008,1030",  "StudyDescription"],
-        		    ["0008,103E",  "SeriesDescription"],
-        		    ["0008,1070",  "Operator"],
-        		    ["0010,0020",  "PatientID"],
-        		    ["0018,0060",  "kVp"],
-        		    ["0018,1000",  "DeviceSerialNumber"],
-        		    ["0018,1020",  "SoftwareVersions"],
-        		    ["0018,1110",  "DistanceSourceToDetector"],
-        		    ["0018,1111",  "DistanceSourceToPatient"],
-        		    ["0018,1150",  "ExposureTime_(ms)"],
-        		    ["0018,1151",  "TubeCurrent_(mA)"],
-        		    ["0018,1153",  "muAs"],
-        		    ["0018,1164",  "ImagerPixelSpacing"],
-        		    ["0018,1166",  "Grid"],
-        		    ["0018,1190",  "FocalSpot"],
-        		    ["0018,1191",  "AnodeTargetMaterial"],
-        		    ["0018,11A0",  "BodyPartThickness"],
-        		    ["0018,11A2",  "CompressionForce"],
-        		    ["0018,1405",  "RelativeXRayExposure"],
-        		    ["0018,700A",  "DetectorID"],
-        		    ["0018,700C",  "DateOfLastDetectorCalibration"],
-        		    ["0018,7050",  "FilterMaterialLT"],
-        		    ["0019,1029",  "---"],
-        		    ["0028,0101",  "BitsStored"],
-        		    ["0028,1040",  "PixelensityRelationship"],
-        		    ["0028,1052",  "Rescaleercept"],
-        		    ["0028,1053",  "RescaleSlope"],
-        		    ["0028,1054",  "RescaleType"],
-        		    ["0040,0302",  "EntranceDose"],
-        		    ["0040,0314",  "HalfValueLayer_(mm)"],
-        		    ["0040,0316",  "OrganDose"],
-        		    ["0040,8302",  "EntranceDose_(mGy)"],
-        		    ["0000,0000",  "NOViewCodeSequence"],
-        		    ["0000,0000",  "NOViewCodeMeaning"]]
+                            ["0008,0031",  "Series Time"],
+                            ["0008,0070",  "Manufacturer"],
+                            ["0008,0080",  "InstitutionName"],
+                            ["0008,1010",  "StationName"],
+                            ["0008,1030",  "StudyDescription"],
+                            ["0008,103E",  "SeriesDescription"],
+                            ["0008,1070",  "Operator"],
+                            ["0010,0020",  "PatientID"],
+                            ["0018,0060",  "kVp"],
+                            ["0018,1000",  "DeviceSerialNumber"],
+                            ["0018,1020",  "SoftwareVersions"],
+                            ["0018,1110",  "DistanceSourceToDetector"],
+                            ["0018,1111",  "DistanceSourceToPatient"],
+                            ["0018,1150",  "ExposureTime_(ms)"],
+                            ["0018,1151",  "TubeCurrent_(mA)"],
+                            ["0018,1153",  "muAs"],
+                            ["0018,1164",  "ImagerPixelSpacing"],
+                            ["0018,1166",  "Grid"],
+                            ["0018,1190",  "FocalSpot"],
+                            ["0018,1191",  "AnodeTargetMaterial"],
+                            ["0018,11A0",  "BodyPartThickness"],
+                            ["0018,11A2",  "CompressionForce"],
+                            ["0018,1405",  "RelativeXRayExposure"],
+                            ["0018,700A",  "DetectorID"],
+                            ["0018,700C",  "DateOfLastDetectorCalibration"],
+                            ["0018,7050",  "FilterMaterialLT"],
+                            ["0019,1029",  "---"],
+                            ["0028,0101",  "BitsStored"],
+                            ["0028,1040",  "PixelensityRelationship"],
+                            ["0028,1052",  "Rescaleercept"],
+                            ["0028,1053",  "RescaleSlope"],
+                            ["0028,1054",  "RescaleType"],
+                            ["0040,0302",  "EntranceDose"],
+                            ["0040,0314",  "HalfValueLayer_(mm)"],
+                            ["0040,0316",  "OrganDose"],
+                            ["0040,8302",  "EntranceDose_(mGy)"],
+                            ["0000,0000",  "NOViewCodeSequence"],
+                            ["0000,0000",  "NOViewCodeMeaning"]]
             if cs.scannername == lit.stL50:
                 dicomfields[0] = ["0008,0022",  "Acquisition Date"]
                 dicomfields[1] = ["0008,0030",  "Acquisition Time"]
 
         elif(info == "qc"):
             dicomfields = [["0008,0021",  "Series Date"],
-        		    ["0008,1010",  "StationName"],
-        		    ["0008,1070",  "Operator"],
-        		    ["0018,0060",  "kVp"],
-        		    ["0018,1020",  "SoftwareVersions"],
-        		    ["0018,1030",  "ProtocolName"],
-        		    ["0018,1110",  "DistanceSourceToDetector"],
-        		    ["0018,1111",  "DistanceSourceToPatient"],
-        		    ["0018,1153",  "muAs"],
-        		    ["0018,1166",  "Grid"],
-        		    ["0018,1190",  "FocalSpot"],
-        		    ["0018,1191",  "AnodeTargetMaterial"],
-        		    ["0018,11A0",  "BodyPartThickness"],
-        		    ["0018,11A2",  "CompressionForce"],
-        		    ["0018,700A",  "DetectorID"],
-        		    ["0018,700C",  "DateOfLastDetectorCalibration"],
-        		    ["0018,7050",  "FilterMaterialLT"],
-        		    ["0040,0314",  "HalfValueLayer_(mm)"],
-        		    ["0040,0316",  "OrganDose"],
-        		    ["0040,8302",  "EntranceDose_(mGy)"]]
+                           ["0008,1010",  "StationName"],
+                           ["0008,1070",  "Operator"],
+                           ["0018,0060",  "kVp"],
+                           ["0018,1020",  "SoftwareVersions"],
+                           ["0018,1030",  "ProtocolName"],
+                           ["0018,1110",  "DistanceSourceToDetector"],
+                           ["0018,1111",  "DistanceSourceToPatient"],
+                           ["0018,1153",  "muAs"],
+                           ["0018,1166",  "Grid"],
+                           ["0018,1190",  "FocalSpot"],
+                           ["0018,1191",  "AnodeTargetMaterial"],
+                           ["0018,11A0",  "BodyPartThickness"],
+                           ["0018,11A2",  "CompressionForce"],
+                           ["0018,700A",  "DetectorID"],
+                           ["0018,700C",  "DateOfLastDetectorCalibration"],
+                           ["0018,7050",  "FilterMaterialLT"],
+                           ["0040,0314",  "HalfValueLayer_(mm)"],
+                           ["0040,0316",  "OrganDose"],
+                           ["0040,8302",  "EntranceDose_(mGy)"]]
             if cs.scannername == lit.stL50:
                 dicomfields[0] = ["0008,0022",  "Acquisition Date"]
                 dicomfields.append( ["0019,10c1",  "EnergyComponent"] )
@@ -1123,7 +1152,7 @@ class Mammo_QC:
                 ["0008,0022",  "AcquisitionDate"],
                 ["0008,0032",  "AcquisitionTime"],
                 ["0018,7050",  "FilterMaterialLT"]
-                ]
+            ]
 
         results = []
         for df in dicomfields:
@@ -1156,14 +1185,14 @@ class Mammo_QC:
         return error
 
     def drawThickCircle(self,draw,x,y,rad,color,thick):
-        for t in range(-(thick-1)/2,(thick+1)/2):
+        for t in range(-int((thick-1)/2),int((thick+1)/2)):
             r1 = rad+t
             draw.ellipse((x-r1,y-r1,x+r1,y+r1), outline=color)
 
     def saveAnnotatedArtefactImage(self,cs,fname):
         # make a palette, mapping intensities to greyscale
         pal = np.arange(0,256,1,dtype=np.uint8)[:,np.newaxis] * \
-                              np.ones((3,),dtype=np.uint8)[np.newaxis,:]
+            np.ones((3,),dtype=np.uint8)[np.newaxis,:]
         # but reserve the first for red for markings
         pal[0] = [255,0,0]
 

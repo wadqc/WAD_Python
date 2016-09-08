@@ -10,19 +10,13 @@
 # 
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-import numpy as np
-import os
-
-def _importProfile(fname='profile.tsv'):
-    return np.loadtxt(os.path.join('temp',fname), delimiter='\t')
-
-def _exportProfile(data,fname='profile.tsv'):
-    np.savetxt(os.path.join('temp',fname), data, delimiter='\t')
-
-def _importNDArray(fname='ndarray.npy'):
-    return np.load(os.path.join('temp',fname))
-
-def _exportNDArray(data,fname='ndarray.npy'):
-    np.save(os.path.join('temp',fname), data)
-
+#
+"""
+String constants for usage in QCXRay
+"""
+stUnknown = "Unknown"
+stTable   = "Table"
+stWall    = "Wall"
+stForced = "Forced"
+stPehamed   = "pehamed"
+stWellhofer = "wellhofer"

@@ -1,4 +1,6 @@
 # dicom_series.py
+from __future__ import print_function
+
 """
 By calling the function read_files with a directory name or list
 of files as an argument, a list of DicomSeries instances can be
@@ -20,6 +22,7 @@ instance is created for each 3D volume.
 #    available at http://pydicom.googlecode.com
 #
 # Changelog:
+# 20160902: python3 compatible
 # 20150616: AS: added fake attributes if missing for RF
 # 20140904: AS: exclusion of RAW files which popped up in MRI data sent PACS
 # 20140526: Merging of DD version(added get_data and show_data) with AS version (added usage of thickness if missing z-pos info)
@@ -47,7 +50,10 @@ import time
 import gc
 import dicom
 from dicom.sequence import Sequence
-import pylab as plt
+try:
+    import pylab as plt
+except:
+    pass
 
 # Try importing numpy
 try:
@@ -122,7 +128,7 @@ _progressBar = ProgressBar()
 
 def _progressCallback(progress):
     """ The default callback for displaying progress. """
-    if isinstance(progress, basestring):
+    if isinstance(progress, str):
         _progressBar.Start(progress)
         _progressBar._t0 = time.time()
     elif progress is None:
@@ -190,7 +196,7 @@ def _splitSerieIfRequired(serie, series):
         else:
             # Test missing file
             if distance and newDist > 1.5 * distance:
-                print 'Warning: missing file after "%s"' % ds1.filename
+                print('Warning: missing file after "%s"' % ds1.filename)
             distance = newDist
 
         # Add to last list
@@ -330,14 +336,14 @@ def read_files(path, showProgress=False, readPixelData=False,skipNonImageFiles=T
     files = []
 
     # Obtain data from the given path
-    if isinstance(path, basestring):
+    if isinstance(path, str):
         # Make dir nice
         basedir = os.path.abspath(path)
         # Check whether it exists
         if not os.path.isdir(basedir):
 #            raise ValueError('The given path is not a valid directory.')
             if os.path.isfile(path):
-                print "a single dicom file!"
+                print("a single dicom file!")
                 files.append(path)
 
         if os.path.isdir(basedir):
@@ -352,9 +358,9 @@ def read_files(path, showProgress=False, readPixelData=False,skipNonImageFiles=T
             elif os.path.isfile(p):
                 files.append(p)
             else:
-                print "Warning, the path '%s' is not valid." % p
+                print("Warning, the path '%s' is not valid." % p)
     else:
-        raise ValueError('The path argument must be a string or list.')
+        raise ValueError('The path argument must be a string or list, but is of type', str(type(path)))
 
     # Set default progress callback?
     if showProgress is True:
@@ -388,7 +394,7 @@ def read_files(path, showProgress=False, readPixelData=False,skipNonImageFiles=T
             if showProgress is _progressCallback:
                 _progressBar.PrintMessage(str(why))
             else:
-                print 'Warning:', why
+                print('Warning:', why)
             continue
 
         #AS: Skip the file if it is of SOPClassUID 1.2.840.10008.5.1.4.1.1.66
@@ -398,7 +404,7 @@ def read_files(path, showProgress=False, readPixelData=False,skipNonImageFiles=T
             except AttributeError:
                 continue  # some other kind of dicom file
             if sopclass == 'Raw Data Storage': #'1.2.840.10008.5.1.4.1.1.66'
-                print 'Skipping RAW file %s' %filename
+                print('Skipping RAW file %s' %filename)
                 continue
 
         # Get SUID and register the file with an existing or new series object
@@ -417,7 +423,7 @@ def read_files(path, showProgress=False, readPixelData=False,skipNonImageFiles=T
     showProgress(None)
 
     # Make a list and sort, so that the order is deterministic
-    series = series.values()
+    series = list(series.values())
     series.sort(key=lambda x: x.suid)
     # Split series if necessary
     for serie in reversed([serie for serie in series]):
@@ -430,7 +436,7 @@ def read_files(path, showProgress=False, readPixelData=False,skipNonImageFiles=T
         try:
             series[i]._finish()
             series_.append(series[i])
-        except Exception,e:
+        except Exception as e:
             pass  # Skip serie (probably report-like file without pixels)
         showProgress(float(i + 1) / len(series))
     showProgress(None)
@@ -464,15 +470,15 @@ class DicomSeries(object):
         self._sampling = None
 
     def _fixMissingAttributes_AS(self):
-      # For now only for RF sets some of these tags were missing!
-      for index in range(len(self._datasets)):
-	if not hasattr(self._datasets[index],'PixelSpacing'):
-	  print '[pydicom_series] AS: adding fake PixelSpacing'
-	  self._datasets[index].PixelSpacing = [1,1]
-	if not hasattr(self._datasets[index],'SliceThickness'):
-	  print '[pydicom_series] AS: adding fake SliceThickness'
-	  self._datasets[index].SliceThickness = 1
-	    
+        # For now only for RF sets some of these tags were missing!
+        for index in range(len(self._datasets)):
+            if not hasattr(self._datasets[index],'PixelSpacing'):
+                print('[pydicom_series] AS: adding fake PixelSpacing')
+                self._datasets[index].PixelSpacing = [1,1]
+            if not hasattr(self._datasets[index],'SliceThickness'):
+                print('[pydicom_series] AS: adding fake SliceThickness')
+                self._datasets[index].SliceThickness = 1
+
 
     @property
     def suid(self):
@@ -616,11 +622,11 @@ class DicomSeries(object):
           * that the pixel spacing of all images match
 
         """
-	#
-	# Try to fix the data if it is missing attributes [e.g. for RF] AS
-	if len( self._datasets) > 0 and self._datasets[0].Modality == 'RF':
-	  self._fixMissingAttributes_AS()
-	  
+        #
+        # Try to fix the data if it is missing attributes [e.g. for RF] AS
+        if len( self._datasets) > 0 and self._datasets[0].Modality == 'RF':
+            self._fixMissingAttributes_AS()
+
         # The datasets list should be sorted by instance number
         L = self._datasets
         if len(L) == 0:
@@ -674,18 +680,18 @@ class DicomSeries(object):
                 if self._showProgress is _progressCallback:
                     _progressBar.PrintMessage(msg)
                 else:
-                    print msg
+                    print(msg)
             # Store previous
             ds1 = ds2
 
         if warning_distance:
-            print "*** *** WARNING: No z-pos info in file, using thickness instead of distance"
+            print("*** *** WARNING: No z-pos info in file, using thickness instead of distance")
         # Create new dataset by making a deep copy of the first
         info = dicom.dataset.Dataset()
         firstDs = self._datasets[0]
         for key in firstDs.keys():
             if key == (0x01f1, 0x1033):
-                print "AS: ignoring key",key
+                print("AS: ignoring key",key)
                 continue
             if key != (0x7fe0, 0x0010):
                 el = firstDs[key]
@@ -705,27 +711,30 @@ class DicomSeries(object):
 
 
 def get_data(dicomseries):
-    print dicomseries[0]._datasets[0]
+    print(dicomseries[0]._datasets[0])
     return dicomseries[0]._datasets[0].pixel_array
 
 def show_data(array):
-    plt.matshow(array[20,:,:])
-    plt.show()
+    try:
+        plt.matshow(array[20,:,:])
+        plt.show()
+    except:
+        print('[show_data] Error! matplotlib was installed or accessible')
 
 
 if __name__ == '__main__':
     import sys
 
     if len(sys.argv) != 2:
-        print "Expected a single argument: a directory with dicom files in it"
+        print("Expected a single argument: a directory with dicom files in it")
     else:
         adir = sys.argv[1]
         t0 = time.time()
         all_series = read_files(adir, None, False)
-        print "Summary of each series:"
+        print("Summary of each series:")
         for series in all_series:
-            print series.description
+            print(series.description)
 
 
-        print np.shape(get_data(all_series))
+        print(np.shape(get_data(all_series)))
         show_data(get_data(all_series))

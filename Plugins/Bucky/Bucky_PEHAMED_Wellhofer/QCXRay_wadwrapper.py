@@ -10,25 +10,25 @@
 # 
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-# PyWAD is open-source software and consists of a set of plugins written in python for the WAD-Software medical physics quality control software. 
+#
+# PyWAD is open-source software and consists of a set of modules written in python for the WAD-Software medical physics quality control software. 
 # The WAD Software can be found on https://github.com/wadqc
 # 
-# The pywad package includes plugins for the automated analysis of QC images for various imaging modalities. 
+# The pywad package includes modules for the automated analysis of QC images for various imaging modalities. 
 # PyWAD has been originaly initiated by Dennis Dickerscheid (AZN), Arnold Schilham (UMCU), Rob van Rooij (UMCU) and Tim de Wit (AMC) 
 #
 #
 # Changelog:
+#   20160802: sync with wad2.0
 #
 #
 # Description of this plugin:
 # 
 #
+from __future__ import print_function # python 2 and 3 compatible
 
-
-__version__='20150814'
-__author__ = 'aschilha'
-import sys
+__version__ = '20160802'
+__author__ = 'aschilham'
 import os
 if not 'MPLCONFIGDIR' in os.environ:
     os.environ['MPLCONFIGDIR'] = "/tmp/.matplotlib" # if this folder already exists it must be accessible by the owner of WAD_Processor 
@@ -36,7 +36,7 @@ import matplotlib
 matplotlib.use('Agg') # Force matplotlib to not use any Xwindows backend.
 
 import dicom
-import QCXRay_lib
+from . import QCXRay_lib
 try:
     import wadwrapper_lib
 except ImportError:
@@ -85,9 +85,9 @@ def _getRoomDefinition(params):
             mnames = ['mm1.8','mm0.6','mm1.4','mm4.6']
             for mname in mnames:
                 marker  = markers.find(mname)
-                linepairmarkers[mname] = [ float(marker.attrib['x']), float(marker.attrib['y']) ]
+                linepairmarkers['xy'+mname] = [ float(marker.attrib['x']), float(marker.attrib['y']) ]
         except:
-            print logTag()+' exact locations of markers on linepair pattern not supplied by config. Using empirical values; please check if these are valid here.'
+            print(logTag()+' exact locations of markers on linepair pattern not supplied by config. Using empirical values; please check if these are valid here.')
             
         # Source to Detector distance and Patient to Detector distance for wall and table (both in mm)
         tablepidmm  = float(params.find('tablepidmm').text)
@@ -103,7 +103,6 @@ def _getRoomDefinition(params):
             outvalue    = int(params.find('outvalue').text)
         except:
             pass
-        
         
         # for fcr systems there is no dicom tag to indicate wall or table, but a hack on SD or Sensitivity is possible
         try:
@@ -135,7 +134,7 @@ def _getRoomDefinition(params):
                                tablesid=tablesidmm, wallsid=wallsidmm, 
                                tablepid=tablepidmm, wallpid=wallpidmm,
                                phantom=phantom,linepairmarkers=linepairmarkers)
-    except AttributeError,e:
+    except AttributeError as e:
         raise ValueError(logTag()+" missing room definition parameter!"+str(e))
 
 
@@ -178,8 +177,15 @@ def xrayqc_series(data, results, params):
 
     labvals = qclib.ReportEntries(cs)
     tmpdict={}
-    for key,val in labvals:
-        results.addFloat(key+str(idname), val, quantity=str(key))
+    for elem in labvals:
+        #labvals.append( {'name':'label','value':0, 'quantity':'columnname','level':'1:default, 2: detail','pos':missing or a number} )
+        # if no pos given, the next one will be given
+        # if no quantity given, 'name' will be used
+        # if no level given, the default will be used
+        quan = elem['quantity'] if 'quantity' in elem else str(elem['name'])
+        level = elem['level'] if 'level' in elem else None
+        rank = elem['rank'] if 'rank' in elem else None
+        results.addFloat(elem['name']+str(idname), elem['value'], quantity=quan, level=level,rank=rank)
 
     ## 6. Build artefact picture thumbnail
     filename = 'test'+idname+'.jpg' # Use jpg if a thumbnail is desired
@@ -220,13 +226,16 @@ def xrayheader_series(data,results,params):
         'Sensitivity',
         'kVp'
     ]
-
+    offset = -25
     results.addChar('pluginversion'+idname, str(qclib.qcversion)) # do not specify level, use default from config
-    for di in dicominfo:
-        if di[0] in floatlist:
-            results.addFloat(di[0]+idname, di[1]) # do not specify level, use default from config
+    for elem in dicominfo:
+        quan = elem['quantity'] if 'quantity' in elem else str(elem['name'])
+        level = elem['level'] if 'level' in elem else None # if not specify level, use default from config
+        rank = elem['rank'] if 'rank' in elem else None
+        if elem['name'] in floatlist:
+            results.addFloat(elem['name']+str(idname), elem['value'], quantity=quan, level=level,rank=rank)
         else:
-            results.addChar(di[0]+idname, str(di[1])[:min(len(str(di[1])),128)]) # do not specify level, use default from config
+            results.addChar(elem['name']+str(idname), str(elem['value'])[:min(len(str(elem['value'])),128)], quantity=quan, level=level,rank=rank)
 
     results.addChar('room'+idname, cs.forceRoom.name) # do not specify level, use default from config
-    results.addChar('stand'+idname, qclib.TableOrWall(cs)) # do not specify level, use default from config
+    results.addChar('stand'+idname, qclib.TableOrWall(cs), level=1,rank=offset+1) # do not specify level, use default from config

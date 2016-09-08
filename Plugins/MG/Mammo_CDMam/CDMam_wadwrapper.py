@@ -10,20 +10,23 @@
 # 
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-# PyWAD is open-source software and consists of a set of plugins written in python for the WAD-Software medical physics quality control software. 
+#
+# PyWAD is open-source software and consists of a set of modules written in python for the WAD-Software medical physics quality control software. 
 # The WAD Software can be found on https://github.com/wadqc
 # 
-# The pywad package includes plugins for the automated analysis of QC images for various imaging modalities. 
+# The pywad package includes modules for the automated analysis of QC images for various imaging modalities. 
 # PyWAD has been originaly initiated by Dennis Dickerscheid (AZN), Arnold Schilham (UMCU), Rob van Rooij (UMCU) and Tim de Wit (AMC) 
 #
 #
+# Changelog:
+#   20160802: sync with wad2.0
+#
+#
+from __future__ import print_function
 
-__version__ = '20150826'
+__version__ = '20160802'
 __author__ = 'aschilham'
 
-
-import sys
 import numpy as np
 import os
 if not 'MPLCONFIGDIR' in os.environ:
@@ -31,7 +34,7 @@ if not 'MPLCONFIGDIR' in os.environ:
 import matplotlib
 matplotlib.use('Agg') # Force matplotlib to not use any Xwindows backend.
 
-import CDMam_lib
+from . import CDMam_lib
 try:
     import wadwrapper_lib
 except ImportError:

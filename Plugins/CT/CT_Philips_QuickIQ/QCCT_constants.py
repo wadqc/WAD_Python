@@ -10,13 +10,14 @@
 # 
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 """
 String constants for usage in QCCT
 """
 stUnknown = "Unknown"
 stHead = "HEAD"
 stBody = "BODY"
+stSurview = "SURVIEW"
+
 stAir       = "AIR"
 stWater     = "WATER"
 stTungsten  = "TUNGSTEN"
