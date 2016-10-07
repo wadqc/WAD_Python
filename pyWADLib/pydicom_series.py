@@ -22,6 +22,7 @@ instance is created for each 3D volume.
 #    available at http://pydicom.googlecode.com
 #
 # Changelog:
+# 20161007: prepare for pydicom release 1
 # 20160902: python3 compatible
 # 20150616: AS: added fake attributes if missing for RF
 # 20140904: AS: exclusion of RAW files which popped up in MRI data sent PACS
@@ -48,8 +49,13 @@ import os
 import sys
 import time
 import gc
-import dicom
-from dicom.sequence import Sequence
+try:
+    import pydicom as dicom
+    from pydicom.sequence import Sequence
+except ImportError:
+    import dicom
+    from dicom.sequence import Sequence
+
 try:
     import pylab as plt
 except:

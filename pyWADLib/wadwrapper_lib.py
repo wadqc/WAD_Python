@@ -13,6 +13,8 @@ This includes:
 
 """
 # Changelog:
+# 20161007: prepare for pydicom release 1
+# 20161006: skip_check flag for prepareinput
 # 20160902: python3 compatible
 # 20160826: for RGB US default to use only red channel
 # 20150420: Added scipy connectedComponents
@@ -20,16 +22,20 @@ This includes:
 
 US_RGB_USE_RED = True # force using only the RED channel in RGB, or remove all data where there is a difference between R,G,B
 
-import dicom
+try:
+    import pydicom as dicom
+    import pydicom.errors as dicomExceptions
+except ImportError:
+    import dicom
+    try: # moved to errors in 'bleeding edge' pydicom
+        import dicom.errors as dicomExceptions
+    except ImportError: 
+        import dicom.filereader as dicomExceptions
+
 try:
     import pydicom_series as dcmseries
 except ImportError:
     from pyWADLib import pydicom_series as dcmseries
-    
-try: # moved to errors in 'bleeding edge' pydicom
-    import dicom.errors as dicomExceptions
-except ImportError: 
-    import dicom.filereader as dicomExceptions
     
 import sys
 import os
@@ -256,7 +262,7 @@ def prepareEnhancedInput(filename,headers_only,logTag="[prepareEnhancedInput] ")
         pixeldataIn = np.transpose(pixeldataIn,(0,2,1))
     return dcmInfile,pixeldataIn,getDICOMMode(dcmInfile)
 
-def prepareInput(instancedict,headers_only,logTag="[prepareInput] "):
+def prepareInput(instancedict,headers_only,logTag="[prepareInput] ", skip_check=False):
     """
     Reads inputfile as an EnhancedDICOM object; if an EnhancedDICOM object is detected, prepareEnhancedInput is called.
     Checks if the input is as expected: number of slices etc.
@@ -264,9 +270,12 @@ def prepareInput(instancedict,headers_only,logTag="[prepareInput] "):
     and transposing for pyqtgraph format.
     Raises ValueError if file cannot be opened as a DICOM object
     Returns raw dcmfile, scaled and transposed pixeldata (or None), type of DICOM object.
+
+    Speed up option skip_check added: no checking for bogus files or multi path
     """
     # compile a list of valid files to read
-    instancedict = removeBogusDICOMfiles(instancedict)
+    if not skip_check:
+        instancedict = removeBogusDICOMfiles(instancedict)
 
     dcmInfile = None
     pixeldataIn = None
@@ -360,11 +369,14 @@ def prepareInput(instancedict,headers_only,logTag="[prepareInput] "):
                                         pixeldataIn[x,y] = 0
 
     else:
-        path = os.path.dirname(instancedict[0])
-        for ip in instancedict:
-            if os.path.dirname(ip) != path:
-                raise ValueError("{} ERROR! multiple would-be dicom files scattered over multiple dirs!".format(logTag))
-
+        if not skip_check:
+            path = os.path.dirname(instancedict[0])
+            for ip in instancedict:
+                if os.path.dirname(ip) != path:
+                    raise ValueError("{} ERROR! multiple would-be dicom files scattered over multiple dirs!".format(logTag))
+        else:
+            path = instancedict
+            
         try:
             dcmInfile = dcmseries.read_files(path, True, readPixelData=False)[0]
             if not headers_only: # NOTE: Rescaling is already done pydicom_series, but maybe not for stupid MR

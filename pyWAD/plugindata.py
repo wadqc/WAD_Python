@@ -1,4 +1,7 @@
-import dicom
+try:
+    import pydicom as dicom
+except ImportError:
+    import dicom
 
 
 ### Helper functions
