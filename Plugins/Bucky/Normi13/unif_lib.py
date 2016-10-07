@@ -16,7 +16,10 @@ Changelog:
 __version__ = '20160815'
 __author__ = 'aschilham'
 
-import dicom
+try:
+    import pydicom as dicom
+except ImportError:
+    import dicom
 import numpy as np
 from math import pi
 import copy

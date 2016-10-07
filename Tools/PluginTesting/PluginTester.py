@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 import os,sys
 import ConfigParser
-import dicom
+try:
+    import pydicom as dicom
+except ImportError:
+    import dicom
 from datetime import datetime
 from loaddicom import LoadDicom
 import subprocess

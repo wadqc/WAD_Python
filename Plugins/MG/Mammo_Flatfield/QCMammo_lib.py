@@ -42,7 +42,6 @@ Changelog:
 __version__ = '20160902'
 __author__ = 'aschilham'
 
-import dicom
 import numpy as np
 from math import pi
 import copy

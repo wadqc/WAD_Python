@@ -31,7 +31,10 @@ Changelog:
 __version__ = '20160816'
 __author__ = 'aschilham'
 
-import dicom
+try:
+    import pydicom as dicom
+except ImportError:
+    import dicom
 import numpy as np
 import scipy.ndimage as scind
 

@@ -33,7 +33,6 @@ if not 'MPLCONFIGDIR' in os.environ:
 import matplotlib
 matplotlib.use('Agg') # Force matplotlib to not use any Xwindows backend.
 
-import dicom
 from . import QCCT_lib
 from . import QCCT_constants as lit
 

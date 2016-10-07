@@ -1,5 +1,8 @@
 import os
-import dicom
+try:
+    import pydicom as dicom
+except ImportError:
+    import dicom
 
 
 class _LoadDicom():

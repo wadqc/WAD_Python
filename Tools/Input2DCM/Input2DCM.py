@@ -3,7 +3,10 @@
 import socket
 import uuid
 from netdicom import AE, StorageSOPClass, VerificationSOPClass
-import dicom
+try:
+    import pydicom as dicom
+except ImportError:
+    import dicom
 import os
 
 def sendasdicom(dcmconfig,datastr):

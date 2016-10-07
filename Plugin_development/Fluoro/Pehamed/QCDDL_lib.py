@@ -23,7 +23,6 @@ Changelog:
 __version__ = '20160902'
 __author__ = 'aschilham'
 
-import dicom
 import numpy as np
 import scipy.ndimage as scind
 import operator
