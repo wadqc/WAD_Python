@@ -13,6 +13,8 @@ This includes:
 
 """
 # Changelog:
+# 20161025: added option to override default series splitting splitOnPosition
+# 20161013: preparing to remove tranposing the data (nuisance for some dataprocessing)
 # 20161007: prepare for pydicom release 1
 # 20161006: skip_check flag for prepareinput
 # 20160902: python3 compatible
@@ -231,7 +233,7 @@ def removeBogusDICOMfiles(instancedict):
 
     return results
 
-def prepareEnhancedInput(filename,headers_only,logTag="[prepareEnhancedInput] "):
+def prepareEnhancedInput(filename, headers_only, do_transpose=True, logTag="[prepareEnhancedInput] "):
     """
     Reads filename as an EnhancedDICOM object. If not headers_only , scaling the pixel values according to RescaleIntercept and RescaleIntercept of each frame
     and transposing for pyqtgraph format.
@@ -259,10 +261,12 @@ def prepareEnhancedInput(filename,headers_only,logTag="[prepareEnhancedInput] ")
             intercept = perframe[i].PixelValueTransformationSequence[0].RescaleIntercept
             slope = perframe[i].PixelValueTransformationSequence[0].RescaleSlope
             pixeldataIn[i] = intercept + slope*pixeldataIn[i]
-        pixeldataIn = np.transpose(pixeldataIn,(0,2,1))
+        if do_transpose:
+            pixeldataIn = np.transpose(pixeldataIn,(0,2,1))
+
     return dcmInfile,pixeldataIn,getDICOMMode(dcmInfile)
 
-def prepareInput(instancedict,headers_only,logTag="[prepareInput] ", skip_check=False):
+def prepareInput(instancedict, headers_only, do_transpose=True, logTag="[prepareInput] ", skip_check=False, splitOnPosition=True):
     """
     Reads inputfile as an EnhancedDICOM object; if an EnhancedDICOM object is detected, prepareEnhancedInput is called.
     Checks if the input is as expected: number of slices etc.
@@ -272,6 +276,7 @@ def prepareInput(instancedict,headers_only,logTag="[prepareInput] ", skip_check=
     Returns raw dcmfile, scaled and transposed pixeldata (or None), type of DICOM object.
 
     Speed up option skip_check added: no checking for bogus files or multi path
+    Option to prevent default splitting of series on patientposition differences
     """
     # compile a list of valid files to read
     if not skip_check:
@@ -291,7 +296,7 @@ def prepareInput(instancedict,headers_only,logTag="[prepareInput] ", skip_check=
         ModeEnhanced = False
         ModeEnhanced = testIfEnhancedDICOM(instancedict[0])
         if ModeEnhanced:
-            return prepareEnhancedInput(instancedict[0],headers_only=headers_only) # scaled and transposed
+            return prepareEnhancedInput(instancedict[0], do_transpose=do_transpose, headers_only=headers_only) # scaled and transposed
 
         if dcmInfile is None:
             filename = instancedict[0]
@@ -309,24 +314,26 @@ def prepareInput(instancedict,headers_only,logTag="[prepareInput] ", skip_check=
                         dcmInfile.RescaleIntercept = readDICOMtag(keymapping[0][0],dcmInfile,0)
                         dcmInfile.RescaleSlope = readDICOMtag(keymapping[1][0],dcmInfile,0)
 
-                    pixeldataIn = np.int16(np.transpose(dcmInfile.pixel_array.astype(int),(1,0)))
+                    pixeldataIn = np.int16(dcmInfile.pixel_array.astype(int))
                     slope = dcmInfile.RescaleSlope
                     intercept = dcmInfile.RescaleIntercept
+                    if int(slope) != slope or int(intercept) != intercept:
+                        pixeldataIn = pixeldataIn.astype(float)
                     pixeldataIn = intercept + slope*pixeldataIn
                 elif modality == 'MG' and getDICOMMode(dcmInfile) == stModeBTO:
                     print('!WARNING! MG BTO dataset! DICOM info is NOT properly adjusted, no scaling applied yet!')
-                    pixeldataIn = np.transpose(dcmInfile.pixel_array,(0,2,1))
+                    pixeldataIn = dcmInfile.pixel_array
                 elif modality == 'MG' or modality == 'CR' or modality == 'DX':
-                    pixeldataIn = dcmInfile.pixel_array.transpose()
+                    pixeldataIn = dcmInfile.pixel_array
                 elif modality == 'RF': # fixme! 2D and 3D
-                    pixeldataIn = dcmInfile.pixel_array.transpose()
+                    pixeldataIn = dcmInfile.pixel_array
                 elif modality == 'US':
                     rgbmode = (dcmInfile.SamplesPerPixel == 3)
                     if not rgbmode:
                         if len(np.shape(dcmInfile.pixel_array)) == 2:
-                            pixeldataIn = dcmInfile.pixel_array.transpose()
-                        elif len(np.shape(dcmInfile.pixel_array)):
-                            pixeldataIn = np.transpose(dcmInfile.pixel_array,(0,2,1))
+                            pixeldataIn = dcmInfile.pixel_array
+                        elif len(np.shape(dcmInfile.pixel_array)) == 3:
+                            pixeldataIn = dcmInfile.pixel_array
                             pixeldataIn = pixeldataIn[0]
                     else:
                         # AS: this fix is needed in pydicom < 1.0; maybe solved in later versions?
@@ -342,31 +349,32 @@ def prepareInput(instancedict,headers_only,logTag="[prepareInput] ", skip_check=
                         # force using only the RED channel in RGB.
                         if US_RGB_USE_RED == True:
                             if len(np.shape(pixel_array)) == 3: #2d rgb
-                                pixeldataIn = pixel_array[:,:,0].transpose()
+                                pixeldataIn = pixel_array[:,:,0]
                             elif len(np.shape(pixel_array)) == 4: #3d rgb
-                                pixeldataIn = (pixel_array[-1,:,:,0]).transpose()
+                                pixeldataIn = pixel_array[-1,:,:,0]
                         else:
                             # remove all data where there is a difference between R,G,B
                             if len(np.shape(pixel_array)) == 3: #2d rgb
-                                pixeldataIn = pixel_array[:,:,0].transpose()
-                                pixeldataInR = (pixel_array[:,:,0]).transpose()
-                                pixeldataInG = (pixel_array[:,:,1]).transpose()
-                                pixeldataInB = (pixel_array[:,:,2]).transpose()
+                                pixeldataIn = pixel_array[:,:,0]
+                                pixeldataInR = pixel_array[:,:,0]
+                                pixeldataInG = pixel_array[:,:,1]
+                                pixeldataInB = pixel_array[:,:,2]
                             elif len(np.shape(pixel_array)) == 4: #3d rgb
-                                pixeldataIn = (pixel_array[-1,:,:,0]).transpose()
-                                pixeldataInR = (pixel_array[-1,:,:,0]).transpose()
-                                pixeldataInG = (pixel_array[-1,:,:,1]).transpose()
-                                pixeldataInB = (pixel_array[-1,:,:,2]).transpose()
+                                pixeldataIn = pixel_array[-1,:,:,0]
+                                pixeldataInR = pixel_array[-1,:,:,0]
+                                pixeldataInG = pixel_array[-1,:,:,1]
+                                pixeldataInB = pixel_array[-1,:,:,2]
+
                             # remove rgb info
                             for y in range(dcmInfile.Rows):
                                 for x in range(dcmInfile.Columns):
-                                    r = pixeldataInR[x,y]
-                                    g = pixeldataInG[x,y]
-                                    b = pixeldataInB[x,y]
+                                    r = pixeldataInR[y,x]
+                                    g = pixeldataInG[y,x]
+                                    b = pixeldataInB[y,x]
                                     ma = max(r,g,b)
                                     mi = min(r,g,b)
                                     if ma != mi:
-                                        pixeldataIn[x,y] = 0
+                                        pixeldataIn[y,x] = 0
 
     else:
         if not skip_check:
@@ -378,14 +386,25 @@ def prepareInput(instancedict,headers_only,logTag="[prepareInput] ", skip_check=
             path = instancedict
             
         try:
-            dcmInfile = dcmseries.read_files(path, True, readPixelData=False)[0]
+            dcmInfile = dcmseries.read_files(path, True, readPixelData=False, splitOnPosition=splitOnPosition)[0]
             if not headers_only: # NOTE: Rescaling is already done pydicom_series, but maybe not for stupid MR
-                pixeldataIn = np.transpose(dcmInfile.get_pixel_array(),(0,2,1))
+                for i in range(len(dcmInfile._datasets)):
+                    if not "RescaleIntercept" in dcmInfile._datasets[i]: # in wrong place define for some MR files
+                        dcmInfile._datasets[i].RescaleIntercept = readDICOMtag(keymapping[0][0],dcmInfile,i)
+                        dcmInfile._datasets[i].RescaleSlope = readDICOMtag(keymapping[1][0],dcmInfile,i)
+                pixeldataIn = dcmInfile.get_pixel_array()
 
         except Exception as e:
             raise ValueError("{} ERROR! {} is not a valid non-Enhanced DICOM series".format(logTag, path))
 
-    return dcmInfile,pixeldataIn,getDICOMMode(dcmInfile)
+    if not headers_only and do_transpose:
+        ndims = len(np.shape(pixeldataIn))
+        if ndims == 3:
+            pixeldataIn = np.transpose(pixeldataIn,(0,2,1))
+        elif ndims == 2:
+            pixeldataIn = pixeldataIn.transpose()
+
+    return dcmInfile, pixeldataIn, getDICOMMode(dcmInfile)
 
 
 ### math

@@ -22,6 +22,7 @@ instance is created for each 3D volume.
 #    available at http://pydicom.googlecode.com
 #
 # Changelog:
+# 20161025: added option to override default series splitting splitOnPosition
 # 20161007: prepare for pydicom release 1
 # 20160902: python3 compatible
 # 20150616: AS: added fake attributes if missing for RF
@@ -317,7 +318,7 @@ def _getPixelDataFromDataset(ds):
 
 ## The public functions and classes
 
-def read_files(path, showProgress=False, readPixelData=False,skipNonImageFiles=True):
+def read_files(path, showProgress=False, readPixelData=False, skipNonImageFiles=True, splitOnPosition=True):
     """ read_files(path, showProgress=False, readPixelData=False)
 
     Reads dicom files and returns a list of DicomSeries objects, which
@@ -337,6 +338,10 @@ def read_files(path, showProgress=False, readPixelData=False,skipNonImageFiles=T
     default the loading of pixeldata is deferred until it is requested
     using the DicomSeries.get_pixel_array() method. In general, both
     methods should be equally fast.
+
+    AS: splitOnPosition: by default, pydicom inspects if the found series
+      must be split based on patientposition differences. Can be prevented
+      by setting to False
     """
     # Init list of files
     files = []
@@ -432,8 +437,9 @@ def read_files(path, showProgress=False, readPixelData=False,skipNonImageFiles=T
     series = list(series.values())
     series.sort(key=lambda x: x.suid)
     # Split series if necessary
-    for serie in reversed([serie for serie in series]):
-        _splitSerieIfRequired(serie, series)
+    if splitOnPosition:
+        for serie in reversed([serie for serie in series]):
+            _splitSerieIfRequired(serie, series)
 
     # Finish all series
     showProgress('Analysing series')
