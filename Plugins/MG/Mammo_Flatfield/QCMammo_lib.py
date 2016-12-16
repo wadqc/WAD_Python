@@ -78,6 +78,7 @@ except ImportError:
         except ImportError: 
             # use parent wad_qc folder, and add it to search path
             import sys
+            import os
             # add root folder of WAD_QC to search path for modules
             _modpath = os.path.dirname(os.path.abspath(__file__))
             while(not os.path.basename(_modpath) == 'Modules'):
@@ -407,7 +408,7 @@ class Mammo_QC:
         cs_mam.contrast_mean = []
         cs_mam.contrast_sd = []
         for k in range(len(tg_mean)):
-            sd = np.sqrt(0.5*(tg_sd[k]**2+bg_sd[k]**2))
+            sd = np.sqrt(0.5*(tg_sd[k]**2.+bg_sd[k]**2.))
             if sd <1e-6:
                 sd = 1.
             cs_mam.contrast_snr.append(np.abs(tg_mean[k]-bg_mean[k])/sd)
