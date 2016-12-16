@@ -19,12 +19,13 @@
 #
 #
 # Changelog:
+#   20161216: added use_anatomy param
 #   20160802: sync with wad2.0
 #
 #
 from __future__ import print_function
 
-__version__ = '20160802'
+__version__ = '20161216'
 __author__ = 'aschilham'
 
 import os
@@ -57,7 +58,10 @@ def _getScannerDefinition(params):
         # three materials in Philips Performance Phantom Head
         headHU_air   = float(params.find('headHU_air').text)
         headHU_water = float(params.find('headHU_water').text)
-        headHU_pvc   = float(params.find('headHU_pvc').text)
+        try:
+            headHU_pvc   = float(params.find('headHU_pvc').text)
+        except:
+            headHU_pvc   = float(params.find('headHU_shell').text) # for Siemens scanner, which does not use PVC for shell
 
         # inner and outer diameter (in mm) of PVC skull (container) of head phantom
         headdiammm_in    = float(params.find('headdiammm_in').text)
@@ -79,6 +83,21 @@ def _getScannerDefinition(params):
                             headdiammm_in, headdiammm_out,
                             [bodyHU_aculon,bodyHU_teflon,bodyHU_water])
     
+def override_settings(cs, params):
+    """
+    Look for 'use_' params in to force behaviour of module
+    """
+    try:
+        use_anatomy = params.find('use_anatomy').text
+        if 'head' in use_anatomy.lower():
+            cs.anatomy = lit.stHead
+        elif 'body' in use_anatomy.lower():
+            cs.anatomy = lit.stBody
+        else:
+            raise ValueError('Unknown value %s for param use_anatomy'%use_anatomy)
+    except:
+        pass
+
 ##### Real functions
 def ctqc_series(data,results,params):
     """
@@ -98,6 +117,7 @@ def ctqc_series(data,results,params):
     cs = QCCT_lib.CTStruct(dcmInfile=dcmInfile,pixeldataIn=pixeldataIn,dicomMode=dicomMode)
     cs.forceScanner = _getScannerDefinition(params)
     cs.verbose = False
+    override_settings(cs, params)
 
     ## id scanner
     error = qclib.DetermineCTID(cs)
@@ -198,6 +218,7 @@ def ctheader_series(data,results,params):
     qcctlib = QCCT_lib.CT_QC()
     cs = QCCT_lib.CTStruct(dcmInfile=dcmInfile,pixeldataIn=pixeldataIn,dicomMode=dicomMode)
     cs.verbose = False
+    override_settings(cs, params)
 
     error = qcctlib.HeadOrBody(cs)
     if(error == True or cs.anatomy == lit.stUnknown):

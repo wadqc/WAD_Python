@@ -17,6 +17,7 @@ from __future__ import print_function
 Warning: THIS MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!
 
 Changelog:
+    20161216: allow manually supplied anatomy
     20160902: sync with wad2.0; Unified pywad1.0 and wad2.0
     20150701: updated for iPatient iCT: body and head; other tags; other body
     20150409: Removed scanner definitions; should be passed to cs or in config
@@ -27,7 +28,7 @@ Changelog:
     20140409: Initial split of gui/lib for pywad
 
 """
-__version__ = '20160902'
+__version__ = '20161216'
 __author__ = 'aschilham'
 
 import copy
@@ -185,19 +186,25 @@ class CT_QC:
 
     def HeadOrBody(self,cs):
         error = True
-        cs.anatomy = lit.stUnknown
-        dicomvalue = self.readDICOMtag(cs,"0018,1030") #Protocol Name
-        dicomvalue = str(dicomvalue).lower()
-        if dicomvalue == 'unknown':
-            dicomvalue = self.readDICOMtag(cs,"0008,103e") #Series Description (for iPatient)
-            dicomvalue = str(dicomvalue).lower()
+        if not cs.anatomy is lit.stUnknown:
+            return False
 
-        if(dicomvalue.find("head")>-1):
-            cs.anatomy = lit.stHead
-            error = False
-        if(dicomvalue.find("body")>-1):
-            cs.anatomy = lit.stBody
-            error = False
+        cs.anatomy = lit.stUnknown
+        for tag in ["0018,1030", "0008,103e"]: #Protocol Name, Series Description (for iPatient) and Force
+            dicomvalue = self.readDICOMtag(cs,tag)
+            dicomvalue = str(dicomvalue).lower()
+            if dicomvalue == 'unknown':
+                continue
+
+            if(dicomvalue.find("head")>-1):
+                cs.anatomy = lit.stHead
+                error = False
+            if(dicomvalue.find("body")>-1):
+                cs.anatomy = lit.stBody
+                error = False
+            if error == False:
+                break
+
         return error
 
     def pix2phantommm(self, cs, pix):
