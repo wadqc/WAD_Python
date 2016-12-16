@@ -17,6 +17,7 @@ Warning: THIS MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED! And make su
 
 TODO:
 Changelog:
+    20161216: allow override of auto determine maybeinvert; try other field is pixelspacing missing
     20160902: sync wad2.0 with pywad1.0
     20151112: Bugfix in calculation of lowcontrast
     20151029: Changed output levels and descriptions etc.
@@ -40,7 +41,7 @@ Changelog:
               fix for po_box on annotation; fix for invert LowContrast
     20140623: First attempt to rewrite into WAD module; speedup and bugfix of Uniformity()
 """
-__version__ = '20160902'
+__version__ = '20161216'
 __author__ = 'aschilham'
 
 try:
@@ -110,6 +111,7 @@ class Room :
     skipFFT = False # only for wellhofer
     sdthresh = -1 # threshold on stdev for determin table or wall, now only for CALHOS, maybe WKZ?
     sens_threshold = [] # list of (date,sensitivity) describing from dates and max threshold on sensitivity for table
+    mustbeinverted = None # allow force
 
     xy06mm = [] # x,y position in mm of decimal dot in 0.6 lp/mm 
     xy14mm = [] # x,y position in mm of decimal dot in 1.4 lp/mm 
@@ -118,7 +120,7 @@ class Room :
     
     def __init__ (self,_name, outvalue=-1, tablesid=-1, wallsid=-1, tablepid=-1, wallpid=-1,
                   phantom=lit.stPehamed,sdthresh=-1,sens_threshold = [],
-                  linepairmarkers = {}):
+                  linepairmarkers = {}, mustbeinverted=None):
         self.name = _name
         self.outvalue = outvalue
         self.pidtablemm = tablepid
@@ -128,6 +130,8 @@ class Room :
         self.phantom = phantom
         self.sdthresh = sdthresh
         self.sens_threshold = sens_threshold
+        self.mustbeinverted = mustbeinverted
+
         if(phantom == lit.stWellhofer):
             self.skipFFT = True
         if len(linepairmarkers)>0:
@@ -257,7 +261,7 @@ class XRayStruct:
     # input image
     dcmInfile = None
     pixeldataIn = None
-    mustbeinverted = False # if pixval(Cu) = high and pixval(air) = low, then mustbeinverted
+    mustbeinverted = None #False # if pixval(Cu) = high and pixval(air) = low, then mustbeinverted
     expertOverridepixToGridScaleCm = None
     bbox_confidence = 0.
 
@@ -290,6 +294,10 @@ class XRayStruct:
     hasmadeplots = False
 
     def maybeInvert(self):
+        if not self.mustbeinverted is None:
+            print("Must be Inverted (use)",self.mustbeinverted)
+            return
+        
         if self.dcmInfile is None:
             return
         self.mustbeinverted = False
@@ -304,7 +312,7 @@ class XRayStruct:
         self.pixeldataIn = pixeldataIn
         self.hasmadeplots = False
         self.expertOverridepixToGridScaleCm = None
-        self.mustbeinverted = False
+        self.mustbeinverted = None
         self.forceRoom = room
         self.lastimage = None
         self.po_center_roi = []
@@ -322,7 +330,10 @@ class XRayStruct:
         self.loco = self.LoCoStruct()
         self.bbox_confidence = 0.
 
-        self.maybeInvert()
+        if room.mustbeinverted is None:
+            self.maybeInvert()
+        else:
+            self.mustbeinverted = room.mustbeinverted
 
 class XRayQC:
     qcversion = __version__
@@ -346,7 +357,11 @@ class XRayQC:
         if not cs.expertOverridepixToGridScaleCm is None:
             return cs.expertOverridepixToGridScaleCm
 
-        pixel_spacing_x = cs.dcmInfile.PixelSpacing[0]
+        try:
+            pixel_spacing_x = cs.dcmInfile.PixelSpacing[0]
+        except AttributeError:
+            pixel_spacing_x = cs.dcmInfile.ImagerPixelSpacing[0]
+            
         stand = self.TableOrWall(cs)
         # calculate distance = L0-Thick
         if not 'DistanceSourceToDetector' in cs.dcmInfile:
@@ -1180,7 +1195,6 @@ class XRayQC:
             outvalue = min(cs.pixeldataIn[0][0], cs.pixeldataIn[-1][0],cs.pixeldataIn[0][-1],cs.pixeldataIn[-1][-1])
         if cs.mustbeinverted:
             outvalue = invertmax-outvalue
-
         """
         0 ll [int(immidx-rad/2+.5),int(immidy-rad/2+.5)],
         1 ul [int(immidx-rad/2+.5),int(immidy+rad/2+.5)],

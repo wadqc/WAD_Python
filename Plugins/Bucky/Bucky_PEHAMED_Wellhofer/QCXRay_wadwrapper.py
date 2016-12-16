@@ -19,6 +19,7 @@
 #
 #
 # Changelog:
+#   20161216: added use_mustbeinverted param
 #   20160802: sync with wad2.0
 #
 #
@@ -27,7 +28,7 @@
 #
 from __future__ import print_function # python 2 and 3 compatible
 
-__version__ = '20160802'
+__version__ = '20161216'
 __author__ = 'aschilham'
 import os
 if not 'MPLCONFIGDIR' in os.environ:
@@ -96,12 +97,20 @@ def _getRoomDefinition(params):
         tablepidmm  = float(params.find('tablepidmm').text)
         wallpidmm   = float(params.find('wallpidmm').text)
 
-        outvalue    = -1 # not supplied
         wallsidmm   = -1 # not supplied
-        tablesidmm  = -1 # not supplied
         try: # only for FCR
             wallsidmm   = float(params.find('wallsidmm').text)
+        except:
+            pass
+
+        tablesidmm  = -1 # not supplied
+        try: # only for FCR
             tablesidmm  = float(params.find('tablesidmm').text)
+        except:
+            pass
+
+        outvalue    = -1 # not supplied
+        try: # only for CR
             # pixelvalue that defines 'outside phantom' use '-1' to calculate from four cornerpoints
             outvalue    = int(params.find('outvalue').text)
         except:
@@ -132,13 +141,43 @@ def _getRoomDefinition(params):
         except:
             pass
 
+        try:
+            use_mustbeinverted = params.find('use_mustbeinverted').text
+            if use_mustbeinverted.lower() == 'true':
+                mustbeinverted = True
+            elif use_mustbeinverted.lower() == 'false':
+                mustbeinverted = False
+            else:
+                raise ValueError('Unknown value %s for param use_mustbeinverted'%use_mustbeinverted)
+        except:
+            mustbeinverted = None
+
+
         # no artificial thresholds present or needed
         return QCXRay_lib.Room(roomname, outvalue=outvalue,
                                tablesid=tablesidmm, wallsid=wallsidmm, 
                                tablepid=tablepidmm, wallpid=wallpidmm,
-                               phantom=phantom,linepairmarkers=linepairmarkers)
+                               phantom=phantom,linepairmarkers=linepairmarkers,
+                               mustbeinverted=mustbeinverted)
     except AttributeError as e:
         raise ValueError(logTag()+" missing room definition parameter!"+str(e))
+
+
+def override_settings(cs, params):
+    """
+    Look for 'use_' params in to force behaviour of module
+    """
+    return
+    try:
+        use_mustbeinverted = params.find('use_mustbeinverted').text
+        if use_mustbeinverted.lower() == 'true':
+            cs.mustbeinverted = True
+        elif use_mustbeinverted.lower() == 'false':
+            cs.mustbeinverted = False
+        else:
+            raise ValueError('Unknown value %s for param use_mustbeinverted'%use_mustbeinverted)
+    except:
+        pass
 
 
 ###### Series wrappers
@@ -169,6 +208,7 @@ def xrayqc_series(data, results, params):
     room = _getRoomDefinition(params)
     cs = QCXRay_lib.XRayStruct(dcmInfile,pixeldataIn,room)
     cs.verbose = False # do not produce detailed logging
+    override_settings(cs, params)
 
     ## 4. Run tests
     error,msg = qclib.QC(cs)
@@ -217,6 +257,8 @@ def xrayheader_series(data,results,params):
     ## Table or Wall? from distances and sensitivity; for well defined protocols to be defined in DESCRIPTION field
     cs = QCXRay_lib.XRayStruct(dcmInfile,None,room)
     cs.verbose = False # do not produce detailed logging
+    override_settings(cs, params)
+
     dicominfo = qclib.DICOMInfo(cs,info)
     idname = '_'+qclib.TableOrWall(cs)
 
