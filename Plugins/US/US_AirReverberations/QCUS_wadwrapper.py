@@ -118,11 +118,11 @@ def qc_series(data, results, params):
     # also run ocr_series; needed as part of qc because of the boxes it generates
     ocr_rois, error, msg = ocr_series(data, results, params)
     xtra= {'rectrois': ocr_rois }
-    fname = 'overview.jpg'
+    fname = 'overview%s.jpg'%str(idname)
     qclib.saveAnnotatedImage(cs, fname, what='overview',xtra=xtra)
     results.addObject(os.path.splitext(fname)[0],fname)
 
-    fname = 'reverb.jpg'
+    fname = 'reverb%s.jpg'%str(idname)
     qclib.saveAnnotatedImage(cs, fname, what='reverb')
     results.addObject(os.path.splitext(fname)[0],fname)
     if error:
@@ -139,6 +139,11 @@ def ocr_series(data, results, params):
     rectrois = []
     error = False
     msg = ''
+
+    # an id
+    inputfile = data.series_filelist[0]  # give me a [filename]
+    qclib,cs = setup_series(inputfile, params, headers_only=True)
+    idname = '_'+qclib.imageID(cs,probeonly=True)
 
     # solve ocr params
     regions = {}
@@ -166,25 +171,26 @@ def ocr_series(data, results, params):
                           (region['xywh'][0]+region['xywh'][2],region['xywh'][1]+region['xywh'][3])])
 
         txt, part = ocr_lib.OCR(pixeldataIn, region['xywh'])
+        uname = name+str(idname)
         if region['type'] == 'object':
             import scipy
             im = scipy.misc.toimage(part) 
-            fn = '%s.jpg'%name
+            fn = '%s.jpg'%uname
             im.save(fn)
-            results.addObject(name, fn)
+            results.addObject(uname, fn)
             
         else:
             try:
                 value = ocr_lib.txt2type(txt, region['type'], region['prefix'],region['suffix'])
                 if region['type'] == 'float':
-                    results.addFloat(name, value)
+                    results.addFloat(uname, value)
                 elif region['type'] == 'string':
-                    results.addChar(name, value)
+                    results.addChar(uname, value)
                 elif region['type'] == 'bool':
-                    results.addBool(name, value)
+                    results.addBool(uname, value)
             except:
                 error = True
-                msg += name + ' '
+                msg += uname + ' '
     return rectrois, error, msg
 
 def header_series(data,results,params):
