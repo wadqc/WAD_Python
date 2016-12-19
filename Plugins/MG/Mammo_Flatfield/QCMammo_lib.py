@@ -113,7 +113,8 @@ class MammoStruct:
     # artefacts
     art_clusters = []
     art_image = None
-    art_borderpx = -1
+    art_borderpx_lrtb = [0, 0, 0, 0] # part of the image that should be ignored left, right, top, bottom
+
     art_threshold = -1
     art_rois = [] # x0,y0,rad
 
@@ -133,7 +134,7 @@ class MammoStruct:
     contrast_mean = []
     contrast_sd = []
 
-    def __init__ (self,dcmInfile,pixeldataIn):
+    def __init__ (self, dcmInfile, pixeldataIn):
         self.verbose = False
         self.dcmInfile = dcmInfile
         self.pixeldataIn = pixeldataIn
@@ -146,7 +147,7 @@ class MammoStruct:
         self.doseratio = -1
         self.art_clusters = []
         self.art_image = None
-        self.art_borderpx = -1
+        self.art_borderpx_lrtb = [0, 0, 0, 0] # for selenia there is a part of the image that should be ignored
         self.art_threshold = -1
         self.art_rois = []
         self.expertmode = False
@@ -159,9 +160,33 @@ class MammoStruct:
         self.contrast_snr = []
         self.contrast_mean = []
         self.contrast_sd = []
+        self.DetermineScannerID()
+
+    def DetermineScannerID(self):
+        """
+        Actually only needed to determine if L50 contrast module should run
+        """
+        error = True
+        self.scannername = lit.stUnknown
+        dicomvalue = wadwrapper_lib.readDICOMtag("0008,1090", self.dcmInfile, imslice=0) #Manufacturer's Model Name
+        dicomvalue = str(dicomvalue).lower()
+        if dicomvalue.find("l50")>-1:
+            self.scannername = lit.stL50
+            error = False
+        elif dicomvalue.find("lorad selenia")>-1:
+            self.scannername = lit.stSelenia
+            error = False
+        elif dicomvalue.find("dimensions")>-1:
+            self.scannername = lit.stDimensions
+            error = False
+        elif dicomvalue.find("affirm prone")>-1:
+            self.scannername = lit.stAffirmProne
+            error = False
+        return error
+
 
 class Mammo_QC:
-    qcversion = 20150522
+    qcversion = 20161219
 
     def __init__(self,guimode=False):
         self.guimode = guimode
@@ -311,7 +336,6 @@ class Mammo_QC:
             return False
 
         error = True
-        self.DetermineScannerID(cs_mam)
         pixel_spacing_x = self.pixDim(cs_mam.dcmInfile,0)## spacing in mm
         pixel_spacing_y = self.pixDim(cs_mam.dcmInfile,1)##cs_mam.dcmInfile.PixelSpacing[1]
 
@@ -553,7 +577,6 @@ class Mammo_QC:
         Defined in EUREF_DMWG_Protocol_2003 as max deviation between avg pix value in five ROIs
         """
         error = True
-        self.DetermineScannerID(cs_mam)
 
         width_array = np.shape(cs_mam.pixeldataIn)[0] ## width/height in pixels
         height_array = np.shape(cs_mam.pixeldataIn)[1]
@@ -909,16 +932,11 @@ class Mammo_QC:
         error = True
         doUseStructureAlways = False
 
-        self.DetermineScannerID(cs_mam)
-
         # copy image, and cutoff black borders
-        borderpx = 12 # for selenia there is a part of the image that should be ignored
-        if cs_mam.scannername == lit.stL50:
-            borderpx = 0
-        field_max_x_px =  np.shape(cs_mam.pixeldataIn)[0] ## width/height in pixels
-        field_max_y_px = np.shape(cs_mam.pixeldataIn)[1]-borderpx
-        field_min_x_px = 0
-        field_min_y_px = borderpx
+        field_max_x_px = np.shape(cs_mam.pixeldataIn)[0] - cs_mam.art_borderpx_lrtb[1] ## width/height in pixels
+        field_max_y_px = np.shape(cs_mam.pixeldataIn)[1] - cs_mam.art_borderpx_lrtb[3]
+        field_min_x_px = cs_mam.art_borderpx_lrtb[0]
+        field_min_y_px = cs_mam.art_borderpx_lrtb[2]
         if cs_mam.expertmode:
             field_min_x_px = cs_mam.expert_roipts[0]
             field_max_x_px = cs_mam.expert_roipts[1]
@@ -997,7 +1015,6 @@ class Mammo_QC:
         npix = 0
         # check histogram
         cs_mam.art_clusters = []
-        cs_mam.art_borderpx = borderpx
         cs_mam.art_threshold = thresh
         if cs_mam.scannername == lit.stL50 or doUseStructureAlways:
             if not cs_mam.art_image.max()>thresh: # above for Structure!
@@ -1062,7 +1079,6 @@ class Mammo_QC:
 
         if cs_mam is not None:
             cs_mam.art_clusters = copy.deepcopy(clusters)
-            cs_mam.art_borderpx = borderpx
             cs_mam.art_threshold = thresh
 
         if uiobject:
@@ -1078,7 +1094,6 @@ class Mammo_QC:
         # Possibly this can be solved by using if(type(value) == type(dicom.sequence.Sequence()))
         #  but I don't see the relevance of these tags anymore, so set them to NO
 
-        self.DetermineScannerID(cs)
         if(info == "dicom"):
             dicomfields = [ ["0008,0021",  "Series Date"],
                             ["0008,0031",  "Series Time"],
@@ -1167,22 +1182,6 @@ class Mammo_QC:
             results.append( (df[1],value) )
 
         return results
-
-    def DetermineScannerID(self,cs):
-        error = True
-        cs.scannername = lit.stUnknown
-        dicomvalue = self.readDICOMtag(cs,"0008,1090") #Manufacturer's Model Name
-        dicomvalue = str(dicomvalue).lower()
-        if dicomvalue.find("l50")>-1:
-            cs.scannername = lit.stL50
-            error = False
-        elif dicomvalue.find("lorad selenia")>-1:
-            cs.scannername = lit.stSelenia
-            error = False
-        elif dicomvalue.find("dimensions")>-1:
-            cs.scannername = lit.stDimensions
-            error = False
-        return error
 
     def drawThickCircle(self,draw,x,y,rad,color,thick):
         for t in range(-int((thick-1)/2),int((thick+1)/2)):

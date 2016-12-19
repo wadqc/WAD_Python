@@ -19,12 +19,13 @@
 #
 #
 # Changelog:
+#   20161219: added artefact border setting param
 #   20160802: sync with wad2.0
 #
 #
 from __future__ import print_function
 
-__version__ = '20160802'
+__version__ = '20161219'
 __author__ = 'aschilham'
 
 import os
@@ -48,9 +49,26 @@ def logTag():
 
 # MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!
 
+def _setRunParams(cs, params):
+    # Use the params in the config file 
+    try:
+        # a name for identification
+        # art_borderpx_lrtb = "0;0;12;12" # skip this number of pixels in artefact evaluation for left, right, top, bottom
+        art_borderpx_lrtb = params.find('art_borderpx_lrtb').text
+    except:
+        art_borderpx_lrtb = "0;0;0;0"
+
+    try:
+        art_borderpx_lrtb = [int(x) for x in art_borderpx_lrtb.split(';')]
+            
+    except Exception as e:
+        raise ValueError(logTag()+" Malformed parameter definition!"+str(e))
+
+    cs.art_borderpx_lrtb = art_borderpx_lrtb
+    
 
 ##### Series wrappers
-def mammoqc_series(data, results, **kwargs):
+def mammoqc_series(data, results, params):
     """
     QCMammo_UMCU checks:
         Uniformity (5 rois) and SNR (hologic),
@@ -74,6 +92,8 @@ def mammoqc_series(data, results, **kwargs):
     qcmammolib = QCMammo_lib.Mammo_QC()
     cs_mam = QCMammo_lib.MammoStruct(dcmInfile,pixeldataIn)
     cs_mam.verbose = False # do not produce detailed logging
+    _setRunParams(cs_mam, params)
+
     if qcmammolib.NeedsCropping(cs_mam):
         cs_mam.expertmode = True
         qcmammolib.RestrictROI(cs_mam)
@@ -172,7 +192,7 @@ def mammoqc_series(data, results, **kwargs):
     qcmammolib.saveAnnotatedArtefactImage(cs_mam,filename)
     results.addObject('ArtefactImage'+idname,filename)
 
-def mammoheader_series(data,results,params):
+def mammoheader_series(data, results, params):
     """
     Read selected dicomfields and write to IQC database
 
@@ -192,6 +212,7 @@ def mammoheader_series(data,results,params):
     qcmammolib = QCMammo_lib.Mammo_QC()
     cs = QCMammo_lib.MammoStruct(dcmInfile,None)
     cs.verbose = False # do not produce detailed logging
+    _setRunParams(cs, params)
     dicominfo = qcmammolib.DICOMInfo(cs,info)
 
     ## find filtername
