@@ -15,12 +15,8 @@ import numpy as np
 from scipy import optimize
 
 class CircleFit:
-    # Coordinates of the 2D points
-    x = []
-    y = []
-    residu = -1
-
     def __init__(self,data_xy):
+        # Coordinates of the 2D points
         self.x = [xy[0] for xy in data_xy]
         self.y = [xy[1] for xy in data_xy]
         self.residu = -1.

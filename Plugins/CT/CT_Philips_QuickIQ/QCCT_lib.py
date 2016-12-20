@@ -17,6 +17,7 @@ from __future__ import print_function
 Warning: THIS MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!
 
 Changelog:
+    20161220: removed testing stuff; removed class variables
     20161216: allow manually supplied anatomy
     20160902: sync with wad2.0; Unified pywad1.0 and wad2.0
     20150701: updated for iPatient iCT: body and head; other tags; other body
@@ -28,7 +29,7 @@ Changelog:
     20140409: Initial split of gui/lib for pywad
 
 """
-__version__ = '20161216'
+__version__ = '20161220'
 __author__ = 'aschilham'
 
 import copy
@@ -48,22 +49,8 @@ except ImportError:
         from pyWADLib import wadwrapper_lib
 
     except ImportError: 
-        # wad1.0 solutions failed, try wad2.0
-        try: 
-            # try system package wad_qc
-            from wad_qc.modulelibs import wadwrapper_lib
-        except ImportError: 
-            # use parent wad_qc folder, and add it to search path
-            import sys
-            # add root folder of WAD_QC to search path for modules
-            _modpath = os.path.dirname(os.path.abspath(__file__))
-            while(not os.path.basename(_modpath) == 'Modules'):
-                _new_modpath = os.path.dirname(_modpath)
-                if _new_modpath == _modpath:
-                    raise
-                _modpath = _new_modpath
-            sys.path.append(os.path.dirname(_modpath))
-            from wad_qc.modulelibs import wadwrapper_lib
+        # wad1.0 solutions failed, try wad2.0 from system package wad_qc
+        from wad_qc.modulelibs import wadwrapper_lib
 
 import numpy as np
 from scipy import stats
@@ -71,83 +58,52 @@ import scipy.ndimage
 import matplotlib.pyplot as plt
 
 class Scanner:
-    name = ""
-    HeadGT = [] # HU for Air, Water, Teflon
-    BodyGT = []
-    innerskulldiammm = 0
-    outerskulldiammm = 0
     def __init__ (self, _name,_HeadGT,_innerdiam,_outerdiam, _BodyGT):
         self.name = _name
-        self.HeadGT = copy.deepcopy(_HeadGT)
+        self.HeadGT = copy.deepcopy(_HeadGT) # HU for Air, Water, Teflon
         self.innerskulldiammm = _innerdiam
         self.outerskulldiammm = _outerdiam
         self.BodyGT = copy.deepcopy(_BodyGT)
 
-
 class CTStruct:
-    verbose = False
-
-    # input image
-    dcmInfile = None
-    pixeldataIn = None
-    dicomMode = wadwrapper_lib.stMode2D
-
-    # for matlib plotting
-    hasmadeplots = False
-
-    # identification
-    guessScanner = None
-    forceScanner = None # guessScanner is old way, forceScanner passes scanner definition to struct for usage
-
-    anatomy = lit.stUnknown
-
-    # measurements for head and body
-    roiavg = []  # Average HU in rois
-    roisd  = -1. # SD in center
-    snr_hol = -1. # (avg+1000)/sd
-    unif    = -1.
-    linearity = -1.;
-    maxdev = -1.
-    shiftxypx = []
-    valid = False
-
-    # measurements for head only
-    skull_avg = -1. # Avg HU in skull
-
-    # for gui
-    unif_slice = 0
-    unif_rois = [] # x0,y0,rad
-
     def __init__ (self,dcmInfile,pixeldataIn,dicomMode):
         self.verbose = False
+
+        # input image
         self.dcmInfile = dcmInfile
         self.pixeldataIn = pixeldataIn
         self.dicomMode = dicomMode
 
+        # for matlib plotting
         self.hasmadeplots = False
-        self.guessScanner = None
-        self.forceScanner = None
 
+        # identification
+        self.guessScanner = None
+        self.forceScanner = None # guessScanner is old way, forceScanner passes scanner definition to struct for usage
         self.anatomy = lit.stUnknown
-        self.roiavg = []
-        self.roisd  = -1.
-        self.snr_hol = -1.
+        
+        # measurements for head and body
+        self.roiavg = [] # Average HU in rois
+        self.roisd  = -1. # SD in center
+        self.snr_hol = -1. # (avg+1000)/sd
         self.unif    = -1.
         self.linearity = -1.
         self.maxdev = -1.
         self.shiftxypx = []
         self.valid = False
-        self.skull_avg = -1.
+
+        # measurements for head only
+        self.skull_avg = -1. # Avg HU in skull
+
+        # for gui
         self.unif_slice = 0
-        self.unif_rois = []
+        self.unif_rois = [] # x0,y0,rad
 
 
 class CT_QC:
-    qcversion = __version__
-    sigma_ext = 1.5 # gaussian blur factor for extreme finder
-
     def __init__(self):
-        pass
+        self.qcversion = __version__
+        self.sigma_ext = 1.5 # gaussian blur factor for extreme finder
 
     def readDICOMtag(self,cs,key,imslice=0): # slice=2 is image 3
         value = wadwrapper_lib.readDICOMtag(key,cs.dcmInfile,imslice)

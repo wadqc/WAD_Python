@@ -5,6 +5,7 @@ from __future__ import print_function
 Warning: THIS MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!
 
 Changelog:
+    20161219: Removed class variables
     20160815: Restructuring (clean up)
     20160803: Fix for RestrictROINormi13 where edge is both min and max
     20160802: sync with wad2.0
@@ -13,7 +14,7 @@ Changelog:
     20160202: Finished uniformity
     20160201: Split Uniformity/Artefact detection off from QCMammo to enable recycling; starting from v20150522
 """
-__version__ = '20160815'
+__version__ = '20161219'
 __author__ = 'aschilham'
 
 try:
@@ -62,32 +63,6 @@ except ImportError:
 
 
 class UnifStruct:
-    verbose = False
-    max_pixel_value = -1
-
-    # for matlib plotting
-    hasmadeplots = False
-
-    # uniformity
-    means = []
-    stdevs = []
-    unif_pct = -1
-    snr_hol = -1
-    unif_rois = [] # xy roi definitions # format: x0,wid, y0,hei
-
-    # artefacts
-    art_clusters = []
-    art_image = None
-    art_borderpx = []
-    art_threshold = -1
-    art_rois = [] # x0,y0,rad
-    art_crop = [] # [xmin,xmax, ymin,ymax]
-
-    # working with a smaller FOV
-    unif_crop_frac = 1
-    unif_crop_inoutoverin = -1
-    unif_crop = []
-
     def _max_pixel_value(self):
         # determine max allowed pixelvalue; as 2^bits_stored -1; note this value is not properly stored in dcmfileIn.BitsStored!
         dicomfields = [ ["0028,0101",  "Bits Stored"]]
@@ -111,19 +86,25 @@ class UnifStruct:
 
         self.max_pixel_value = self._max_pixel_value() # max allowed value to store per pixel
 
+        # for matlib plotting
         self.hasmadeplots = False
+
+        # uniformity
         self.means = []
         self.stdevs = []
         self.unif_pct = -1
         self.snr_hol = -1
-        self.unif_rois = []
+        self.unif_rois = [] # xy roi definitions # format: x0,wid, y0,hei
+
+        # artefacts
         self.art_clusters = []
         self.art_image = None
         self.art_borderpx = []
         self.art_threshold = -1
-        self.art_rois = []
+        self.art_rois = [] # x0,y0,rad
+        self.art_crop = [] # [xmin,xmax, ymin,ymax]
 
-        self.art_crop = []
+        # working with a smaller FOV
         self.unif_crop_frac = 1
         self.unif_crop_inoutoverin = -1
         self.unif_crop = []
@@ -138,9 +119,8 @@ class UnifStruct:
         return pix_mm
 
 class Uniformity_QC:
-    qcversion = __version__
-
     def __init__(self):
+        self.qcversion = __version__
         self.artefactDetectorParameters() # default for non-L50 mammo
 
     def artefactDetectorParameters(self, UseStructure=False,

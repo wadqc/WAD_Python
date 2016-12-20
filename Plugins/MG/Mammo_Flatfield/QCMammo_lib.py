@@ -17,6 +17,7 @@ from __future__ import print_function
 Warning: THIS MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!
 
 Changelog:
+    20161220: removed class variables; removed testing stuff
     20160902: sync with wad2.0
     20150522: Force scipy version at least 0.10.1 to avoid problems with PIL/Pillow mixing
     20150430: allow crash if no PIL.ImageDraw available
@@ -39,7 +40,7 @@ Changelog:
     20131010: FFU calc of rad10 and rad20 by Euclidan distance transform
     20131009: Finished SNR; finished ArtLevel; finish FloodField Uniformity
 """
-__version__ = '20160902'
+__version__ = '20161220'
 __author__ = 'aschilham'
 
 import numpy as np
@@ -71,95 +72,52 @@ except ImportError:
         from pyWADLib import wadwrapper_lib
 
     except ImportError: 
-        # wad1.0 solutions failed, try wad2.0
-        try: 
-            # try system package wad_qc
-            from wad_qc.modulelibs import wadwrapper_lib
-        except ImportError: 
-            # use parent wad_qc folder, and add it to search path
-            import sys
-            import os
-            # add root folder of WAD_QC to search path for modules
-            _modpath = os.path.dirname(os.path.abspath(__file__))
-            while(not os.path.basename(_modpath) == 'Modules'):
-                _new_modpath = os.path.dirname(_modpath)
-                if _new_modpath == _modpath:
-                    raise
-                _modpath = _new_modpath
-            sys.path.append(os.path.dirname(_modpath))
-            from wad_qc.modulelibs import wadwrapper_lib
-
+        # wad1.0 solutions failed, try wad2.0 from system package wad_qc
+        from wad_qc.modulelibs import wadwrapper_lib
 
 class MammoStruct:
-    verbose = False
-
-    # input image
-    dcmInfile = None
-    pixeldataIn = None
-
-    # for matlib plotting
-    hasmadeplots = False
-
-    # uniformity
-    means = []
-    stdevs = []
-    unif_pct = -1
-    snr_hol = -1
-    unif_rois = [] # xy roi definitions # format: x0,wid, y0,hei
-
-    # dose ratio
-    doseratio = -1
-
-    # artefacts
-    art_clusters = []
-    art_image = None
-    art_borderpx_lrtb = [0, 0, 0, 0] # part of the image that should be ignored left, right, top, bottom
-
-    art_threshold = -1
-    art_rois = [] # x0,y0,rad
-
-    # working with a smaller FOV
-    expertmode = False
-    expert_roipts = []
-    expert_frac = -1
-    expert_inoutoverin = -1
-
-    # identifiers
-    filtername = lit.stUnknown
-    scannername = lit.stUnknown
-
-    # contrast L50
-    contrast_rois = []  # x0,y0,rad
-    contrast_snr = []
-    contrast_mean = []
-    contrast_sd = []
-
     def __init__ (self, dcmInfile, pixeldataIn):
         self.verbose = False
+
+        # input image
         self.dcmInfile = dcmInfile
         self.pixeldataIn = pixeldataIn
+
+        # for matlib plotting
         self.hasmadeplots = False
+
+        # uniformity
         self.means = []
         self.stdevs = []
         self.unif_pct = -1
         self.snr_hol = -1
-        self.unif_rois = []
+        self.unif_rois = [] # xy roi definitions # format: x0,wid, y0,hei
+
+        # dose ratio
         self.doseratio = -1
+
+        # artefacts
         self.art_clusters = []
         self.art_image = None
         self.art_borderpx_lrtb = [0, 0, 0, 0] # for selenia there is a part of the image that should be ignored
         self.art_threshold = -1
-        self.art_rois = []
+        self.art_rois = [] # x0,y0,rad
+
+        # working with a smaller FOV
         self.expertmode = False
         self.expert_roipts = []
         self.expert_frac = -1
         self.expert_inoutoverin = -1
-        self.filtername = lit.stUnknown
-        self.scannername = lit.stUnknown
-        self.contrast_rois = []
+
+        # contrast L50
+        self.contrast_rois = [] # x0,y0,rad
         self.contrast_snr = []
         self.contrast_mean = []
         self.contrast_sd = []
+
+        # identifiers
+        self.filtername  = lit.stUnknown
+        self.scannername = lit.stUnknown
         self.DetermineScannerID()
 
     def DetermineScannerID(self):
@@ -186,9 +144,8 @@ class MammoStruct:
 
 
 class Mammo_QC:
-    qcversion = 20161219
-
     def __init__(self,guimode=False):
+        self.qcversion = __version__
         self.guimode = guimode
         pass
 

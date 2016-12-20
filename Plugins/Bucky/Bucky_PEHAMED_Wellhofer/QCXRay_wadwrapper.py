@@ -19,6 +19,7 @@
 #
 #
 # Changelog:
+#   20161220: Removed class variables; removed testing stuff
 #   20161216: added use_mustbeinverted param
 #   20160802: sync with wad2.0
 #
@@ -28,7 +29,7 @@
 #
 from __future__ import print_function # python 2 and 3 compatible
 
-__version__ = '20161216'
+__version__ = '20161220'
 __author__ = 'aschilham'
 import os
 if not 'MPLCONFIGDIR' in os.environ:

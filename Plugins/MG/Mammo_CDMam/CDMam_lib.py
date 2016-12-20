@@ -24,11 +24,12 @@ Some stuff that can be optimized:
  * speed up removal of grid (maybe with grid detection on lower scale?)
 
 Changelog:
+    20161220: removed class variables; removed testing stuff
     20160902: sync with wad2.0; Unified pywad1.0 and wad2.0;
     20150826: reshuffling in gridremove to demand less memory (windows cannot cope)
     20150213: first working version
 """
-__version__ = '20160902'
+__version__ = '20161220'
 __author__ = 'aschilham'
 
 import subprocess
@@ -49,22 +50,8 @@ except ImportError:
         from pyWADLib import wadwrapper_lib
 
     except ImportError: 
-        # wad1.0 solutions failed, try wad2.0
-        try: 
-            # try system package wad_qc
-            from wad_qc.modulelibs import wadwrapper_lib
-        except ImportError: 
-            # use parent wad_qc folder, and add it to search path
-            import sys
-            # add root folder of WAD_QC to search path for modules
-            _modpath = os.path.dirname(os.path.abspath(__file__))
-            while(not os.path.basename(_modpath) == 'Modules'):
-                _new_modpath = os.path.dirname(_modpath)
-                if _new_modpath == _modpath:
-                    raise
-                _modpath = _new_modpath
-            sys.path.append(os.path.dirname(_modpath))
-            from wad_qc.modulelibs import wadwrapper_lib
+        # wad1.0 solutions failed, try wad2.0 from system package wad_qc
+        from wad_qc.modulelibs import wadwrapper_lib
 
 try:
     # wad2.0 runs each module stand alone
@@ -76,11 +63,6 @@ class CDMamPhantom:
     """
     Description of the CDMAM Phantom. For now version 3.2 and 3.4 are implemented
     """
-    thickness_um = []
-    diameter_mm  = []
-    phantomlim = []
-    humanfactor = []
-    version = "0.0"
 
     #
     #GT = 4 1
@@ -103,7 +85,7 @@ class CDMamPhantom:
                     [0,0,0,0,0,0,3,2,3,3,1,1,4,3,3,2],#0.13
                     [0,0,0,0,0,0,0,4,2,2,4,2,2,3,4,0],#0.1
                     ]
-    def __init__ (self,version):
+    def __init__ (self, version):
         """
         Constructor of CDMamPhantom. 
         Difference between 3.2 and 3.4 is thickness/diammeter of gold discs
@@ -172,23 +154,17 @@ class CDMamStruct:
     """
     Class holding all information for IO between gui and Lib
     """
-    verbose = False
-    
-    # input image
-    dcmInfile = None
-    pixeldataIn = None
-    imageFileName = None
-    
-    # for matlib plotting
-    hasmadeplots = False
-
     def __init__ (self,dcmInfile,pixeldataIn,phantomversion):
         self.verbose = False
+
+        # input image
         self.dcmInfile = dcmInfile
         self.pixeldataIn = pixeldataIn
+        self.imageFileName = None
+
+        # for matlib plotting
         self.hasmadeplots = False
 
-        self.imageFileName = None
         self.phantom = CDMamPhantom(phantomversion)
         self.gridimage = None
         self.startingroi = [] # starting box in phantom to find grid coords
@@ -212,9 +188,8 @@ class CDMam():
     """
     Class for calculation of CDMAM score
     """
-    qcversion = __version__
-
     def __init__(self,guimode=False):
+        self.qcversion = __version__
         self.guimode = guimode
         pass
 

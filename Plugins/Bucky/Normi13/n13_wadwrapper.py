@@ -19,13 +19,14 @@
 #
 #
 # Changelog:
+#   20161220: Removed class variables; removed testing stuff
 #   20160825: fixes for portable detector
 #   20160802: sync with wad2.0
 #
 #
 from __future__ import print_function
 
-__version__ = '20160825'
+__version__ = '20161220'
 __author__ = 'aschilham'
 
 import os

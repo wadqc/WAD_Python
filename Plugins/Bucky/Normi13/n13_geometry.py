@@ -33,20 +33,6 @@ except ImportError:
     from . import unif_lib
     
 class GeomStruct:
-    crop_ranges = None # [xmin_px,ymin_px, xmax_px,ymax_px]
-    crop_frac = 1. #area_in/area_all
-    crop_inoutoverin = 0. #(mean_in-mean_out)/mean_in
-
-    box_roi = []  # phantombox [UL, LL, LR, UR]
-    box_radmm = [] # halfwidth, halfheight of phantombox in mm
-    box_confidence = 0.
-    box_orientation = 0 # rotation of box in degrees (0, 90, 180, 270)
-    center_shiftxy = [0,0] # shift of box center wrt to center of uncropped image in px
-    orig_shape = [] # width,height in px of original image
-
-    xr_NSWEmm = [] # edges of xray exposure in mm
-    xr_roi = [] # edges of xray exposure in px on cropped im
-
     def _roi_to_coords_transformation(self):
         """
         Use found phantombox to determine transformation from pos_xy in mm on phantom grid to pos_xy in px
@@ -87,18 +73,19 @@ class GeomStruct:
 
 
     def __init__(self):
-        self.crop_ranges = None
-        self.crop_frac = 1.
-        self.crop_inoutoverin = 0.
+        self.crop_ranges = None    # [xmin_px,ymin_px, xmax_px,ymax_px]
+        self.crop_frac = 1.        # area_in/area_all
+        self.crop_inoutoverin = 0. #(mean_in-mean_out)/mean_in
 
-        self.box_roi = []
-        self.box_radmm = []
+        # phantombox  
+        self.box_roi = []            # [UL, LL, LR, UR]
+        self.box_radmm = []          # halfwidth, halfheight of phantombox in mm
         self.box_confidence = 0.
-        self.box_orientation = 0
-        self.center_shiftxy = [0, 0]
-        self.xr_NSWEmm = []
-        self.xr_roi = []
-        self.orig_shape = [] # width,height in px of original image, so before cropping
+        self.box_orientation = 0     # rotation of box in degrees (0, 90, 180, 270)
+        self.center_shiftxy = [0, 0] # shift of box center wrt to center of uncropped image in px
+        self.xr_NSWEmm = []          # edges of xray exposure in mm
+        self.xr_roi = []             # edges of xray exposure in px on cropped im
+        self.orig_shape = []         # width,height in px of original image, so before cropping
         
 
 def CropPhantom(cs):

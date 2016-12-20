@@ -21,26 +21,16 @@ Normi13 analysis, Low Contrast functions:
 import numpy as np
 
 class LoCoStruct :
-    low_rois = [] # circles of low contrast [x0,y0,r] in pix
-    low_rois_bku = [] # circles of background above low contrast [x0,y0,r] in pix
-    low_rois_bkd = [] # circles of background above below low contrast [x0,y0,r] in pix
-
-    mean_sg = []
-    sdev_sg = []
-    mean_bk = [] # corresponding to max cnr
-    sdev_bk = [] # corresponding to max cnr
-    low_cnr = [] # max cnr for up and down
-    
     def __init__ (self):
-        self.low_rois = []
-        self.low_rois_bku = []
-        self.low_rois_bkd = []
+        self.low_rois = []     # circles of low contrast [x0,y0,r] in pix
+        self.low_rois_bku = [] # circles of background above low contrast [x0,y0,r] in pix
+        self.low_rois_bkd = [] # circles of background above below low contrast [x0,y0,r] in pix
 
         self.mean_sg = []
-        self.mean_bk = []
         self.sdev_sg = []
-        self.sdev_bk = []
-        self.low_cnr = []
+        self.mean_bk = [] # corresponding to max cnr
+        self.sdev_bk = [] # corresponding to max cnr
+        self.low_cnr = [] # max cnr for up and down
 
 def LowContrast(cs):
     """

@@ -19,13 +19,14 @@
 #
 #
 # Changelog:
+#   20161220: removed testing stuff; removed class variables
 #   20161216: added use_anatomy param
 #   20160802: sync with wad2.0
 #
 #
 from __future__ import print_function
 
-__version__ = '20161216'
+__version__ = '20161220'
 __author__ = 'aschilham'
 
 import os

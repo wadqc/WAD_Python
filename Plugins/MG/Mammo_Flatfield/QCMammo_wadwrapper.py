@@ -19,13 +19,13 @@
 #
 #
 # Changelog:
-#   20161219: added artefact border setting param
+#   20161220: added artefact border setting param; removed class variables; removed testing stuff
 #   20160802: sync with wad2.0
 #
 #
 from __future__ import print_function
 
-__version__ = '20161219'
+__version__ = '20161220'
 __author__ = 'aschilham'
 
 import os

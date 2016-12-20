@@ -409,11 +409,6 @@ def prepareInput(instancedict, headers_only, do_transpose=True, logTag="[prepare
 
 ### math
 class connectedComponents():
-    maskIn = None
-    cca    = None
-    nb_labels = None
-    cluster_sizes = []
-    
     def __init__(self):
         self.maskIn = None
         self.cca = None

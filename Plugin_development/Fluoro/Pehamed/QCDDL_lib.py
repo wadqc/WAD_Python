@@ -16,11 +16,12 @@ Warning: THIS MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED! And make su
 
 TODO:
 Changelog:
+    20161220: removed testing stuff; removed class variabled
     20160902: sync with wad2.0; Unified pywad1.0 and wad2.0
     20150616: better orientation module
     20150609: Initial from QCXRay_Lib
 """
-__version__ = '20160902'
+__version__ = '20161220'
 __author__ = 'aschilham'
 
 import numpy as np
@@ -43,22 +44,8 @@ except ImportError:
         from pyWADLib import wadwrapper_lib
 
     except ImportError: 
-        # wad1.0 solutions failed, try wad2.0
-        try: 
-            # try system package wad_qc
-            from wad_qc.modulelibs import wadwrapper_lib
-        except ImportError: 
-            # use parent wad_qc folder, and add it to search path
-            import sys
-            # add root folder of WAD_QC to search path for modules
-            _modpath = os.path.dirname(os.path.abspath(__file__))
-            while(not os.path.basename(_modpath) == 'Modules'):
-                _new_modpath = os.path.dirname(_modpath)
-                if _new_modpath == _modpath:
-                    raise
-                _modpath = _new_modpath
-            sys.path.append(os.path.dirname(_modpath))
-            from wad_qc.modulelibs import wadwrapper_lib
+        # wad1.0 solutions failed, try wad2.0 from system package wad_qc
+        from wad_qc.modulelibs import wadwrapper_lib
 
 import matplotlib.pyplot as plt
 import copy
@@ -74,66 +61,31 @@ if scipy_version[1]<10 or (scipy_version[1] == 10 and scipy_version[1]<1):
     raise RuntimeError("scipy version too old. Upgrade scipy to at least 0.10.1")
 
 class DDLStruct:
-    verbose = False
-    knownHorizontalOrVertical = None
-
     class Room :
-        name = ""       # identifier of room
-        outvalue = -1   # value of pixels outside x-ray field
-        sidHorizontal_mm = -1 
-        sidVertical_mm   = -1 
-        p2mm512Horizontal = 1. # factor to convert pix in 512 to mm on phantom; from manual fit
-        p2mm512Vertical   = 1.
-        protocolHorizontal = ''
-        protocolVertical   = ''
-        phantom = lit.stPehamed
-        skipFFT = False # only for wellhofer
-        sdthresh = -1 # threshold on stdev for determin table or wall, now only for CALHOS, maybe WKZ?
-
         def __init__ (self,_name, outvalue=-1, 
                       sHmm=-1, sVmm=-1, 
                       pH2mm=-1, pV2mm=-1, 
                       protocolH = '', protocolV = '',
                       phantom=lit.stPehamed,sdthresh=-1):
-            self.name = _name
-            self.outvalue = outvalue
+            self.name = _name        # identifier of room
+            self.outvalue = outvalue # value of pixels outside x-ray field
             self.sidHorizontal_mm  = sHmm
             self.sidVertical_mm    = sVmm
-            self.p2mm512Horizontal = pH2mm
+            self.p2mm512Horizontal = pH2mm # factor to convert pix in 512 to mm on phantom; from manual fit
             self.p2mm512Vertical   = pV2mm
             self.protocolHorizontal = protocolH
             self.protocolVertical = protocolV
             self.phantom = phantom
-            self.sdthresh = sdthresh
+            self.sdthresh = sdthresh # threshold on stdev for determin table or wall, now only for CALHOS, maybe WKZ?
+            self.skipFFT = False
             if(phantom == lit.stWellhofer):
-                self.skipFFT = True
-
-    # room names
-    #    roomWKZ1 = Room("WKZ1",outvalue=1023,tablesid=1150,wallsid=2000, tablepid=60, wallpid=45,phantom="wellhofer")
-    # wkz tablepid=30 from fit
-    roomF7 = Room("AZUDDL", outvalue=0,sHmm=1500,sVmm=1500,pH2mm=0.6384,pV2mm=0.6384,protocolH='HSG',protocolV='Defaec')
-    #roomF7.skipFFT = True
-    roomUnknown = Room(lit.stUnknown)
-    guessroom = roomUnknown
+                self.skipFFT = True # only for wellhofer
 
     class UnifStruct :
-        ROIuniformity = -1 # fraction
-        LRuniformity = -1  # fraction
-        LineUniformity = -1  # fraction
-        BKmean = -1 # gridless bk
-        BKsdev = -1 # gridless bk stdev
-        peakValue = -1 # max valule over uniformity line
-        posval = []
-        intens = []
-        trend = []
-        trendMin = -1
-        trendMax = -1
-        roi = []
-        verticalROI = False
         def __init__ (self):
-            self.ROIuniformity = self.LRuniformity = LineUniformity = 0.
-            self.BKmean = self.BKsdev = 0.
-            self.peakValue = 0.
+            self.ROIuniformity = self.LRuniformity = LineUniformity = 0. # fraction
+            self.BKmean = self.BKsdev = 0. # gridless bk
+            self.peakValue = 0. # max valule over uniformity line
             self.posval = []
             self.intens = []
             self.trendMax = self.trendMin = 0.
@@ -142,17 +94,6 @@ class DDLStruct:
             self.verticalROI = False
 
     class CuStruct :
-        roi_snr = []
-        roi_cnr = []
-        roi_mmcu = []
-        roi_mean = []
-        roi_sdev = []
-        dynamicRange = -1
-        guesskVp     = -1
-        slope        = 0.
-        roi = []
-        step_rois = []
-        wedge_confidence = -1.
         def __init__ (self):
             self.roi_snr = []
             self.roi_cnr = []
@@ -167,12 +108,6 @@ class DDLStruct:
             self.wedge_confidence = -1.
 
     class LoCoStruct :
-        low_cnr = []
-        mean_sg = []
-        mean_bk = []
-        sdev_sg = []
-        sdev_bk = []
-        lo_rois = []
         def __init__ (self):
             self.low_cnr = []
             self.mean_sg = []
@@ -182,36 +117,7 @@ class DDLStruct:
             self.lo_rois = []
 
     #####################
-    # input image
-    dcmInfile = None
-    pixeldataIn = None
-    dicomMode = wadwrapper_lib.stMode2D
-
-    mustbeinverted = False # if pixval(Cu) = high and pixval(air) = low, then mustbeinverted
-    expertOverridepixToGridScaleCm = None
-    bbox_confidence = 0.
-
-    # phantom orientation
-    po_center_roi = [] # xmid,ymid,rad
-    po_roi = [] # list [ [x,y] ]
-    po_fftroi = []
-    po_rot = 0 # only is phantom is rotate multiple of 90
-    test_rois = []
-    po_angledeg = 0 # exact angle of rotation after multiple of 90
-
-    # horz. uniformity
-    unif = None
-
-    # Cu Wedge
-    cuwedge = None
-
-    # Low Contrast
-    loco = None
-
-    lastimage = None # GUI feedback
-
-    # for matlib plotting
-    hasmadeplots = False
+    roomUnknown = Room(lit.stUnknown)
 
     def readDICOMtag(self,key): # slice=2 is image 3
         value = wadwrapper_lib.readDICOMtag(key,self.dcmInfileRaw,self.imslice)
@@ -277,7 +183,10 @@ class DDLStruct:
                     return
 
     def __init__ (self,dcmInfile,pixeldataIn,dicomMode):
+        self.knownHorizontalOrVertical = None
         self.verbose = False
+
+        # input image
         self.dcmInfileRaw = dcmInfile
         self.pixeldataInRaw = pixeldataIn
         self.dcmInfile = dcmInfile
@@ -290,32 +199,45 @@ class DDLStruct:
             self.dcmInfile = self.dcmInfileRaw.info
             self.pixeldataIn = None if pixeldataIn is None else self.pixeldataInRaw[self.imslice]
 
-        self.hasmadeplots = False
         self.expertOverridepixToGridScaleCm = None
-        self.mustbeinverted = False
-        self.guessroom = self.roomUnknown
-        self.lastimage = None
-        self.po_center_roi = []
-        self.po_roi = []
-        self.po_rot = 0
-        self.po_angledeg = 0.
+        self.mustbeinverted = False # if pixval(Cu) = high and pixval(air) = low, then mustbeinverted
+        self.lastimage = None # GUI feedback
+
+        # phantom orientation
+        self.test_rois = []
+        self.po_center_roi = [] # xmid,ymid,rad
+        self.po_roi = [] # list [ [x,y] ]
+        self.po_rot = 0  # only is phantom is rotate multiple of 90
+        self.po_angledeg = 0. # exact angle of rotation after multiple of 90
         self.po_fftroi = []
 
+        # horz. uniformity
         self.unif = self.UnifStruct()
+
+        # Cu Wedge
         self.cuwedge = self.CuStruct()
+
+        # Low Contrast
         self.loco = self.LoCoStruct()
         self.bbox_confidence = 0.
 
+        # for matlib plotting
+        self.hasmadeplots = False
+
+        # room names
+        self.roomF7 = self.Room("AZUDDL", outvalue=0,sHmm=1500,sVmm=1500,pH2mm=0.6384,pV2mm=0.6384,protocolH='HSG',protocolV='Defaec')
+        #roomF7.skipFFT = True
+
+        self.guessroom = self.roomUnknown
         self.determineDeviceID()
+
         if not pixeldataIn is None:
             self.maybeInvert()
 
 class DDLQC:
-    qcversion = __version__
-
-    boxradmm   = 110  # choose 11 cm or 8 cm for clean surroundings
     def __init__(self):
-        self.boxradmm = 110
+        self.qcversion = __version__
+        self.boxradmm = 110  # choose 11 cm or 8 cm for clean surroundings
 
     def readDICOMtag(self,cs,key): # slice=2 is image 3
         value = wadwrapper_lib.readDICOMtag(key,cs.dcmInfileRaw,cs.imslice)

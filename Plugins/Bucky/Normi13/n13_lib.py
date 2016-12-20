@@ -19,6 +19,7 @@ Note: comparison will be against lit.stTable, if not matched (eg. overwritten by
 
 TODO:
 Changelog:
+    20161220: Removed class variables; removed testing stuff
     20160816: split in separate files for each block of analysis
     20160812: another attempt at consistent box finding
     20160811: fix bad align for too low contrast; trendremoval; hessian; bugfix rotated phantom; fixes for small detector
@@ -28,7 +29,7 @@ Changelog:
     20160202: added uniformity
     20151109: start of new module, based on QCXRay_lib of Bucky_PEHAMED_Wellhofer of 20151029
 """
-__version__ = '20160816'
+__version__ = '20161220'
 __author__ = 'aschilham'
 
 try:
@@ -66,29 +67,20 @@ except ImportError:
     from . import unif_lib
     
 class Room:
-    name = ""     # identifier of room
-    outvalue = -1 # value of pixels outside x-ray field
-
-    pidmm= {} # distance between mid phantom and detector in mm
-    sidmm= {} # distance between source and detector in mm
-
-    xy06mm = [] # x,y position in mm of decimal dot in 0.6 lp/mm 
-    xy10mm = [] # x,y position in mm of decimal dot in 1.0 lp/mm 
-    xy14mm = [] # x,y position in mm of decimal dot in 1.4 lp/mm 
-    xy18mm = [] # x,y position in mm of decimal dot in 1.8 lp/mm 
-    xy46mm = [] # x,y position in mm of decimal dot in 4.6 lp/mm 
-
     def __init__ (self,_name, outvalue=-1, pid_tw=[-1,-1], sid_tw=[-1,-1],
                   linepairmarkers = {},artefactborderpx=[0,0,0,0],detectorname={}, auto_suffix=False):
-        self.name = _name
-        self.outvalue = outvalue
+        self.name = _name        # identifier of room
+        self.outvalue = outvalue # value of pixels outside x-ray field
+        self.pidmm = {}
+        self.sidmm = {}
+
         if len(pid_tw) == 1: # forced
-            self.pidmm[lit.stForced] = pid_tw[0]
+            self.pidmm[lit.stForced] = pid_tw[0] 
             self.sidmm[lit.stForced] = sid_tw[0]
         else:
-            self.pidmm[lit.stTable]    = pid_tw[0]
+            self.pidmm[lit.stTable]    = pid_tw[0] # distance between mid phantom and detector in mm
             self.pidmm[lit.stWall]     = pid_tw[1]
-            self.sidmm[lit.stTable]    = sid_tw[0]
+            self.sidmm[lit.stTable]    = sid_tw[0] # distance between source and detector in mm
             self.sidmm[lit.stWall]     = sid_tw[1]
 
         self.artefactborderpx = artefactborderpx
@@ -97,12 +89,12 @@ class Room:
             self.linepairmodel = linepairmarkers['type']
             if self.linepairmodel == 'RXT02':
                 self.xy06mm = linepairmarkers['xymm0.6']
-                self.xy10mm = linepairmarkers['xymm1.0']
+                self.xy10mm = linepairmarkers['xymm1.0'] # x,y position in mm of decimal dot in 1.0 lp/mm 
             elif self.linepairmodel == 'typ38':
-                self.xy06mm = linepairmarkers['xymm0.6']
-                self.xy14mm = linepairmarkers['xymm1.4']
-                self.xy18mm = linepairmarkers['xymm1.8']
-                self.xy46mm = linepairmarkers['xymm4.6']
+                self.xy06mm = linepairmarkers['xymm0.6'] # x,y position in mm of decimal dot in 0.6 lp/mm 
+                self.xy14mm = linepairmarkers['xymm1.4'] # x,y position in mm of decimal dot in 1.4 lp/mm 
+                self.xy18mm = linepairmarkers['xymm1.8'] # x,y position in mm of decimal dot in 1.8 lp/mm 
+                self.xy46mm = linepairmarkers['xymm4.6'] # x,y position in mm of decimal dot in 4.6 lp/mm 
             elif self.linepairmodel == 'None':
                 pass
             else:
@@ -112,31 +104,8 @@ class Room:
 
 class XRayStruct:
     ###
-    knownDetectorStand = None
-
+    # class variables
     roomUnknown = Room(lit.stUnknown)
-    forceRoom = roomUnknown
-
-    #####################
-    # all geometry related stuff in geom
-    geom = None # Geometry.GeomStruct()
-
-    # Cu Wedge
-    cuwedge = None # CuWedge.CuStruct()
-
-    # Low Contrast
-    loco = None # LowContrast.LoCoStruct()
-
-    # MTF
-    mtf = None # Resolution.MTFStruct()
-
-    # Uniformity # actually not part of Normi13
-    unif = None
-
-    lastimage = None # GUI feedback
-
-    # for matlib plotting
-    hasmadeplots = False
 
     def FixInvertedImage(self):
         """
@@ -249,8 +218,10 @@ class XRayStruct:
         return px/self.phantom_px_in_mm
 
     def __init__ (self, dcmInfile, pixeldataIn, room):
+        ###
         self.verbose = False
         self.knownDetectorStand = None
+
         # input image
         self.dcmInfile   = dcmInfile
         self.pixeldataIn = pixeldataIn
@@ -268,19 +239,32 @@ class XRayStruct:
 
         self.forceRoom = room
         self.phantom_px_in_mm = self.pixToGridScale_mm()
+
+        # all geometry related stuff in geom
         self.geom = Geometry.GeomStruct()
+
+        # Cu Wedge
         self.cuwedge = CuWedge.CuStruct()
+
+        # Low Contrast
         self.loco = LowContrast.LoCoStruct()        
+
+        # MTF
         self.mtf = Resolution.MTFStruct()
 
+        # Uniformity # actually not part of Normi13
+        self.unif = None
+
+        # for matlib plotting
         self.hasmadeplots = False
-        self.lastimage = None
+
+        # GUI feedback
+        self.lastimage = None 
 
 
 class XRayQC:
-    qcversion = __version__
-
     def __init__(self):
+        self.qcversion = __version__
         pass
 
     def drawThickCircle(self,draw,x,y,rad,color,thick):

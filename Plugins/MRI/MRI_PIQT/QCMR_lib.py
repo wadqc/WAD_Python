@@ -20,6 +20,7 @@ TODO: Linearity : m/p angle
 TODO: SliceProfile: phase shift
 TODO: pixelsizes
 Changelog:
+    20161220: remove class variables; remove testing stuff
     20160902: sync with wad2.0; Unified pywad1.0 and wad2.0
     20151111: Added resultimages for all tests
     20151104: Many changes to fix QA1, QA2, QA3 agreement with Philips results; removed AffineTransform, used lowpass instead of movingaverage; changed signs
@@ -40,7 +41,7 @@ Changelog:
     20131010: FFU calc of rad10 and rad20 by Euclidean distance transform
     20131009: Finished SNR; finished ArtLevel; finish FloodField Uniformity
 """
-__version__ = '20160902'
+__version__ = '20161220'
 __author__ = 'aschilham'
 
 import numpy as np
@@ -56,7 +57,7 @@ except ImportError:
     from . import QCMR_constants as lit
     from . import QCMR_math as mymath
 
-# First try if we are running wad1.0, since in wad2 libs are installed systemwide
+# First try if we are running wad1.0, since in wad2 libs are installed system-wide
 try: 
     # try local folder
     import wadwrapper_lib
@@ -66,22 +67,8 @@ except ImportError:
         from pyWADLib import wadwrapper_lib
 
     except ImportError: 
-        # wad1.0 solutions failed, try wad2.0
-        try: 
-            # try system package wad_qc
-            from wad_qc.modulelibs import wadwrapper_lib
-        except ImportError: 
-            # use parent wad_qc folder, and add it to search path
-            import sys
-            # add root folder of WAD_QC to search path for modules
-            _modpath = os.path.dirname(os.path.abspath(__file__))
-            while(not os.path.basename(_modpath) == 'Modules'):
-                _new_modpath = os.path.dirname(_modpath)
-                if _new_modpath == _modpath:
-                    raise
-                _modpath = _new_modpath
-            sys.path.append(os.path.dirname(_modpath))
-            from wad_qc.modulelibs import wadwrapper_lib
+        # wad1.0 solutions failed, try wad2.0 from system package wad_qc
+        from wad_qc.modulelibs import wadwrapper_lib
 
 # for image results
 from PIL import Image # image from pillow is needed
@@ -93,113 +80,33 @@ if scipy_version[1]<10 or (scipy_version[1] == 10 and scipy_version[1]<1):
     raise RuntimeError("scipy version too old. Upgrade scipy to at least 0.10.1")
 
 class PiQT_Struct:
-    # input image
-    dcmInfile = None
-    pixeldataIn = None
-    piqttest = None # tuple (seq_test,imagetype,philipsslicenumber,echonumber,echotime,)
-    verbose = False
-    dicomMode = wadwrapper_lib.stMode2D
-    scanID = lit.stUnknown
-
-    # for matlib plotting
-    hasmadeplots = False
-
-    # SNR 
-    snr_means  = [] # average in Center, Background
-    snr_stdevs = [] # Stdev in Center, Background
-    snr_rois   = [] # xy roi definitions # format: x0,wid, yo,hei
-    snr_slice  = -1
-    snr_SNC = -1
-    snr_SNB = -1
-    snr_BsdB = -1
-
-    # Artefact Level 
-    artefact_max = None # Maximum mean value of ROI of 3*3 pixels in background of image. The edges of the image are masked.
-    artefact_roi = [] # x0,y0,rad
-    artefact_ArtLevel = -1
-
-    # FloodField Uniformity
-    ffu_Ntot     = None
-    ffu_TCm20    = -1.
-    ffu_Cm20Cm10 = -1.
-    ffu_Cm10Cp10 = -1.
-    ffu_Cp10Cp20 = -1.
-    ffu_Cp20MAX  = -1.
-    ffu_rad10 = -1.
-    ffu_rad20 = -1.
-    ffu_mid10 = [] # for plotting format [x,y]
-    ffu_mid20 = [] # for plotting format [x,y]
-    ffu_lin_unif = -1
-    ffu_mid_linunif = [] # for plotting format [x,y]
-    ffu_rad_linunif = -1. # for plotting format rad
-
-    # Spatial Linearity
-    lin_slice = -1
-    lin_posgt = []     # for plotting format [x,y]
-    lin_posfound = []  # for plotting format [x,y]
-    lin_diampx = -1.   # for plotting format [x,y]
-    lin_phantomrotdeg = 0. # phantom misalignment
-    lin_phantomshift = []
-    lin_sizehor = 0
-    lin_sizever = 0
-    lin_intshiftavg = [] # shifts
-    lin_intshiftsdev = []
-    lin_shiftmax = []
-    lin_shiftmin = []
-    lin_intdiffavg = [] # linear differentials
-    lin_intdiffsdev =[]
-    lin_intdiffmax = [] 
-    lin_intdiffmin = [] 
-    lin_nema_label = []
-    lin_nema = []
-    lin_nema_max = 0
-
-    # Slice Profile
-    sp_slice = -1
-    sp_rois = []  # for plotting
-    sp_mean = []  # for plotting ?
-    sp_diamm = -1 # for plotting 
-    sp_pins  = [] # for plotting
-    sp_phantomrotdeg = -1
-    sp_fwhm = None
-    sp_fwtm = -1 # in mm
-    sp_phantomzangledeg = -1
-    sp_line_int = -1 # in mm
-    sp_phantom = ""
-    sp_method = ""
-    sp_slicewidth_fwhm = -1 # philips PiQT report values are NOT fwhm but FWHM*tan(angle)
-    sp_slicewidth_fwtm = -1 # philips PiQT report values are NOT fwtm but FWTM*tan(angle)
-    sp_slicewidth_lineint = -1 # philips PiQT report values are NOT line_int but line_int*tan(angle),
-                               # also non-zero offset correction and scaled by (hival-loval) so it is like SW
-    sp_phantomshift = 1 # philips Distance between centre of slice thickness section to the centre of image plane, but can be negative?
-    sp_phaseshift = -360. # phaseshift in degrees. Don't know if this is calculated properly
-
-    # MTF
-    mtf_slice = -1
-    mtf_rois  = [] # for plotting
-    mtf_pixelsize = []
-    mtf_mtf50 = []
-    mtf_integral = []
-
-    resultimage = {} # container for calculated image results
-
     def __init__ (self,dcmInfile,pixeldataIn,dicomMode,piqttest):
+        # input image
         self.dcmInfile = dcmInfile
         self.pixeldataIn = pixeldataIn
         self.dicomMode = dicomMode
         self.scanID = lit.stUnknown
-        self.piqttest = piqttest
+        self.piqttest = piqttest # tuple (seq_test,imagetype,philipsslicenumber,echonumber,echotime,)
         self.verbose = False
+
+        # for matlib plotting
         self.hasmadeplots = False
-        self.snr_means  = []
-        self.snr_stdevs = []
-        self.snr_rois = []
+
+        # SNR 
+        self.snr_means  = [] # average in Center, Background
+        self.snr_stdevs = [] # Stdev in Center, Background
+        self.snr_rois   = [] # xy roi definitions # format: x0,wid, yo,hei
+        self.snr_slice  = -1
         self.snr_SNC = -1
         self.snr_SNB = -1
         self.snr_BsdB = -1
-        self.artefact_max = None
-        self.artefact_roi = []
+
+        # Artefact Level 
+        self.artefact_max = None # Maximum mean value of ROI of 3*3 pixels in background of image. The edges of the image are masked.
+        self.artefact_roi = [] # x0,y0,rad
         self.artefact_ArtLevel = -1
+
+        # FloodField Uniformity
         self.ffu_Ntot     = None
         self.ffu_TCm20    = -1.
         self.ffu_Cm20Cm10 = -1.
@@ -208,20 +115,22 @@ class PiQT_Struct:
         self.ffu_Cp20MAX  = -1.
         self.ffu_rad10 = -1.
         self.ffu_rad20 = -1.
-        self.ffu_mid10 = []
-        self.ffu_mid20 = []
+        self.ffu_mid10 = [] # for plotting format [x,y]
+        self.ffu_mid20 = [] # for plotting format [x,y]
         self.ffu_lin_unif = -1
         self.ffu_mid_linunif = [] # for plotting format [x,y]
         self.ffu_rad_linunif = -1. # for plotting format rad
+
+        # Spatial Linearity
         self.lin_slice = -1
-        self.lin_posgt = []
-        self.lin_posfound = []
-        self.lin_diampx = -1.
+        self.lin_posgt = []     # for plotting format [x,y]
+        self.lin_posfound = []  # for plotting format [x,y]
+        self.lin_diampx = -1.   # for plotting format [x,y]
         self.lin_phantomrotdeg = 0. # phantom misalignment
         self.lin_phantomshift = []
         self.lin_sizehor = 0
         self.lin_sizever = 0
-        self.lin_intshiftavg = []
+        self.lin_intshiftavg = [] # shifts
         self.lin_intshiftsdev = []
         self.lin_shiftmax = [] # geom. shifts
         self.lin_shiftmin = []
@@ -232,6 +141,8 @@ class PiQT_Struct:
         self.lin_nema_label = []
         self.lin_nema = []
         self.lin_nema_max = 0
+
+        # Slice Profile
         self.sp_slice = -1
         self.sp_rois = []  # for plotting
         self.sp_mean = []  # for plotting ?
@@ -247,24 +158,24 @@ class PiQT_Struct:
         self.sp_slicewidth_fwhm = -1 # philips PiQT report values are NOT fwhm but FWHM*tan(angle)
         self.sp_slicewidth_fwtm = -1 # philips PiQT report values are NOT fwtm but FWHM*tan(angle)
         self.sp_slicewidth_lineint = -1 # philips PiQT report values are NOT line_int but line_int*tan(angle),
-        self.sp_phantomshift = 1 # philips Distance between centre of slice thickness section to the centre of image plane, but can be negative?
+        self.sp_phantomshift = 1 # philips Distance between centre of slice thickness section to the centre of image plane, but can be negative? also non-zero offset correction and scaled by (hival-loval) so it is like SW
         self.sp_phaseshift = -360. # phaseshift in degrees. Don't know if this is calculated properly
+
+        # MTF
         self.mtf_slice = -1
         self.mtf_rois  = [] # for plotting
         self.mtf_pixelsize = []
         self.mtf_mtf50 = []
         self.mtf_integral = []
 
-        self.resultimage = {}
+        self.resultimage = {} # container for calculated image results
 
 class PiQT_QC:
-    qcversion = __version__
-
     """
     string constants
     """
     def __init__ (self):
-        pass
+        self.qcversion = __version__
 
     """
         ** head and body coils
@@ -1661,8 +1572,6 @@ class PiQT_QC:
 #            print(la,ne)
         error = False
         return error
-
-
 
     def DICOMInfo(self,cs,info='dicom',imslice=0):
         # Different from ImageJ version; tags "0008","0104" and "0054","0220"

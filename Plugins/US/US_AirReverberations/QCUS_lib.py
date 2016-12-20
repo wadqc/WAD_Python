@@ -43,6 +43,7 @@ Warning: THIS MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!
 TODO:
     o Maybe put hard threshold on peak value for uniformity (is normalized, so why not?!)
 Changelog:
+    20161220: removed class variables; removed testing stuff
     20160831: bugfix no clusters left; Unified pywad1.0 and wad2.0; Transfer input parameters to xml; 
               Modifications in analysis paramters optimized for GE Voluson [PvH]; changed uniformity 
               to only analyse first bright reverb if possible
@@ -58,7 +59,7 @@ Changelog:
     20150416: Sensitivity analysis and uniformity analysis
     20150410: Initial version
 """
-__version__ = '20160831'
+__version__ = '20161220'
 __author__ = 'aschilham'
 
 import copy
@@ -88,22 +89,8 @@ except ImportError:
         from pyWADLib import wadwrapper_lib
 
     except ImportError: 
-        # wad1.0 solutions failed, try wad2.0
-        try: 
-            # try system package wad_qc
-            from wad_qc.modulelibs import wadwrapper_lib
-        except ImportError: 
-            # use parent wad_qc folder, and add it to search path
-            import sys
-            # add root folder of WAD_QC to search path for modules
-            _modpath = os.path.dirname(os.path.abspath(__file__))
-            while(not os.path.basename(_modpath) == 'Modules'):
-                _new_modpath = os.path.dirname(_modpath)
-                if _new_modpath == _modpath:
-                    raise
-                _modpath = _new_modpath
-            sys.path.append(os.path.dirname(_modpath))
-            from wad_qc.modulelibs import wadwrapper_lib
+        # wad1.0 solutions failed, try wad2.0 from system package wad_qc
+        from wad_qc.modulelibs import wadwrapper_lib
 
 try:
     import numpy.fft.rfftfreq as rfftfreq
@@ -156,109 +143,42 @@ def cropImage(image,offX,offY):
     return image[xran[0]:xran[1],yran[0]:yran[1]]
 
 class USStruct:
-    verbose = False
-
-    # input image
-    dcmInfile = None
-    pixeldataIn = None
-    dicomMode = wadwrapper_lib.stMode2D
-
-
-    # for matlib plotting
-    hasmadeplots = False
-
-    # reverbrations
-    cluster_fminsize = 10*10*3 # ignore clusters of size smaller than imwidth*imheigth/minsizefactor (wid/10*hei/10)/3
-    reverb_image  = None # isolated reverbrations (by largest connected component)
-    rect_image    = None # straightend image for curvilinear probes
-    curve_xyr     = None # center and radius [x,y,r] of curvilinear probe
-    curve_residu  = None # residu of fitting of curvilinear probe
-    curve_opendeg = None # opening angle in degrees
-    unif_bots     = None # list of (pos,val) of kept valleys in normalized reverb profile
-    unif_lowest   = 0 # lowest value of valleys
-    unif_low      = 0 # lowest value 
-    unif_line     = 0 # Overal non-uniformity over whole, unnormalized pofile
-    unif_stdnorm  = 0 # Standard deviation over norm uniformity data
-    unif_COV      = 0 # Coefficient of Variation over uniformity data
-    unif_yrange   = [0,0] # Range in y that is analyzed for uniformity
-
-    dipfarea_0_10   = 0 # fraction of image part of dip*depth for  0-10% width
-    dipfarea_10_30  = 0 # fraction of image part of dip*depth for 10-30% width
-    dipfarea_30_70  = 0 # fraction of image part of dip*depth for 30-70% width
-    dipfarea_70_90  = 0 # fraction of image part of dip*depth for 70-90% width
-    dipfarea_90_100 = 0 # fraction of image part of dip*depth for 90-100% width
-
-    dipstrength_0_10   = 0 # number of dips*depth for  0-10% width
-    dipstrength_10_30  = 0 # number of dips*depth for 10-30% width
-    dipstrength_30_70  = 0 # number of dips*depth for 30-70% width
-    dipstrength_70_90  = 0 # number of dips*depth for 70-90% width
-    dipstrength_90_100 = 0 # number of dips*depth for 90-100% width
-    
-    lowfrac_0_10   = 0 # fraction of image part with norm.uniformity 5% or more below line average for  0-10% width
-    lowfrac_10_30  = 0 # fraction of image part with norm.uniformity 5% or more below line average for 10-30% width
-    lowfrac_30_70  = 0 # fraction of image part with norm.uniformity 5% or more below line average for 30-70% width
-    lowfrac_70_90  = 0 # fraction of image part with norm.uniformity 5% or more below line average for 70-90% width
-    lowfrac_90_100 = 0 # fraction of image part with norm.uniformity 5% or more below line average for 90-100% width
-
-    rev_miny = None # (x,y) of position of minimum y of reverb image
-    rev_maxy = None # (x,y) of position of maximum y of reverb image
-    rev_maxx = None # (x,y) of position of maximum x of reverb image
-    rev_minx = None # (x,y) of position of minimum x of reverb image
-    rev_midx = None # estimated x of middle of reverb image
-    rev_mask = None # mask of reverb image
-
-    curve_radii  = None # [min, max] radius
-    curve_angles = None # [min, max] angle
-
-    # sensitivity
-    sens_ylim   = None    # limit on y determined from peaks in y-dir 
-    sens_ylim2  = None   # limit on y determined from fft analysis of peaks in y-dir 
-    sens_noiseM = None # noise determined from (vertical) sensitivity profile
-    sens_numtops = None # number of peaks found upto ylim
-    sens_numbots = None # number of valleys found upto ylim
-    sens_noiserange = None # number of lines used for calculation of noiselevel
-    sens_basewavelength = None # basic wavelength i.e. distance between rings in mm
-    sens_bots = [] # store the y locations of the dips to use for uniformity analysis [px]
-    
-    # images
-    image_fnames = [] # filenames of generated images
-
-    # for gui
-    cca_image = None # connected component analysis
-    report = None # list ('description',value) of timing information
-
-    #params
-    uni_filter = 5 # running average of this width before peak detection
-    uni_delta = 0.05 # A dip in normalized reverb pattern must be at least <delta> .05 = 5%
-    sen_filter = 5 # running average of this width for sensitivity data
-    sen_delta = 0.1 # A peak in sensitivity profile must be at least <fdelta>*(max-noise)
-    ver_offset = 0 # default lines to exclude from top and bottom when making profiles (10)
-    hor_offset = 0 # default rows to exclude from top and bottom when making profiles (10)
-    fitcircle_frac = 1/3 # by default use only central 1/3 of circle for fitting, as deformations towards edge can occur. 
-                            # use >1 for full fit. 1 is best for GE, 1/3 is best for Philips
-
     def __init__ (self,dcmInfile,pixeldataIn,dicomMode):
         self.verbose = False
+
+        # input image
         self.dcmInfile = dcmInfile
         self.pixeldataIn = pixeldataIn
         self.dicomMode = dicomMode
+
+        # for matlib plotting
         self.hasmadeplots = False
-        self.report = []
 
-        self.cca_image = None
+        # for gui
+        self.report = [] # list ('description',value) of timing information
+        self.cca_image = None # connected component analysis
+
+        # images
+        self.image_fnames = [] # filenames of generated images
+        
+        # reverbrations
         self.cluster_fminsize = 10*10*3 # ignore clusters of size smaller than imwidth*imheigth/minsizefactor (wid/10*hei/10)/3
-        self.reverb_image = None
-        self.rect_image = None
-        self.curve_xyr = [0,0,0]
-        self.curve_residu = 0
-        self.curve_opendeg = 0
-        self.unif_bots = []
-        self.unif_lowest = 0
-        self.unif_low = 0
-        self.unif_line = 1
-        self.unif_stdnorm = 0
-        self.unif_COV = 0
+        self.reverb_image = None        # isolated reverbrations (by largest connected component)
+        self.rect_image = None          # straightend image for curvilinear probes
+        
+        self.curve_xyr = [0,0,0] # center and radius [x,y,r] of curvilinear probe
+        self.curve_residu = 0    # residu of fitting of curvilinear probe
+        self.curve_opendeg = 0   # opening angle in degrees
 
+
+        self.unif_bots = []      # list of (pos,val) of kept valleys in normalized reverb profile
+        self.unif_lowest = 0     # lowest value of valleys
+        self.unif_low = 0        # lowest value 
+        self.unif_line = 1       # Overal non-uniformity over whole, unnormalized pofile
+        self.unif_stdnorm = 0    # Standard deviation over norm uniformity data
+        self.unif_COV = 0        # Coefficient of Variation over uniformity data
+        self.unif_yrange = [0,0] # Range in y that is analyzed for uniformity
+    
         self.dipfarea_0_10   = 0 # fraction of image part of dip*depth for  0-10% width
         self.dipfarea_10_30  = 0 # fraction of image part of dip*depth for 10-30% width
         self.dipfarea_30_70  = 0 # fraction of image part of dip*depth for 30-70% width
@@ -277,49 +197,48 @@ class USStruct:
         self.lowfrac_70_90  = 0 # fraction of image part with norm.uniformity 5% or more below line average for 70-90% width
         self.lowfrac_90_100 = 0 # fraction of image part with norm.uniformity 5% or more below line average for 90-100% width
 
-        self.sens_ylim = 0
-        self.sens_ylim2 = 0
-        self.sens_noiseM = 0
-        self.sens_numtops = 0
-        self.sens_numbots = 0
-        self.sens_noiserange = 2 
-        self.sens_basewavelength = 0.
-        self.sens_bots = []
+        # sensitivity
+        self.sens_ylim = 0    # limit on y determined from peaks in y-dir 
+        self.sens_ylim2 = 0   # limit on y determined from fft analysis of peaks in y-dir
+        self.sens_noiseM = 0  # noise determined from (vertical) sensitivity profile
+        self.sens_numtops = 0 # number of peaks found upto ylim
+        self.sens_numbots = 0 # number of valleys found upto ylim
+        self.sens_noiserange = 2 # number of lines used for calculation of noiselevel
+        self.sens_basewavelength = 0. # basic wavelength i.e. distance between rings in mm
+        self.sens_bots = [] # store the y locations of the dips to use for uniformity analysis [px] 
         
         #input parameters
-        self.uni_filter = 5
-        self.uni_delta = 0.1
-        self.sen_filter = 5
-        self.sen_delta = 0.1
-        self.ver_offset = 0
-        self.hor_offset = 0
-        self.fitcircle_frac = 1/3
+        self.uni_filter = 5  # running average of this width before peak detection
+        self.uni_delta = 0.1 # A dip in normalized reverb pattern must be at least <delta> .05 = 5%
+        self.sen_filter = 5  # running average of this width for sensitivity data
+        self.sen_delta = 0.1 # A peak in sensitivity profile must be at least <fdelta>*(max-noise)
+        self.ver_offset = 0  # default lines to exclude from top and bottom when making profiles (10)
+        self.hor_offset = 0  # default rows to exclude from top and bottom when making profiles (10)
+        self.fitcircle_frac = 1/3 # by default use only central 1/3 of circle for fitting, as deformations towards edge can occur. 
+                                  # use >1 for full fit. 1 is best for GE, 1/3 is best for Philips
 
         # helper stuff
-        self.rev_miny = None 
-        self.rev_maxy = None 
-        self.rev_maxx = None 
-        self.rev_minx = None 
-        self.rev_midx = None 
-        self.curve_angles = []
-        self.curve_radii  = []
-        self.rev_mask = None
+        self.rev_miny = None # (x,y) of position of minimum y of reverb image
+        self.rev_maxy = None # (x,y) of position of maximum y of reverb image
+        self.rev_maxx = None # (x,y) of position of maximum x of reverb image
+        self.rev_minx = None # (x,y) of position of minimum x of reverb image
+        self.rev_midx = None # estimated x of middle of reverb image
+        self.rev_mask = None # mask of reverb image
+        self.curve_angles = [] # [min, max] radius
+        self.curve_radii  = [] # [min, max] angle
 
 class US_QC:
-    qcversion = __version__
-    fastmode = False
-    modeLocalNorm = False
-
-    # parameters:
-    fft_skip = 5 # in fft analysis, ignore peak if it is located within skip freqs from 0
-                    # to ignore for peak finding (offset, trend)
-    check_asym = False # do or do not check of strongly asym peaks
-    sens_hicut = True # restrict peaks to max > noise (True) or min < noise
-
     def __init__(self,guimode=False,fastmode=False,modelocalnorm=False):
+        self.qcversion = __version__
         self.guimode = guimode
         self.fastmode = fastmode
         self.modeLocalNorm = modelocalnorm # EXPERIMENTAL
+    
+        # parameters:
+        self.fft_skip = 5 # in fft analysis, ignore peak if it is located within skip freqs from 0
+                        # to ignore for peak finding (offset, trend)
+        self.check_asym = False # do or do not check of strongly asym peaks
+        self.sens_hicut = True # restrict peaks to max > noise (True) or min < noise
 
     def readDICOMtag(self,cs,key,imslice=0): # slice=2 is image 3
         value = wadwrapper_lib.readDICOMtag(key,cs.dcmInfile,imslice)

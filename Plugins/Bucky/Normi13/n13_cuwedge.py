@@ -23,22 +23,10 @@ import scipy.ndimage as scind
 import matplotlib.pyplot as plt
 
 class CuStruct:
-    box_roi = [] # max horizontal box in complete edge
-
-    # for each step: mmCu, roi, snr, cnr, mean, sdec
-    step_rois = []
-    step_mmcu = []
-    step_mean = []
-    step_sdev = []
-    step_snr = []
-    step_cnr = []
-
-    wedge_confidence = -1.
-
-    dynamicRange = -1
     def __init__ (self):
-        self.box_roi = []
+        self.box_roi = [] # max horizontal box in complete edge
 
+        # for each step: mmCu, roi, snr, cnr, mean, sdev
         self.step_mean = []
         self.step_sdev = []
         self.step_snr = []

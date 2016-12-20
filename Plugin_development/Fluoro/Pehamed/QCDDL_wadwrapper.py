@@ -20,12 +20,13 @@
 #
 #
 # Changelog:
+#   20161220: removed testing stuff; removed class variabled
 #   20160802: sync with wad2.0
 #
 #
 from __future__ import print_function
 
-__version__ = '20160802'
+__version__ = '20161220'
 __author__ = 'aschilham'
 
 import os

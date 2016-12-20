@@ -17,6 +17,7 @@ Warning: THIS MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED! And make su
 
 TODO:
 Changelog:
+    20161220: Removed class variables; removed testing stuff
     20161216: allow override of auto determine maybeinvert; try other field is pixelspacing missing
     20160902: sync wad2.0 with pywad1.0
     20151112: Bugfix in calculation of lowcontrast
@@ -41,7 +42,7 @@ Changelog:
               fix for po_box on annotation; fix for invert LowContrast
     20140623: First attempt to rewrite into WAD module; speedup and bugfix of Uniformity()
 """
-__version__ = '20161216'
+__version__ = '20161220'
 __author__ = 'aschilham'
 
 try:
@@ -61,22 +62,8 @@ except ImportError:
         from pyWADLib import wadwrapper_lib
 
     except ImportError: 
-        # wad1.0 solutions failed, try wad2.0
-        try: 
-            # try system package wad_qc
-            from wad_qc.modulelibs import wadwrapper_lib
-        except ImportError: 
-            # use parent wad_qc folder, and add it to search path
-            import sys
-            # add root folder of WAD_QC to search path for modules
-            _modpath = os.path.dirname(os.path.abspath(__file__))
-            while(not os.path.basename(_modpath) == 'Modules'):
-                _new_modpath = os.path.dirname(_modpath)
-                if _new_modpath == _modpath:
-                    raise
-                _modpath = _new_modpath
-            sys.path.append(os.path.dirname(_modpath))
-            from wad_qc.modulelibs import wadwrapper_lib
+        # wad1.0 solutions failed, try wad2.0 from system package wad_qc
+        from wad_qc.modulelibs import wadwrapper_lib
 
 import operator
 import matplotlib.pyplot as plt
@@ -101,41 +88,29 @@ except ImportError:
     from . import QCXRay_math as mymath
 
 class Room :
-    name = ""     # identifier of room
-    outvalue = -1 # value of pixels outside x-ray field
-    pidtablemm = -1    # distance between mid phantom and detector in mm
-    pidwallmm = -1
-    sidtablemm = -1
-    sidwallmm = -1
-    phantom = lit.stPehamed
-    skipFFT = False # only for wellhofer
-    sdthresh = -1 # threshold on stdev for determin table or wall, now only for CALHOS, maybe WKZ?
-    sens_threshold = [] # list of (date,sensitivity) describing from dates and max threshold on sensitivity for table
-    mustbeinverted = None # allow force
-
-    xy06mm = [] # x,y position in mm of decimal dot in 0.6 lp/mm 
-    xy14mm = [] # x,y position in mm of decimal dot in 1.4 lp/mm 
-    xy18mm = [] # x,y position in mm of decimal dot in 1.8 lp/mm 
-    xy46mm = [] # x,y position in mm of decimal dot in 4.6 lp/mm 
-    
     def __init__ (self,_name, outvalue=-1, tablesid=-1, wallsid=-1, tablepid=-1, wallpid=-1,
                   phantom=lit.stPehamed,sdthresh=-1,sens_threshold = [],
                   linepairmarkers = {}, mustbeinverted=None):
-        self.name = _name
-        self.outvalue = outvalue
-        self.pidtablemm = tablepid
+        self.name = _name # identifier of room
+        
+        self.outvalue = outvalue # value of pixels outside x-ray field
+        
+        self.pidtablemm = tablepid # distance between mid phantom and detector in mm
         self.pidwallmm  = wallpid
         self.sidtablemm = tablesid
         self.sidwallmm = wallsid
         self.phantom = phantom
-        self.sdthresh = sdthresh
-        self.sens_threshold = sens_threshold
-        self.mustbeinverted = mustbeinverted
 
+        self.sdthresh = sdthresh             # threshold on stdev for determin table or wall, now only for CALHOS, maybe WKZ?
+        self.sens_threshold = sens_threshold # list of (date,sensitivity) describing from dates and max threshold on sensitivity for table
+        self.mustbeinverted = mustbeinverted # allow force
+
+        self.skipFFT = False # only for wellhofer
         if(phantom == lit.stWellhofer):
             self.skipFFT = True
+
         if len(linepairmarkers)>0:
-            self.xy06mm = linepairmarkers['xymm0.6']
+            self.xy06mm = linepairmarkers['xymm0.6'] 
             self.xy14mm = linepairmarkers['xymm1.4']
             self.xy18mm = linepairmarkers['xymm1.8']
             self.xy46mm = linepairmarkers['xymm4.6']
@@ -159,29 +134,13 @@ class Room :
         self.sidwallmm = _sidwall
 
 class XRayStruct:
-    verbose = False
-    knownTableOrWall = None
-
     roomUnknown = Room(lit.stUnknown)
-    forceRoom = roomUnknown
 
     class UnifStruct :
-        ROIuniformity = -1 # fraction
-        LRuniformity = -1  # fraction
-        BKmean = -1 # gridless bk
-        BKsdev = -1 # gridless bk stdev
-        peakValue = -1 # max valule over uniformity line
-        posval = []
-        intens = []
-        trend = []
-        trendMin = -1
-        trendMax = -1
-        roi = []
-        verticalROI = False
         def __init__ (self):
-            self.ROIuniformity = self.LRuniformity = 0.
-            self.BKmean = self.BKsdev = 0.
-            self.peakValue = 0.
+            self.ROIuniformity = self.LRuniformity = 0. # fraction
+            self.BKmean = self.BKsdev = 0. # gridless bk
+            self.peakValue = 0. # max valule over uniformity line
             self.posval = []
             self.intens = []
             self.trendMax = self.trendMin = 0.
@@ -190,17 +149,6 @@ class XRayStruct:
             self.verticalROI = False
 
     class CuStruct :
-        roi_snr = []
-        roi_cnr = []
-        roi_mmcu = []
-        roi_mean = []
-        roi_sdev = []
-        dynamicRange = -1
-        guesskVp     = -1
-        slope        = 0.
-        roi = []
-        step_rois = []
-        wedge_confidence = -1.
         def __init__ (self):
             self.roi_snr = []
             self.roi_cnr = []
@@ -215,12 +163,6 @@ class XRayStruct:
             self.wedge_confidence = -1.
 
     class LoCoStruct :
-        low_cnr = []
-        mean_sg = []
-        mean_bk = []
-        sdev_sg = []
-        sdev_bk = []
-        lo_rois = []
         def __init__ (self):
             self.low_cnr = []
             self.mean_sg = []
@@ -230,19 +172,6 @@ class XRayStruct:
             self.lo_rois = []
 
     class MTFStruct:
-        dotxys = []
-        contrast_response = []
-        contrast_high = []
-        contrast_low = []
-        ctfmtf = []
-        contrast_freqs = []
-        contrast_tops = []
-        contrast_bots = []
-        calc_freqs = []  # frequencies in phantom units as measured from extremes
-        mtf_aapm = -1.
-        freq_confidence = -1.
-        pos_confidence  = -1.
-        roi = []
         def __init__ (self):
             self.dotxys = []
             self.contrast_response = []
@@ -252,46 +181,11 @@ class XRayStruct:
             self.contrast_freqs = []
             self.contrast_tops = []
             self.contrast_bots = []
+            self.calc_freqs = []  # frequencies in phantom units as measured from extremes
             self.mtf_aapm = -1.
             self.freq_confidence = -1.
             self.pos_confidence = -1.
             self.roi = []
-
-    #####################
-    # input image
-    dcmInfile = None
-    pixeldataIn = None
-    mustbeinverted = None #False # if pixval(Cu) = high and pixval(air) = low, then mustbeinverted
-    expertOverridepixToGridScaleCm = None
-    bbox_confidence = 0.
-
-    # phantom orientation
-    po_center_roi = [] # xmid,ymid,rad
-    po_roi = [] # list [ [x,y] ]
-    po_fftroi = []
-    po_rot = 0
-    test_rois = []
-
-    # xray field
-    xrayNSWEmm = []
-    xr_roi = []
-
-    # horz. uniformity
-    unif = None
-
-    # Cu Wedge
-    cuwedge = None
-
-    # MTF
-    mtf = None
-
-    # Low Contrast
-    loco = None
-
-    lastimage = None # GUI feedback
-
-    # for matlib plotting
-    hasmadeplots = False
 
     def maybeInvert(self):
         if not self.mustbeinverted is None:
@@ -308,50 +202,60 @@ class XRayStruct:
 
     def __init__ (self,dcmInfile,pixeldataIn,room):
         self.verbose = False
+
+        # input image
         self.dcmInfile = dcmInfile
         self.pixeldataIn = pixeldataIn
-        self.hasmadeplots = False
+        self.knownTableOrWall = None
+
         self.expertOverridepixToGridScaleCm = None
-        self.mustbeinverted = None
         self.forceRoom = room
-        self.lastimage = None
-        self.po_center_roi = []
-        self.po_roi = []
+        self.lastimage = None # GUI feedback
+
+        # phantom orientation
+        self.po_center_roi = [] # xmid,ymid,rad
+        self.po_roi = [] # list [ [x,y] ]
         self.po_rot = 0
         self.po_fftroi = []
         self.test_rois = []
+        self.bbox_confidence = 0.
 
+        # xray field
         self.xrayNSWEmm = []
         self.xr_roi = []
 
+        # horz. uniformity
         self.unif = self.UnifStruct()
-        self.cuwedge = self.CuStruct()
-        self.mtf = self.MTFStruct()
-        self.loco = self.LoCoStruct()
-        self.bbox_confidence = 0.
 
+        # Cu Wedge
+        self.cuwedge = self.CuStruct()
+
+        # MTF
+        self.mtf = self.MTFStruct()
+
+        # Low Contrast
+        self.loco = self.LoCoStruct()
+
+        self.mustbeinverted = None # if pixval(Cu) = high and pixval(air) = low, then mustbeinverted
         if room.mustbeinverted is None:
             self.maybeInvert()
         else:
             self.mustbeinverted = room.mustbeinverted
 
+        # for matlib plotting
+        self.hasmadeplots = False
+
 class XRayQC:
-    qcversion = __version__
-
-    boxradmm   = 110  # choose 11 cm or 8 cm for clean surroundings
-    adjustmtfangledeg = 0. # if consistency check fails, add a little angle
-    bShowMTFDetail = False
-    bShowCTF = True
-    bIgnoreMTFError = False # in rare cases MTF is "ok" but looks wrong
-
-    crLimit = 0.1 # contrast limit for MTF
-    sigma_ext = 1.5 # gaussian blur factor for extreme finder
-
     def __init__(self):
-        self.adjustmtfangledeg = 0.
+        self.qcversion = __version__
+        self.boxradmm   = 110  # choose 11 cm or 8 cm for clean surroundings
+        self.adjustmtfangledeg = 0. # if consistency check fails, add a little angle
         self.bShowMTFDetail = False
         self.bShowCTF = False
-        self.bIgnoreMTFError = False
+        self.bIgnoreMTFError = False # in rare cases MTF is "ok" but looks wrong
+    
+        self.crLimit = 0.1 # contrast limit for MTF
+        self.sigma_ext = 1.5 # gaussian blur factor for extreme finder
 
     def pixToGridScaleCm(self,cs):
         if not cs.expertOverridepixToGridScaleCm is None:

@@ -19,11 +19,12 @@
 #
 #
 # Changelog:
+#   20161220: removed class variables; removed testing stuff
 #   20160825: added extra config parameters (PvH)
 #   20160802: sync with pywad1.0
 from __future__ import print_function
 
-__version__ = '20160825'
+__version__ = '20161220'
 __author__ = 'aschilham'
 
 import os

@@ -18,7 +18,6 @@ import scipy.ndimage as scind
 import numpy as np
 
 def FiniteDifference1D(pSrc,BC="BC_MIRROR",order=0):
-
     pDest = np.zeros(pSrc.shape[0],dtype=float)
     if(order == 0):  # Gaussian just blurring, here nothing
         for i in range(0,pSrc.shape[0]):

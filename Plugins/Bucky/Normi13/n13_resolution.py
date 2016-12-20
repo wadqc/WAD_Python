@@ -35,30 +35,13 @@ except ImportError:
     from . import n13_math as mymath
 
 class MTFStruct:
-    crLimit = 0.1 # contrast limit for MTF
-    sigma_ext = 1.5 # gaussian blur factor for extreme finder
-
-    bShowMTFDetail = False
-    bShowCTF = True
-    bIgnoreMTFError = False # in rare cases MTF is "ok" but looks wrong
-
-    pos_confidence  = -1.
-    roi = []
-
-    contrast_response = []
-    contrast_high = []
-    contrast_low = []
-    ctfmtf = []
-    contrast_freqs = []
-    contrast_tops = []
-    contrast_bots = []
-    calc_freqs = []  # frequencies in phantom units as measured from extremes
-    mtf_aapm = -1.
-    freq_confidence = -1.
     def __init__ (self):
-        bShowMTFDetail = False
-        bShowCTF = True
-        bIgnoreMTFError = False # in rare cases MTF is "ok" but looks wrong
+        self.crLimit   = 0.1 # contrast limit for MTF
+        self.sigma_ext = 1.5 # gaussian blur factor for extreme finder
+
+        self.bShowMTFDetail = False
+        self.bShowCTF = True
+        self.bIgnoreMTFError = False # in rare cases MTF is "ok" but looks wrong
 
         self.roi = []
         self.pos_confidence = -1.
@@ -72,6 +55,7 @@ class MTFStruct:
         self.contrast_bots = []
         self.mtf_aapm = -1.
         self.freq_confidence = -1.
+        self.calc_freqs = []  # frequencies in phantom units as measured from extremes
 
 
 def MTF(cs):
