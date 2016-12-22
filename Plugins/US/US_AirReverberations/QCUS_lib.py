@@ -43,6 +43,8 @@ Warning: THIS MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!
 TODO:
     o Maybe put hard threshold on peak value for uniformity (is normalized, so why not?!)
 Changelog:
+    20161221: added level to reportvalues; added unif_depth and unif_sum; normalize on median;
+              isolateReverbrations threshold is config param (PvH)
     20161220: removed class variables; removed testing stuff
     20160831: bugfix no clusters left; Unified pywad1.0 and wad2.0; Transfer input parameters to xml; 
               Modifications in analysis paramters optimized for GE Voluson [PvH]; changed uniformity 
@@ -59,7 +61,7 @@ Changelog:
     20150416: Sensitivity analysis and uniformity analysis
     20150410: Initial version
 """
-__version__ = '20161220'
+__version__ = '20161221'
 __author__ = 'aschilham'
 
 import copy
@@ -150,7 +152,8 @@ class USStruct:
         self.dcmInfile = dcmInfile
         self.pixeldataIn = pixeldataIn
         self.dicomMode = dicomMode
-
+        self.resultslabel = None # allow override of label by config
+        
         # for matlib plotting
         self.hasmadeplots = False
 
@@ -165,6 +168,7 @@ class USStruct:
         self.cluster_fminsize = 10*10*3 # ignore clusters of size smaller than imwidth*imheigth/minsizefactor (wid/10*hei/10)/3
         self.reverb_image = None        # isolated reverbrations (by largest connected component)
         self.rect_image = None          # straightend image for curvilinear probes
+        self.signal_thresh = 0          # only pixelvalues above this number can be part of reverberations (set >0 is very noisy)
         
         self.curve_xyr = [0,0,0] # center and radius [x,y,r] of curvilinear probe
         self.curve_residu = 0    # residu of fitting of curvilinear probe
@@ -178,6 +182,7 @@ class USStruct:
         self.unif_stdnorm = 0    # Standard deviation over norm uniformity data
         self.unif_COV = 0        # Coefficient of Variation over uniformity data
         self.unif_yrange = [0,0] # Range in y that is analyzed for uniformity
+        self.unif_sum = 0        # Sum of normalised uniformity values
     
         self.dipfarea_0_10   = 0 # fraction of image part of dip*depth for  0-10% width
         self.dipfarea_10_30  = 0 # fraction of image part of dip*depth for 10-30% width
@@ -210,6 +215,7 @@ class USStruct:
         #input parameters
         self.uni_filter = 5  # running average of this width before peak detection
         self.uni_delta = 0.1 # A dip in normalized reverb pattern must be at least <delta> .05 = 5%
+        self.uni_depth = 5 # default depth in mm for uniformity analysis
         self.sen_filter = 5  # running average of this width for sensitivity data
         self.sen_delta = 0.1 # A peak in sensitivity profile must be at least <fdelta>*(max-noise)
         self.ver_offset = 0  # default lines to exclude from top and bottom when making profiles (10)
@@ -291,7 +297,7 @@ class US_QC:
             key = df[0]
             value = ""
             try:
-                value = self.readDICOMtag(cs,key)
+                value = str(self.readDICOMtag(cs,key)).replace('&','')
             except:
                 value = ""
             results.append( (df[1],value) )
@@ -299,7 +305,7 @@ class US_QC:
         return results
 
     #----------------------------------------------------------------------
-    def isolateReverbrations(self,cs,thresh=0):
+    def isolateReverbrations(self,cs):
         """
         Find reverbrations part of image.
         Workflow:
@@ -309,9 +315,8 @@ class US_QC:
         error = True
         # cluster connected components with pixelvalues>0
         time0 = time.time()
-        #thresh = 0
         #work = (cs.pixeldataIn>0) * (cs.pixeldataIn<255) # must give a signal, but 255 often reserved for overlay
-        work = cs.pixeldataIn>thresh
+        work = cs.pixeldataIn>cs.signal_thresh
         cca = wadwrapper_lib.connectedComponents()
         cs.cca_image,nb_labels = cca.run(work)
         mode = 'all_middle' #'largest_only'#'all_middle'
@@ -332,6 +337,7 @@ class US_QC:
             #cca.removeSmallClusters(wid/10*hei/10)
             cca.removeSmallClusters(minsize)
             search = cs.cca_image[int(0.4*wid):int(0.6*wid),:]
+            
             labs = []
             for ss in search.ravel():
                 if ss>0 and not ss in labs:
@@ -585,8 +591,11 @@ class US_QC:
                     w_buckets[i]+= f*w/len(normuniformity)*-y #f*w/len(normuniformity)
                     p_buckets[i]+=-y*p
                     
-        # calculate fraction of region darker than 5% of line average
-        low = normuniformity<-0.05
+        # deprec 5%: calculate fraction of region darker than 5% of line average: 
+        # low = normuniformity<-0.05
+
+        # calculate fraction of region darker than 2* stddev of line average
+        low = normuniformity # low parameter, now used as temporary profile for low analysis per bucket.
         regions = [
             [int(0*nx),  int(.1*nx)],
             [int(.1*nx), int(.3*nx)],
@@ -595,9 +604,15 @@ class US_QC:
             [int(.9*nx), nx],
         ]
         low_buckets = [0,0,0,0,0]
+        cs.unif_sum = np.abs(np.sum(low))
 
+        # deprec 5%:
+        #for i, (x0,x1) in enumerate(regions):
+        #    low_buckets[i] = np.average(low[x0:x1])
+        
         for i, (x0,x1) in enumerate(regions):
-            low_buckets[i] = np.average(low[x0:x1])
+            if np.min(low[x0:x1])<0:
+                low_buckets[i] = -100*np.min(low[x0:x1])# lowest value per bucket; multiply with -100 to yield percentage
             
         if cs.verbose:
             print('  ','dip_frac','dips','low_frac')
@@ -706,13 +721,17 @@ class US_QC:
                     yran = [yy, cs.sens_ylim-1]
                 break
 
+        # Alternatively, just take a fixed depth in mm. Testing, if OK, then remove stuff above
+        depth  = int(float(cs.uni_depth)/self.pixels2mm(cs,1.)+.5) # depth from mm to pixels
+        offset = int(3./self.pixels2mm(cs,1.)+.5) # offset from mm to pixels
+        yran = [offset,offset+depth]              # restrict analysis to depth mm from 3 mm from top
+
         cs.unif_yrange   = yran # Range in y that is analyzed for uniformity
                 
         crop = cropImage(cs.rect_image, [cs.hor_offset], yran)
 
         uniformity = np.mean(crop,axis=1)
         
-        #uniformitysmoothed = mymath.movingaverage(uniformity,cs.uni_filter)
         uniformitysmoothed = mymath.smooth(uniformity,cs.uni_filter, window='flat') # Smoothing without boundary effects
 
         ## line uniformity
@@ -721,11 +740,12 @@ class US_QC:
         inteavg = np.mean(uniformity)
         cs.unif_line = np.max([intemax-inteavg,inteavg-intemin])/inteavg
 
-        # Output of COV 
-        meanvalue = np.mean(uniformity) 
-        stdvalue = np.std(uniformity)
+        # Output of COV based on smoothed uniformity
+        meanvalue = np.mean(uniformitysmoothed) 
+        medianvalue = np.median(uniformitysmoothed)
+        stdvalue = np.std(uniformitysmoothed)
         CoefVar = stdvalue/meanvalue
-        cs.unif_COV = CoefVar
+        cs.unif_COV = CoefVar*100 # in pct
 
         # normalized uniformity 
         if self.modeLocalNorm:
@@ -733,9 +753,9 @@ class US_QC:
             print("Uniformity, using Local Normalization",frac)
             normuniformity = mymath.localnormalization(uniformity, sigma=len(uniformity)*frac)
         else:
-            normuniformity = ((uniformitysmoothed-meanvalue)/meanvalue)
+            normuniformity = ((uniformitysmoothed-medianvalue)/medianvalue)
 
-        return self._uniformityAnalysis(cs, normuniformity, (uniformity-meanvalue)/meanvalue )
+        return self._uniformityAnalysis(cs, normuniformity, (uniformity-medianvalue)/medianvalue )
 
     def fftAnalysis(self,cs,profile,mode='sensitivity'):
         """
@@ -827,7 +847,7 @@ class US_QC:
         crop = cropImage(cs.rect_image, [offsetHOR], [cs.ver_offset])
         wid,hei = np.shape(crop)
 
-        sensitivity = np.mean(crop,axis=0)
+        sensitivity = np.median(crop,axis=0) # more robust for defects
         time0 = time.time()
         self.fftAnalysis(cs,sensitivity,mode='sensitivity')
         cs.report.append(('sens_fft',time.time()-time0))
@@ -999,7 +1019,10 @@ class US_QC:
         mm = 10.*self.readDICOMtag(cs,dicomfields[1][0]) # convert to mm
         return px*mm
 
-    def imageID(self,cs,probeonly=False):
+    def imageID(self, cs, probeonly=False):
+        if not cs.resultslabel is None:
+            return cs.resultslabel
+        
         if not probeonly and not cs.verbose:# and not self.guimode:
             return '0000'
         # make an identifier for this image
@@ -1007,6 +1030,7 @@ class US_QC:
             di = self.DICOMInfo(cs,info='probe')
         else:
             di = self.DICOMInfo(cs,info='id')
+
         label = ''
         for k,v in di:
             label += '%s_'%v
@@ -1020,47 +1044,49 @@ class US_QC:
             else:
                 label2 += la
         label2 = label2.replace('UNUSED', '') # cleaning
+        cs.resultslabel = label2.replace('/','-')
         return label2
 
     def reportEntries(self,cs):
         # Convenience function to get all entries to report
-        cs_items =[
-            ('Curve_X',cs.curve_xyr[0]),
-            ('Curve_Y',cs.curve_xyr[1]),
-            ('Curve_R',cs.curve_xyr[2]),
-            ('Curve_Residu',cs.curve_residu),
-            ('Curve_OpenDeg',cs.curve_opendeg),
-            ('Rect_width',np.shape(cs.rect_image)[0]),
-            ('Sens_noiserange',cs.sens_noiserange),
-            ('Sens_depth',cs.sens_ylim),
-            ('Sens_fft_depth',cs.sens_ylim2),
-            ('Sens_noise',cs.sens_noiseM),
-            ('Sens_tops',cs.sens_numtops),
-            ('Sens_bots',cs.sens_numbots),
-            ('Sens_basewl_mm',cs.sens_basewavelength),
-            ('Unif_bots',len(cs.unif_bots)),
-            ('Unif_lowest',cs.unif_lowest),
-            ('Unif_low',cs.unif_low),
-            ('Unif_line',cs.unif_line),
-            ('Unif_stdnorm',cs.unif_stdnorm), 
-            ('Unif_COV',cs.unif_COV),
-            ('Unif_ymin',cs.unif_yrange[0]),
-            ('Unif_ymax',cs.unif_yrange[1]),
-            ('DipFracArea_0_10',cs.dipfarea_0_10),
-            ('DipFracArea_10_30',cs.dipfarea_10_30),
-            ('DipFracArea_30_70',cs.dipfarea_30_70),
-            ('DipFracArea_70_90',cs.dipfarea_70_90),
-            ('DipFracArea_90_100',cs.dipfarea_90_100),
-            ('DipStrength_0_10',cs.dipstrength_0_10),
-            ('DipStrength_10_30',cs.dipstrength_10_30),
-            ('DipStrength_30_70',cs.dipstrength_30_70),
-            ('DipStrength_70_90',cs.dipstrength_70_90),
-            ('DipStrength_90_100',cs.dipstrength_90_100),
-            ('LowFrac_0_10',cs.lowfrac_0_10),
-            ('LowFrac_10_30',cs.lowfrac_10_30),
-            ('LowFrac_30_70',cs.lowfrac_30_70),
-            ('LowFrac_70_90',cs.lowfrac_70_90),
-            ('LowFrac_90_100',cs.lowfrac_90_100),
+        cs_items =[ # name, value, level
+            ('Curve_X',cs.curve_xyr[0], 2),
+            ('Curve_Y',cs.curve_xyr[1], 2),
+            ('Curve_R',cs.curve_xyr[2], 2),
+            ('Curve_Residu',cs.curve_residu, 2),
+            ('Curve_OpenDeg',cs.curve_opendeg, 2),
+            ('Rect_width',np.shape(cs.rect_image)[0], 2),
+            ('Sens_noiserange',cs.sens_noiserange, 2),
+            ('Sens_depth',cs.sens_ylim, 1),
+            ('Sens_fft_depth',cs.sens_ylim2, 2),
+            ('Sens_noise',cs.sens_noiseM, 2),
+            ('Sens_tops',cs.sens_numtops, 2),
+            ('Sens_bots',cs.sens_numbots, 2),
+            ('Sens_basewl_mm',cs.sens_basewavelength, 2),
+            ('Unif_bots',len(cs.unif_bots), 1),
+            ('Unif_lowest',cs.unif_lowest, 2),
+            ('Unif_low',cs.unif_low, 2),
+            ('Unif_line',cs.unif_line, 2),
+            ('Unif_stdnorm',cs.unif_stdnorm, 2), 
+            ('Unif_sumlow',cs.unif_sum, 1),
+            ('Unif_COV',cs.unif_COV, 1),
+            ('Unif_ymin',cs.unif_yrange[0], 2),
+            ('Unif_ymax',cs.unif_yrange[1], 2),
+            ('DipFracArea_0_10',cs.dipfarea_0_10, 2),
+            ('DipFracArea_10_30',cs.dipfarea_10_30, 2),
+            ('DipFracArea_30_70',cs.dipfarea_30_70, 2),
+            ('DipFracArea_70_90',cs.dipfarea_70_90, 2),
+            ('DipFracArea_90_100',cs.dipfarea_90_100, 2),
+            ('DipStrength_0_10',cs.dipstrength_0_10, 2),
+            ('DipStrength_10_30',cs.dipstrength_10_30, 2),
+            ('DipStrength_30_70',cs.dipstrength_30_70, 2),
+            ('DipStrength_70_90',cs.dipstrength_70_90, 2),
+            ('DipStrength_90_100',cs.dipstrength_90_100, 2),
+            ('LowFrac_0_10',cs.lowfrac_0_10, 1),
+            ('LowFrac_10_30',cs.lowfrac_10_30, 1),
+            ('LowFrac_30_70',cs.lowfrac_30_70, 1),
+            ('LowFrac_70_90',cs.lowfrac_70_90, 1),
+            ('LowFrac_90_100',cs.lowfrac_90_100, 1),
         ]
 
         return cs_items

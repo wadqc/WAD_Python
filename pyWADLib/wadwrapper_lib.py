@@ -13,6 +13,7 @@ This includes:
 
 """
 # Changelog:
+# 20161221: changed order of components in US ALOKA images (PvH)
 # 20161025: added option to override default series splitting splitOnPosition
 # 20161013: preparing to remove tranposing the data (nuisance for some dataprocessing)
 # 20161007: prepare for pydicom release 1
@@ -351,7 +352,10 @@ def prepareInput(instancedict, headers_only, do_transpose=True, logTag="[prepare
                             if len(np.shape(pixel_array)) == 3: #2d rgb
                                 pixeldataIn = pixel_array[:,:,0]
                             elif len(np.shape(pixel_array)) == 4: #3d rgb
-                                pixeldataIn = pixel_array[-1,:,:,0]
+                                if dcmInfile.PlanarConfiguration==0:
+                                    pixeldataIn = pixel_array[-1,:,:,0]
+                                else:   
+                                    pixeldataIn = pixel_array[0,-1,:,:] # adjusted for ALOKA images
                         else:
                             # remove all data where there is a difference between R,G,B
                             if len(np.shape(pixel_array)) == 3: #2d rgb

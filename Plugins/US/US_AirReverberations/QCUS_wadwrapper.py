@@ -19,16 +19,20 @@
 #
 #
 # Changelog:
+#   20161221: changes in default positions for uniformity, scaling of uniformity, extra config params (PvH)
 #   20161220: removed class variables; removed testing stuff
 #   20160825: added extra config parameters (PvH)
 #   20160802: sync with pywad1.0
 from __future__ import print_function
 
-__version__ = '20161220'
+__version__ = '20161221'
 __author__ = 'aschilham'
 
 import os
 import numpy as np
+import scipy
+import xml.etree.ElementTree as ET
+
 if not 'MPLCONFIGDIR' in os.environ:
     # using a fixed folder is preferable to a tempdir, because tempdirs are not automatically removed
     os.environ['MPLCONFIGDIR'] = "/tmp/.matplotlib" # if this folder already exists it must be accessible by the owner of WAD_Processor 
@@ -67,6 +71,7 @@ def setup_series(inputfile,params,headers_only):
     cs.verbose = False # do not produce detailed logging
     cs.uni_filter = int(params.find("uni_filter").text)
     cs.uni_delta = float(params.find("uni_delta").text)
+    cs.uni_depth = float(params.find("uni_depth").text)
     cs.uni_low = float(params.find("uni_low").text)
     cs.sen_filter = int(params.find("sen_filter").text)
     cs.sen_delta = float(params.find("sen_delta").text)
@@ -74,11 +79,43 @@ def setup_series(inputfile,params,headers_only):
     cs.hor_offset = int(params.find("hor_offset").text)
     cs.fitcircle_frac = float(params.find("fitcircle_frac").text)
     cs.cluster_fminsize = float(params.find("cluster_fminsize").text)
+    # optional parameters
     try:
         cs.verbose = params.find('verbose').text.lower() in ['1', 'true', 'y', 'yes']
     except:
         pass
+    try:
+        cs.signal_thresh = int(params.find("signal_thresh").text)
+    except:
+        pass
+
     return qclib,cs
+
+def get_idname_from_ocr(data, params):
+    """
+    Separate function to generate idname from ocr, because it is needed by several functions
+    """
+    try:
+        dummy = params.find('OCR_probeID.xywh').text
+        # build fake param set
+        idparams = ET.Element('params')
+        base = 'OCR_probeID'
+        for tag in ['xywh', 'type', 'prefix', 'suffix']:
+            try:
+                name = '%s.%s'%(base, tag)
+                val = params.find(name).text
+                child = ET.SubElement(idparams,name)
+                child.text = str(val)
+            except:
+                pass
+        values, error, msg = ocr_series(data, None, idparams, idname='')
+        if error:
+            raise ValueError("Cannot find values for %s: %s"%(base, msg))
+        idname = '_'+ values[base].replace('/','-')
+    except Exception as e:
+        idname = None # OCR cannot be found
+
+    return idname
 
 def qc_series(data, results, params):
     """
@@ -100,36 +137,40 @@ def qc_series(data, results, params):
     # 1.-3.
     inputfile = data.series_filelist[0]  # give me a [filename]
     qclib,cs = setup_series(inputfile, params, headers_only=False)
+    idname = get_idname_from_ocr(data, params)
+    if idname is None:
+        idname = '_'+qclib.imageID(cs,probeonly=True)
+    cs.resultslabel = idname[1:]
 
     # 4. Run tests
     error = qclib.Analyse(cs)
 
     # 5. Build xml output
-    idname = '_'+qclib.imageID(cs,probeonly=True)
     labvals = qclib.reportEntries(cs)
+
     #    image_fnames = [] # filenames of generated images
 
-    for key,val in labvals:
-        results.addFloat(key+str(idname), val, quantity=str(key))
+    for key,val,lev in labvals:
+        results.addFloat(key+str(idname), val, level=lev, quantity=str(key))
 
     # 6. also store images as results
     for fn in cs.image_fnames:
-        results.addObject(os.path.splitext(fn)[0],fn)
+        results.addObject(os.path.splitext(fn)[0], fn, level=2)
 
     # also run ocr_series; needed as part of qc because of the boxes it generates
-    ocr_rois, error, msg = ocr_series(data, results, params)
+    ocr_rois, error, msg = ocr_series(data, results, params, idname)
     xtra= {'rectrois': ocr_rois }
     fname = 'overview%s.jpg'%str(idname)
     qclib.saveAnnotatedImage(cs, fname, what='overview',xtra=xtra)
-    results.addObject(os.path.splitext(fname)[0],fname)
+    results.addObject(os.path.splitext(fname)[0],fname, level=1)
 
     fname = 'reverb%s.jpg'%str(idname)
     qclib.saveAnnotatedImage(cs, fname, what='reverb')
-    results.addObject(os.path.splitext(fname)[0],fname)
+    results.addObject(os.path.splitext(fname)[0],fname, level=2)
     if error:
         raise ValueError('%s Cannot read OCR box for %s'%(logTag(),msg))
 
-def ocr_series(data, results, params):
+def ocr_series(data, results, params, idname):
     """
     Use pyOCR which for OCR
     returns rect rois for plotting in overview
@@ -140,11 +181,10 @@ def ocr_series(data, results, params):
     rectrois = []
     error = False
     msg = ''
-
+    values = {}
+    
     # an id
     inputfile = data.series_filelist[0]  # give me a [filename]
-    qclib,cs = setup_series(inputfile, params, headers_only=True)
-    idname = '_'+qclib.imageID(cs,probeonly=True)
 
     # solve ocr params
     regions = {}
@@ -174,7 +214,6 @@ def ocr_series(data, results, params):
         txt, part = ocr_lib.OCR(pixeldataIn, region['xywh'])
         uname = name+str(idname)
         if region['type'] == 'object':
-            import scipy
             im = scipy.misc.toimage(part) 
             fn = '%s.jpg'%uname
             im.save(fn)
@@ -183,15 +222,22 @@ def ocr_series(data, results, params):
         else:
             try:
                 value = ocr_lib.txt2type(txt, region['type'], region['prefix'],region['suffix'])
-                if region['type'] == 'float':
-                    results.addFloat(uname, value)
-                elif region['type'] == 'string':
-                    results.addChar(uname, value)
-                elif region['type'] == 'bool':
-                    results.addBool(uname, value)
+                if not results is None:
+                    if region['type'] == 'float':
+                        results.addFloat(uname, value)
+                    elif region['type'] == 'string':
+                        results.addChar(uname, value)
+                    elif region['type'] == 'bool':
+                        results.addBool(uname, value)
+                else:
+                    values[uname] = value
             except:
                 error = True
                 msg += uname + ' '
+
+    if results is None:
+        return values, error, msg
+
     return rectrois, error, msg
 
 def header_series(data,results,params):
@@ -208,13 +254,14 @@ def header_series(data,results,params):
     # 1.-3.
     inputfile = data.series_filelist[0]  # give me a [filename]
     qclib,cs = setup_series(inputfile, params, headers_only=True)
+    idname = get_idname_from_ocr(data, params)
+    if idname is None:
+        idname = '_'+qclib.imageID(cs,probeonly=True)
+    cs.resultslabel = idname[1:]
 
     # 4. Run tests
     dicominfo = qclib.DICOMInfo(cs)
 
-    ## find probename
-    idname = '_'+qclib.imageID(cs,probeonly=True)
-        
     ## 2. Add results to 'result' object
     results.addChar('pluginversion'+idname, str(qclib.qcversion)) # do not specify level, use default from config
     for di in dicominfo:
