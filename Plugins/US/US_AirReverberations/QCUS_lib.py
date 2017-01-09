@@ -43,6 +43,7 @@ Warning: THIS MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!
 TODO:
     o Maybe put hard threshold on peak value for uniformity (is normalized, so why not?!)
 Changelog:
+    20170109: remove unprintable characters from DICOM info
     20161221: added level to reportvalues; added unif_depth and unif_sum; normalize on median;
               isolateReverbrations threshold is config param (PvH)
     20161220: removed class variables; removed testing stuff
@@ -257,6 +258,9 @@ class US_QC:
         # Possibly this can be solved by using if(type(value) == type(dicom.sequence.Sequence()))
         #  but I don't see the relevance of these tags anymore, so set them to NO
 
+        import string
+        printable = set(string.printable)
+        
         if info == "dicom":
             dicomfields = [
                 ["0008,0012", "Instance Date"],
@@ -298,6 +302,7 @@ class US_QC:
             value = ""
             try:
                 value = str(self.readDICOMtag(cs,key)).replace('&','')
+                value = ''.join(list(filter(lambda x: x in printable, value)))
             except:
                 value = ""
             results.append( (df[1],value) )

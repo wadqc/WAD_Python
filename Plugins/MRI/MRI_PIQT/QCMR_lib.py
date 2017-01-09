@@ -20,6 +20,7 @@ TODO: Linearity : m/p angle
 TODO: SliceProfile: phase shift
 TODO: pixelsizes
 Changelog:
+    20170109: Protocolnames are sometimes prefixed by WIP
     20161220: remove class variables; remove testing stuff
     20160902: sync with wad2.0; Unified pywad1.0 and wad2.0
     20151111: Added resultimages for all tests
@@ -41,7 +42,7 @@ Changelog:
     20131010: FFU calc of rad10 and rad20 by Euclidean distance transform
     20131009: Finished SNR; finished ArtLevel; finish FloodField Uniformity
 """
-__version__ = '20161220'
+__version__ = '20170109'
 __author__ = 'aschilham'
 
 import numpy as np
@@ -248,7 +249,8 @@ class PiQT_QC:
         dicomvalue = self.readDICOMtag(cs,"0018,1030",0) #"Protocol Name"],  # QA1S:MS,SE
         _seqname = str(dicomvalue).upper()
         seqid = seqname[:3] # first 3 elements QA1
-        if not _seqname[:3] in seqid:
+        #if not _seqname[:3] in seqid: # Protocolname is renamed to WIP...
+        if not seqid in _seqname:
             print("ImageSliceNumber: wrong sequence; %s != %s" %(seqid,_seqname[:3]))
             return result
 
