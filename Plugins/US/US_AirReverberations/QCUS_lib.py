@@ -621,7 +621,7 @@ class US_QC:
             
         if cs.verbose:
             print('  ','dip_frac','dips','low_frac')
-            for w,p,low,avg,std,cov in zip(w_buckets, p_buckets,low_buckets):
+            for w,p,low in zip(w_buckets, p_buckets,low_buckets):
                 print('  ',w,p,low)
 
         # write to cs
@@ -732,7 +732,7 @@ class US_QC:
         yran = [offset,offset+depth]              # restrict analysis to depth mm from 3 mm from top
 
         cs.unif_yrange   = yran # Range in y that is analyzed for uniformity
-                
+
         crop = cropImage(cs.rect_image, [cs.hor_offset], yran)
 
         uniformity = np.mean(crop,axis=1)
@@ -974,7 +974,6 @@ class US_QC:
         """
         #return self.interpTest(cs)
         error = True
-
         if cs.verbose:
             scipy.misc.imsave('Inputdata.jpg', cs.pixeldataIn)
 
