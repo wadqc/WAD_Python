@@ -13,6 +13,7 @@ This includes:
 
 """
 # Changelog:
+# 20170310: only "fix" rescale for CT and MR
 # 20161221: changed order of components in US ALOKA images (PvH)
 # 20161025: added option to override default series splitting splitOnPosition
 # 20161013: preparing to remove tranposing the data (nuisance for some dataprocessing)
@@ -392,10 +393,12 @@ def prepareInput(instancedict, headers_only, do_transpose=True, logTag="[prepare
         try:
             dcmInfile = dcmseries.read_files(path, True, readPixelData=False, splitOnPosition=splitOnPosition)[0]
             if not headers_only: # NOTE: Rescaling is already done pydicom_series, but maybe not for stupid MR
-                for i in range(len(dcmInfile._datasets)):
-                    if not "RescaleIntercept" in dcmInfile._datasets[i]: # in wrong place define for some MR files
-                        dcmInfile._datasets[i].RescaleIntercept = readDICOMtag(keymapping[0][0],dcmInfile,i)
-                        dcmInfile._datasets[i].RescaleSlope = readDICOMtag(keymapping[1][0],dcmInfile,i)
+                modality = dcmInfile._datasets[0].Modality
+                if modality == 'CT' or modality == 'MR':
+                    for i in range(len(dcmInfile._datasets)):
+                        if not "RescaleIntercept" in dcmInfile._datasets[i]: # in wrong place define for some MR files
+                                dcmInfile._datasets[i].RescaleIntercept = readDICOMtag(keymapping[0][0],dcmInfile,i)
+                                dcmInfile._datasets[i].RescaleSlope = readDICOMtag(keymapping[1][0],dcmInfile,i)
                 pixeldataIn = dcmInfile.get_pixel_array()
 
         except Exception as e:
