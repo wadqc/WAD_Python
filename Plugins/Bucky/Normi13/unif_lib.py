@@ -5,6 +5,7 @@ from __future__ import print_function
 Warning: THIS MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!
 
 Changelog:
+    20170310: add override params for pixmm
     20161219: Removed class variables
     20160815: Restructuring (clean up)
     20160803: Fix for RestrictROINormi13 where edge is both min and max
@@ -14,7 +15,7 @@ Changelog:
     20160202: Finished uniformity
     20160201: Split Uniformity/Artefact detection off from QCMammo to enable recycling; starting from v20150522
 """
-__version__ = '20161219'
+__version__ = '20170310'
 __author__ = 'aschilham'
 
 try:
@@ -109,9 +110,13 @@ class UnifStruct:
         self.unif_crop_inoutoverin = -1
         self.unif_crop = []
 
+        self.pixmm = None # allow hard override of pixmm, for example is ImagerPixelSpacing does not exist
+        
     def pixDim(self, axis=0):
         if self.dcmInfile is None:
             return None
+        if not self.pixmm is None:
+            return self.pixmm
         try:
             pix_mm = self.dcmInfile.PixelSpacing[axis]
         except:

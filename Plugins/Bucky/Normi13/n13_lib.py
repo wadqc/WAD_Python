@@ -19,6 +19,7 @@ Note: comparison will be against lit.stTable, if not matched (eg. overwritten by
 
 TODO:
 Changelog:
+    20170310: add override params for inversion and pixmm; geometry changed xray-edge finding logic; draw uniformity_crop on image; 
     20161220: Removed class variables; removed testing stuff
     20160816: split in separate files for each block of analysis
     20160812: another attempt at consistent box finding
@@ -29,7 +30,7 @@ Changelog:
     20160202: added uniformity
     20151109: start of new module, based on QCXRay_lib of Bucky_PEHAMED_Wellhofer of 20151029
 """
-__version__ = '20161220'
+__version__ = '20170310'
 __author__ = 'aschilham'
 
 try:
@@ -73,6 +74,9 @@ class Room:
         self.outvalue = outvalue # value of pixels outside x-ray field
         self.pidmm = {}
         self.sidmm = {}
+
+        self.pixmm = None          # allow hard override of pixmm, for example is ImagerPixelSpacing does not exist
+        self.mustbeinverted = None # allow hard override of auto invert
 
         if len(pid_tw) == 1: # forced
             self.pidmm[lit.stForced] = pid_tw[0] 
@@ -120,18 +124,24 @@ class XRayStruct:
         if self._fixed_inversion: # already fixed
             return False
 
-        # determine max allowed pixelvalue; as 2^bits_stored -1; note this value is not properly stored in dcmfileIn.BitsStored!
-        dicomfields = [ ["0028,0101",  "Bits Stored"]]
-        key = dicomfields[0][0]
-        dicvalue = self.dcmInfile[dicom.tag.Tag(key.split(',')[0],key.split(',')[1])].value
-        if dicvalue == "":
-            return error
-        self.max_pixel_value = (2**dicvalue)-1
+        if not self.forceRoom.mustbeinverted is None:
+            print("Must be Inverted (use)",self.forceRoom.mustbeinverted)
+            self.original_inverted = self.forceRoom.mustbeinverted
+        else:
+            # determine max allowed pixelvalue; as 2^bits_stored -1; note this value is not properly stored in dcmfileIn.BitsStored!
+            dicomfields = [ ["0028,0101",  "Bits Stored"]]
+            key = dicomfields[0][0]
+            dicvalue = self.dcmInfile[dicom.tag.Tag(key.split(',')[0],key.split(',')[1])].value
+            if dicvalue == "":
+                return error
+            self.max_pixel_value = (2**dicvalue)-1
+    
+            # now check storage format
+            self.original_inverted = False
+            if self.dcmInfile.PhotometricInterpretation == "MONOCHROME2":
+                self.original_inverted = True
 
-        # now check storage format
-        self.original_inverted = False
-        if self.dcmInfile.PhotometricInterpretation == "MONOCHROME2":
-            self.original_inverted = True
+        if self.original_inverted:
             # inversion
             if not self.pixeldataIn is None:
                 self.pixeldataIn = self.max_pixel_value-self.pixeldataIn
@@ -144,6 +154,9 @@ class XRayStruct:
 
     def pixToGridScale_mm(self):
         # determine scaling of pixel to mm on phantom scale
+        if not self.forceRoom.pixmm is None:
+            return self.forceRoom.pixmm
+        
         pixel_spacing_x = self.dcmInfile.ImagerPixelSpacing[0] # PixelSpacing already corrects for magnification in DX!
         stand = self.DetectorStand()
         # DX
@@ -230,6 +243,8 @@ class XRayStruct:
         self._fixed_inversion = False # already fixed inversion, skip checks
         self.max_pixel_value = 0 # max allowed value to store per pixel
 
+        self.forceRoom = room
+
         # first correct image represenation
         error = self.FixInvertedImage()
         if error:
@@ -237,7 +252,6 @@ class XRayStruct:
             print('ERROR. Not a valid DICOM image')
             return None
 
-        self.forceRoom = room
         self.phantom_px_in_mm = self.pixToGridScale_mm()
 
         # all geometry related stuff in geom
@@ -354,6 +368,9 @@ class XRayQC:
                 im = scipy.misc.toimage(pdCopy.transpose(),low=1,pal=pal) # MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!
 
             # now add all box rois
+            # add uniformity crop area
+            rectrois.append([(unif_crop[0],unif_crop[2]),(unif_crop[1],unif_crop[3])]) #[(x0,y0),(x1,y1)]
+
             # show the box of the whole image so we can see what has been cropped
             wid,hei = np.shape(cs.pixeldataIn)
             rectrois.append([(0,0),(wid-1,hei-1)]) #[(x0,y0),(x1,y1)]
@@ -741,6 +758,8 @@ class XRayQC:
         usestructure = True
 
         cs.unif = unif_lib.UnifStruct(cs.dcmInfile, cs.pixeldataIn)
+        cs.unif.pixmm = cs.forceRoom.pixmm
+        
         qc_unif = unif_lib.Uniformity_QC()
 
         if qc_unif.NeedsCroppingUnif(cs):

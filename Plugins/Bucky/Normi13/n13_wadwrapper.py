@@ -19,6 +19,7 @@
 #
 #
 # Changelog:
+#   20170310: add override params; take average over series
 #   20161220: Removed class variables; removed testing stuff
 #   20160825: fixes for portable detector
 #   20160802: sync with wad2.0
@@ -26,7 +27,7 @@
 #
 from __future__ import print_function
 
-__version__ = '20161220'
+__version__ = '20170310'
 __author__ = 'aschilham'
 
 import os
@@ -40,6 +41,7 @@ try:
 except ImportError:
     import dicom
 from . import n13_lib
+import numpy as np
 
 try: 
     # try local folder
@@ -78,6 +80,19 @@ def logTag():
       </detector_name>
     </params>
 """
+def override_settings(room, params):
+    """
+    Look for 'use_' params in to force behaviour of module and disable automatic determination of param.
+    """
+    try:
+        room.pixmm = float(params.find('use_pixmm').text)
+    except:
+        pass
+    try:
+        room.mustbeinverted = params.find('use_mustbeinverted').text.lower() in ['1', 'true', 'y', 'yes']
+    except:
+        pass
+
 def _getRoomDefinition(params):
     # Use the params in the config file to construct an Scanner object
     try:
@@ -130,8 +145,15 @@ def _getRoomDefinition(params):
         try:
             pidmm = [ float(params.find('pidmm').text) ]
         except:
-            # Source to Detector distance and Patient to Detector distance for wall and table (both in mm)
-            pidmm = [ float(params.find('tablepidmm').text), float(params.find('wallpidmm').text) ]
+            try:
+                # Source to Detector distance and Patient to Detector distance for wall and table (both in mm)
+                pidmm = [ float(params.find('tablepidmm').text), float(params.find('wallpidmm').text) ]
+            except:
+                try:
+                    dummy = float(params.find('use_pixmm').text)
+                    pidmm = [-1] # will fill in use_pixmm later
+                except:
+                    raise ValueError('Must supply "tablepidmm" and "wallpidmm", or "pidmm", or "use_pixmm"')
 
         try:
             sidmm = [ float(params.find('sidmm').text) ]
@@ -151,10 +173,13 @@ def _getRoomDefinition(params):
         outvalue    = -1 # not supplied
         
         # no artificial thresholds present or needed
-        return n13_lib.Room(roomname, outvalue=outvalue,
+        room =  n13_lib.Room(roomname, outvalue=outvalue,
                                pid_tw=pidmm, sid_tw=sidmm,
                                artefactborderpx=artefactborderpx,
                                linepairmarkers=linepairmarkers,detectorname=detectorname,auto_suffix=auto_suffix)
+        override_settings(room, params)
+        return room
+
     except AttributeError as e:
         raise ValueError(logTag()+" missing room definition parameter!"+str(e))
 
@@ -179,6 +204,14 @@ def xrayqc_series(data, results, params):
 
     ## 2. Check data format
     dcmInfile,pixeldataIn,dicomMode = wadwrapper_lib.prepareInput(inputfile,headers_only=False,logTag=logTag())
+    
+    # select only middle slice for series
+    numslices = len(pixeldataIn)
+    if dicomMode == wadwrapper_lib.stMode3D:
+        nim = int(len(pixeldataIn)/2.)
+        dcmInfile   = dcmInfile._datasets[nim]
+        pixeldataIn = np.average(pixeldataIn, axis=0)
+        dicomMode = wadwrapper_lib.stMode2D
 
     ## 3. Build and populate qcstructure
     remark = ""
@@ -215,6 +248,7 @@ def xrayqc_series(data, results, params):
         level = elem['level'] if 'level' in elem else None
         rank = elem['rank'] if 'rank' in elem else None
         results.addFloat(elem['name']+str(idname), elem['value'], quantity=quan, level=level,rank=rank)
+    results.addFloat('num_slices'+str(idname), numslices)
 
 
 def xrayqc_uniformity_series(data, results, params):
@@ -233,6 +267,14 @@ def xrayqc_uniformity_series(data, results, params):
 
     ## 2. Check data format
     dcmInfile,pixeldataIn,dicomMode = wadwrapper_lib.prepareInput(inputfile,headers_only=False,logTag=logTag())
+
+    # select only middle slice for series
+    numslices = len(pixeldataIn)
+    if dicomMode == wadwrapper_lib.stMode3D:
+        nim = int(len(pixeldataIn)/2.)
+        dcmInfile   = dcmInfile._datasets[nim]
+        pixeldataIn = np.average(pixeldataIn, axis=0)
+        dicomMode = wadwrapper_lib.stMode2D
 
     ## 3. Build and populate qcstructure
     remark = ""
@@ -269,6 +311,7 @@ def xrayqc_uniformity_series(data, results, params):
         level = elem['level'] if 'level' in elem else None
         rank = elem['rank'] if 'rank' in elem else None
         results.addFloat(elem['name']+str(idname), elem['value'], quantity=quan, level=level,rank=rank)
+    results.addFloat('num_slices'+str(idname), numslices)
 
 
 def xrayheader_series(data,results,params):

@@ -95,6 +95,7 @@ def CropPhantom(cs):
     error = False
 
     cs_unif = unif_lib.UnifStruct(cs.dcmInfile, cs.pixeldataIn)
+    cs_unif.pixmm = cs.forceRoom.pixmm
     qc_unif = unif_lib.Uniformity_QC()
     widthpx, heightpx = np.shape(cs.pixeldataIn)
     cs.geom.orig_shape = [widthpx, heightpx]
@@ -772,7 +773,6 @@ def XRayField(cs):
 def FindXRayEdge(cs, side, workim):
     # travel from center to edges
     # workim is a prepared image, getting rid of noise and other stuff
-
     widthpx, heightpx  = np.shape(workim) ## width/height in pixels
 
     outvalue = cs.forceRoom.outvalue
@@ -868,19 +868,37 @@ def FindXRayEdge(cs, side, workim):
             id += 1
 
         minval = min(valvec)
+        maxval = max((max(valvec),outvalue)) # outvalue might not be present in this direction
         meanval = np.mean(valvec)
-        threshLow = (9.*minval+meanval)/10.
+
+        if meanval < outvalue: # do not include outvalue parts in mean
+            npa = np.array(valvec)
+            meanval = np.mean( npa[npa<outvalue] )
+        elif meanval > outvalue:
+            npa = np.array(valvec)
+            meanval = np.mean( npa[npa>outvalue] )
+            
+        if outvalue < meanval: # looking for a low value
+            threshLow = (9.*minval+meanval)/10.
+            lab = "low"
+        else:
+            threshLow = (9.*maxval+meanval)/10.
+            lab = "high"
         threshHigh = outvalue
+            
         if cs.verbose:
             plt.figure()
             plt.plot(posvec,valvec)
-            plt.title(side+" "+str(threshLow)+" "+str(threshHigh))
+            plt.title(side+" "+str(threshLow)+" "+str(threshHigh)+" "+lab)
             cs.hasmadeplots = True
 
         found = False
         for p,v in zip(posvec,valvec):
-            if v<threshLow:
+            if outvalue < meanval and v<threshLow:
                 found = True
+            elif outvalue >= meanval and v>threshLow:
+                found = True
+            if found:
                 edgemm.append( cs.pix2phantommm(p)+useboxradmm )
                 if cs.verbose:
                     plt.plot(p,v,'bo')
