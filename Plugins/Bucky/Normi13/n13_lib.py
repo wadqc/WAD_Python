@@ -19,6 +19,8 @@ Note: comparison will be against lit.stTable, if not matched (eg. overwritten by
 
 TODO:
 Changelog:
+    20170324: made Geometry._FineTunePhantomBox bit more robust (prefer small shift); also do not quit if phantomGrid 
+              found with too little confidence
     20170310: add override params for inversion and pixmm; geometry changed xray-edge finding logic; draw uniformity_crop on image; 
     20161220: Removed class variables; removed testing stuff
     20160816: split in separate files for each block of analysis
@@ -30,7 +32,7 @@ Changelog:
     20160202: added uniformity
     20151109: start of new module, based on QCXRay_lib of Bucky_PEHAMED_Wellhofer of 20151029
 """
-__version__ = '20170310'
+__version__ = '20170324'
 __author__ = 'aschilham'
 
 try:
@@ -713,7 +715,7 @@ class XRayQC:
         error = self.CropNormi13(cs)
         if error:
             msg += 'Crop '
-
+        
         # 1.2 geometry: orientation
         if not error:
             error = self.FixPhantomOrientation(cs)
@@ -725,6 +727,7 @@ class XRayQC:
             error = self.FindPhantomGrid(cs)
             if error:
                 msg += 'Grid '
+                error = False
 
         # 1.4: travel straight along NS and find edge of x-ray; similar for EW
         if not error:

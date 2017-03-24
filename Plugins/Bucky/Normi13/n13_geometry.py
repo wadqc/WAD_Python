@@ -429,6 +429,7 @@ def _FineTunePhantomBox(cs, roipts):
     threshold = 0.65 # threshold for acceptance
     # using the determinant of the hessian gives nicest solution.
     # if it fails, try the dumb max finder
+    best = (0, copy.deepcopy(roipts0))
     for radmm in [9.0, 6.0, 4.5]:
         error = False
         roipts = copy.deepcopy(roipts0)
@@ -437,9 +438,10 @@ def _FineTunePhantomBox(cs, roipts):
             print('BBAlignROI failed! confidence:', bbox_confidence)
             error = True
             print('BBAlignROI try smaller searchradius')
-        else:
-            break
+        if bbox_confidence>best[0]:
+            best = (bbox_confidence, copy.deepcopy(roipts)) 
 
+    
     if error:
         print('BBAlignROI trying without Hessian')
         roipts = copy.deepcopy(roipts0)
@@ -449,7 +451,10 @@ def _FineTunePhantomBox(cs, roipts):
         if bbox_confidence< threshold or ValidateROI(cs, roipts) == False:
             print('BBAlignROI failed! confidence:', bbox_confidence)
             error = True
+        if bbox_confidence>best[0]:
+            best = (bbox_confidence, copy.deepcopy(roipts)) 
 
+    bbox_confidence, roipts = best
     print('Using box with conf:', bbox_confidence)
 
     return error, roipts, bbox_confidence
@@ -529,6 +534,7 @@ def BBAlignROI(cs, roipts, radmm=9.0, useHessian=True):
             rp[0] = x1
             rp[1] = y1
 
+
         # force consistency with initial shape
         roiptsCA = BBConsistencyAlign(cs, roipts0, roipts)
         RCA = BBROIConfidence(cs, roiptsCA)
@@ -536,6 +542,7 @@ def BBAlignROI(cs, roipts, radmm=9.0, useHessian=True):
         if RCA> RC: # if consistency adjustment results in better confidence, accept it
             roipts = roiptsCA
             RC = RCA
+
         conf_pts.append((RC,copy.deepcopy(roipts)))
 
     # Just take best of the last two interations; prevent up down jumping
