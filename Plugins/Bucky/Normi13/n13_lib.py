@@ -19,6 +19,7 @@ Note: comparison will be against lit.stTable, if not matched (eg. overwritten by
 
 TODO:
 Changelog:
+    20170518: _findDropLine now uses median which is more robust for noise
     20170324: made Geometry._FineTunePhantomBox bit more robust (prefer small shift); also do not quit if phantomGrid 
               found with too little confidence
     20170310: add override params for inversion and pixmm; geometry changed xray-edge finding logic; draw uniformity_crop on image; 
@@ -32,7 +33,7 @@ Changelog:
     20160202: added uniformity
     20151109: start of new module, based on QCXRay_lib of Bucky_PEHAMED_Wellhofer of 20151029
 """
-__version__ = '20170324'
+__version__ = '20170518'
 __author__ = 'aschilham'
 
 try:

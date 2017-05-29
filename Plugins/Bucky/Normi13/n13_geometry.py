@@ -381,12 +381,13 @@ def removeBKTrend(imageIn, sigma):
 
 def _findDropLine(smallimage, hlinepx, removeTrend=False):
     # find first position of drop for grid line
-    # optionally remove a trend in teh background
+    # optionally remove a trend in the background
 
     axis = 0 if np.shape(smallimage)[0] < np.shape(smallimage)[1] else 1
     # turn each roi into a average line
-    line = np.average(smallimage,axis=axis)
-
+    # line = np.average(smallimage,axis=axis)
+    line = np.median(smallimage,axis=axis) # more robust for 1 px outlier
+    
     # find first position of drop
     threshold = (np.amax(line)+np.amin(line))/2
     threshold = (line[0]+np.amin(line))/2
@@ -395,6 +396,10 @@ def _findDropLine(smallimage, hlinepx, removeTrend=False):
         line = removeBKTrend(line, 3*hlinepx)
         threshold = (0+np.amin(line))/2 # trend removal, so expect negative!
 
+    print(threshold, np.std(line),threshold/np.std(line) )
+    plt.figure()
+    plt.plot(line)
+    plt.show()
     ep = -1
     for x in range(hlinepx,len(line)-hlinepx-1):
         if line[x-hlinepx]>threshold and line[x]<threshold and line[x+hlinepx]> threshold:
