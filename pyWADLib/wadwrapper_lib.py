@@ -13,6 +13,7 @@ This includes:
 
 """
 # Changelog:
+# 20170502: Default US_RGB channel to Blue
 # 20170310: only "fix" rescale for CT and MR
 # 20161221: changed order of components in US ALOKA images (PvH)
 # 20161025: added option to override default series splitting splitOnPosition
@@ -24,7 +25,10 @@ This includes:
 # 20150420: Added scipy connectedComponents
 # 20150203: Added docstrings; added raise exceptions; clean-up of code
 
-US_RGB_USE_RED = True # force using only the RED channel in RGB, or remove all data where there is a difference between R,G,B
+#US_RGB_USE_CHANNEL = 'R' # force using only the RED channel in RGB
+#US_RGB_USE_CHANNEL = 'G' # force using only the GREEN channel in RGB
+US_RGB_USE_CHANNEL = 'B' # force using only the BLUE channel in RGB
+#US_RGB_USE_CHANNEL = 'S' # force remove all data where there is a difference between R,G,B
 
 try:
     import pydicom as dicom
@@ -268,7 +272,7 @@ def prepareEnhancedInput(filename, headers_only, do_transpose=True, logTag="[pre
 
     return dcmInfile,pixeldataIn,getDICOMMode(dcmInfile)
 
-def prepareInput(instancedict, headers_only, do_transpose=True, logTag="[prepareInput] ", skip_check=False, splitOnPosition=True):
+def prepareInput(instancedict, headers_only, do_transpose=True, logTag="[prepareInput] ", skip_check=False, splitOnPosition=True, rgbchannel=US_RGB_USE_CHANNEL):
     """
     Reads inputfile as an EnhancedDICOM object; if an EnhancedDICOM object is detected, prepareEnhancedInput is called.
     Checks if the input is as expected: number of slices etc.
@@ -348,17 +352,9 @@ def prepareInput(instancedict, headers_only, do_transpose=True, logTag="[prepare
                         else:
                             pixel_array = dcmInfile.pixel_array.reshape(dcmInfile.SamplesPerPixel, nofframes, dcmInfile.Rows, dcmInfile.Columns)
 
-                        # force using only the RED channel in RGB.
-                        if US_RGB_USE_RED == True:
-                            if len(np.shape(pixel_array)) == 3: #2d rgb
-                                pixeldataIn = pixel_array[:,:,0]
-                            elif len(np.shape(pixel_array)) == 4: #3d rgb
-                                if dcmInfile.PlanarConfiguration==0:
-                                    pixeldataIn = pixel_array[-1,:,:,0]
-                                else:   
-                                    pixeldataIn = pixel_array[0,-1,:,:] # adjusted for ALOKA images
-                        else:
-                            # remove all data where there is a difference between R,G,B
+                        # pick channel to use for RGB
+                        print('Using RGB Channel {}'.format(rgbchannel))
+                        if rgbchannel == 'S': # remove all data where there is a difference between R,G,B
                             if len(np.shape(pixel_array)) == 3: #2d rgb
                                 pixeldataIn = pixel_array[:,:,0]
                                 pixeldataInR = pixel_array[:,:,0]
@@ -380,6 +376,20 @@ def prepareInput(instancedict, headers_only, do_transpose=True, logTag="[prepare
                                     mi = min(r,g,b)
                                     if ma != mi:
                                         pixeldataIn[y,x] = 0
+                        else:
+                            if rgbchannel == 'R':
+                                chan = 0
+                            elif rgbchannel == 'G':
+                                chan = 1
+                            elif rgbchannel == 'B':
+                                chan = 2
+                            if len(np.shape(pixel_array)) == 3: #2d rgb
+                                pixeldataIn = pixel_array[:,:,chan]
+                            elif len(np.shape(pixel_array)) == 4: #3d rgb
+                                if dcmInfile.PlanarConfiguration==0:
+                                    pixeldataIn = pixel_array[-1,:,:,chan]
+                                else:   
+                                    pixeldataIn = pixel_array[chan,-1,:,:] # adjusted for ALOKA images
 
     else:
         if not skip_check:
@@ -397,12 +407,12 @@ def prepareInput(instancedict, headers_only, do_transpose=True, logTag="[prepare
                 if modality == 'CT' or modality == 'MR':
                     for i in range(len(dcmInfile._datasets)):
                         if not "RescaleIntercept" in dcmInfile._datasets[i]: # in wrong place define for some MR files
-                                dcmInfile._datasets[i].RescaleIntercept = readDICOMtag(keymapping[0][0],dcmInfile,i)
-                                dcmInfile._datasets[i].RescaleSlope = readDICOMtag(keymapping[1][0],dcmInfile,i)
+                            dcmInfile._datasets[i].RescaleIntercept = readDICOMtag(keymapping[0][0],dcmInfile,i)
+                            dcmInfile._datasets[i].RescaleSlope = readDICOMtag(keymapping[1][0],dcmInfile,i)
                 pixeldataIn = dcmInfile.get_pixel_array()
 
         except Exception as e:
-            raise ValueError("{} ERROR! {} is not a valid non-Enhanced DICOM series".format(logTag, path))
+            raise ValueError("{} ERROR! {} is not a valid non-Enhanced DICOM series ({})".format(logTag, path, str(e)))
 
     if not headers_only and do_transpose:
         ndims = len(np.shape(pixeldataIn))

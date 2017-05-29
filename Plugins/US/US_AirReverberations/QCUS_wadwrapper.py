@@ -19,13 +19,16 @@
 #
 #
 # Changelog:
+#   20170510: Added rgbchannel param, defaults to 'B'; 
+#             added optional parameters cluster_model, uni_start, ocr_threshold, ocr_zoom; 
+#             removed uni_low; removed reverb.jpg output (added to uniformity)
 #   20161221: changes in default positions for uniformity, scaling of uniformity, extra config params (PvH)
 #   20161220: removed class variables; removed testing stuff
 #   20160825: added extra config parameters (PvH)
 #   20160802: sync with pywad1.0
 from __future__ import print_function
 
-__version__ = '20161221'
+__version__ = '20170510'
 __author__ = 'aschilham'
 
 import os
@@ -63,7 +66,11 @@ def setup_series(inputfile,params,headers_only):
     """
     # 1. Set runtime parameters
     # 2. Check data format
-    dcmInfile,pixeldataIn,dicomMode = wadwrapper_lib.prepareInput(inputfile,headers_only=headers_only,logTag=logTag())
+    try:
+        rgbchannel = params.find("rgbchannel").text
+    except:
+        rgbchannel = 'B'
+    dcmInfile,pixeldataIn,dicomMode = wadwrapper_lib.prepareInput(inputfile, headers_only=headers_only, logTag=logTag(), rgbchannel=rgbchannel)
 
     # 3. Build and populate qcstructure
     qclib = QCUS_lib.US_QC(guimode=False)
@@ -72,13 +79,13 @@ def setup_series(inputfile,params,headers_only):
     cs.uni_filter = int(params.find("uni_filter").text)
     cs.uni_delta = float(params.find("uni_delta").text)
     cs.uni_depth = float(params.find("uni_depth").text)
-    cs.uni_low = float(params.find("uni_low").text)
     cs.sen_filter = int(params.find("sen_filter").text)
     cs.sen_delta = float(params.find("sen_delta").text)
     cs.ver_offset = int(params.find("ver_offset").text)
     cs.hor_offset = int(params.find("hor_offset").text)
     cs.fitcircle_frac = float(params.find("fitcircle_frac").text)
     cs.cluster_fminsize = float(params.find("cluster_fminsize").text)
+
     # optional parameters
     try:
         cs.verbose = params.find('verbose').text.lower() in ['1', 'true', 'y', 'yes']
@@ -86,6 +93,14 @@ def setup_series(inputfile,params,headers_only):
         pass
     try:
         cs.signal_thresh = int(params.find("signal_thresh").text)
+    except:
+        pass
+    try:
+        cs.cluster_mode = params.find("cluster_mode").text
+    except:
+        pass
+    try:
+        cs.uni_start = float(params.find("uni_start").text)
     except:
         pass
 
@@ -164,9 +179,6 @@ def qc_series(data, results, params):
     qclib.saveAnnotatedImage(cs, fname, what='overview',xtra=xtra)
     results.addObject(os.path.splitext(fname)[0],fname, level=1)
 
-    fname = 'reverb%s.jpg'%str(idname)
-    qclib.saveAnnotatedImage(cs, fname, what='reverb')
-    results.addObject(os.path.splitext(fname)[0],fname, level=2)
     if error:
         raise ValueError('%s Cannot read OCR box for %s'%(logTag(),msg))
 
@@ -187,6 +199,14 @@ def ocr_series(data, results, params, idname):
     inputfile = data.series_filelist[0]  # give me a [filename]
 
     # solve ocr params
+    # optional parameters
+    ocr_options = {}
+    for lab in ['ocr_threshold', 'ocr_zoom']:
+        try:
+            ocr_options[lab] = int(params.find(lab).text)
+        except:
+            pass
+        
     regions = {}
     for param in params:
         #'OCR_TissueIndex.xywh' = 'x;y;w;h'
@@ -211,7 +231,8 @@ def ocr_series(data, results, params, idname):
         rectrois.append([ (region['xywh'][0],region['xywh'][1]), 
                           (region['xywh'][0]+region['xywh'][2],region['xywh'][1]+region['xywh'][3])])
 
-        txt, part = ocr_lib.OCR(pixeldataIn, region['xywh'])
+        txt, part = ocr_lib.OCR(pixeldataIn, region['xywh'], **ocr_options)
+
         uname = name+str(idname)
         if region['type'] == 'object':
             im = scipy.misc.toimage(part) 

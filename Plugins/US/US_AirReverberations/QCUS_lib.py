@@ -43,6 +43,10 @@ Warning: THIS MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!
 TODO:
     o Maybe put hard threshold on peak value for uniformity (is normalized, so why not?!)
 Changelog:
+    20170510: extra parameters uni_start, clustermode; extra measurement skewness; 
+              removed unused uniformity yrange stuff; removed unused fft stuff; removed localnormalization; removed fastmode;
+              removed helper cropImage; added makeFigure for uniformity and rois; removed 'reverb' image;
+              remove timing
     20170109: remove unprintable characters from DICOM info
     20161221: added level to reportvalues; added unif_depth and unif_sum; normalize on median;
               isolateReverbrations threshold is config param (PvH)
@@ -62,15 +66,16 @@ Changelog:
     20150416: Sensitivity analysis and uniformity analysis
     20150410: Initial version
 """
-__version__ = '20161221'
-__author__ = 'aschilham'
+__version__ = '20170510'
+__author__ = 'aschilham, pvanhorsen'
 
 import copy
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
 import operator
 import scipy
-import time
+import scipy.stats
 import os
 
 try:
@@ -95,58 +100,8 @@ except ImportError:
         # wad1.0 solutions failed, try wad2.0 from system package wad_qc
         from wad_qc.modulelibs import wadwrapper_lib
 
-try:
-    import numpy.fft.rfftfreq as rfftfreq
-except: # old numpy
-    def rfftfreq(n, d=1.0):
-        """
-        Return the Discrete Fourier Transform sample frequencies
-        (for usage with rfft, irfft).
-        The returned float array `f` contains the frequency bin centers in cycles
-        per unit of the sample spacing (with zero at the start).  For instance, if
-        the sample spacing is in seconds, then the frequency unit is cycles/second.
-        Given a window length `n` and a sample spacing `d`::
-          f = [0, 1, ...,     n/2-1,     n/2] / (d*n)   if n is even
-          f = [0, 1, ..., (n-1)/2-1, (n-1)/2] / (d*n)   if n is odd
-        Unlike `fftfreq` (but like `scipy.fftpack.rfftfreq`)
-        the Nyquist frequency component is considered to be positive.
-        Parameters
-        ----------
-        n : int
-            Window length.
-        d : scalar, optional
-            Sample spacing (inverse of the sampling rate). Defaults to 1.
-        Returns
-        -------
-        f : ndarray
-            Array of length ``n//2 + 1`` containing the sample frequencies.
-        """
-
-        val = 1.0/(n*d)
-        N = n//2 + 1
-        results = np.arange(0, N, dtype=int)
-        return results * val    
-
-def cropImage(image,offX,offY):
-    # helper function for symmetric cropping of image
-    wid,hei = np.shape(image)
-    if len(offX)==1:
-        xran = [offX[0],-offX[0]]
-    else:
-        xran = offX
-    if xran[1] == 0:
-        xran[1] = wid-1
-
-    if len(offY)==1:
-        yran = [offY[0],-offY[0]]
-    else:
-        yran = offY
-    if yran[1] == 0:
-        yran[1] = hei-1
-    return image[xran[0]:xran[1],yran[0]:yran[1]]
-
 class USStruct:
-    def __init__ (self,dcmInfile,pixeldataIn,dicomMode):
+    def __init__ (self, dcmInfile, pixeldataIn, dicomMode):
         self.verbose = False
 
         # input image
@@ -154,7 +109,7 @@ class USStruct:
         self.pixeldataIn = pixeldataIn
         self.dicomMode = dicomMode
         self.resultslabel = None # allow override of label by config
-        
+
         # for matlib plotting
         self.hasmadeplots = False
 
@@ -164,13 +119,14 @@ class USStruct:
 
         # images
         self.image_fnames = [] # filenames of generated images
-        
+
         # reverbrations
         self.cluster_fminsize = 10*10*3 # ignore clusters of size smaller than imwidth*imheigth/minsizefactor (wid/10*hei/10)/3
         self.reverb_image = None        # isolated reverbrations (by largest connected component)
         self.rect_image = None          # straightend image for curvilinear probes
         self.signal_thresh = 0          # only pixelvalues above this number can be part of reverberations (set >0 is very noisy)
-        
+        self.cluster_mode = 'all_middle' # 'largest_only' default mode of dataroi selection
+
         self.curve_xyr = [0,0,0] # center and radius [x,y,r] of curvilinear probe
         self.curve_residu = 0    # residu of fitting of curvilinear probe
         self.curve_opendeg = 0   # opening angle in degrees
@@ -184,7 +140,8 @@ class USStruct:
         self.unif_COV = 0        # Coefficient of Variation over uniformity data
         self.unif_yrange = [0,0] # Range in y that is analyzed for uniformity
         self.unif_sum = 0        # Sum of normalised uniformity values
-    
+        self.unif_skew = 0       # skewness of the distribution
+
         self.dipfarea_0_10   = 0 # fraction of image part of dip*depth for  0-10% width
         self.dipfarea_10_30  = 0 # fraction of image part of dip*depth for 10-30% width
         self.dipfarea_30_70  = 0 # fraction of image part of dip*depth for 30-70% width
@@ -205,18 +162,17 @@ class USStruct:
 
         # sensitivity
         self.sens_ylim = 0    # limit on y determined from peaks in y-dir 
-        self.sens_ylim2 = 0   # limit on y determined from fft analysis of peaks in y-dir
         self.sens_noiseM = 0  # noise determined from (vertical) sensitivity profile
         self.sens_numtops = 0 # number of peaks found upto ylim
         self.sens_numbots = 0 # number of valleys found upto ylim
-        self.sens_noiserange = 2 # number of lines used for calculation of noiselevel
-        self.sens_basewavelength = 0. # basic wavelength i.e. distance between rings in mm
-        self.sens_bots = [] # store the y locations of the dips to use for uniformity analysis [px] 
+        self.sens_noiserange = 2      # number of lines used for calculation of noiselevel
+        self.sens_bots = []   # store the y locations of the dips to use for uniformity analysis [px] 
         
         #input parameters
         self.uni_filter = 5  # running average of this width before peak detection
         self.uni_delta = 0.1 # A dip in normalized reverb pattern must be at least <delta> .05 = 5%
-        self.uni_depth = 5 # default depth in mm for uniformity analysis
+        self.uni_depth = 5   # default depth in mm for uniformity analysis
+        self.uni_start = 2   # default offset in mm to start of uniformity analysis
         self.sen_filter = 5  # running average of this width for sensitivity data
         self.sen_delta = 0.1 # A peak in sensitivity profile must be at least <fdelta>*(max-noise)
         self.ver_offset = 0  # default lines to exclude from top and bottom when making profiles (10)
@@ -235,23 +191,18 @@ class USStruct:
         self.curve_radii  = [] # [min, max] angle
 
 class US_QC:
-    def __init__(self,guimode=False,fastmode=False,modelocalnorm=False):
+    def __init__(self, guimode=False):
         self.qcversion = __version__
         self.guimode = guimode
-        self.fastmode = fastmode
-        self.modeLocalNorm = modelocalnorm # EXPERIMENTAL
-    
+
         # parameters:
-        self.fft_skip = 5 # in fft analysis, ignore peak if it is located within skip freqs from 0
-                        # to ignore for peak finding (offset, trend)
-        self.check_asym = False # do or do not check of strongly asym peaks
         self.sens_hicut = True # restrict peaks to max > noise (True) or min < noise
 
-    def readDICOMtag(self,cs,key,imslice=0): # slice=2 is image 3
-        value = wadwrapper_lib.readDICOMtag(key,cs.dcmInfile,imslice)
+    def readDICOMtag(self, cs, key, imslice=0): # slice=2 is image 3
+        value = wadwrapper_lib.readDICOMtag(key, cs.dcmInfile, imslice)
         return value
 
-    def DICOMInfo(self,cs,info='dicom'):
+    def DICOMInfo(self, cs, info='dicom'):
         # Different from ImageJ version; tags "0008","0104" and "0054","0220"
         #  appear to be part of sequences. This gives problems (cannot be found
         #  or returning whole sequence blocks)
@@ -310,7 +261,7 @@ class US_QC:
         return results
 
     #----------------------------------------------------------------------
-    def isolateReverbrations(self,cs):
+    def isolateReverbrations(self, cs):
         """
         Find reverbrations part of image.
         Workflow:
@@ -319,20 +270,17 @@ class US_QC:
         """
         error = True
         # cluster connected components with pixelvalues>0
-        time0 = time.time()
         #work = (cs.pixeldataIn>0) * (cs.pixeldataIn<255) # must give a signal, but 255 often reserved for overlay
         work = cs.pixeldataIn>cs.signal_thresh
         cca = wadwrapper_lib.connectedComponents()
         cs.cca_image,nb_labels = cca.run(work)
-        mode = 'all_middle' #'largest_only'#'all_middle'
-        if mode == 'largest_only': # model of Pepijn
+        if cs.cluster_mode == 'largest_only': # model of PVH
             # select only largest cluster
             cluster_sizes = cca.clusterSizes()
             clus_val = np.argmax(cluster_sizes)
             cs.rev_mask = (cs.cca_image == clus_val)
-            cs.report.append(('cca',time.time()-time0))
             clus = cca.indicesOfCluster(clus_val)
-        else: 
+        else: #'all_middle'
             # select all clusters present in vertical middle area of image, excluding top and 0
             wid,hei = np.shape(cs.cca_image)
             # first remove very small clusters (can be located around top edge!)
@@ -342,7 +290,7 @@ class US_QC:
             #cca.removeSmallClusters(wid/10*hei/10)
             cca.removeSmallClusters(minsize)
             search = cs.cca_image[int(0.4*wid):int(0.6*wid),:]
-            
+
             labs = []
             for ss in search.ravel():
                 if ss>0 and not ss in labs:
@@ -361,12 +309,11 @@ class US_QC:
 
         # make an image of only largest cluster applied to original pixeldata
         cs.reverb_image = cs.pixeldataIn*cs.rev_mask
-        cs.report.append(('mask',time.time()-time0))
 
         if cs.verbose:
             scipy.misc.imsave('Reverbimage.jpg', cs.reverb_image)
+
         # bounds of reverb image
-        time0 = time.time()
         if len(clus) == 0:
             error = True
         else:
@@ -388,7 +335,6 @@ class US_QC:
         error = True
 
         ## 2. Transform reverb data to rectangle if needed
-        time0 = time.time()
         ## Fit a circle to top of reverb pattern
         # From top of reverb image down, look for pixels != 0 from mid to left and from mid to right;
         # if both found, add it to the list
@@ -438,10 +384,7 @@ class US_QC:
             cs.curve_residu = cf.residu
             cs.curve_opendeg = (cs.curve_angles[1]-cs.curve_angles[0])/np.pi*180.
 
-            cs.report.append(('fit',time.time()-time0))
-
             # transform reverb pattern to rectangle: interpolate at coords
-            time0 = time.time()
             ang = np.linspace(cs.curve_angles[0],cs.curve_angles[1],cs.rev_maxx[0]-cs.rev_minx[0])
             rad = np.linspace(cs.curve_radii[0],cs.curve_radii[1],cs.rev_maxy[1]-cs.rev_miny[1])
             an,ra = scipy.meshgrid(ang,rad)
@@ -449,7 +392,6 @@ class US_QC:
             yi = cs.curve_xyr[1]+ra*np.cos(an)
             coords = np.array( [xi,yi] )
             cs.rect_image = scipy.ndimage.map_coordinates(cs.reverb_image, coords).transpose()
-            cs.report.append(('straighten',time.time()-time0))
             if cs.verbose:
                 scipy.misc.imsave('Transfimage.jpg', cs.rect_image)
         else: # not a curved probe
@@ -459,14 +401,11 @@ class US_QC:
         return error
 
     def _uniformityAnalysis(self,cs, normuniformity, raw_uniformity):
-        # Helper function for analysis of normalized uniformity profile:
+        # Helper function for analysis of normalized uniformity profile: (find dips and dark areas)
         # normuniformity = normalized, smoothend uniformity
         # raw_uniformity = normalized uniformity
         error = True
         nx = len(normuniformity)
-        time0 = time.time()
-        self.fftAnalysis(cs,normuniformity,mode='uniformity')
-        cs.report.append(('unif_fft',time.time()-time0))
 
         # peak detection with ugly hack to also allow peaks at index 0 and last
         #xy_max,xy_min = wadwrapper_lib.peakdet(normuniformity, delta=cs.uni_delta,x=range(nx))
@@ -489,84 +428,32 @@ class US_QC:
         x_min = np.array([xy[0] for xy in xy_min])
         y_min = np.array([xy[1] for xy in xy_min])
 
-        yran = []
-        if self.fastmode: # use only first ring
-            print('Uniformity: FASTMODE',cs.sens_basewavelength)
-            if cs.sens_basewavelength >0:
-                ylim = int(cs.sens_basewavelength/self.pixels2mm(cs,1.)+.5)
-                yran = [cs.ver_offset,ylim]
-
-        if len(yran) == 0:
-            yran = [cs.ver_offset,cs.sens_ylim] if cs.sens_ylim>0 else [cs.ver_offset]
-
-        plt.figure()
-        crop = cropImage(cs.rect_image, [cs.hor_offset], yran)
-        plt.imshow(crop.transpose(),cmap=plt.gray())
-        x = np.array(range(nx))
-        plt.plot(x,-100*normuniformity,'y-',label='100*normalized')
-        plt.plot(x_min,-100*y_min,'ro',label='accepted dips')
-        plt.plot(x_max,-100*y_max,'bo',label='accepted peaks')
-        plt.xlim([0,nx])
+        # generate an image showing detected dips and peaks
+        fig = self.makeFigure(cs, 'uniformity', 
+                              {'x_min': x_min, 'x_max': x_max, 'y_min': y_min, 'y_max': y_max,
+                               'normuniformity': normuniformity})
+        if not self.guimode:
+            fname = 'uniformity_'+self.imageID(cs,probeonly=True)+'.jpg'
+            fig.savefig(fname)
+            cs.image_fnames.append(fname)
+        else:
+            cs.hasmadeplots = True
+        
 
         if cs.verbose:
             np.savetxt('normuniformity.tsv', [ (s,ss) for s,ss in zip(raw_uniformity, normuniformity) ], delimiter='\t')
             np.savetxt('normuniformity_xy_max.tsv', xy_max, delimiter='\t')
             np.savetxt('normuniformity_xy_min.tsv', xy_min, delimiter='\t')
 
-        if not self.guimode:
-            fname = 'uniformity_'+self.imageID(cs,probeonly=True)+'.jpg'
-            plt.savefig(fname)
-            cs.image_fnames.append(fname)
-        else:
-            cs.hasmadeplots = True
-
         if cs.verbose:
             plt.figure()
+            x = np.array(range(nx))
             plt.plot(x,normuniformity,'k-')
             plt.plot(x_min,y_min,'ro')
             plt.plot(x_max,y_max,'bo')
             cs.hasmadeplots = True
 
-        # possible clean-up of peaks detected
-        cs.unif_bots = []
-        for damin in xy_min:
-            # find range around each dip and remove strongly asymetric dips
-            if self.check_asym:
-                peak_pos = damin[0]
-                peak_val = damin[1]
-                asym = True
-                delta = cs.uni_delta
-                while asym:
-                    pos_left = peak_pos
-                    for ix in reversed(range(0,peak_pos)):
-                        if normuniformity[ix]>peak_val+delta:
-                            pos_left= ix
-                            break
-                    pos_right = peak_pos
-                    for ix in range(peak_pos,nx):
-                        if normuniformity[ix]>peak_val+delta:
-                            pos_right= ix
-                            break
-                    if pos_left == peak_pos:
-                        print('ERROR! Could not find left point of peak',peak_ix,peak_pos,peak_val)
-                        return error
-                    if pos_right == peak_pos:
-                        print('ERROR! Could not find left point of peak',peak_ix,peak_pos,peak_val)
-                        return error
-                    # check if we are looking at a strongly symmetric peak
-                    if (pos_right-pos_left)>4*min(peak_pos-pos_left,pos_right-peak_pos):
-                        delta -= .1*cs.uni_delta
-                        if delta < .2*cs.uni_delta:
-                            break
-                    else:
-                        asym = False
-                if asym:
-                    print('ERROR! Very asymmetric peak',peak_ix,peak_pos,peak_val,peak_pos-pos_left,pos_right-peak_pos)
-                    continue
-
-            # acceptable
-            cs.unif_bots.append(damin)
-
+        cs.unif_bots = xy_min
         # some figures of merit to store: non-unif in deepest dip and overal
         cs.unif_lowest = 1. if len(cs.unif_bots)==0 else min(cs.unif_bots,key=operator.itemgetter(1))[1]
         cs.unif_low = min(normuniformity[1:-1]) # exclude bounds
@@ -595,9 +482,6 @@ class US_QC:
                 for i,(f,w,p) in enumerate(zip(weights, w_contrib, p_contrib)):
                     w_buckets[i]+= f*w/len(normuniformity)*-y #f*w/len(normuniformity)
                     p_buckets[i]+=-y*p
-                    
-        # deprec 5%: calculate fraction of region darker than 5% of line average: 
-        # low = normuniformity<-0.05
 
         # calculate fraction of region darker than 2* stddev of line average
         low = normuniformity # low parameter, now used as temporary profile for low analysis per bucket.
@@ -609,12 +493,12 @@ class US_QC:
             [int(.9*nx), nx],
         ]
         low_buckets = [0,0,0,0,0]
-        cs.unif_sum = np.abs(np.sum(low))
+        cs.unif_sum = np.sum(low)
+        if cs.unif_sum < 0:
+            cs.unif_sum = np.abs(cs.unif_sum)
+        else:
+            cs.unif_sum = 0
 
-        # deprec 5%:
-        #for i, (x0,x1) in enumerate(regions):
-        #    low_buckets[i] = np.average(low[x0:x1])
-        
         for i, (x0,x1) in enumerate(regions):
             if np.min(low[x0:x1])<0:
                 low_buckets[i] = -100*np.min(low[x0:x1])# lowest value per bucket; multiply with -100 to yield percentage
@@ -642,12 +526,6 @@ class US_QC:
         cs.lowfrac_30_70  = low_buckets[2]
         cs.lowfrac_70_90  = low_buckets[3]
         cs.lowfrac_90_100 = low_buckets[4]
-        """
-        meanvalue = np.mean(uniformity) 
-        stdvalue = np.std(uniformity)
-        CoefVar = stdvalue/meanvalue
-        cs.unif_COV = CoefVar
-        """
         
         error = False
         return error
@@ -688,7 +566,7 @@ class US_QC:
     
     def reverbUniformity(self,cs):
         """
-        Analysis uniformity of reverb pattern
+        Analysis uniformity of reverb pattern (find dips and dark areas)
         Workflow:
         1. Define ROI of reverb (dependend on vertical profile)
         2. Average ROI horizontally and calculate COV
@@ -698,46 +576,23 @@ class US_QC:
         error = True
 
         ## 1. Define ROI of reverb (dependend on vertical profile)
-        """
-        As a fall back use 20% of the total y_range found from sensitivity analysis. 
-        Prefer to analyse first full reverb band, as averaging over multiple bands will
-        decrease the effect of a dip.
-        """
-        yran = []
-        if self.fastmode:
-            print('Uniformity: FASTMODE',cs.sens_basewavelength)
-            if cs.sens_basewavelength >0:
-                ylim = int(cs.sens_basewavelength/self.pixels2mm(cs,1.)+.5) 
-                yran = [cs.ver_offset,ylim] # consider only first reverb length
-            print(yran)
-        if len(yran) == 0:
-            yran = [cs.ver_offset,int(cs.sens_ylim/5)] if cs.sens_ylim>0 else [cs.ver_offset] # only first few reverbs needed
-        if len(cs.sens_bots)>1:
-            # find range between first good dip and second good dip.
-            dist = []
-            for i in range(1,len(cs.sens_bots)):
-                dist.append(cs.sens_bots[i]-cs.sens_bots[i-1])
-            dd = np.median(dist)/2 #at least start with top
-            for i,yy in enumerate(cs.sens_bots):
-                if yy<dd: continue
-                if i<len(cs.sens_bots)-1:
-                    yran = [yy, cs.sens_bots[i+1]]
-                else:
-                    yran = [yy, cs.sens_ylim-1]
-                break
-
-        # Alternatively, just take a fixed depth in mm. Testing, if OK, then remove stuff above
+        # Take a fixed depth in mm. Testing, if OK, then remove stuff above
         depth  = int(float(cs.uni_depth)/self.pixels2mm(cs,1.)+.5) # depth from mm to pixels
-        offset = int(3./self.pixels2mm(cs,1.)+.5) # offset from mm to pixels
-        yran = [offset,offset+depth]              # restrict analysis to depth mm from 3 mm from top
+        offset = int(float(cs.uni_start)/self.pixels2mm(cs,1.)+.5) # offset from mm to pixels
+        yran = [offset, offset+depth]              # restrict analysis to depth mm from 3 mm from top
 
         cs.unif_yrange   = yran # Range in y that is analyzed for uniformity
-
-        crop = cropImage(cs.rect_image, [cs.hor_offset], yran)
+        # crop image
+        im_wid, im_hei = np.shape(cs.rect_image)
+        xran = [cs.hor_offset, -cs.hor_offset]
+        if xran[1] == 0: xran[1] = im_wid-1
+        if yran[1] == 0: yran[1] = im_hei-1
+        crop = cs.rect_image[ xran[0]:xran[1], yran[0]:yran[1] ]
 
         uniformity = np.mean(crop,axis=1)
-        
         uniformitysmoothed = mymath.smooth(uniformity,cs.uni_filter, window='flat') # Smoothing without boundary effects
+        if cs.verbose:
+            np.savetxt('uniformity.tsv', [ (s,ss) for s,ss in zip(uniformity, uniformitysmoothed) ], delimiter='\t')
 
         ## line uniformity
         intemin = np.min(uniformity)
@@ -751,91 +606,17 @@ class US_QC:
         stdvalue = np.std(uniformitysmoothed)
         CoefVar = stdvalue/meanvalue
         cs.unif_COV = CoefVar*100 # in pct
+        cs.unif_skew = scipy.stats.skew(uniformitysmoothed)
 
         # normalized uniformity 
-        if self.modeLocalNorm:
-            frac = .1
-            print("Uniformity, using Local Normalization",frac)
-            normuniformity = mymath.localnormalization(uniformity, sigma=len(uniformity)*frac)
-        else:
-            normuniformity = ((uniformitysmoothed-medianvalue)/medianvalue)
+        normuniformity = ((uniformitysmoothed-medianvalue)/medianvalue)
 
         return self._uniformityAnalysis(cs, normuniformity, (uniformity-medianvalue)/medianvalue )
-
-    def fftAnalysis(self,cs,profile,mode='sensitivity'):
-        """
-        Fourier analysis: find main frequencies and power therein
-        """
-        fdelta = .1 # peak should differ by more than this fraction of max ps
-
-        if mode == 'sensitivity':
-            cs.sens_basewavelength = 0.
-            cs.sens_ylim2 = -1
-
-        # remove average component
-        ywork = profile-np.average(profile)
-        nx = len(ywork)
-        x = np.array(range(nx))
-
-        ffty = np.fft.rfft(ywork)
-        ps = np.abs(ffty)**2
-        integral = np.sum(ps[self.fft_skip:]) # calculate total content, but ignore zero component
-        freqs = rfftfreq(nx)
-
-        # find peaks
-        xy_max,xy_min = wadwrapper_lib.peakdet(ps, delta=fdelta*np.max(ps[self.fft_skip:])) # returns indices for freqs
-
-        # sort peaks from large to small
-        xy_max = sorted(xy_max,key=operator.itemgetter(1), reverse=True)
-
-        # find max component which is not zero-component and represents larger than given fraction of power
-        base_ix = 0   # index of base-frequency
-        start_ix = 0  # index of zero-peak
-        for i,(xi,yi) in enumerate(xy_max):
-            if xi<=self.fft_skip: # zero-peak must be located in skip
-                start_ix = xi
-            if xi>self.fft_skip and base_ix<1:
-                base_ix = xi 
-                if mode == 'sensitivity':
-                    cs.sens_basewavelength = self.pixels2mm(cs, 1./freqs[xi])
-                break
-
-        # filter-out all non-background trend components to find extend of signal
-        for i in range(len(ffty)):
-            if i>(base_ix+start_ix)/2:
-                ffty[i] = 0.
-
-        # locate minimum (after zero-peak) of trend
-        fy = np.fft.irfft(ffty)
-        ix_max = np.argmax(fy)
-        ix_min = ix_max+np.argmin(fy[ix_max:])
-        if cs.verbose:
-            print('max @',ix_max)
-            print('min @',ix_min)
-
-        if mode == 'sensitivity':
-            cs.sens_ylim2 = ix_min
-
-        if cs.verbose:
-            plt.figure()
-            plt.plot(ywork)
-            plt.plot(fy)
-            if mode == 'sensitivity':
-                plt.title('sensitivity,filtered')
-            else:
-                plt.title('uniformity,filtered')
-            plt.figure()
-            plt.plot(ps)
-            if mode == 'sensitivity':
-                plt.title('sensitivity,powerspectrum')
-            else:
-                plt.title('uniformity,powerspectrum')
-            cs.hasmadeplots = True
 
     def sensitivityAnalysis(self,cs):
         """
         Workflow:
-        1. Calculate profile (vertically)
+        1. Calculate profile (vertically): count rings, determine noise level
         2. Determine noise level
         3. Exponential fit to peaks in profile
         4. total sensitivity = penetration depth (intercept fit and noise)
@@ -844,21 +625,23 @@ class US_QC:
         error = True
 
         ## 1. Calculate profile (vertically)
-        wid,hei = np.shape(cs.rect_image)
-        offsetHOR= int(wid/4) #10 ; adjusted to remove influence of annotations through reverb data (enhancement line)
+        im_wid,im_hei = np.shape(cs.rect_image)
+        offsetHOR = int(im_wid/4.) #10 ; adjusted to remove influence of annotations through reverb data (enhancement line)
 
         if offsetHOR == 0:
             offsetHOR = cs.hor_offset
-        crop = cropImage(cs.rect_image, [offsetHOR], [cs.ver_offset])
+        
+        # crop image
+        xran = [offsetHOR, im_wid-1-offsetHOR]
+        cs.sens_xrange = xran
+        yran = [cs.ver_offset, -cs.ver_offset]
+        if xran[1] == 0: xran[1] = im_wid-1
+        if yran[1] == 0: yran[1] = im_hei-1
+        crop = cs.rect_image[ xran[0]:xran[1], yran[0]:yran[1] ]
         wid,hei = np.shape(crop)
 
         sensitivity = np.median(crop,axis=0) # more robust for defects
-        time0 = time.time()
-        self.fftAnalysis(cs,sensitivity,mode='sensitivity')
-        cs.report.append(('sens_fft',time.time()-time0))
-
         nx = len(sensitivity)
-        #sensitivitysmoothed = mymath.movingaverage(sensitivity,cs.sen_filter)
         sensitivitysmoothed = mymath.smooth(sensitivity,cs.sen_filter, window='flat') # Smoothing without boundary effects
 
         if cs.verbose:
@@ -957,6 +740,11 @@ class US_QC:
             plt.plot(x,sensitivitysmoothed,'k-')
             plt.plot(x_min,y_min,'ro')
             plt.plot(x_max,y_max,'bo')
+            plt.plot([kk],[0],'c+')
+            plt.plot([cs.sens_ylim],[0],'cx')
+            plt.plot([0, nx-1], [cs.sens_noiseM, cs.sens_noiseM], 'c:')
+            plt.plot([0, nx-1], [cut_val, cut_val], 'c-')
+
             cs.hasmadeplots = True
 
 
@@ -977,7 +765,6 @@ class US_QC:
         if cs.verbose:
             scipy.misc.imsave('Inputdata.jpg', cs.pixeldataIn)
 
-        time00 = time.time()
         cs.rect_image = None
 
         if cs.rect_image is None:
@@ -992,19 +779,10 @@ class US_QC:
             if error:
                 return error
 
-        time0 = time.time()
         error = self.sensitivityAnalysis(cs)
-        cs.report.append(('sensitivity',time.time()-time0))
         if not error:
-            time0 = time.time()
             error = self.reverbUniformity(cs)
-            cs.report.append(('uniformity',time.time()-time0))
 
-        cs.report.append(('total',time.time()-time00))
-
-        print("#timing info#\npart seconds")
-        for r,t in cs.report:
-            print(r,t)
         return error
 
     def pixels2mm(self,cs,px):
@@ -1061,12 +839,10 @@ class US_QC:
             ('Curve_OpenDeg',cs.curve_opendeg, 2),
             ('Rect_width',np.shape(cs.rect_image)[0], 2),
             ('Sens_noiserange',cs.sens_noiserange, 2),
-            ('Sens_depth',cs.sens_ylim, 1),
-            ('Sens_fft_depth',cs.sens_ylim2, 2),
+            ('Sens_depth',self.pixels2mm(cs, cs.sens_ylim), 1),
             ('Sens_noise',cs.sens_noiseM, 2),
             ('Sens_tops',cs.sens_numtops, 2),
             ('Sens_bots',cs.sens_numbots, 2),
-            ('Sens_basewl_mm',cs.sens_basewavelength, 2),
             ('Unif_bots',len(cs.unif_bots), 1),
             ('Unif_lowest',cs.unif_lowest, 2),
             ('Unif_low',cs.unif_low, 2),
@@ -1074,6 +850,7 @@ class US_QC:
             ('Unif_stdnorm',cs.unif_stdnorm, 2), 
             ('Unif_sumlow',cs.unif_sum, 1),
             ('Unif_COV',cs.unif_COV, 1),
+            ('Unif_skew',cs.unif_skew, 1),
             ('Unif_ymin',cs.unif_yrange[0], 2),
             ('Unif_ymax',cs.unif_yrange[1], 2),
             ('DipFracArea_0_10',cs.dipfarea_0_10, 2),
@@ -1096,6 +873,74 @@ class US_QC:
         return cs_items
 
 
+    def makeFigure(self, cs, what, xtra={}):
+        """
+        Use matplotlib to make an analysis image indicating all analyzed and interesting parts
+        """
+        if what == 'uniformity':
+            # generate an image showing detected dips and peaks
+            # crop image
+            fig = plt.figure(facecolor='black') # black frame
+            ax = plt.gca()
+            ax.set_facecolor('black')
+            
+            im_wid, im_hei = np.shape(cs.rect_image)
+            xran = [cs.hor_offset, -cs.hor_offset]
+            #yran = [cs.ver_offset, cs.sens_ylim] if cs.sens_ylim>0 else [cs.ver_offset, -cs.ver_offset]
+            yran = [cs.ver_offset, -cs.ver_offset]
+            if xran[1] == 0: xran[1] = im_wid-1
+            if yran[1] == 0: yran[1] = im_hei-1
+            crop = cs.rect_image[ xran[0]:xran[1], yran[0]:yran[1] ]
+            plt.imshow(crop.transpose(),cmap=plt.gray())
+            plt.axis('off')
+            
+            # draw boxes around dip calc areas
+            c_wid, c_hei = np.shape(crop)
+            rectrois = [] # x0,y0, width, height, color, alpha
+            parts = [ [0,.1], [.1,.3], [.3,.7], [.7,.9], [.9,1] ]
+            for p0,p1 in parts:
+                rectrois.append( (p0*c_wid, cs.unif_yrange[0],  # (x,y)
+                                  c_wid*(p1-p0),          # width
+                                  cs.unif_yrange[1]-cs.unif_yrange[0], # height
+                                  'r', .5)
+                                 )
+
+            # add box around sensitivity part (only meaningfull on linear probe image)
+            sens_xran = cs.sens_xrange
+            if sens_xran[0] != xran[0]: # correct if part only
+                sens_xran[0] -= xran[0]
+                sens_xran[1] -= xran[0]
+            rectrois.append( (sens_xran[0], yran[0], 
+                              sens_xran[1]-sens_xran[0], cs.sens_ylim, 'c', .5 ) ) # correct! sens_ylim + yran is end
+        
+
+            for x0,y0,w,h,c,a in rectrois:
+                ax.add_patch(Rectangle( 
+                    (x0, y0),   # (x,y)
+                    w, # width
+                    h, # height
+                    fill = None, color = c, alpha=a)
+                )
+                
+            # add enhanced dips line on top
+            normuniformity = xtra['normuniformity']
+            nx = len(normuniformity)
+            x_min = xtra['x_min']
+            x_max = xtra['x_max']
+            y_min = xtra['y_min']
+            y_max = xtra['y_max']
+
+            # ax1 = top left
+            yoff = max(10, int(.1*(yran[1]-yran[0])))
+            x = np.array(range(nx))
+            plt.plot(x,-100*normuniformity-yoff,'y-',label='100*normalized')
+            plt.plot(x_min,-100*y_min-yoff,'ro',label='accepted dips')
+            plt.plot(x_max,-100*y_max-yoff,'co',label='accepted peaks')
+            plt.xlim( [0, nx] )
+            plt.tight_layout()
+    
+            return fig
+            
     def saveAnnotatedImage(self, cs, fname, what='overview', xtra={}):
         """
         Make an jpg of the original image, indicating all analyzed and interesting parts
@@ -1125,25 +970,6 @@ class US_QC:
 
             # add box around reverb region
             rectrois.append( [(minx, miny),(maxx, maxy)] )
-
-        elif what == 'reverb':
-            # first the base image
-            work = cs.rect_image
-            work[cs.rect_image <.1] = 1
-            im = scipy.misc.toimage(work.transpose(),low=1, pal=pal) # MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!
-
-            minx = 0
-            miny = 0
-            wid,hei = np.shape(cs.rect_image)
-
-            # add box around analysed uniformity (only meaningfull on linear probe image)
-            rectrois.append( [(minx, miny+cs.unif_yrange[0]),(wid-1, miny+cs.unif_yrange[1])] )
-            parts = [ [0,.1], [.1,.3], [.3,.7], [.7,.9], [.9,1] ]
-            for p0,p1 in parts:
-                rectrois.append( [(int(p0*wid), miny+cs.unif_yrange[0]),(int(p1*wid), miny+cs.unif_yrange[1])] )
-        
-            # add box around sensitivity part (only meaningfull on linear probe image)
-            rectrois.append( [(minx,miny),(wid-1, miny+cs.sens_ylim)] )
 
         # add extra rois if provided
         if 'circlerois' in xtra:

@@ -45,26 +45,6 @@ class CircleFit:
         return center_2,R_2
 
 
-def localnormalization(pSrc, sigma,bksigma = None):
-    """
-    Local normalization: [ i(x,y)-mean(x,y) ]/stdev(x,y)
-    Can be approximated as [ I- Gauss{I,sigma}] / sqrt[ Gauss{I-Gauss{I,sigma},sigma}^2]
-    """
-    blurIm = scind.gaussian_filter1d(pSrc,sigma,order=0)
-    devIm = pSrc-blurIm
-
-    sdIm  = np.sqrt(scind.gaussian_filter1d(devIm**2,sigma,order=0))
-    sdIm[sdIm<1.e-6]=1. # prevent div by zero
-
-    locnormIm = devIm/sdIm
-    return locnormIm
-
-def movingaverage(data1d, window_size):
-    if window_size <2:
-        return data1d
-    window = np.ones(int(window_size))/float(window_size)
-    return np.convolve(data1d, window, 'same')    
-
 def smooth(x, window_len=10, window='hanning'):
     """smooth the data using a window with requested size.
 

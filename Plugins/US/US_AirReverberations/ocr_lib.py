@@ -81,11 +81,12 @@ def txt2type(txt, type, prefix='',suffix=''):
         return float(txt)
 
     
-def OCR(pixeldata, xywh, zpos=0, zoom=10):
+def OCR(pixeldata, xywh, zpos=0, ocr_zoom=10, ocr_threshold=0):
     """
     Use pyOCR which for OCR
     ul = upperleft pixel location [x,y]
-    zoom = factor to enlarge image (15)
+    ocr_zoom = factor to enlarge image (15)
+    ocr_threshold = remove values below this threshold (after inversion)
     """
     tool = getOCRTool()
 
@@ -106,6 +107,9 @@ def OCR(pixeldata, xywh, zpos=0, zoom=10):
         part = edgeval-part
         part[part<0] = 0
 
+    # remove noise/gradient
+    part[part<ocr_threshold] = 0
+
     # enhance contrast
     minval = np.min(part)
     maxval = np.max(part)
@@ -114,16 +118,16 @@ def OCR(pixeldata, xywh, zpos=0, zoom=10):
 
     part = np.transpose(part) # input was pyqtgraph-like
 
-    # enlarge to prevent OCR mismatches; below 20px font height accuracy drops off
-    minheight = 200 # this value to prevent pixGenHalftoneMask errors
-    minwidth = 600 # this value to prevent pixGenHalftoneMask errors
-    if height<minheight or width<minwidth:
-        minzoom = int(max([minheight/height,minwidth/width]))+1
-        if zoom is None or zoom< minzoom:
-            zoom = minzoom
+    if ocr_zoom is None:
+        # enlarge to prevent OCR mismatches; below 20px font height accuracy drops off
+        minheight = 200 # this value to prevent pixGenHalftoneMask errors
+        minwidth = 600 # this value to prevent pixGenHalftoneMask errors
+        if height<minheight or width<minwidth:
+            minzoom = int(max([minheight/height,minwidth/width]))+1
+            ocr_zoom = minzoom
 
-    if not zoom is None:
-        part = np.round(scind.interpolation.zoom(part, zoom=(zoom,zoom),order=1))
+    if not ocr_zoom is None:
+        part = np.round(scind.interpolation.zoom(part, zoom=(ocr_zoom,ocr_zoom),order=1))
 
     # extract numbers/text from bounding box
     ##import pytesseract
