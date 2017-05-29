@@ -17,6 +17,7 @@ from __future__ import print_function
 Warning: THIS MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!
 
 Changelog:
+    20170502: added radiusmm param for air roi location; added thumbnail with ROIs
     20161220: removed testing stuff; removed class variables
     20161216: allow manually supplied anatomy
     20160902: sync with wad2.0; Unified pywad1.0 and wad2.0
@@ -29,7 +30,7 @@ Changelog:
     20140409: Initial split of gui/lib for pywad
 
 """
-__version__ = '20161220'
+__version__ = '20170502'
 __author__ = 'aschilham'
 
 import copy
@@ -56,6 +57,13 @@ import numpy as np
 from scipy import stats
 import scipy.ndimage
 import matplotlib.pyplot as plt
+from PIL import Image # image from pillow is needed
+from PIL import ImageDraw # imagedraw from pillow is needed, not pil
+import scipy.misc
+# sanity check: we need at least scipy 0.10.1 to avoid problems mixing PIL and Pillow
+scipy_version = [int(v) for v in scipy.__version__ .split('.')]
+if scipy_version[1]<10 or (scipy_version[1] == 10 and scipy_version[1]<1):
+    raise RuntimeError("scipy version too old. Upgrade scipy to at least 0.10.1")
 
 class Scanner:
     def __init__ (self, _name,_HeadGT,_innerdiam,_outerdiam, _BodyGT):
@@ -64,6 +72,8 @@ class Scanner:
         self.innerskulldiammm = _innerdiam
         self.outerskulldiammm = _outerdiam
         self.BodyGT = copy.deepcopy(_BodyGT)
+        self.HeadAirDistmm = 79.75 # distance to center of Air roi for head
+        self.BodyAirDistmm = 115.75 # distance to center of Air roi for body
 
 class CTStruct:
     def __init__ (self,dcmInfile,pixeldataIn,dicomMode):
@@ -230,7 +240,7 @@ class CT_QC:
         stepx    = int(self.phantommm2pix(cs,65.)+.5)
         roidim   = int(self.phantommm2pix(cs,18.)+.5) # 25 for body // IEC say at least 10% of diam (178mm)
         sddim    = 4*roidim #IEC say at least 40% of diam (178mm) and may not overlap with other structures
-        diagstep = int(self.phantommm2pix(cs,79.75)+.5);
+        diagstep = int(self.phantommm2pix(cs,cs.guessScanner.HeadAirDistmm)+.5) # distance to Air ROI
         roirad   = roidim/2.
 
         roix = []
@@ -384,8 +394,8 @@ class CT_QC:
         roidimIEC   = int(self.phantommm2pix(cs,30.)+.5) # 25 for body // IEC say at least 10% of diam (178mm)
         roidimMAT   = int(self.phantommm2pix(cs,18.)+.5) # 2non official, like for uniformity and outside
         sddimIEC    = int(3.25*roidimIEC)#IEC say at least 40% of diam (178mm) and may not overlap with other structures
-        hdiagstep = int(self.phantommm2pix(cs,85.)+.5);
-        diagstep = int(self.phantommm2pix(cs,115.75)+.5);
+        hdiagstep = int(self.phantommm2pix(cs,85.)+.5)
+        diagstep = int(self.phantommm2pix(cs,cs.guessScanner.BodyAirDistmm)+.5) # distance to Air ROI 
 
         roidim = []
         roidim.append(roidimIEC)
@@ -733,4 +743,53 @@ class CT_QC:
             results.append( (df[1],value) )
 
         return results
+
+    def saveAnnotatedImage(self, cs, fname):
+        # make a palette, mapping intensities to greyscale
+        pal = np.arange(0,256,1,dtype=np.uint8)[:,np.newaxis] * \
+            np.ones((3,),dtype=np.uint8)[np.newaxis,:]
+        # but reserve the first for red for markings
+        pal[0] = [255,0,0]
+
+        rectrois = []
+        polyrois = []
+        circlerois = []
+
+        # convert to 8-bit palette mapped image with lowest palette value used = 1
+        # first the base image
+        if cs.dicomMode == wadwrapper_lib.stMode2D:
+            im = scipy.misc.toimage(cs.pixeldataIn.transpose(), low=1, pal=pal) # MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!
+        else:
+            im = scipy.misc.toimage((cs.pixeldataIn[cs.unif_slice]).transpose(),low=1,pal=pal) # MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!
+
+        # add all rois
+        for r in cs.unif_rois: # uniformity
+            circlerois.append(r)
+
+        # now draw all rois in reserved color
+        draw = ImageDraw.Draw(im)
+        for r in polyrois:
+            roi =[]
+            for x,y in r:
+                roi.append( (int(x+.5),int(y+.5)))
+            draw.polygon(roi,outline=0)
+
+        for r in rectrois:
+            #draw.rectangle(r,outline=0)
+            self.drawThickRectangle(draw, r, 0, 3)
+
+        # now draw all cirlerois in reserved color
+        for x,y,r in circlerois: # low contrast elements
+            draw.ellipse((x-r,y-r,x+r,y+r), outline=0)
+        del draw
+
+        # convert to RGB for JPG, cause JPG doesn't do PALETTE and PNG is much larger
+        im = im.convert("RGB")
+
+        imsi = im.size
+        if max(imsi)>2048:
+            ratio = 2048./max(imsi)
+            im = im.resize( (int(imsi[0]*ratio+.5), int(imsi[1]*ratio+.5)),Image.ANTIALIAS)
+        im.save(fname)
+
 #----------------------------------------------------------------------

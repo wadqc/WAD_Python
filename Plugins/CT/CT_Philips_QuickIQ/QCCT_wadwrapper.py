@@ -19,6 +19,7 @@
 #
 #
 # Changelog:
+#   20170502: added radiusmm param for air roi location
 #   20161220: removed testing stuff; removed class variables
 #   20161216: added use_anatomy param
 #   20160802: sync with wad2.0
@@ -26,7 +27,7 @@
 #
 from __future__ import print_function
 
-__version__ = '20161220'
+__version__ = '20170502'
 __author__ = 'aschilham'
 
 import os
@@ -96,6 +97,16 @@ def override_settings(cs, params):
             cs.anatomy = lit.stBody
         else:
             raise ValueError('Unknown value %s for param use_anatomy'%use_anatomy)
+    except:
+        pass
+
+    try:
+        cs.forceScanner.HeadAirDistmm = float(params.find['use_headairdistmm'].text)
+    except:
+        pass
+
+    try:
+        cs.forceScanner.BodyAirDistmm = float(params.find['use_bodyairdistmm'].text)
     except:
         pass
 
@@ -199,10 +210,7 @@ def ctqc_series(data,results,params):
 
     ## Build thumbnail
     filename = 'test'+idname+'.jpg' # Use jpg if a thumbnail is desired
-    if cs.dicomMode == wadwrapper_lib.stMode2D:
-        scipy.misc.imsave(filename,cs.pixeldataIn.transpose()) # MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!
-    else:
-        scipy.misc.imsave(filename,(cs.pixeldataIn[cs.unif_slice]).transpose()) # MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!
+    qclib.saveAnnotatedImage(cs, filename)
     results.addObject('CTslice'+idname,filename)
 
 def ctheader_series(data,results,params):
