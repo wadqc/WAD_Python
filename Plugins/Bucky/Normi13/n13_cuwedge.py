@@ -123,14 +123,30 @@ def _AnalyseWedge(cs):
     n_edges = 6
     posedges = []
     flatpix = int( cs.phantommm2pix(3) +.5) # flat step at least 3mm wide
+    mindist = 0.75*len(profile)/n_edges
     for ix in range(0,n_edges):
-        profminid = np.unravel_index(profile.argmax(), profile.shape)[0]
+        accept = False
+        while(not accept):
+            """
+            Look for the next biggest peak. 
+            For simplicity, check if peak not too close to others (then prob. noisy)
+            If acceptable, flatten part of profile
+            """
+            profminid = np.unravel_index(profile.argmax(), profile.shape)[0]
+            miniy = max(0,profminid-flatpix)
+            maxiy = min(wid-1,profminid+flatpix)
+            flatval = .5*(profile[maxiy]+profile[miniy])
+            for iy in range(miniy,maxiy+1):
+                profile[iy] = flatval
+                if len(posedges)>1:
+                    mdist = np.min( [np.abs(profminid-pe) for pe in posedges ])
+                    if mdist> mindist:
+                        accept = True
+                else:
+                    accept = True
+
         posedges.append(profminid)
-        miniy = max(0,posedges[-1]-flatpix)
-        maxiy = min(wid-1,posedges[-1]+flatpix)
-        flatval = .5*(profile[maxiy]+profile[miniy])
-        for iy in range(miniy,maxiy+1):
-            profile[iy] = flatval
+
     posedges = sorted(posedges)
 
     # calculate a confidence by counting number of steps and comparing the sizes of the steps

@@ -130,27 +130,44 @@ def FixPhantomOrientation(cs):
 
     # 2. Make box at x-5cm and calculate avg
     seppx = int(cs.phantommm2pix(20))# 2 cm away from edges
+    seppx = int(cs.phantommm2pix(10))# 2 cm away from edges
 
     widthpx = np.shape(cs.pixeldataIn)[0] ## width/height in pixels
     heightpx = np.shape(cs.pixeldataIn)[1]
 
-    smallimage = cs.pixeldataIn[seppx:widthpx-seppx:3,seppx:heightpx-seppx:3] #every third pixel
-    smallimage = scind.gaussian_filter(smallimage, sigma=5)
+    still_in_edge = True
+    while still_in_edge:
+        seppx += int(cs.phantommm2pix(10))# 2 cm away from edges
+        smallimage = cs.pixeldataIn[seppx:widthpx-seppx:3,seppx:heightpx-seppx:3] #every third pixel
+        smallimage = scind.gaussian_filter(smallimage, sigma=5, )
+    
+        # find quandrant with min transmission; count which quad has most low transmission pix
+        minim = smallimage.min()
+        maxim = smallimage.max()
+        imhei = smallimage.shape[1]
+        imwid = smallimage.shape[0]
+        imhei2 = int(imhei/2)
+        imwid2 = int(imwid/2)
+        thresmax = minim+.05*(maxim-minim) # 5% higher than minimum
+        # make sure the outside of the phantom is not included
+        if np.sum(smallimage[  0:imwid2,  0        ]<thresmax) > .9*imwid2:
+            continue
+        if np.sum(smallimage[  0:imwid2, -1        ]<thresmax) > .9*imwid2:
+            continue
+        if np.sum(smallimage[  0,        0:imhei2 ]<thresmax) > .9*imhei2:
+            continue
+        if np.sum(smallimage[ -1,        0:imhei2 ]<thresmax) > .9*imhei2:
+            continue
+        still_in_edge = False
 
-    # find quandrant with min transmission; count which quad has most low transmission pix
-    minim = smallimage.min()
-    maxim = smallimage.max()
-    imhei = smallimage.shape[1]
-    imwid = smallimage.shape[0]
-    imhei2 = int(imhei/2)
-    imwid2 = int(imwid/2)
-    thresmax = minim+.05*(maxim-minim) # 5% higher than minimum
-    count = np.array([0,0,0,0])
-    count[0] = np.sum(smallimage[     0:imwid2,      0:imhei2]<thresmax)
-    count[1] = np.sum(smallimage[imwid2:imwid,       0:imhei2]<thresmax)
-    count[2] = np.sum(smallimage[imwid2:imwid,  imhei2:imhei]<thresmax)
-    count[3] = np.sum(smallimage[     0:imwid2, imhei2:imhei]<thresmax)
-    count0 = count.argmax()
+        count = np.array([0,0,0,0])
+        count[0] = np.sum(smallimage[     0:imwid2,      0:imhei2]<thresmax)
+        count[1] = np.sum(smallimage[imwid2:imwid,       0:imhei2]<thresmax)
+        count[2] = np.sum(smallimage[imwid2:imwid,  imhei2:imhei]<thresmax)
+        count[3] = np.sum(smallimage[     0:imwid2, imhei2:imhei]<thresmax)
+
+        count0 = count.argmax()
+
     if count0==0:
         # correct side on x
         # correct side on y
@@ -163,7 +180,7 @@ def FixPhantomOrientation(cs):
     else:
         # correct side on x
         ang = 3 # +270rot
-
+    
     # fix orientation
     box_orientation = ang
     if ang>0:
@@ -266,7 +283,8 @@ def _FindPhantomBox(cs, vertical=None, assumegood=False):
         midxpx = int(midx)
     else:
         hlinepx = int(max(2,cs.phantommm2pix(1)+.5)) # don't expect a gridline to be larger than 2mm
-        seppx = int(cs.phantommm2pix(20))# stop 2 cm away from image edges
+        #seppx = int(cs.phantommm2pix(20))# stop 2 cm away from image edges
+        seppx = int(cs.phantommm2pix(10))# stop 1 cm away from image edges (arbitrarily)
         blockheight = 10 # px number of lines to average (get id of noise!)
 
         if vertical is None:
@@ -330,7 +348,6 @@ def _FindPhantomBox(cs, vertical=None, assumegood=False):
                 stepx = 1 if r[1]>r[0] else -1
                 stepy = 1 if r[3]>r[2] else -1
                 smallimage = cs.pixeldataIn[r[0]:r[1]:stepx,r[2]:r[3]:stepy]
-
                 ep, line, threshold = _findDropLine(smallimage, hlinepx, removeTrend=True)
                 if ep == -1:
                     print(threshold,line)
@@ -396,10 +413,6 @@ def _findDropLine(smallimage, hlinepx, removeTrend=False):
         line = removeBKTrend(line, 3*hlinepx)
         threshold = (0+np.amin(line))/2 # trend removal, so expect negative!
 
-    print(threshold, np.std(line),threshold/np.std(line) )
-    plt.figure()
-    plt.plot(line)
-    plt.show()
     ep = -1
     for x in range(hlinepx,len(line)-hlinepx-1):
         if line[x-hlinepx]>threshold and line[x]<threshold and line[x+hlinepx]> threshold:
@@ -879,7 +892,8 @@ def FindXRayEdge(cs, side, workim):
                 break
             id += 1
 
-        minval = min(valvec)
+        #minval = min(valvec)
+        minval = min((min(valvec),outvalue))
         maxval = max((max(valvec),outvalue)) # outvalue might not be present in this direction
         meanval = np.mean(valvec)
 

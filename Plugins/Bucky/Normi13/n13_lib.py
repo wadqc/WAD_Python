@@ -19,6 +19,9 @@ Note: comparison will be against lit.stTable, if not matched (eg. overwritten by
 
 TODO:
 Changelog:
+    20170619: fix for missing step in Cu Wedge due to noise; fix for artefacts if treshold close to 0; 
+              fix for low crontrast out-of-image; increase box search range; fix xray edge found too early;
+              fix for wrong orientation if outside phantom included
     20170518: _findDropLine now uses median which is more robust for noise
     20170324: made Geometry._FineTunePhantomBox bit more robust (prefer small shift); also do not quit if phantomGrid 
               found with too little confidence
@@ -33,7 +36,7 @@ Changelog:
     20160202: added uniformity
     20151109: start of new module, based on QCXRay_lib of Bucky_PEHAMED_Wellhofer of 20151029
 """
-__version__ = '20170518'
+__version__ = '20170619'
 __author__ = 'aschilham'
 
 try:
@@ -769,6 +772,18 @@ class XRayQC:
         if qc_unif.NeedsCroppingUnif(cs):
             # note: no cropping will occur, just the uniformity analysis will be restricted to crop_unif. rois are wrt original
             qc_unif.RestrictROIUniformity(cs.unif)
+        else:
+            borderpx=[0,0,0,0]
+            widthpx  = np.shape(cs.pixeldataIn)[0] ## width/height in pixels
+            heightpx = np.shape(cs.pixeldataIn)[1]
+            xmin0_px = borderpx[0]
+            xmax0_px = widthpx-borderpx[1]-1
+            ymin0_px = borderpx[2]# cs.border_offset_px
+            ymax0_px = heightpx-borderpx[3] -1 #cs.border_offset_px -1
+            cs.unif.unif_crop = [xmin0_px,xmax0_px, ymin0_px,ymax0_px]
+            cs.unif.unif_crop_frac = 1.
+            cs.unif_crop_inoutoverin = 1.
+
 
         if usestructure:
             qc_unif.artefactDetectorParameters(UseStructure=True, bkscale=25, fgscale=5.0, threshold=3000)

@@ -75,6 +75,9 @@ def LowContrast(cs):
             ymin = max(0,py-radpx)
             xmax = min(px+radpx, imwid-1)
             ymax = min(py+radpx, imhei-1)
+            if ymax<ymin: # field too small, no low contrast elements
+                error = True
+                return
             # select data inside circle only 
             smallimage = cs.pixeldataIn[xmin:xmax+1, ymin:ymax+1]
 
