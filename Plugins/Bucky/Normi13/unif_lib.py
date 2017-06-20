@@ -453,23 +453,23 @@ class Uniformity_QC:
         # extra mapout
         if self.artdet_UseStructure:
             if borderpx[0]>0:
-                cs.art_image[:(borderpx[0]+1),:] = self.artdet_threshold-1
+                cs.art_image[:(borderpx[0]+1),:] = self.artdet_threshold-1e-3
             if borderpx[1]>0:
-                cs.art_image[-borderpx[1]:,:]    = self.artdet_threshold-1
+                cs.art_image[-borderpx[1]:,:]    = self.artdet_threshold-1e-3
             if borderpx[2]>0:
-                cs.art_image[:,:(borderpx[2]+1)] = self.artdet_threshold-1
+                cs.art_image[:,:(borderpx[2]+1)] = self.artdet_threshold-1e-3
             if borderpx[3]>0:
-                cs.art_image[:,-borderpx[3]:]    = self.artdet_threshold-1
+                cs.art_image[:,-borderpx[3]:]    = self.artdet_threshold-1e-3
             cca_in = np.abs(cs.art_image)>self.artdet_threshold
         else:
             if borderpx[0]>0:
-                cs.art_image[:(borderpx[0]+1),:] = -self.artdet_threshold+1
+                cs.art_image[:(borderpx[0]+1),:] = -self.artdet_threshold+1e-3
             if borderpx[1]>0:
-                cs.art_image[-borderpx[1]:,:]    = -self.artdet_threshold+1
+                cs.art_image[-borderpx[1]:,:]    = -self.artdet_threshold+1e-3
             if borderpx[2]>0:
-                cs.art_image[:,:(borderpx[2]+1)] = -self.artdet_threshold+1
+                cs.art_image[:,:(borderpx[2]+1)] = -self.artdet_threshold+1e-3
             if borderpx[3]>0:
-                cs.art_image[:,-borderpx[3]:]    = -self.artdet_threshold+1
+                cs.art_image[:,-borderpx[3]:]    = -self.artdet_threshold+1e-3
             cca_in = np.abs(cs.art_image)>self.artdet_threshold
         cc_art_image,nclusters = cca.run(cca_in) 
         for a in range(1,nclusters+1):
