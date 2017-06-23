@@ -16,12 +16,13 @@ Warning: THIS MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED! And make su
 
 TODO:
 Changelog:
+    20170621: increased uniformity box to deal with no pix found.
     20161220: removed testing stuff; removed class variabled
     20160902: sync with wad2.0; Unified pywad1.0 and wad2.0
     20150616: better orientation module
     20150609: Initial from QCXRay_Lib
 """
-__version__ = '20161220'
+__version__ = '20170621'
 __author__ = 'aschilham'
 
 import numpy as np
@@ -892,8 +893,8 @@ class DDLQC:
         ymidpx /= len(roipts_orig)
         xmidpx = int(xmidpx)
         ymidpx = int(ymidpx)
-        yhipx = ymidpx-int(self.phantommm2pix(cs,90.))
-        ylopx = ymidpx-int(self.phantommm2pix(cs,70.))
+        yhipx = ymidpx-int(self.phantommm2pix(cs,95.))
+        ylopx = ymidpx-int(self.phantommm2pix(cs,65.))
         seppx = int(self.phantommm2pix(cs,10.)+.5)
         widthpx = np.shape(cs.pixeldataIn)[0] ## width/height in pixels
 
