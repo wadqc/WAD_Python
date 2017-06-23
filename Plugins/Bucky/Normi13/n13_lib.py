@@ -19,6 +19,7 @@ Note: comparison will be against lit.stTable, if not matched (eg. overwritten by
 
 TODO:
 Changelog:
+    20170623: fix for finding wrong grid line in 1 direction; bot more robust MTF
     20170619: fix for missing step in Cu Wedge due to noise; fix for artefacts if treshold close to 0; 
               fix for low crontrast out-of-image; increase box search range; fix xray edge found too early;
               fix for wrong orientation if outside phantom included
@@ -36,7 +37,7 @@ Changelog:
     20160202: added uniformity
     20151109: start of new module, based on QCXRay_lib of Bucky_PEHAMED_Wellhofer of 20151029
 """
-__version__ = '20170619'
+__version__ = '20170623'
 __author__ = 'aschilham'
 
 try:

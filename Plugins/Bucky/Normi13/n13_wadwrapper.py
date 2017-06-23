@@ -19,6 +19,7 @@
 #
 #
 # Changelog:
+#   20170622: identify more float vars from header
 #   20170310: add override params; take average over series
 #   20161220: Removed class variables; removed testing stuff
 #   20160825: fixes for portable detector
@@ -27,7 +28,7 @@
 #
 from __future__ import print_function
 
-__version__ = '20170310'
+__version__ = '20170622'
 __author__ = 'aschilham'
 
 import os
@@ -344,11 +345,19 @@ def xrayheader_series(data,results,params):
     ## 3. Build xml output
     floatlist = [
         'Exposure (mAs)',
+        'Exposure (uAs)',
         'DistanceSourceToDetector (mm)',
         'ExposureTime (ms)',
+        'ExposureTime (us)',
         'ImageAreaDoseProduct',
         'Sensitivity',
-        'kVp'
+        'kVp',
+        'CollimatorLeft',
+        'CollimatorRight',
+        'CollimatorUp',
+        'CollimatorDown',
+        'EntranceDose_mGy',
+        'RelativeXRayExposure'
     ]
     offset = -26
     results.addChar('pluginversion'+idname, str(qclib.qcversion)) # do not specify level, use default from config

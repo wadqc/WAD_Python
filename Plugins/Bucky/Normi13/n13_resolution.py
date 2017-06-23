@@ -268,7 +268,7 @@ def _MTF_smallimage(cs, smallimage):
 
     start_endpos = []
     start_endpos = FillMTFBarDetails(cs, smallimage)
-
+    
     # Find high contrast response of line patterns
     for vpi in range(1,num_freq):
         contrast_response[vpi] = 0.
@@ -506,16 +506,6 @@ def AnalyseMTF_Part(cs,smallimage, start_endpos, vpi):
         contrast_response[vpi],contrast_high[vpi],contrast_low[vpi],contrast_tops[vpi],contrast_bots[vpi],calc_freq[vpi] = self.AnalyseMTF_Part(smallimage, startpos[vpi-1],endpos[vpi-1], vpi)
     Already inverted smallimage as input
     """
-    startpos = start_endpos[0]
-    endpos   = start_endpos[1]
-
-    ipbar = smallimage[startpos[0]:endpos[0],startpos[1]:endpos[1]]
-    print('[AnalyseMTF_Part]',vpi,startpos,endpos)
-    #cs.hasmadeplots = True
-    #plt.figure()
-    #plt.title(vpi)
-    #plt.imshow(ipbar) 
-
     contrast_response = 0.
     contrast_high     = 0.
     contrast_low      = 0.
@@ -523,23 +513,36 @@ def AnalyseMTF_Part(cs,smallimage, start_endpos, vpi):
     contrast_bots     = 0
     calc_freq = 0
 
-    pwid = ipbar.shape[0]
-    phei = ipbar.shape[1]
+    startpos = start_endpos[0]
+    endpos   = start_endpos[1]
 
-    pattern = np.zeros(phei,dtype=float)
-    for y in range(0,phei):
-        for x in range(0,pwid):
-            pattern[y]+= ipbar[x,y]
-        pattern[y] /= pwid
-
-    if pattern.shape[0]<2:
-        print("[AnalyseMTF_Part] SKIP: no pattern left")
-        return contrast_response,contrast_high,contrast_low,contrast_tops,contrast_bots,calc_freq
-
-    # 1. find abs min and max
-    # 2. between (max+min)/2 point left and right
-    # 3. find all tops and valleys
-    mustplot,tops,bots = FindExtrema(cs, pattern)
+    offset = max(1, int((endpos[1]-startpos[1])/8.+.5)) # about half a linepair
+    for oi in [(0,0), (0,1), (-1,0), (-1,1), (0,0) ]: # if it doesnt work, use 0
+        ipbar = smallimage[startpos[0]:endpos[0],startpos[1]+oi[0]*offset:endpos[1]+oi[1]*offset]
+        print('[AnalyseMTF_Part]',vpi,startpos,endpos)
+        
+        pwid = ipbar.shape[0]
+        phei = ipbar.shape[1]
+    
+        pattern = np.zeros(phei,dtype=float)
+        for y in range(0,phei):
+            for x in range(0,pwid):
+                pattern[y]+= ipbar[x,y]
+            pattern[y] /= pwid
+    
+        if pattern.shape[0]<2:
+            print("[AnalyseMTF_Part] SKIP: no pattern left")
+            return contrast_response,contrast_high,contrast_low,contrast_tops,contrast_bots,calc_freq
+    
+        # 1. find abs min and max
+        # 2. between (max+min)/2 point left and right
+        # 3. find all tops and valleys
+        mustplot,tops,bots = FindExtrema(cs, pattern)
+        if len(tops) < 3 or len(bots)<2:
+            print("[AnalyseMTF_Part] could not find 3 tops and 2 bots, trying again after shifting.")
+            continue
+        else:
+            break
 
     # determine 100%
     if vpi == 1 and len(tops)>0:

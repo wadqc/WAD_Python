@@ -40,8 +40,8 @@ class GeomStruct:
         box_roi = [ UL, LL, LR, UR]
         box_radmm = [half width, half height]
         """
-        xmidpx = np.sum([x for x,y in self.box_roi])/len(self.box_roi)
-        ymidpx = np.sum([y for x,y in self.box_roi])/len(self.box_roi)
+        xmidpx = float(np.sum([x for x,y in self.box_roi]))/len(self.box_roi)
+        ymidpx = float(np.sum([y for x,y in self.box_roi]))/len(self.box_roi)
 
         # calc difference in x, y in px per mm shift in x, y
         xmm_dxy = [0, 0]# 1 mm in x direction results in shift xy
@@ -294,24 +294,37 @@ def _FindPhantomBox(cs, vertical=None, assumegood=False):
             rois.append([midx,widthpx-1-seppx,  midy+v_px,midy+v_px+blockheight]) # East
             rois.append([midx,midx+blockheight, midy,heightpx-1-seppx]) # South
             rois.append([midx,seppx,  midy+v_px,midy+v_px+blockheight]) # West
-            lines = []
-            edgepos = []
-            for r in rois:
-                stepx = 1 if r[1]>r[0] else -1
-                stepy = 1 if r[3]>r[2] else -1
-                smallimage = cs.pixeldataIn[r[0]:r[1]:stepx,r[2]:r[3]:stepy]
+            
+            for factor in [2., 2.5, 3.]:
+                lines = []
+                edgepos = []
+                for r in rois:
+                    stepx = 1 if r[1]>r[0] else -1
+                    stepy = 1 if r[3]>r[2] else -1
+                    smallimage = cs.pixeldataIn[r[0]:r[1]:stepx,r[2]:r[3]:stepy]
+    
+                    ep, line, threshold = _findDropLine(smallimage, hlinepx, removeTrend=True, factor=factor)
+                    if ep == -1:
+                        print(threshold,line)
+    
+                    edgepos.append(ep)
+                    lines.append(line)
+                ns = np.sum( [cs.pix2phantommm(edgepos[i]) for i in [0,2]] )
+                ew = np.sum( [cs.pix2phantommm(edgepos[i]) for i in [1,3]] )
+                if np.abs(ew-ns)<5.: # if difference between ew and ns less than 0.5 cm, accept. else retry
+                    break
+                else:
+                    print("Factor {}: Difference between NS and EW too large ({} mm). Will try again.".format(factor, ew-ns))
 
-                ep, line, threshold = _findDropLine(smallimage, hlinepx, removeTrend=True)
-                if ep == -1:
-                    print(threshold,line)
-
-                edgepos.append(ep)
-                lines.append(line)
             if cs.verbose:
                 cs.hasmadeplots = True
                 plt.figure()
                 for line,lab in zip(lines,['N','E','S','W']):
                     plt.plot(line,label=lab)
+                    with open('/tmp/line{}.tsv'.format(lab), 'w') as fout:
+                        for l in line:
+                            fout.write('{}\n'.format(l))
+
                 plt.plot(edgepos,len(edgepos)*[threshold],'ro')
                 print(edgepos)
                 plt.legend()
@@ -396,7 +409,7 @@ def removeBKTrend(imageIn, sigma):
     work = 1000.*(work -medfilt(work, sigma)) 
     return work
 
-def _findDropLine(smallimage, hlinepx, removeTrend=False):
+def _findDropLine(smallimage, hlinepx, removeTrend=False, factor=2.):
     # find first position of drop for grid line
     # optionally remove a trend in the background
 
@@ -407,11 +420,11 @@ def _findDropLine(smallimage, hlinepx, removeTrend=False):
     
     # find first position of drop
     threshold = (np.amax(line)+np.amin(line))/2
-    threshold = (line[0]+np.amin(line))/2
-
+    threshold = (line[0]+np.amin(line))/factor
+    
     if removeTrend:
         line = removeBKTrend(line, 3*hlinepx)
-        threshold = (0+np.amin(line))/2 # trend removal, so expect negative!
+        threshold = (0+np.amin(line))/factor # trend removal, so expect negative! sometimes 3!
 
     ep = -1
     for x in range(hlinepx,len(line)-hlinepx-1):
