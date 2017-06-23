@@ -17,6 +17,7 @@ from __future__ import print_function
 Warning: THIS MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!
 
 Changelog:
+    20170622: more extreme avg_skull value to allow reporting for body
     20170502: added radiusmm param for air roi location; added thumbnail with ROIs
     20161220: removed testing stuff; removed class variables
     20161216: allow manually supplied anatomy
@@ -30,7 +31,7 @@ Changelog:
     20140409: Initial split of gui/lib for pywad
 
 """
-__version__ = '20170502'
+__version__ = '20170622'
 __author__ = 'aschilham'
 
 import copy
@@ -103,7 +104,7 @@ class CTStruct:
         self.valid = False
 
         # measurements for head only
-        self.skull_avg = -1. # Avg HU in skull
+        self.skull_avg = -2024. # Avg HU in skull
 
         # for gui
         self.unif_slice = 0
