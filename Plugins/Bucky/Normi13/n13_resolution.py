@@ -19,6 +19,10 @@ Normi13 analysis, resolution functions:
   o MTF
   
 Horrible code; need to clean up. Lot's of unclear, redundant stuff
+
+Changelog:
+ 20170731: MTF cutout rxt02 extended by 2.0 mm instead of 1.5 mm to fix no pattern found lowest freq in low res images; 
+           MTF bar analysis shift shift half a bar two sides (instead of one)
 """
 
 import numpy as np
@@ -178,7 +182,7 @@ def _AnalyseMTF_RXT02(cs):
     roipts = copy.deepcopy(cs.mtf.roi)
 
     # need to extend roi
-    extendup = cs.phantommm2pix(1.5)  # extend bbox beyond dot in '1.8' [mm]
+    extendup = cs.phantommm2pix(2.0)  # extend bbox beyond dot in '1.8' [mm]
     extenddo = cs.phantommm2pix(15.)  # extend beyond dot in '4.6' [mm]
 
     # extend starting points
@@ -516,9 +520,12 @@ def AnalyseMTF_Part(cs,smallimage, start_endpos, vpi):
     startpos = start_endpos[0]
     endpos   = start_endpos[1]
 
+    sw,wh = smallimage.shape
     offset = max(1, int((endpos[1]-startpos[1])/8.+.5)) # about half a linepair
     for oi in [(0,0), (0,1), (-1,0), (-1,1), (0,0) ]: # if it doesnt work, use 0
-        ipbar = smallimage[startpos[0]:endpos[0],startpos[1]+oi[0]*offset:endpos[1]+oi[1]*offset]
+        #ipbar = smallimage[startpos[0]:endpos[0],max(0, startpos[1]+oi[0]*offset):min(endpos[1]+oi[1]*offset, wh)]
+        ipbar = smallimage[max(0, startpos[0]+oi[0]*offset):min(endpos[0]+oi[1]*offset, wh),
+                           max(0, startpos[1]+oi[0]*offset):min(endpos[1]+oi[1]*offset, wh)]
         print('[AnalyseMTF_Part]',vpi,startpos,endpos)
         
         pwid = ipbar.shape[0]
@@ -529,15 +536,16 @@ def AnalyseMTF_Part(cs,smallimage, start_endpos, vpi):
             for x in range(0,pwid):
                 pattern[y]+= ipbar[x,y]
             pattern[y] /= pwid
-    
+        
         if pattern.shape[0]<2:
-            print("[AnalyseMTF_Part] SKIP: no pattern left")
+            print("[AnalyseMTF_Part] SKIP: no pattern left ({}:{}, {}:{})".format(startpos[0],endpos[0], startpos[1]+oi[0]*offset,endpos[1]+oi[1]*offset ))
             return contrast_response,contrast_high,contrast_low,contrast_tops,contrast_bots,calc_freq
     
         # 1. find abs min and max
         # 2. between (max+min)/2 point left and right
         # 3. find all tops and valleys
         mustplot,tops,bots = FindExtrema(cs, pattern)
+
         if len(tops) < 3 or len(bots)<2:
             print("[AnalyseMTF_Part] could not find 3 tops and 2 bots, trying again after shifting.")
             continue

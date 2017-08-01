@@ -150,13 +150,13 @@ def FixPhantomOrientation(cs):
         imwid2 = int(imwid/2)
         thresmax = minim+.05*(maxim-minim) # 5% higher than minimum
         # make sure the outside of the phantom is not included
-        if np.sum(smallimage[  0:imwid2,  0        ]<thresmax) > .9*imwid2:
+        if np.sum(smallimage[  0:imwid2,  0        ]<thresmax) > .66*imwid2:
             continue
-        if np.sum(smallimage[  0:imwid2, -1        ]<thresmax) > .9*imwid2:
+        if np.sum(smallimage[  0:imwid2, -1        ]<thresmax) > .66*imwid2:
             continue
-        if np.sum(smallimage[  0,        0:imhei2 ]<thresmax) > .9*imhei2:
+        if np.sum(smallimage[  0,        0:imhei2 ]<thresmax) > .66*imhei2:
             continue
-        if np.sum(smallimage[ -1,        0:imhei2 ]<thresmax) > .9*imhei2:
+        if np.sum(smallimage[ -1,        0:imhei2 ]<thresmax) > .66*imhei2:
             continue
         still_in_edge = False
 
@@ -211,7 +211,6 @@ def FindPhantomGrid(cs):
     The input image should be properly cropped (CropPhantom) and oriented (FixPhantomOrientation).
     """
     error = False
-
     # first try a to find 90x90 box
     roipts = _FindPhantomBox(cs, vertical=None, assumegood=False)
 
@@ -321,9 +320,6 @@ def _FindPhantomBox(cs, vertical=None, assumegood=False):
                 plt.figure()
                 for line,lab in zip(lines,['N','E','S','W']):
                     plt.plot(line,label=lab)
-                    with open('/tmp/line{}.tsv'.format(lab), 'w') as fout:
-                        for l in line:
-                            fout.write('{}\n'.format(l))
 
                 plt.plot(edgepos,len(edgepos)*[threshold],'ro')
                 print(edgepos)
@@ -533,7 +529,6 @@ def BBAlignROI(cs, roipts, radmm=9.0, useHessian=True):
 
             # must work in float images else gaussians are ints as well, which is bad for poor contrast
             cropped = (cs.pixeldataIn[minx:maxx+1,miny:maxy+1]).astype(float)
-
             if useHessian == True:
                 #Determinant of Hessian matrix 
                 # maybe add requirement for minimum?
@@ -564,7 +559,6 @@ def BBAlignROI(cs, roipts, radmm=9.0, useHessian=True):
             # candidate location
             rp[0] = x1
             rp[1] = y1
-
 
         # force consistency with initial shape
         roiptsCA = BBConsistencyAlign(cs, roipts0, roipts)
@@ -780,10 +774,10 @@ def XRayField(cs):
 
     xr_NSWEmm = []
     # north- and southside
-    xr_NSWEmm.append(FindXRayEdge(cs, 'N', workim))
-    xr_NSWEmm.append(FindXRayEdge(cs, 'S', workim))
-    xr_NSWEmm.append(FindXRayEdge(cs, 'W', workim))
-    xr_NSWEmm.append(FindXRayEdge(cs, 'E', workim))
+    xr_NSWEmm.append(FindXRayEdge(cs, 'N', workim, rawim=cs.pixeldataIn))
+    xr_NSWEmm.append(FindXRayEdge(cs, 'S', workim, rawim=cs.pixeldataIn))
+    xr_NSWEmm.append(FindXRayEdge(cs, 'W', workim, rawim=cs.pixeldataIn))
+    xr_NSWEmm.append(FindXRayEdge(cs, 'E', workim, rawim=cs.pixeldataIn))
     if min(xr_NSWEmm)<1.:
         error = True
     else:
@@ -808,7 +802,7 @@ def XRayField(cs):
 
     return error
 
-def FindXRayEdge(cs, side, workim):
+def FindXRayEdge(cs, side, workim, rawim=None):
     # travel from center to edges
     # workim is a prepared image, getting rid of noise and other stuff
     widthpx, heightpx  = np.shape(workim) ## width/height in pixels
@@ -859,6 +853,7 @@ def FindXRayEdge(cs, side, workim):
             useboxradmm = cs.geom.box_radmm[1]
         posvec = []
         valvec = []
+        rawvalvec = [] # on original, allow for shrinkage
         id = 0
         inrange = True
         while inrange:
@@ -894,13 +889,22 @@ def FindXRayEdge(cs, side, workim):
                     ya = 0 if y0<0 else heightpx-1
                     posvec.append(pos)
                     valvec.append(int(workim[xa,ya]))
+                    if not rawim is None:
+                        rawvalvec.append(int(rawim[xa,ya]))
                 break
+
+            if not rawim is None:
+                val00 = int(rawim[x0,y0])
+                val10 = int(rawim[x1,y0])
+                val05 = 1.*val00+(xpos-(int)(xpos))*(val10-val00)
+                rawvalvec.append(val05)
 
             val00 = int(workim[x0,y0])
             val10 = int(workim[x1,y0])
             val05 = 1.*val00+(xpos-(int)(xpos))*(val10-val00)
             posvec.append(pos)
             valvec.append(val05)
+                
             if val00 == outvalue:
                 break
             id += 1
@@ -928,16 +932,26 @@ def FindXRayEdge(cs, side, workim):
         if cs.verbose:
             plt.figure()
             plt.plot(posvec,valvec)
+            if not rawim is None:
+                plt.plot(posvec,rawvalvec)
             plt.title(side+" "+str(threshLow)+" "+str(threshHigh)+" "+lab)
             cs.hasmadeplots = True
 
         found = False
-        for p,v in zip(posvec,valvec):
+        for ix, (p,v) in enumerate(zip(posvec,valvec)):
             if outvalue < meanval and v<threshLow:
                 found = True
             elif outvalue >= meanval and v>threshLow:
                 found = True
             if found:
+                if not rawim is None: # try to exclude constant region outside which is now blurred.
+                    usep = p
+                    for _ix in reversed(range(0,ix)):
+                        if rawvalvec[_ix] == rawvalvec[ix]:
+                            usep = posvec[_ix]
+                        else:
+                            break
+                    p = usep
                 edgemm.append( cs.pix2phantommm(p)+useboxradmm )
                 if cs.verbose:
                     plt.plot(p,v,'bo')
@@ -945,9 +959,17 @@ def FindXRayEdge(cs, side, workim):
                 break
 
         if not found and threshHigh>threshLow:
-            for p,v in zip(posvec,valvec):
+            for ix, (p,v) in enumerate(zip(posvec,valvec)):
                 if v>=threshHigh:
                     found = True
+                    if not rawim is None: # try to exclude constant region outside which is now blurred.
+                        usep = p
+                        for _ix in reversed(range(0,ix)):
+                            if rawvalvec[_ix] == rawvalvec[ix]:
+                                usep = posvec[_ix]
+                            else:
+                                break
+                        p = usep
                     edgemm.append( cs.pix2phantommm(p)+useboxradmm )
                     if cs.verbose:
                         plt.plot(p,v,'bo')
@@ -956,6 +978,7 @@ def FindXRayEdge(cs, side, workim):
 
         if not found: # add max edge pos
             edgemm.append( cs.pix2phantommm(max(posvec))+useboxradmm )
+
 
     return max(edgemm)
 

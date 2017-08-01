@@ -166,8 +166,13 @@ class Uniformity_QC:
         ymin_px = ymin0_px
         ymax_px = ymax0_px
         for x0 in posx[0:-1]:
+            yoffset0 = [0,0]
             # min y pos
             smallIm = cs.pixeldataIn[x0:(x0+stepx), 0:sy2 ]#stepy]
+            while np.min(smallIm) == np.max(smallIm): # fix for XA images with a lot of empty content
+                yoffset0[0] += sy2
+                smallIm = cs.pixeldataIn[x0:(x0+stepx), yoffset0[0]:yoffset0[0]+sy2 ]#stepy]
+
             mean  = np.mean(smallIm)
             stdev = np.std(smallIm)
             thresh = nsdev*stdev
@@ -175,18 +180,22 @@ class Uniformity_QC:
             for iy in reversed(range(hei)):
                 val = np.mean(smallIm[:,iy])
                 if iy == 0 or (val<mean-thresh or val > mean+thresh):
-                    ymin_px = max(ymin_px, iy+1+small_offset_px)
+                    ymin_px = max(ymin_px, yoffset0[0]+iy+1+small_offset_px)
                     break
             # max y pos
             smallIm = cs.pixeldataIn[x0:(x0+stepx), (posy[-1]+sy2):(posy[-1]+stepy)]#posy[-1]:(posy[-1]+stepy)]
+            while np.min(smallIm) == np.max(smallIm): # fix for XA images with a lot of empty content
+                yoffset0[1] += sy2
+                smallIm = cs.pixeldataIn[x0:(x0+stepx), (posy[-1]-yoffset0[1]+sy2):(posy[-1]+stepy-yoffset0[1]) ]#stepy]
+
             mean  = np.mean(smallIm)
             stdev = np.std(smallIm)
             thresh = nsdev*stdev
-
+            hei = np.shape(smallIm)[1]
             for iy in range(hei):
                 val = np.mean(smallIm[:,iy])
                 if iy == hei-1 or (val<mean-thresh or val > mean+thresh):
-                    ymax_px = min(ymax_px, posy[-1]+sy2+iy-1-small_offset_px)
+                    ymax_px = min(ymax_px, (posy[-1]+sy2-yoffset0[1])+iy-1-small_offset_px)
                     break
 
         print('[restrict_y]',mean,stdev, ymin0_px,ymax0_px, thresh,ymin_px,ymax_px)
@@ -194,29 +203,37 @@ class Uniformity_QC:
         xmin_px = xmin0_px
         xmax_px = xmax0_px
         for y0 in posy[0:-1]:
+            xoffset0 = [0,0]
             # min x pos
             smallIm = cs.pixeldataIn[0:sx2, y0:(y0+stepy)]
+            while np.min(smallIm) == np.max(smallIm): # fix for XA images with a lot of empty content
+                xoffset0[0] += sy2
+                smallIm = cs.pixeldataIn[xoffset0[0]:xoffset0[0]+sx2, y0:(y0+stepy)]
+
             mean  = np.mean(smallIm)
             stdev = np.std(smallIm)
             thresh = nsdev*stdev
-
             wid = np.shape(smallIm)[0]
             for ix in reversed(range(wid)):
                 val = np.mean(smallIm[ix, :])
                 if ix == 0 or (val<mean-thresh or val > mean+thresh):
-                    xmin_px = max(xmin_px, ix+1+small_offset_px)
+                    xmin_px = max(xmin_px, xoffset0[0]+ix+1+small_offset_px)
                     break
 
             # max x pos
             smallIm = cs.pixeldataIn[(posx[-1]+sx2):(posx[-1]+stepx), y0:(y0+stepy)]
+            while np.min(smallIm) == np.max(smallIm): # fix for XA images with a lot of empty content
+                xoffset0[1] += sy2
+                smallIm = cs.pixeldataIn[(posx[-1]-xoffset0[1]+sx2):(posx[-1]+stepx-xoffset0[1]), y0:(y0+stepy)]
+
             mean  = np.mean(smallIm)
             stdev = np.std(smallIm)
             thresh = nsdev*stdev
-
+            wid = np.shape(smallIm)[0]
             for ix in range(wid):
                 val = np.mean(smallIm[ix, :])
                 if ix == wid-1 or (val<mean-thresh or val > mean+thresh):
-                    xmax_px = min(xmax_px, posx[-1]+sx2+ix-1-small_offset_px)
+                    xmax_px = min(xmax_px, posx[-1]+sx2-xoffset0[1]+ix-1-small_offset_px)
                     break
 
         print('[restrict_x]',mean,stdev, xmin0_px, xmax0_px, thresh,xmin_px,xmax_px)
@@ -743,6 +760,9 @@ class Uniformity_QC:
         total = np.sum(hist)
         hist[bins[:-1]>=thresh] = 0
         low = np.sum(hist)
+        frc = 1.*low/total
+        if frc>0.97: # if almost all is background, likely background and foreground are swapped!
+            frc = 1.-0.97
 
         num = 5
         edge_max = np.max([np.max(cs.pixeldataIn[:num,:]),
@@ -757,15 +777,15 @@ class Uniformity_QC:
         if mode == 'normi13':
             minfraction = 0.25
             if edge_min < max(0.05*cs.max_pixel_value+1.,0.6*cmean): 
-                if 1.*low/total>minfraction:
-                    print('[NeedsCropping2] Needs -cropping (%f).'%(1.*low/total), edge_min,edge_max)
+                if frc>minfraction:
+                    print('[NeedsCropping2] Needs -cropping (%f).'%(frc), edge_min,edge_max)
                     return True 
 
         elif mode == 'uniformity':
             minfraction = .025
             if edge_min < max(0.05*cs.max_pixel_value+1.,0.6*cmean) or edge_min <2 or edge_max>cs.max_pixel_value-1: 
-                if 1.*low/total>minfraction or edge_min <2 or edge_max>cs.max_pixel_value-1:
-                    print('[NeedsCropping2] Needs -cropping (%f).'%(1.*low/total), edge_min,edge_max)
+                if frc>minfraction or edge_min <2 or edge_max>cs.max_pixel_value-1:
+                    print('[NeedsCropping2] Needs -cropping (%f).'%(frc), edge_min,edge_max)
                     return True 
 
         print('[NeedsCropping2] Does not need cropping (%f).'%(1.*low/total))

@@ -19,6 +19,10 @@ Note: comparison will be against lit.stTable, if not matched (eg. overwritten by
 
 TODO:
 Changelog:
+    20170731: shrink xrayfield to exclude constant outside region; add param for mirroring of images; 
+              if crop_frac>0.98, likely invert ratio (swapped fore and background);
+              fix cropping of images where original seach area is empty (XA all 0.)
+    20170629: decreased threshold for orientation for 90% to 66%
     20170623: fix for finding wrong grid line in 1 direction; bot more robust MTF
     20170619: fix for missing step in Cu Wedge due to noise; fix for artefacts if treshold close to 0; 
               fix for low crontrast out-of-image; increase box search range; fix xray edge found too early;
@@ -37,7 +41,7 @@ Changelog:
     20160202: added uniformity
     20151109: start of new module, based on QCXRay_lib of Bucky_PEHAMED_Wellhofer of 20151029
 """
-__version__ = '20170623'
+__version__ = '20170731'
 __author__ = 'aschilham'
 
 try:
@@ -84,7 +88,8 @@ class Room:
 
         self.pixmm = None          # allow hard override of pixmm, for example is ImagerPixelSpacing does not exist
         self.mustbeinverted = None # allow hard override of auto invert
-
+        self.mustbemirrored = False # by default do not mirror image; must be hard overridden if to do
+        
         if len(pid_tw) == 1: # forced
             self.pidmm[lit.stForced] = pid_tw[0] 
             self.sidmm[lit.stForced] = sid_tw[0]
@@ -130,7 +135,17 @@ class XRayStruct:
 
         if self._fixed_inversion: # already fixed
             return False
-
+        
+        if not self._fixed_mirror: # already fixed, next time skip this step
+            if self.forceRoom.mustbemirrored:
+                print("Must be Mirrored (use)",self.forceRoom.mustbemirrored)
+                self.original_mirrored = self.forceRoom.mustbemirrored
+                if not self.pixeldataIn is None:
+                    self.pixeldataIn = np.fliplr(self.pixeldataIn)
+    
+            self._fixed_mirror = True # already fixed, next time skip this step
+            
+            
         if not self.forceRoom.mustbeinverted is None:
             print("Must be Inverted (use)",self.forceRoom.mustbeinverted)
             self.original_inverted = self.forceRoom.mustbeinverted
@@ -248,6 +263,7 @@ class XRayStruct:
 
         self.original_inverted = False # if pixval(Cu) = high and pixval(air) = low, then mustbeinverted
         self._fixed_inversion = False # already fixed inversion, skip checks
+        self._fixed_mirror = False # already fixed mirror, skip checks
         self.max_pixel_value = 0 # max allowed value to store per pixel
 
         self.forceRoom = room

@@ -19,6 +19,7 @@
 #
 #
 # Changelog:
+#   20170801: added mirror param
 #   20170622: identify more float vars from header
 #   20170310: add override params; take average over series
 #   20161220: Removed class variables; removed testing stuff
@@ -28,7 +29,7 @@
 #
 from __future__ import print_function
 
-__version__ = '20170622'
+__version__ = '20170801'
 __author__ = 'aschilham'
 
 import os
@@ -91,6 +92,10 @@ def override_settings(room, params):
         pass
     try:
         room.mustbeinverted = params.find('use_mustbeinverted').text.lower() in ['1', 'true', 'y', 'yes']
+    except:
+        pass
+    try:
+        room.mustbemirrored = params.find('mustbemirrored').text.lower() in ['1', 'true', 'y', 'yes']
     except:
         pass
 
