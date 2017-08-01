@@ -636,7 +636,7 @@ class DicomSeries(object):
         """
         #
         # Try to fix the data if it is missing attributes [e.g. for RF] AS
-        if len( self._datasets) > 0 and self._datasets[0].Modality == 'RF':
+        if len( self._datasets) > 0 and self._datasets[0].Modality in ['RF', 'XA']:
             self._fixMissingAttributes_AS()
 
         # The datasets list should be sorted by instance number

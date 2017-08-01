@@ -331,7 +331,7 @@ def prepareInput(instancedict, headers_only, do_transpose=True, logTag="[prepare
                     pixeldataIn = dcmInfile.pixel_array
                 elif modality == 'MG' or modality == 'CR' or modality == 'DX':
                     pixeldataIn = dcmInfile.pixel_array
-                elif modality == 'RF': # fixme! 2D and 3D
+                elif modality == 'RF' or modality == 'XA': # fixme! 2D and 3D
                     pixeldataIn = dcmInfile.pixel_array
                 elif modality == 'US':
                     rgbmode = (dcmInfile.SamplesPerPixel == 3)
@@ -390,7 +390,8 @@ def prepareInput(instancedict, headers_only, do_transpose=True, logTag="[prepare
                                     pixeldataIn = pixel_array[-1,:,:,chan]
                                 else:   
                                     pixeldataIn = pixel_array[chan,-1,:,:] # adjusted for ALOKA images
-
+                else:
+                    raise ValueError("ERROR! reading of modality {} not implemented!".format(modality))
     else:
         if not skip_check:
             path = os.path.dirname(instancedict[0])
