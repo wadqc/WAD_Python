@@ -19,13 +19,14 @@
 #
 #
 # Changelog:
+#   20170802: added cdcom params
 #   20161220: removed class variables; removed testing stuff
 #   20160802: sync with wad2.0
 #
 #
 from __future__ import print_function
 
-__version__ = '20161220'
+__version__ = '20170802'
 __author__ = 'aschilham'
 
 import numpy as np
@@ -67,6 +68,14 @@ def cdmamsetup_series(inputfile,params,headers_only):
             modeCDCOM = (params.find("modeCDCOM").text == 'True')
         except AttributeError:
             raise ValueError(logTag()+" missing cdcommode parameter!")
+        
+        parsCDCOM = ''
+        try:
+            parsCDCOM = params.find('parsCDCOM').text
+        except:
+            pass
+        parsCDCOM = parsCDCOM.split(';')
+
     else:
         phantomversion = '3.2' # dummy for headers
         modeCDCOM = False
@@ -80,6 +89,7 @@ def cdmamsetup_series(inputfile,params,headers_only):
     cs.imnum = 0 # needs to be set to an increasing number if multiple files are used
     cs.verbose = False # do not produce detailed logging
     cs.imageFileName = inputfile[0] # only for CDCOM.exe
+    cs.parsCDCOM = parsCDCOM # extra runtime flags ('c','high')
     qclib.determineScannerID(cs)
     return qclib,cs,modeCDCOM
 

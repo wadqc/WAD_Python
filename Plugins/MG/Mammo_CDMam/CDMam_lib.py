@@ -24,16 +24,18 @@ Some stuff that can be optimized:
  * speed up removal of grid (maybe with grid detection on lower scale?)
 
 Changelog:
+    20170802: added cdcom params; ensure cdcom.exe is executable
     20161220: removed class variables; removed testing stuff
     20160902: sync with wad2.0; Unified pywad1.0 and wad2.0;
     20150826: reshuffling in gridremove to demand less memory (windows cannot cope)
     20150213: first working version
 """
-__version__ = '20161220'
+__version__ = '20170802'
 __author__ = 'aschilham'
 
 import subprocess
 import os
+import stat
 import copy
 import numpy as np
 import scipy.ndimage as scind
@@ -58,7 +60,7 @@ try:
     import CDMam_constants as lit
 except:
     from . import CDMam_constants as lit
-    
+
 class CDMamPhantom:
     """
     Description of the CDMAM Phantom. For now version 3.2 and 3.4 are implemented
@@ -161,6 +163,7 @@ class CDMamStruct:
         self.dcmInfile = dcmInfile
         self.pixeldataIn = pixeldataIn
         self.imageFileName = None
+        self.parsCDCOM = [] # optional extra runtime flags ('c','high')
 
         # for matlib plotting
         self.hasmadeplots = False
@@ -629,8 +632,16 @@ class CDMam():
             except:
                 pass
 
+        # make sure cdcom.exe is executable
+        cdcomexe = os.path.join(os.path.dirname(__file__), "cdcom.exe")
+        try: # make module executable
+            os.chmod(cdcomexe, os.stat(cdcomexe).st_mode | stat.S_IEXEC)
+        except Exception as e:
+            print('cannot make cdcom.exe executable')
+        
         # run cdcom on new file
-        cmd = [os.path.join(os.path.dirname(__file__),"cdcom.exe"),cs.imageFileName]
+        cmd = [cdcomexe, cs.imageFileName]
+        cmd.extend(cs.parsCDCOM)
         print(cmd)
         with open(os.devnull, "w") as fnull:
             subprocess.check_call(cmd, stdout = fnull, stderr = fnull)
