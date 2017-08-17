@@ -65,12 +65,22 @@ def parseqcreport(data,results,**kwargs):
     datagroup = root.find('DataGroup')
     scandate = datagroup.get('DateTime')
     
+    # Region is either defined globally or per protocol; try both
+    datapackage_common = root.findall(".//DataPackage[@Package_Name='ID_COMMON']")
+    for data in datapackage_common:
+        region_element=data.find(".//*/DataEntry[@Variable_Name='ID_REGION']/StringVariable")
+        if region_element is not None:
+           region=region_element.get('String_Value').replace('ID_','')
+
     datapackages = root.findall(".//DataPackage[@Package_Name='ID_MODE']")
     for data in datapackages:
         status_ok=True
         kV=data.find(".//*/DataEntry[@Variable_Name='ID_VOLT']/LongVariable").get('Long_Value')
         mA=data.find(".//*/DataEntry[@Variable_Name='ID_CURRENT']/LongVariable").get('Long_Value')
-        region=data.find(".//*/DataEntry[@Variable_Name='ID_REGION']/StringVariable").get('String_Value').replace('ID_','')
+        region_element=data.find(".//*/DataEntry[@Variable_Name='ID_REGION']/StringVariable")
+        # not present for some scanners
+        if region_element is not None:
+           region=region_element.get('String_Value').replace('ID_','')
 
         kV_ok=data.find(".//*/DataSeries[@Series_Name='ID_VOLT']/*/DataEntry").get('Variable_In_Spec')
         status_ok = status_ok and kV_ok=='INTOL'
