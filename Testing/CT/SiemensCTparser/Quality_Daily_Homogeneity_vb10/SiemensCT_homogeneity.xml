@@ -1,0 +1,409 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    Configuratie voor WAD SiemensCTQC analyse module
+-->
+
+<WAD_CTQC_config>
+    <!-- naam van de configuratie -->
+    <name>Siemens CT DailyQC</name>
+
+    <!-- beschrijving -->
+    <description>Siemens CT cfg</description>
+
+    <!-- versie / datum -->
+    <version>20150820</version>
+        
+    <!-- Logfile verbose options -->
+
+    <action>
+        <plugin>Plugin_development.CT.SiemensCTparser.Quality_Daily_Homogeneity_vb10.parser</plugin>
+	<function>parseqcreport</function>
+	<default_level>1</default_level>
+
+        <params>
+	  <use_private_tag>0x0071,0x9999</use_private_tag>
+        </params>
+
+        <limits>
+            <result description="BODY 110kV 150mA">
+                <criterium>Passed</criterium>
+            </result>
+            <result description="BODY 110kV 150mA ROW_N1 center">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="BODY 110kV 150mA ROW_N1 perif_3h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="BODY 110kV 150mA ROW_N1 perif_6h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="BODY 110kV 150mA ROW_N1 perif_9h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="BODY 110kV 150mA ROW_N1 perif_12h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="BODY 110kV 150mA ROW_N2 center">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="BODY 110kV 150mA ROW_N2 perif_3h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="BODY 110kV 150mA ROW_N2 perif_6h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="BODY 110kV 150mA ROW_N2 perif_9h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="BODY 110kV 150mA ROW_N2 perif_12h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="BODY 110kV 150mA ROW_N3 center">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="BODY 110kV 150mA ROW_N3 perif_3h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="BODY 110kV 150mA ROW_N3 perif_6h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="BODY 110kV 150mA ROW_N3 perif_9h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="BODY 110kV 150mA ROW_N3 perif_12h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+
+			<result description="BODY 140kV 350mA">
+                <criterium>Passed</criterium>
+            </result>
+            <result description="BODY 140kV 350mA ROW_N1 center">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="BODY 140kV 350mA ROW_N1 perif_3h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="BODY 140kV 350mA ROW_N1 perif_6h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="BODY 140kV 350mA ROW_N1 perif_9h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="BODY 140kV 350mA ROW_N1 perif_12h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="BODY 140kV 350mA ROW_N2 center">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="BODY 140kV 350mA ROW_N2 perif_3h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="BODY 140kV 350mA ROW_N2 perif_6h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="BODY 140kV 350mA ROW_N2 perif_9h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="BODY 140kV 350mA ROW_N2 perif_12h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="BODY 140kV 350mA ROW_N3 center">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="BODY 140kV 350mA ROW_N3 perif_3h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="BODY 140kV 350mA ROW_N3 perif_6h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="BODY 140kV 350mA ROW_N3 perif_9h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="BODY 140kV 350mA ROW_N3 perif_12h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+			
+            <result description="HEAD 130kV 200mA">
+                <criterium>Passed</criterium>
+            </result>
+            <result description="HEAD 130kV 200mA ROW_N1 center">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="HEAD 130kV 200mA ROW_N1 perif_3h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="HEAD 130kV 200mA ROW_N1 perif_6h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="HEAD 130kV 200mA ROW_N1 perif_9h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="HEAD 130kV 200mA ROW_N1 perif_12h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="HEAD 130kV 200mA ROW_N2 center">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="HEAD 130kV 200mA ROW_N2 perif_3h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="HEAD 130kV 200mA ROW_N2 perif_6h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="HEAD 130kV 200mA ROW_N2 perif_9h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="HEAD 130kV 200mA ROW_N2 perif_12h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="HEAD 130kV 200mA ROW_N3 center">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="HEAD 130kV 200mA ROW_N3 perif_3h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="HEAD 130kV 200mA ROW_N3 perif_6h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="HEAD 130kV 200mA ROW_N3 perif_9h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="HEAD 130kV 200mA ROW_N3 perif_12h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+
+			<result description="HEAD 120kV 250mA">
+                <criterium>Passed</criterium>
+            </result>
+            <result description="HEAD 120kV 250mA ROW_N1 center">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="HEAD 120kV 250mA ROW_N1 perif_3h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="HEAD 120kV 250mA ROW_N1 perif_6h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="HEAD 120kV 250mA ROW_N1 perif_9h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="HEAD 120kV 250mA ROW_N1 perif_12h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="HEAD 120kV 250mA ROW_N2 center">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="HEAD 120kV 250mA ROW_N2 perif_3h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="HEAD 120kV 250mA ROW_N2 perif_6h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="HEAD 120kV 250mA ROW_N2 perif_9h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="HEAD 120kV 250mA ROW_N2 perif_12h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="HEAD 120kV 250mA ROW_N3 center">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="HEAD 120kV 250mA ROW_N3 perif_3h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="HEAD 120kV 250mA ROW_N3 perif_6h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="HEAD 120kV 250mA ROW_N3 perif_9h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+            <result description="HEAD 120kV 250mA ROW_N3 perif_12h">
+                <acc_low>-2</acc_low>
+                <acc_high>2</acc_high>
+                <crit_low>-4</crit_low>
+                <crit_high>4</crit_high>
+            </result>
+			
+        </limits>
+
+    </action>
+
+</WAD_CTQC_config>

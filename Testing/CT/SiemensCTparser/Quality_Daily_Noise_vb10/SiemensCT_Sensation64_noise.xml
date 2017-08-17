@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    Configuratie voor WAD SiemensCTQC analyse module
+-->
+
+<WAD_CTQC_config>
+    <!-- naam van de configuratie -->
+    <name>Siemens CT DailyQC</name>
+
+    <!-- beschrijving -->
+    <description>Siemens CT cfg</description>
+
+    <!-- versie / datum -->
+    <version>20150820</version>
+        
+    <!-- Logfile verbose options -->
+
+    <action>
+        <plugin>Plugin_development.CT.SiemensCTparser.Quality_Daily_Noise_vb10.parser</plugin>
+	<function>parseqcreport</function>
+	<default_level>1</default_level>
+
+        <params>
+	  <use_private_tag>0x0071,0x9999</use_private_tag>
+        </params>
+
+        <limits>
+
+            <result description="BODY 120kV 250mA">
+                <criterium>Passed</criterium>
+            </result>
+            <result description="BODY 120kV 250mA sigma">
+                <acc_low>10.70</acc_low>
+                <acc_high>11.96</acc_high>
+                <crit_low>10.20</crit_low>
+                <crit_high>12.46</crit_high>
+            </result>
+            <result description="BODY 120kV 250mA voltage">
+                <acc_low>114.20</acc_low>
+                <acc_high>126.20</acc_high>
+                <crit_low>108.20</crit_low>
+                <crit_high>132.20</crit_high>
+            </result>
+
+            <result description="BODY 140kV 200mA">
+                <criterium>Passed</criterium>
+            </result>
+            <result description="BODY 140kV 200mA sigma">
+                <acc_low>9.85</acc_low>
+                <acc_high>10.93</acc_high>
+                <crit_low>9.35</crit_low>
+                <crit_high>11.43</crit_high>
+            </result>
+            <result description="BODY 140kV 200mA voltage">
+                <acc_low>132.00</acc_low>
+                <acc_high>148.00</acc_high>
+                <crit_low>126.00</crit_low>
+                <crit_high>154.00</crit_high>
+            </result>
+
+        </limits>
+
+    </action>
+
+</WAD_CTQC_config>
