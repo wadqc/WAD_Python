@@ -43,6 +43,7 @@ Warning: THIS MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!
 TODO:
     o Maybe put hard threshold on peak value for uniformity (is normalized, so why not?!)
 Changelog:
+    20170830: added boundingbox parameter to fix extend of reverbpattern (primarily to exclude know P problem philips); added auto_suffix
     20170510: extra parameters uni_start, clustermode; extra measurement skewness; 
               removed unused uniformity yrange stuff; removed unused fft stuff; removed localnormalization; removed fastmode;
               removed helper cropImage; added makeFigure for uniformity and rois; removed 'reverb' image;
@@ -66,7 +67,7 @@ Changelog:
     20150416: Sensitivity analysis and uniformity analysis
     20150410: Initial version
 """
-__version__ = '20170510'
+__version__ = '20170830'
 __author__ = 'aschilham, pvanhorsen'
 
 import copy
@@ -181,6 +182,7 @@ class USStruct:
                                   # use >1 for full fit. 1 is best for GE, 1/3 is best for Philips
 
         # helper stuff
+        self.rev_forcebbox = None # (xmin, xmax, ymin, ymax) in px to be used to restrict reverb pattern
         self.rev_miny = None # (x,y) of position of minimum y of reverb image
         self.rev_maxy = None # (x,y) of position of maximum y of reverb image
         self.rev_maxx = None # (x,y) of position of maximum x of reverb image
@@ -189,6 +191,7 @@ class USStruct:
         self.rev_mask = None # mask of reverb image
         self.curve_angles = [] # [min, max] radius
         self.curve_radii  = [] # [min, max] angle
+        self.auto_suffix = True # add a probename as suffix to all results
 
 class US_QC:
     def __init__(self, guimode=False):
@@ -265,13 +268,23 @@ class US_QC:
         """
         Find reverbrations part of image.
         Workflow:
-        1. Find reverberations as largest connected component != 0
+        1. Restrict to bbox if provided
+        2. Find reverberations as largest connected component != 0
         2. Return
         """
         error = True
         # cluster connected components with pixelvalues>0
         #work = (cs.pixeldataIn>0) * (cs.pixeldataIn<255) # must give a signal, but 255 often reserved for overlay
         work = cs.pixeldataIn>cs.signal_thresh
+
+        # restrict to bbox if provided:
+        if not cs.rev_forcebbox is None:
+            xmin,xmax,ymin,ymax = cs.rev_forcebbox
+            work[    :xmin,     :    ] = 0
+            work[xmax:    ,     :    ] = 0
+            work[    :    ,     :ymin] = 0
+            work[    :    , ymax:    ] = 0
+            
         cca = wadwrapper_lib.connectedComponents()
         cs.cca_image,nb_labels = cca.run(work)
         if cs.cluster_mode == 'largest_only': # model of PVH

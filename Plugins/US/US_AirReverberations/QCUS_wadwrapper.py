@@ -19,6 +19,7 @@
 #
 #
 # Changelog:
+#   20170830: Added rev_bbox parameter
 #   20170510: Added rgbchannel param, defaults to 'B'; 
 #             added optional parameters cluster_model, uni_start, ocr_threshold, ocr_zoom; 
 #             removed uni_low; removed reverb.jpg output (added to uniformity)
@@ -28,7 +29,7 @@
 #   20160802: sync with pywad1.0
 from __future__ import print_function
 
-__version__ = '20170510'
+__version__ = '20170830'
 __author__ = 'aschilham'
 
 import os
@@ -101,6 +102,10 @@ def setup_series(inputfile,params,headers_only):
         pass
     try:
         cs.uni_start = float(params.find("uni_start").text)
+    except:
+        pass
+    try:
+        cs.rev_forcebbox = [int(v) for v in params.find("rev_bbox").split(';')]
     except:
         pass
 
