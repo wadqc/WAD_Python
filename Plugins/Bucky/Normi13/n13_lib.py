@@ -19,6 +19,7 @@ Note: comparison will be against lit.stTable, if not matched (eg. overwritten by
 
 TODO:
 Changelog:
+    20170825: added optional dicom header fields (should at some point replace the kludge of checking for modality)
     20170731: shrink xrayfield to exclude constant outside region; add param for mirroring of images; 
               if crop_frac>0.98, likely invert ratio (swapped fore and background);
               fix cropping of images where original seach area is empty (XA all 0.)
@@ -41,7 +42,7 @@ Changelog:
     20160202: added uniformity
     20151109: start of new module, based on QCXRay_lib of Bucky_PEHAMED_Wellhofer of 20151029
 """
-__version__ = '20170731'
+__version__ = '20170825'
 __author__ = 'aschilham'
 
 try:
@@ -559,8 +560,7 @@ class XRayQC:
                     {'key':"200B,1028",  'name':"PrivValue1"},
                     {'key':"200B,7096",  'name':"PrivStand"},
                 ])
-
-
+                
 
         elif info == "qcwad":
             offset = -25 # rank must be negative, so recalc as offset+real position
@@ -620,6 +620,29 @@ class XRayQC:
                     {'key':"200B,7096",  'name':"PrivStand"},
                 ])
 
+        # optional fields: if not already in dicomfields, and if exist in header, then include
+        opt_fields = [
+            {'key':"0018,1153",  'name':"Exposure (uAs)"},
+            {'key':"0018,1405",  'name':"RelativeXRayExposure"},
+            {'key':"0018,8150",  'name':"ExposureTime (us)"},
+            {'key':"0018,1150",  'name':"ExposureTime"},
+            {'key':"200B,70BA",  'name':"FocalSpot"},
+            {'key':"0018,1190",  'name':"Focal Spot(s)"},
+            {'key':"0028,0101",  'name':"BitsStored"},
+            {'key':"0040,8302",  'name':"EntranceDose_mGy"},
+            {'key':"0018,7050",  'name':"FilterMaterial"},
+            {'key':"0018,1160",  'name':"FilterType"},
+            {'key':"0018,702B",  'name':"ModelName"},
+            {'key':"0018,7001",  'name':"DetectorTemperature"},
+            {'key':"0018,700A",  'name':"DetectorID"},
+            {'key':"0018,700C",  'name':"DateCalibration"},
+            {'key':"0018,1200",  'name':"Date of Last Calibration"},
+
+            {'key':"0018,1405",  'name':"RelativeXRayExposure"},
+            {'key':"0018,1411",  'name':"ExposureIndex"},
+            {'key':"0018,1412",  'name':"TargetExposureIndex"},
+            {'key':"0018,1413",  'name':"DeviationIndex"},
+        ]
 
         #labvals.append( {'name':'label','value':0, 'quantity':'columnname','level':'1:default, 2: detail','rank':missing or a number} )
         results = []
@@ -644,6 +667,23 @@ class XRayQC:
             df['value'] = value
             results.append( df )
 
+        df_keys = [ k['key'].upper() for k in dicomfields ]
+        for df in opt_fields:
+            key = df['key'].upper()
+            
+            # skip if already in list
+            if key in df_keys:
+                continue
+        
+            # only include if present
+            try:
+                value =  cs.dcmInfile[dicom.tag.Tag(key.split(',')[0],key.split(',')[1])].value
+                df['value'] = value
+                results.append( df )
+            except:
+                continue
+        
+            
         return results
 
     def ReportEntries(self,cs):
