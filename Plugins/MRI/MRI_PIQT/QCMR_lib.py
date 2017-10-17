@@ -20,6 +20,7 @@ TODO: Linearity : m/p angle
 TODO: SliceProfile: phase shift
 TODO: pixelsizes
 Changelog:
+    20170929: Missing transmit coil type tag
     20170109: Protocolnames are sometimes prefixed by WIP
     20161220: remove class variables; remove testing stuff
     20160902: sync with wad2.0; Unified pywad1.0 and wad2.0
@@ -542,6 +543,10 @@ class PiQT_QC:
         cs_mr.sp_mean = copy.deepcopy(mean_mm)
         cs_mr.sp_diamm = defdiamm
         print("FWHMA!",fwhm_mm)
+        if min(fwhm_mm)< 0.:
+            print("Error fwhm smaller than 0.!", fwhm_mm)
+            return True
+        
         if len(fwhm_mm) == 1:
             cs_mr.sp_fwhm = fwhm_mm[0]
             cs_mr.sp_fwtm = fwtm_mm[0]
@@ -569,9 +574,10 @@ class PiQT_QC:
         cs_mr.sp_phantom = sp_object 
         cs_mr.sp_method = sp_method 
 
-#        dataR = self.pixeldataIn[sp_sliceR].astype(float)
-#        dataI = self.pixeldataIn[sp_sliceI].astype(float)
-#        cs_mr.resultimage['phase'] = np.arctan(dataI/dataR) # phase!
+        #dataR = self.pixeldataIn[sp_sliceR].astype(float)
+        #dataI = self.pixeldataIn[sp_sliceI].astype(float)
+        #cs_mr.resultimage['phase'] = np.arctan(dataI/dataR) # phase!
+        
         error = False
         return error
 
@@ -1589,6 +1595,7 @@ class PiQT_QC:
                 ["0008,0031", "Series Time"],# no ScanTime 0008,0032 in EnhancedDicom
                 ["0018,1250", "Receive Coil Name"], # Q-Body
                 ["0018,1251", "Transmit Coil Name"], # B
+                ["0018,9051", "Transmit Coil Type"], # SURFACE
                 ["0018,0095", "Pixel Bandwidth"], # 219
                 ["0018,0020", "Scanning Sequence"], # SE
                 ["0018,0021", "Scanning Variant"], # SS
