@@ -20,8 +20,11 @@ pytesseract is also fine to use, and does not need zooming (but results are less
 Take care to put the bounding box around only txt, and exclude other objects!
 
 On Ubuntu 16.04: apt install python-pyocr tesseract-ocr tesseract-ocr-eng
+
+Changelog:
+    20171116: fix scipy version 1.0
 """
-__version__ = '20160831'
+__version__ = '20171116'
 __author__ = 'aschilham'
 
 from PIL import Image
@@ -32,8 +35,9 @@ import re
 import scipy.misc
 # sanity check: we need at least scipy 0.10.1 to avoid problems mixing PIL and Pillow
 scipy_version = [int(v) for v in scipy.__version__ .split('.')]
-if scipy_version[1]<10 or (scipy_version[1] == 10 and scipy_version[1]<1):
-    raise RuntimeError("scipy version too old. Upgrade scipy to at least 0.10.1")
+if scipy_version[0] == 0:
+    if scipy_version[1]<10 or (scipy_version[1] == 10 and scipy_version[1]<1):
+        raise RuntimeError("scipy version too old. Upgrade scipy to at least 0.10.1")
 
 
 def getOCRTool():

@@ -17,6 +17,7 @@ from __future__ import print_function
 Warning: THIS MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!
 
 Changelog:
+    20171116: fix scipy version 1.0
     20170622: more extreme avg_skull value to allow reporting for body
     20170502: added radiusmm param for air roi location; added thumbnail with ROIs
     20161220: removed testing stuff; removed class variables
@@ -31,7 +32,7 @@ Changelog:
     20140409: Initial split of gui/lib for pywad
 
 """
-__version__ = '20170622'
+__version__ = '20171116'
 __author__ = 'aschilham'
 
 import copy
@@ -63,8 +64,9 @@ from PIL import ImageDraw # imagedraw from pillow is needed, not pil
 import scipy.misc
 # sanity check: we need at least scipy 0.10.1 to avoid problems mixing PIL and Pillow
 scipy_version = [int(v) for v in scipy.__version__ .split('.')]
-if scipy_version[1]<10 or (scipy_version[1] == 10 and scipy_version[1]<1):
-    raise RuntimeError("scipy version too old. Upgrade scipy to at least 0.10.1")
+if scipy_version[0] == 0:
+    if scipy_version[1]<10 or (scipy_version[1] == 10 and scipy_version[1]<1):
+        raise RuntimeError("scipy version too old. Upgrade scipy to at least 0.10.1")
 
 class Scanner:
     def __init__ (self, _name,_HeadGT,_innerdiam,_outerdiam, _BodyGT):

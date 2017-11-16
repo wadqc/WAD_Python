@@ -17,6 +17,7 @@ Warning: THIS MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED! And make su
 
 TODO:
 Changelog:
+    20171116: fix scipy version 1.0
     20161220: Removed class variables; removed testing stuff
     20161216: allow override of auto determine maybeinvert; try other field is pixelspacing missing
     20160902: sync wad2.0 with pywad1.0
@@ -42,7 +43,7 @@ Changelog:
               fix for po_box on annotation; fix for invert LowContrast
     20140623: First attempt to rewrite into WAD module; speedup and bugfix of Uniformity()
 """
-__version__ = '20161220'
+__version__ = '20171116'
 __author__ = 'aschilham'
 
 try:
@@ -76,8 +77,9 @@ from PIL import ImageDraw # imagedraw from pillow is needed, not pil
 import scipy.misc
 # sanity check: we need at least scipy 0.10.1 to avoid problems mixing PIL and Pillow
 scipy_version = [int(v) for v in scipy.__version__ .split('.')]
-if scipy_version[1]<10 or (scipy_version[1] == 10 and scipy_version[1]<1):
-    raise RuntimeError("scipy version too old. Upgrade scipy to at least 0.10.1")
+if scipy_version[0] == 0:
+    if scipy_version[1]<10 or (scipy_version[1] == 10 and scipy_version[1]<1):
+        raise RuntimeError("scipy version too old. Upgrade scipy to at least 0.10.1")
 
 try:
     # wad2.0 runs each module stand alone

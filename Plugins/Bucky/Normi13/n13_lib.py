@@ -19,6 +19,7 @@ Note: comparison will be against lit.stTable, if not matched (eg. overwritten by
 
 TODO:
 Changelog:
+    20171116: fix scipy version 1.0
     20170825: added optional dicom header fields (should at some point replace the kludge of checking for modality)
     20170731: shrink xrayfield to exclude constant outside region; add param for mirroring of images; 
               if crop_frac>0.98, likely invert ratio (swapped fore and background);
@@ -42,7 +43,7 @@ Changelog:
     20160202: added uniformity
     20151109: start of new module, based on QCXRay_lib of Bucky_PEHAMED_Wellhofer of 20151029
 """
-__version__ = '20170825'
+__version__ = '20171116'
 __author__ = 'aschilham'
 
 try:
@@ -58,8 +59,9 @@ from PIL import ImageDraw # imagedraw from pillow is needed, not pil
 import scipy.misc
 # sanity check: we need at least scipy 0.10.1 to avoid problems mixing PIL and Pillow
 scipy_version = [int(v) for v in scipy.__version__ .split('.')]
-if scipy_version[1]<10 or (scipy_version[1] == 10 and scipy_version[1]<1):
-    raise RuntimeError("scipy version too old. Upgrade scipy to at least 0.10.1")
+if scipy_version[0] == 0:
+    if scipy_version[1]<10 or (scipy_version[1] == 10 and scipy_version[1]<1):
+        raise RuntimeError("scipy version too old. Upgrade scipy to at least 0.10.1")
 
 try:
     # wad2.0 runs each module stand alone

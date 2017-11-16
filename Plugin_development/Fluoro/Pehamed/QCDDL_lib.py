@@ -16,13 +16,14 @@ Warning: THIS MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED! And make su
 
 TODO:
 Changelog:
+    20171116: fix scipy version 1.0
     20170621: increased uniformity box to deal with no pix found.
     20161220: removed testing stuff; removed class variabled
     20160902: sync with wad2.0; Unified pywad1.0 and wad2.0
     20150616: better orientation module
     20150609: Initial from QCXRay_Lib
 """
-__version__ = '20170621'
+__version__ = '20171116'
 __author__ = 'aschilham'
 
 import numpy as np
@@ -58,8 +59,9 @@ from PIL import ImageDraw # imagedraw from pillow is needed, not pil
 import scipy.misc
 # sanity check: we need at least scipy 0.10.1 to avoid problems mixing PIL and Pillow
 scipy_version = [int(v) for v in scipy.__version__ .split('.')]
-if scipy_version[1]<10 or (scipy_version[1] == 10 and scipy_version[1]<1):
-    raise RuntimeError("scipy version too old. Upgrade scipy to at least 0.10.1")
+if scipy_version[0] == 0:
+    if scipy_version[1]<10 or (scipy_version[1] == 10 and scipy_version[1]<1):
+        raise RuntimeError("scipy version too old. Upgrade scipy to at least 0.10.1")
 
 class DDLStruct:
     class Room :
