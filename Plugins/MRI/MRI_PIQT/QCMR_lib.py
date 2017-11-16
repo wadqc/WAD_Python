@@ -20,6 +20,7 @@ TODO: Linearity : m/p angle
 TODO: SliceProfile: phase shift
 TODO: pixelsizes
 Changelog:
+    20171116: fix scipy version 1.0
     20170929: Missing transmit coil type tag
     20170109: Protocolnames are sometimes prefixed by WIP
     20161220: remove class variables; remove testing stuff
@@ -43,7 +44,7 @@ Changelog:
     20131010: FFU calc of rad10 and rad20 by Euclidean distance transform
     20131009: Finished SNR; finished ArtLevel; finish FloodField Uniformity
 """
-__version__ = '20170109'
+__version__ = '20171116'
 __author__ = 'aschilham'
 
 import numpy as np
@@ -78,8 +79,9 @@ from PIL import ImageDraw # imagedraw from pillow is needed, not pil
 import scipy.misc
 # sanity check: we need at least scipy 0.10.1 to avoid problems mixing PIL and Pillow
 scipy_version = [int(v) for v in scipy.__version__ .split('.')]
-if scipy_version[1]<10 or (scipy_version[1] == 10 and scipy_version[1]<1):
-    raise RuntimeError("scipy version too old. Upgrade scipy to at least 0.10.1")
+if scipy_version[0] == 0:
+    if scipy_version[1]<10 or (scipy_version[1] == 10 and scipy_version[1]<1):
+        raise RuntimeError("scipy version too old. Upgrade scipy to at least 0.10.1")
 
 class PiQT_Struct:
     def __init__ (self,dcmInfile,pixeldataIn,dicomMode,piqttest):
