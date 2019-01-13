@@ -19,6 +19,8 @@
 #
 #
 # Changelog:
+#   20180904: support for RF circular FOV: skip_cropping, artefactborder_is_circle
+#   20180205: increased attempts to find box in phantom; added precrop
 #   20180124: increased number of retries in BBAlign for robustness
 #   20170801: added mirror param
 #   20170622: identify more float vars from header
@@ -30,7 +32,7 @@
 #
 from __future__ import print_function
 
-__version__ = '20180124'
+__version__ = '20180904'
 __author__ = 'aschilham'
 
 import os
@@ -97,6 +99,19 @@ def override_settings(room, params):
         pass
     try:
         room.mustbemirrored = params.find('mustbemirrored').text.lower() in ['1', 'true', 'y', 'yes']
+    except:
+        pass
+    try:
+        room.mustbeprecropped = [ int(v) for v in params.find('use_mustbeprecropped').text ]
+    except:
+        pass
+
+    try:
+        room.skip_cropping = params.find('skip_cropping').text.lower() in ['1', 'true', 'y', 'yes'] 
+    except:
+        pass
+    try:
+        room.artefactborder_is_circle = params.find('artefactborder_is_circle').text.lower() in ['1', 'true', 'y', 'yes']
     except:
         pass
 
