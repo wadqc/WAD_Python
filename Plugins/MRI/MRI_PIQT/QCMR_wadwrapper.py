@@ -19,6 +19,7 @@
 #
 #
 # Changelog:
+#   20180418: treat DICOM Central_freq as float result
 #   20170929: missing NEMA linearity result
 #   20161220: remove class variables; remove testing stuff
 #   20160802: sync with wad2.0
@@ -26,7 +27,7 @@
 #
 from __future__ import print_function
 
-__version__ = '20170929'
+__version__ = '20180418'
 __author__ = 'aschilham'
 
 import sys
@@ -279,11 +280,28 @@ def mrheader_series(data,results,**kwargs):
                 reportkeyvals.append( (di[0]+idname,str(di[1])) )
 
     ## 2. Build xml output
+    floatlist = [
+        'Central_freq'
+    ]
     # plugionversion is newly added in for this plugin since pywad2
     results.addChar('pluginversion'+idname, str(qclib.qcversion)) # do not specify level, use default from config
     for key,val in reportkeyvals:
-        val2 = "".join([x if ord(x) < 128 else '?' for x in val]) #ignore non-ascii 
-        results.addChar(key, str(val2)[:min(len(str(val)),128)]) # do not specify level, use default from config
+        is_float = False
+        for fl in floatlist:
+            if key.startswith(fl):
+                is_float = True
+                break
+
+        if is_float:
+            try:
+                val2 = float(val)
+            except ValueError:
+                val2 = -1
+            results.addFloat(key, val2)
+        else:
+            for key,val in reportkeyvals:
+                val2 = "".join([x if ord(x) < 128 else '?' for x in val]) #ignore non-ascii 
+                results.addChar(key, str(val2)[:min(len(str(val)),128)]) # do not specify level, use default from config
 
 def make_idname(qclib,cs,sliceno):
     idname = ''
