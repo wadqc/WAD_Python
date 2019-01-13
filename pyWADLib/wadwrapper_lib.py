@@ -13,6 +13,8 @@ This includes:
 
 """
 # Changelog:
+# 20181104: Compatibility with pydicom 1.2.0
+# 20180328: Fix reading of US_RGB data using pydicom 1.x
 # 20170502: Default US_RGB channel to Blue
 # 20170310: only "fix" rescale for CT and MR
 # 20161221: changed order of components in US ALOKA images (PvH)
@@ -83,9 +85,9 @@ def getDICOMMode(dcmInfile):
         dcmMode = stMode2D
         try:
             sopclass = dcmInfile.SOPClassUID
-            if sopclass == 'Enhanced MR Image Storage': #'1.2.840.10008.5.1.4.1.1.66'
+            if sopclass in ['Enhanced MR Image Storage', '1.2.840.10008.5.1.4.1.1.4.1']:
                 dcmMode = stModeEnhanced
-            elif sopclass == 'Breast Tomosynthesis Image Storage' or sopclass == '1.2.840.10008.5.1.4.1.1.13.1.3':
+            elif sopclass in ['Breast Tomosynthesis Image Storage', '1.2.840.10008.5.1.4.1.1.13.1.3']:
                 dcmMode = stModeBTO
 
         except AttributeError:
@@ -101,17 +103,16 @@ def testIfEnhancedDICOM(filename):
         # Not a dicom file
         return False
 
-    #Skip the file if it is of SOPClassUID 1.2.840.10008.5.1.4.1.1.66
     try:
         sopclass = dcmInfile.SOPClassUID
     except AttributeError:
         # some other kind of dicom file and no reason to exclude it
         return False
-    if sopclass == 'Enhanced MR Image Storage': #'1.2.840.10008.5.1.4.1.1.66'
+    if sopclass in ['Enhanced MR Image Storage', '1.2.840.10008.5.1.4.1.1.4.1']:
         print('Image is Enhanced MR')
         return True
     else:
-        if sopclass == 'Breast Tomosynthesis Image Storage' or sopclass == '1.2.840.10008.5.1.4.1.1.13.1.3':
+        if sopclass in ['Breast Tomosynthesis Image Storage', '1.2.840.10008.5.1.4.1.1.13.1.3']:
             print('Image is BTO')
         return False
 
@@ -231,7 +232,7 @@ def removeBogusDICOMfiles(instancedict):
             # some other kind of dicom file and no reason to exclude it
             results.append(fname)
             continue
-        if sopclass == 'Raw Data Storage': #'1.2.840.10008.5.1.4.1.1.66'
+        if sopclass in ['Raw Data Storage', '1.2.840.10008.5.1.4.1.1.66']:
             print('Skipping RAW file %s' %fname)
             continue
         else:
@@ -318,7 +319,11 @@ def prepareInput(instancedict, headers_only, do_transpose=True, logTag="[prepare
                 if modality == 'CT' or modality == 'MR':
                     if not "RescaleIntercept" in dcmInfile: # in wrong place define for some MR files
                         dcmInfile.RescaleIntercept = readDICOMtag(keymapping[0][0],dcmInfile,0)
+                        if dcmInfile.RescaleIntercept == "":
+                            dcmInfile.RescaleIntercept = 0
                         dcmInfile.RescaleSlope = readDICOMtag(keymapping[1][0],dcmInfile,0)
+                        if dcmInfile.RescaleSlope == "":
+                            dcmInfile.RescaleSlope = 1
 
                     pixeldataIn = np.int16(dcmInfile.pixel_array.astype(int))
                     slope = dcmInfile.RescaleSlope
@@ -342,15 +347,22 @@ def prepareInput(instancedict, headers_only, do_transpose=True, logTag="[prepare
                             pixeldataIn = dcmInfile.pixel_array
                             pixeldataIn = pixeldataIn[0]
                     else:
-                        # AS: this fix is needed in pydicom < 1.0; maybe solved in later versions?
+                        # AS: this fix was only needed in pydicom < 1.0; solved in later versions
                         try:
-                            nofframes = dcmInfile.NumberOfFrames
-                        except AttributeError:
-                            nofframes = 1
-                        if dcmInfile.PlanarConfiguration==0:
-                            pixel_array = dcmInfile.pixel_array.reshape(nofframes, dcmInfile.Rows, dcmInfile.Columns, dcmInfile.SamplesPerPixel)
+                            dicomversion = int(dicom.__version_info__[0])
+                        except:
+                            dicomversion = 0
+                        if dicomversion == 0:
+                            try:
+                                nofframes = dcmInfile.NumberOfFrames
+                            except AttributeError:
+                                nofframes = 1
+                            if dcmInfile.PlanarConfiguration==0:
+                                pixel_array = dcmInfile.pixel_array.reshape(nofframes, dcmInfile.Rows, dcmInfile.Columns, dcmInfile.SamplesPerPixel)
+                            else:
+                                pixel_array = dcmInfile.pixel_array.reshape(dcmInfile.SamplesPerPixel, nofframes, dcmInfile.Rows, dcmInfile.Columns)
                         else:
-                            pixel_array = dcmInfile.pixel_array.reshape(dcmInfile.SamplesPerPixel, nofframes, dcmInfile.Rows, dcmInfile.Columns)
+                            pixel_array = dcmInfile.pixel_array
 
                         # pick channel to use for RGB
                         print('Using RGB Channel {}'.format(rgbchannel))
@@ -392,6 +404,7 @@ def prepareInput(instancedict, headers_only, do_transpose=True, logTag="[prepare
                                     pixeldataIn = pixel_array[chan,-1,:,:] # adjusted for ALOKA images
                 else:
                     raise ValueError("ERROR! reading of modality {} not implemented!".format(modality))
+
     else:
         if not skip_check:
             path = os.path.dirname(instancedict[0])
@@ -400,7 +413,7 @@ def prepareInput(instancedict, headers_only, do_transpose=True, logTag="[prepare
                     raise ValueError("{} ERROR! multiple would-be dicom files scattered over multiple dirs!".format(logTag))
         else:
             path = instancedict
-            
+
         try:
             dcmInfile = dcmseries.read_files(path, True, readPixelData=False, splitOnPosition=splitOnPosition)[0]
             if not headers_only: # NOTE: Rescaling is already done pydicom_series, but maybe not for stupid MR
