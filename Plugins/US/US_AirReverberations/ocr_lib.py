@@ -22,9 +22,12 @@ Take care to put the bounding box around only txt, and exclude other objects!
 On Ubuntu 16.04: apt install python-pyocr tesseract-ocr tesseract-ocr-eng
 
 Changelog:
+    20180914: tesseract wants black text on white
+    20180731: fix error ValueError: assignment destination is read-only for part[part<ocr_threshold] = 0
+    20171117: sync with US; prepare for non-transposed data
     20171116: fix scipy version 1.0
 """
-__version__ = '20171116'
+__version__ = '20180914'
 __author__ = 'aschilham'
 
 from PIL import Image
@@ -38,7 +41,6 @@ scipy_version = [int(v) for v in scipy.__version__ .split('.')]
 if scipy_version[0] == 0:
     if scipy_version[1]<10 or (scipy_version[1] == 10 and scipy_version[1]<1):
         raise RuntimeError("scipy version too old. Upgrade scipy to at least 0.10.1")
-
 
 def getOCRTool():
     # check if OCR tools tesseract or cuneiform are available
@@ -85,22 +87,29 @@ def txt2type(txt, type, prefix='',suffix=''):
         return float(txt)
 
     
-def OCR(pixeldata, xywh, zpos=0, ocr_zoom=10, ocr_threshold=0):
+def OCR(pixeldata, xywh, zpos=0, ocr_zoom=10, ocr_threshold=0, transposed=True):
     """
     Use pyOCR which for OCR
     ul = upperleft pixel location [x,y]
     ocr_zoom = factor to enlarge image (15)
     ocr_threshold = remove values below this threshold (after inversion)
+    transposed = pixeldata is transposed (old format)
     """
     tool = getOCRTool()
 
     # slice-out the relevant part of the image
     x,y,width,height = xywh
 
+    if transposed:  # input was pyqtgraph-like
+        if len(np.shape(pixeldata)) == 3:
+            pixeldata = np.transpose(pixeldata,(0,2,1))
+        else:
+            pixeldata = np.transpose(pixeldata)
+
     if len(np.shape(pixeldata)) == 3:
-        part = pixeldata[zpos][x:x+width,y:y+height]
+        part = np.array(pixeldata[zpos][y:y+height, x:x+width])
     elif len(np.shape(pixeldata)) == 2:
-        part = pixeldata[x:x+width,y:y+height]
+        part = np.array(pixeldata[y:y+height, x:x+width])
     else:
         raise ValueError('[ocr_lib] Unknown dataformat of %d dimensions'%len(np.shape(pixeldata)))
 
@@ -120,8 +129,6 @@ def OCR(pixeldata, xywh, zpos=0, ocr_zoom=10, ocr_threshold=0):
     if (maxval-minval)<128:
         part = (part-minval)*(255/(maxval-minval))
 
-    part = np.transpose(part) # input was pyqtgraph-like
-
     if ocr_zoom is None:
         # enlarge to prevent OCR mismatches; below 20px font height accuracy drops off
         minheight = 200 # this value to prevent pixGenHalftoneMask errors
@@ -137,5 +144,9 @@ def OCR(pixeldata, xywh, zpos=0, ocr_zoom=10, ocr_threshold=0):
     ##import pytesseract
     ##txt = pytesseract.image_to_string(Image.fromarray(part))
     
+    # 20180914: actually tesseract wants black text on white, so invert!
+    maxval = np.max(part)
+    part = maxval-part
+
     txt = tool.image_to_string(Image.fromarray(part))
     return txt, part

@@ -30,8 +30,6 @@ input: dicomobject,pixeldata (the pixeldata is already cleaned; color is removed
 3. Sensitivity analyis of rect_image to determine vertical extend of reverberation pattern:
   a. Make a profile along the vertical: average of cetral part of rect_image
   b. Extend: Determine noise_level, and calculate intersection of profile with noise_level
-  c. Extend_fft: Do a fourier analysis to find the ringing pattern; remove it an find the minimum of the 
-     background trend
 4. Uniformity analysis of rect_image to find dips that suggest problems with the probe:
   a. Make a profile along the horizontal of the rect_image upto sensitivity_extend;
      FASTMODE: (experimental) use onle rect_image of first ring; should have all the info there already
@@ -43,6 +41,14 @@ Warning: THIS MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!
 TODO:
     o Maybe put hard threshold on peak value for uniformity (is normalized, so why not?!)
 Changelog:
+    20180731: fix error ValueError: assignment destination is read-only for work[cs.pixeldataIn ==0] = 1
+    20170912: tried sensitivity profile analysis (per column, calculate depth relative to accepted depth; 
+              then calculate COV skew kurt); does not help; removed again.
+              tried combining DipFrac etc to 0-10+90-100, 10-30+70-90; does not help; removed again.
+    20170909: remove deviation, add 10-90, 30-70 versions of kurtosis, COV, skew
+    20170906: testing kurtosis, dev=max-min, and per region;
+              adding alternative uni_range definitions; 
+              error in calculating straightend image is build from several connected components.
     20170830: added boundingbox parameter to fix extend of reverbpattern (primarily to exclude know P problem philips); added auto_suffix
     20170510: extra parameters uni_start, clustermode; extra measurement skewness; 
               removed unused uniformity yrange stuff; removed unused fft stuff; removed localnormalization; removed fastmode;
@@ -67,7 +73,7 @@ Changelog:
     20150416: Sensitivity analysis and uniformity analysis
     20150410: Initial version
 """
-__version__ = '20170830'
+__version__ = '20180731'
 __author__ = 'aschilham, pvanhorsen'
 
 import copy
@@ -142,6 +148,7 @@ class USStruct:
         self.unif_yrange = [0,0] # Range in y that is analyzed for uniformity
         self.unif_sum = 0        # Sum of normalised uniformity values
         self.unif_skew = 0       # skewness of the distribution
+        self.unif_kurtosis = 0   # kurtosis of the distribution
 
         self.dipfarea_0_10   = 0 # fraction of image part of dip*depth for  0-10% width
         self.dipfarea_10_30  = 0 # fraction of image part of dip*depth for 10-30% width
@@ -161,13 +168,20 @@ class USStruct:
         self.lowfrac_70_90  = 0 # fraction of image part with norm.uniformity 5% or more below line average for 70-90% width
         self.lowfrac_90_100 = 0 # fraction of image part with norm.uniformity 5% or more below line average for 90-100% width
 
+        self.unif_COV_10_90 = 0        # Coefficient of Variation over uniformity data 10-90%
+        self.unif_skew_10_90 = 0       # skewness of the distribution
+        self.unif_kurtosis_10_90 = 0   # kurtosis of the distribution
+        self.unif_COV_30_70 = 0        # Coefficient of Variation over uniformity data 30-70%
+        self.unif_skew_30_70 = 0       # skewness of the distribution
+        self.unif_kurtosis_30_70 = 0   # kurtosis of the distribution
+
         # sensitivity
         self.sens_ylim = 0    # limit on y determined from peaks in y-dir 
         self.sens_noiseM = 0  # noise determined from (vertical) sensitivity profile
         self.sens_numtops = 0 # number of peaks found upto ylim
         self.sens_numbots = 0 # number of valleys found upto ylim
         self.sens_noiserange = 2      # number of lines used for calculation of noiselevel
-        self.sens_bots = []   # store the y locations of the dips to use for uniformity analysis [px] 
+        self.sens_bots = []   # store the y locations of the dips to use for uniformity analysis [px]
         
         #input parameters
         self.uni_filter = 5  # running average of this width before peak detection
@@ -180,6 +194,11 @@ class USStruct:
         self.hor_offset = 0  # default rows to exclude from top and bottom when making profiles (10)
         self.fitcircle_frac = 1/3 # by default use only central 1/3 of circle for fitting, as deformations towards edge can occur. 
                                   # use >1 for full fit. 1 is best for GE, 1/3 is best for Philips
+
+        self.uni_range_model = 'absolute' # restrict analysis from uni_start to uni_start+uni_depth (if uni_depth > sens_ylim, this will include many 0s)
+        #self.uni_range_model = 'skip10pct'# restrict analysis from 0.1*sens_ylim to 0.9*sens_ylim
+        #self.uni_range_model = 'skip20pct'# restrict analysis from 0.2*sens_ylim to 0.8*sens_ylim
+        #self.uni_range_model = 'maxsenslimit' # restrict analysis from uni_start to min(sens_ylim, uni_start+uni_depth)
 
         # helper stuff
         self.rev_forcebbox = None # (xmin, xmax, ymin, ymax) in px to be used to restrict reverb pattern
@@ -399,7 +418,8 @@ class US_QC:
 
             # transform reverb pattern to rectangle: interpolate at coords
             ang = np.linspace(cs.curve_angles[0],cs.curve_angles[1],cs.rev_maxx[0]-cs.rev_minx[0])
-            rad = np.linspace(cs.curve_radii[0],cs.curve_radii[1],cs.rev_maxy[1]-cs.rev_miny[1])
+            #rad = np.linspace(cs.curve_radii[0],cs.curve_radii[1],cs.rev_maxy[1]-cs.rev_miny[1])
+            rad = np.linspace(cs.curve_radii[0],cs.curve_radii[1],int(0.5+cs.curve_radii[1]-cs.curve_radii[0]))
             an,ra = scipy.meshgrid(ang,rad)
             xi = cs.curve_xyr[0]+ra*np.sin(an)
             yi = cs.curve_xyr[1]+ra*np.cos(an)
@@ -446,7 +466,11 @@ class US_QC:
                               {'x_min': x_min, 'x_max': x_max, 'y_min': y_min, 'y_max': y_max,
                                'normuniformity': normuniformity})
         if not self.guimode:
-            fname = 'uniformity_'+self.imageID(cs,probeonly=True)+'.jpg'
+            fname = 'uniformity'
+            suffix = self.imageID(cs,probeonly=True)
+            if not suffix == '':
+                fname += '_'+suffix
+            fname = fname +'.jpg'
             fig.savefig(fname)
             cs.image_fnames.append(fname)
         else:
@@ -486,7 +510,7 @@ class US_QC:
         
         # calculate fraction of region part of dips weighted with depth of dip
         # number of dips in region weighted with depth of dip
-        weights = [100/10, 100/20, 100/40, 100/20, 100/10] # 10%, 20%, 40%, 20%, 10%
+        weights = [100./10, 100./20, 100./40, 100./20, 100./10] # 10%, 20%, 40%, 20%, 10%
         w_buckets = [0,0,0,0,0] # 10%, 20%, 40%, 20%, 10%
         p_buckets = [0,0,0,0,0] 
         for x,y in cs.unif_bots:
@@ -498,6 +522,7 @@ class US_QC:
 
         # calculate fraction of region darker than 2* stddev of line average
         low = normuniformity # low parameter, now used as temporary profile for low analysis per bucket.
+
         regions = [
             [int(0*nx),  int(.1*nx)],
             [int(.1*nx), int(.3*nx)],
@@ -518,8 +543,8 @@ class US_QC:
             
         if cs.verbose:
             print('  ','dip_frac','dips','low_frac')
-            for w,p,low in zip(w_buckets, p_buckets,low_buckets):
-                print('  ',w,p,low)
+            for w,p,lw in zip(w_buckets, p_buckets,low_buckets):
+                print('  ',w,p,lw)
 
         # write to cs
         cs.dipfarea_0_10   = w_buckets[0]
@@ -540,6 +565,29 @@ class US_QC:
         cs.lowfrac_70_90  = low_buckets[3]
         cs.lowfrac_90_100 = low_buckets[4]
         
+        if cs.verbose:
+            plt.figure()
+            print("region: var std cov skew")
+            lab = "all"
+            reg = low
+            hist,bins = np.histogram(reg, bins=100)
+            #plt.plot(sorted(reg), label=lab)
+            plt.plot(bins[1:], hist, label=lab)
+            print("{}: {} {} {} {} {}".format(lab, (np.max(reg)-np.min(reg)), np.std(reg), scipy.stats.variation(reg), scipy.stats.skew(reg), scipy.stats.kurtosis(reg)))
+            for reg, lab, num in [
+                (low[regions[0][0]:regions[0][1]], "00_10", 10),
+                (low[regions[1][0]:regions[1][1]], "10_30", 20),
+                (low[regions[2][0]:regions[2][1]], "30_70", 40),
+                (low[regions[3][0]:regions[3][1]], "70_90", 20),
+                (low[regions[4][0]:regions[4][1]], "90_00", 10),]:  
+                hist,bins = np.histogram(reg, bins=num)
+                #plt.plot(sorted(reg), label=lab)
+                plt.plot(bins[1:], hist, label=lab)
+                print("{}: {} {} {} {} {}".format(lab, (np.max(reg)-np.min(reg)), np.std(reg), scipy.stats.variation(reg), scipy.stats.skew(reg), scipy.stats.kurtosis(reg)))
+
+            plt.legend()
+            cs.hasmadeplots = True
+
         error = False
         return error
 
@@ -575,7 +623,7 @@ class US_QC:
             if y>=edge[0] and y<=edge[1]:
                 p_contrib[i] += 1
         
-        return width, w_contrib, p_contrib
+        return width, w_contrib, p_contrib # width of dip, width of dip in buckets, peak in which buckets
     
     def reverbUniformity(self,cs):
         """
@@ -589,18 +637,37 @@ class US_QC:
         error = True
 
         ## 1. Define ROI of reverb (dependend on vertical profile)
-        # Take a fixed depth in mm. Testing, if OK, then remove stuff above
+        # Take a fixed depth in mm (as a max). Testing, if OK, then remove stuff above
         depth  = int(float(cs.uni_depth)/self.pixels2mm(cs,1.)+.5) # depth from mm to pixels
         offset = int(float(cs.uni_start)/self.pixels2mm(cs,1.)+.5) # offset from mm to pixels
-        yran = [offset, offset+depth]              # restrict analysis to depth mm from 3 mm from top
 
-        cs.unif_yrange   = yran # Range in y that is analyzed for uniformity
+        if cs.uni_range_model == 'absolute':
+            # restrict analysis from uni_start to uni_start+uni_depth (if uni_depth > sens_ylim, this will include many 0s)
+            yran = [offset, offset+depth]
+        elif cs.uni_range_model == 'skip10pct':
+            # restrict analysis from 0.1*sens_ylim to 0.9*sens_ylim
+            skip = .1 # fraction
+            yran = [ int(skip*cs.sens_ylim), int((1.-skip)*cs.sens_ylim) ]
+        elif cs.uni_range_model == 'skip20pct':
+            # restrict analysis from 0.2*sens_ylim to 0.8*sens_ylim
+            skip = .2 # fraction
+            yran = [ int(skip*cs.sens_ylim), int((1.-skip)*cs.sens_ylim) ]
+        elif cs.uni_range_model == 'maxsenslimit':
+            # restrict analysis from uni_start to min(sens_ylim, uni_start+uni_depth)
+            yran = [ offset, min(offset+depth, cs.sens_ylim) ]
+        else:
+            raise ValueError("Unknown uni_range_model '{}'".format(cs.uni_range_model))
+
         # crop image
         im_wid, im_hei = np.shape(cs.rect_image)
         xran = [cs.hor_offset, -cs.hor_offset]
         if xran[1] == 0: xran[1] = im_wid-1
         if yran[1] == 0: yran[1] = im_hei-1
+
         crop = cs.rect_image[ xran[0]:xran[1], yran[0]:yran[1] ]
+
+        # store for reference 
+        cs.unif_yrange   = yran # Range in y that is analyzed for uniformity
 
         uniformity = np.mean(crop,axis=1)
         uniformitysmoothed = mymath.smooth(uniformity,cs.uni_filter, window='flat') # Smoothing without boundary effects
@@ -620,6 +687,18 @@ class US_QC:
         CoefVar = stdvalue/meanvalue
         cs.unif_COV = CoefVar*100 # in pct
         cs.unif_skew = scipy.stats.skew(uniformitysmoothed)
+        cs.unif_kurtosis = scipy.stats.kurtosis(uniformitysmoothed)
+
+        wid = len(uniformitysmoothed)
+        part = uniformitysmoothed[ int(0.1*wid):int(0.9*wid) ]
+        cs.unif_COV_10_90      = scipy.stats.variation(part)*100 # in pct
+        cs.unif_skew_10_90     = scipy.stats.skew(part)
+        cs.unif_kurtosis_10_90 = scipy.stats.kurtosis(part)
+
+        part = uniformitysmoothed[ int(0.3*wid):int(0.7*wid) ]
+        cs.unif_COV_30_70      = scipy.stats.variation(part)*100 # in pct
+        cs.unif_skew_30_70     = scipy.stats.skew(part)
+        cs.unif_kurtosis_30_70 = scipy.stats.kurtosis(part)
 
         # normalized uniformity 
         normuniformity = ((uniformitysmoothed-medianvalue)/medianvalue)
@@ -760,7 +839,6 @@ class US_QC:
 
             cs.hasmadeplots = True
 
-
         error = False
         return error
 
@@ -881,6 +959,15 @@ class US_QC:
             ('LowFrac_30_70',cs.lowfrac_30_70, 1),
             ('LowFrac_70_90',cs.lowfrac_70_90, 1),
             ('LowFrac_90_100',cs.lowfrac_90_100, 1),
+
+            ('Unif_kurtosis',cs.unif_kurtosis, 1),
+
+            ('Unif_COV_10_90',cs.unif_COV_10_90, 1),
+            ('Unif_skew_10_90',cs.unif_skew_10_90, 1),
+            ('Unif_kurtosis_10_90',cs.unif_kurtosis_10_90, 1),
+            ('Unif_COV_30_70',cs.unif_COV_30_70, 1),
+            ('Unif_skew_30_70',cs.unif_skew_30_70, 1),
+            ('Unif_kurtosis_30_70',cs.unif_kurtosis_30_70, 1),
         ]
 
         return cs_items
@@ -971,7 +1058,7 @@ class US_QC:
         # convert to 8-bit palette mapped image with lowest palette value used = 1
         if what == 'overview':
             # first the base image
-            work = cs.pixeldataIn
+            work = np.array(cs.pixeldataIn)
             work[cs.pixeldataIn ==0] = 1
             im = scipy.misc.toimage(work.transpose(),low=1, pal=pal) # MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED!
 
