@@ -19,6 +19,8 @@
 #
 #
 # Changelog:
+#   20181017: fix double occurence of HU High Head
+#   20170622: added MeanHigh result, as this gives most deviations
 #   20170502: added radiusmm param for air roi location
 #   20161220: removed testing stuff; removed class variables
 #   20161216: added use_anatomy param
@@ -27,7 +29,7 @@
 #
 from __future__ import print_function
 
-__version__ = '20170502'
+__version__ = '20181017'
 __author__ = 'aschilham'
 
 import os
@@ -155,6 +157,7 @@ def ctqc_series(data,results,params):
     ## Struct now contains all the results and we can write these to the
     ## WAD IQ database
     includedlist = [
+        'skull_avg',
         'roiavg',
         'roisd',
         'snr_hol',
@@ -179,10 +182,22 @@ def ctqc_series(data,results,params):
         'maxdev',
         'shiftxypx',
         'valid'
-        'skull_avg',
         'unif_slice',
         'unif_rois'
     ]
+    skull_val = -2024 # low value, will need a higher
+    
+    # make sure skull_avg is used if valid, but preserve order of results
+    for elem in cs.__dict__:
+        if elem in includedlist:
+            try:
+                elemval =  cs.__dict__[elem]
+                if 'skull_avg' in elem: # skull_avg only defined for head
+                    skull_val  = elemval
+                    break
+            except:
+                print(logTag()+"error for", elem)
+
     for elem in cs.__dict__:
         if elem in includedlist:
             newkeys = []
@@ -194,11 +209,20 @@ def ctqc_series(data,results,params):
                     newvals.append(elemval[0])
                     newkeys.append('MeanAir')
                     newvals.append(elemval[3])
+                    if skull_val <= -1024: # skull_avg only defined for head; if not head, then take teflon plug
+                        newkeys.append('MeanHigh') 
+                        newvals.append(max(elemval))
+
                 elif 'shiftxypx' in elem:
                     newkeys.append('shiftxpx')
                     newvals.append(elemval[0])
                     newkeys.append('shiftypx')
                     newvals.append(elemval[1])
+                elif 'skull_avg' in elem:
+                    skull_val  = elemval
+                    if elemval > -1024: # skull_avg only defined for head; if not head, then take teflon plug
+                        newkeys.append('MeanHigh')
+                        newvals.append(elemval)
                 else:
                     newkeys.append(str(elem))
                     newvals.append(elemval)
