@@ -1,6 +1,7 @@
 #!/usr/bin/python
 """
 Changelog:
+20161031: PatientID (but prefer to use KFMENU)
 20160803: SeekAndDownload: Series Description; rename seekandDestroy seekandAction
 20160802: SeekAndDestroy: Series Description 
 20151015: SeekAndDestroy (patientid)
@@ -28,7 +29,7 @@ TODO:
     o Herschrijf onSeekandDestroyStation net als onSeekandDestroyGewenst
     o Bouw optie om data te corrigeren (wrong or no stationname, etc)
 """
-__version__ = "20160803"
+__version__ = "20161031"
 
 import argparse
 from collections import OrderedDict
@@ -127,7 +128,8 @@ class dbTool(QtGui.QMainWindow):
     selectedGewenst = None
     selectedSeriesDescription = None
     selectedAET = None
-
+    selectedPatientID = None
+    
     selectedReportPeriod = None
     selectedReportQCPeriodicity = None
     selectedReportDateTimestart = None
@@ -474,6 +476,24 @@ class dbTool(QtGui.QMainWindow):
             return
         if self.runmode == self.stModeDownload:
             self.onSeekAndDownloadSeriesTable(mode='SeriesDescription')
+            return
+
+        if self.runmode == self.stModeReport:
+            self.determineReportPeriod()
+        self.onActivatedProcessorChanged()
+        if self.runmode == self.stModeReport:
+            self.onActivatedReportChanged()
+
+    def onActivatedProcessorPatientID(self,text):
+        if self.verbose:
+            print "[onActivatedProcessorPatientID]",text
+        station = str(text)
+        self.selectedPatientID = station
+
+        if self.qctable is None or self.statusLabel is None:
+            return
+        if self.runmode == self.stModeDestroy:
+            self.onSeekAndDestroyStation(mode='PatientID')
             return
 
         if self.runmode == self.stModeReport:
@@ -908,6 +928,20 @@ class dbTool(QtGui.QMainWindow):
                 cur.execute("SELECT * FROM %s WHERE src_aet='%s'" %(self.table_series,self.selectedAET))
             rows_processen = cur.fetchall()
             thisthing = self.selectedAET
+        elif mode == 'PatientID': #modality mode
+            #HAHA
+            if self.selectedPatientID == self.stNone:
+                print 'nothing selected'
+                return
+
+            patpk = int(self.selectedPatientID.split('::')[0])
+            cur.execute("SELECT pk FROM %s WHERE patient_fk='%s'" %(self.table_studies,patpk))
+            rows_processen = cur.fetchall()
+            studs = '(%s)'%(','.join([str(row['pk']) for row in rows_processen]))
+            cur.execute("SELECT * FROM %s WHERE study_fk in %s" %(self.table_series,studs))
+            rows_processen = cur.fetchall()
+
+            thisthing = self.selectedPatientID
         else:
             feedback = "Unknown mode %s"%mode
 
@@ -1962,7 +1996,25 @@ class dbTool(QtGui.QMainWindow):
             for ho in names:
                 cmSeriesDescriptions.addItem(ho)
             cmSeriesDescriptions.activated[str].connect(self.onActivatedProcessorSeriesDescription)
-        else:
+        elif mode == 'PatientID':
+            # dropdown with PatientIDs
+            cmPatientIDs = QtGui.QComboBox(self)
+            cmPatientIDs.addItem("[PatientID]")
+            self.selectedPatientID = cmPatientIDs.itemText(0)
+            ### fill ComboBoxes
+            selected = []
+            cur.execute("select pk,pat_name from %s" % (self.table_patient))
+            rows = cur.fetchall()
+            for row in rows:
+                if row['pk'] is None:
+                    selected.append(self.stNone)
+                else:
+                    selected.append('%s:: %s'%(str(row['pk']).zfill(6), row['pat_name']))
+            names = sorted(OrderedDict.fromkeys(selected).keys())
+            for ho in names:
+                cmPatientIDs.addItem(ho)
+            cmPatientIDs.activated[str].connect(self.onActivatedProcessorPatientID)
+        else: #
             # dropdown with SrcAET
             cmSrcAET = QtGui.QComboBox(self)
             cmSrcAET.addItem("[SrcAET]")
@@ -1995,6 +2047,8 @@ class dbTool(QtGui.QMainWindow):
             self.layout.addWidget(cmStations,0,1)
         elif mode == 'SeriesDescription':
             self.layout.addWidget(cmSeriesDescriptions,0,1)
+        elif mode == 'PatientID':
+            self.layout.addWidget(cmPatientIDs,0,1)
         else:
             self.layout.addWidget(cmSrcAET,0,1)
 
