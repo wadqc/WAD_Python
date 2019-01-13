@@ -19,6 +19,9 @@ Note: comparison will be against lit.stTable, if not matched (eg. overwritten by
 
 TODO:
 Changelog:
+    20180501: Detect infinite loop in CuWedge
+    20180205: fix in n13_geometry to allow finding droplines at two heights; added extra param mustbeprecropped to room  
+    20180124: fix in uniformity where border px was ignored if cropping detected
     20171116: fix scipy version 1.0
     20170825: added optional dicom header fields (should at some point replace the kludge of checking for modality)
     20170731: shrink xrayfield to exclude constant outside region; add param for mirroring of images; 
@@ -43,7 +46,7 @@ Changelog:
     20160202: added uniformity
     20151109: start of new module, based on QCXRay_lib of Bucky_PEHAMED_Wellhofer of 20151029
 """
-__version__ = '20171116'
+__version__ = '20180501'
 __author__ = 'aschilham'
 
 try:
@@ -82,17 +85,23 @@ except ImportError:
     from . import unif_lib
     
 class Room:
-    def __init__ (self,_name, outvalue=-1, pid_tw=[-1,-1], sid_tw=[-1,-1],
-                  linepairmarkers = {},artefactborderpx=[0,0,0,0],detectorname={}, auto_suffix=False):
+    def __init__(self,_name, outvalue=-1, pid_tw=[-1,-1], sid_tw=[-1,-1],
+                  linepairmarkers = {}, artefactborderpx=[0,0,0,0], detectorname={}, auto_suffix=False):
         self.name = _name        # identifier of room
-        self.outvalue = outvalue # value of pixels outside x-ray field
         self.pidmm = {}
         self.sidmm = {}
 
+        # xray field edge detection
+        self.outvalue = outvalue # value of pixels outside x-ray field
+        self.skip_cropping = False # For images with a circular FOV, this should be set to True
+
+        # hard overrides for use_ params
         self.pixmm = None          # allow hard override of pixmm, for example is ImagerPixelSpacing does not exist
         self.mustbeinverted = None # allow hard override of auto invert
         self.mustbemirrored = False # by default do not mirror image; must be hard overridden if to do
-        
+        self.mustbeprecropped = None # allow start with a hard crop of the image; for example if the auto crop fails, box = [xmin_px,xmax_px, ymin_px,ymax_px]
+
+        # 
         if len(pid_tw) == 1: # forced
             self.pidmm[lit.stForced] = pid_tw[0] 
             self.sidmm[lit.stForced] = sid_tw[0]
@@ -102,8 +111,10 @@ class Room:
             self.sidmm[lit.stTable]    = sid_tw[0] # distance between source and detector in mm
             self.sidmm[lit.stWall]     = sid_tw[1]
 
+        # uniformity
         self.artefactborderpx = artefactborderpx
-        self.detector_name = detectorname # a dict of [detectorid] = name like 
+        self.artefactborder_is_circle = False # No, the artefactborder is not circular
+        # MTF
         if len(linepairmarkers)>0:
             self.linepairmodel = linepairmarkers['type']
             if self.linepairmodel == 'RXT02':
@@ -119,12 +130,37 @@ class Room:
             else:
                 raise ValueError('[Room] Unknown linepairmodel')
             
+        # for auto_suffix
+        self.detector_name = detectorname # a dict of [detectorid] = name like 
         self.auto_suffix = auto_suffix # DetectorSuffix will return None if not set to True
 
 class XRayStruct:
     ###
     # class variables
     roomUnknown = Room(lit.stUnknown)
+
+    def PreCropImage(self):
+        """
+        Apply a precropping, needed for example if auto cropping fails.
+        expects param room.mustbeprecropped = [xmin_px, xmax_px, ymin_px, ymax_px]
+        """
+        error = False
+        if self.forceRoom.mustbeprecropped is None:
+            return error
+        if self.pixeldataIn is None:
+            return error
+
+        [xmin_px,xmax_px, ymin_px,ymax_px] = self.forceRoom.mustbeprecropped
+        widthpx, heightpx = np.shape(self.pixeldataIn)
+    
+        if xmin_px<0 or ymin_px<0:
+            return True
+    
+        if xmax_px>=widthpx or ymax_px>=heightpx:
+            return True
+        
+        self.pixeldataIn = self.pixeldataIn[xmin_px:xmax_px+1,ymin_px:ymax_px+1]
+        return error
 
     def FixInvertedImage(self):
         """
@@ -278,6 +314,12 @@ class XRayStruct:
             print('ERROR. Not a valid DICOM image')
             return None
 
+        # apply precropping if needed
+        error = self.PreCropImage()
+        if error:
+            print('ERROR. PreCrop parameters not valid')
+            return None
+        
         self.phantom_px_in_mm = self.pixToGridScale_mm()
 
         # all geometry related stuff in geom
@@ -772,7 +814,7 @@ class XRayQC:
         error = True
         msg = ''
 
-        print('[QCNormi13]',cs.dcmInfile.SeriesDescription)
+        #print('[QCNormi13]',cs.dcmInfile.SeriesDescription)
 
         # 1.1 geometry: crop
         error = self.CropNormi13(cs)
@@ -828,7 +870,7 @@ class XRayQC:
         
         qc_unif = unif_lib.Uniformity_QC()
 
-        if qc_unif.NeedsCroppingUnif(cs):
+        if not cs.forceRoom.skip_cropping and qc_unif.NeedsCroppingUnif(cs):
             # note: no cropping will occur, just the uniformity analysis will be restricted to crop_unif. rois are wrt original
             qc_unif.RestrictROIUniformity(cs.unif)
         else:
@@ -849,13 +891,14 @@ class XRayQC:
         else:
             qc_unif.artefactDetectorParameters(UseStructure=False, bkscale=25, fgscale=5.0, threshold=15)
 
-        error = qc_unif.Uniformity(cs.unif, cs.forceRoom.artefactborderpx) # DOES NOT HAVE TO BE THE SAME BORDERPIX
+        error = qc_unif.Uniformity(cs.unif, cs.forceRoom.artefactborderpx, cs.forceRoom.artefactborder_is_circle) # DOES NOT HAVE TO BE THE SAME BORDERPIX
 
         if error:
             return error,'error in uniformity'
 
         # here a little bit of cropping, but only for the cs.artefact_image. artefacts are wrt cropped cs.artefact_image
-        error = qc_unif.Artefacts(cs.unif, cs.forceRoom.artefactborderpx)
+        error = qc_unif.Artefacts(cs.unif, borderpx=cs.forceRoom.artefactborderpx, 
+                                  border_is_circle=cs.forceRoom.artefactborder_is_circle)
         if error:
             return error,'error in artefacts'
 
@@ -868,7 +911,11 @@ class XRayQC:
         error = True
         msg = ''
 
-        print('[QCUnif]',cs.dcmInfile.SeriesDescription)
+        label = cs.dcmInfile.get('SeriesDescription', None)
+        if label is None:
+            label = cs.dcmInfile.get('BodyPartExamined', None)
+            
+        print('[QCUnif]', label)
         error, msg = self.Uniformity(cs)
 
         if error:

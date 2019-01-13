@@ -298,7 +298,7 @@ class Uniformity_QC:
         return need
 
 
-    def Uniformity(self,cs,borderpx=[0,0,0,0]):
+    def Uniformity(self,cs,borderpx=[0,0,0,0], border_is_circle=False):
         """
         Calculation of non-uniformity
 
@@ -317,10 +317,10 @@ class Uniformity_QC:
         field_min_y_px = borderpx[2]
 
         if len(cs.unif_crop)>0:
-            field_min_x_px = cs.unif_crop[0]
-            field_max_x_px = cs.unif_crop[1]
-            field_min_y_px = cs.unif_crop[2]
-            field_max_y_px = cs.unif_crop[3]
+            field_min_x_px = max([cs.unif_crop[0], field_min_x_px])
+            field_max_x_px = min([cs.unif_crop[1], field_max_x_px])
+            field_min_y_px = max([cs.unif_crop[2], field_min_y_px])
+            field_max_y_px = min([cs.unif_crop[3], field_max_y_px])
 
         ## According to EUREF_DMWG_Protocol_2003 the areas need to be 4cm^2
 
@@ -331,6 +331,11 @@ class Uniformity_QC:
         ##   4  5
         ##
         ## 2    3
+
+        ## or in circle
+        ##   0
+        ## 1 4 2,5
+        ##   3
 
         width_roi_mm = 20.0 #width of roi in mm
         width_roi_px = int(width_roi_mm/pixel_spacing)  #width of roi in px
@@ -343,15 +348,23 @@ class Uniformity_QC:
         x1 = field_max_x_px-width_roi_px
         y1 = field_max_y_px-height_roi_px
 
-        cs.unif_rois.append([x0,width_roi_px, y0,height_roi_px])
-        cs.unif_rois.append([x1,width_roi_px, y0,height_roi_px])
-        cs.unif_rois.append([x0,width_roi_px, y1,height_roi_px])
-        cs.unif_rois.append([x1,width_roi_px, y1,height_roi_px])
+        if border_is_circle:
+            x01 = int((x0+x1)/2)
+            y01 = int((y0+y1)/2)
+            cs.unif_rois.append([x01,width_roi_px, y0,height_roi_px]) # 0
+            cs.unif_rois.append([x0,width_roi_px, y01,height_roi_px]) # 1
+            cs.unif_rois.append([x1,width_roi_px, y01,height_roi_px]) # 2
+            cs.unif_rois.append([x01,width_roi_px, y1,height_roi_px]) # 3
+        else:
+            cs.unif_rois.append([x0,width_roi_px, y0,height_roi_px]) # 0
+            cs.unif_rois.append([x1,width_roi_px, y0,height_roi_px]) # 1
+            cs.unif_rois.append([x0,width_roi_px, y1,height_roi_px]) # 2
+            cs.unif_rois.append([x1,width_roi_px, y1,height_roi_px]) # 3
         x0 = field_min_x_px+(field_max_x_px-field_min_x_px)/2
         y0 = field_min_y_px+(field_max_y_px-field_min_y_px)/2
 
-        cs.unif_rois.append([int(x0-width_roi_px/2),width_roi_px, int(y0-height_roi_px/2),height_roi_px]) # ? or 0?
-        cs.unif_rois.append([int(x1),width_roi_px, int(y0-height_roi_px/2),height_roi_px])
+        cs.unif_rois.append([int(x0-width_roi_px/2),width_roi_px, int(y0-height_roi_px/2),height_roi_px]) # 4 
+        cs.unif_rois.append([int(x1),width_roi_px, int(y0-height_roi_px/2),height_roi_px]) # 5
 
         cs.means  = []
         cs.stdevs = []
@@ -372,7 +385,9 @@ class Uniformity_QC:
         return error
 
 #----------------------------------------------------------------------
-    def Artefacts(self,cs,borderpx=[0,0,0,0],uiobject=None):
+    def Artefacts(self, cs, borderpx=[0,0,0,0], border_is_circle=False, uiobject=None):
+        """
+        """
         error = True
         doUseStructureAlways = False
         print('[Artefacts]',borderpx)
@@ -395,7 +410,23 @@ class Uniformity_QC:
 
         cs.art_crop = [field_min_x_px,field_max_x_px, field_min_y_px,field_max_y_px]
 
-        pdCopy = cs.pixeldataIn[field_min_x_px:field_max_x_px,field_min_y_px:field_max_y_px]
+        pdCopy = np.array(cs.pixeldataIn[field_min_x_px:field_max_x_px,field_min_y_px:field_max_y_px], dtype=np.float)
+        # exclude outside max circle if so defined
+        if border_is_circle:
+            mw, mh = np.shape(pdCopy) # width/height in pixels
+            cxy = [ mw/2., mh/2.]
+            rxy = [ mw/2., mh/2.]
+            Y,X = np.ogrid[:mh, :mw]
+            dist = np.sqrt( ((X-cxy[0])/rxy[0])**2. + ((Y-cxy[1])/rxy[1])**2.)
+            
+            circle_mask = np.transpose(dist<1.)
+            avg_in = np.average(pdCopy[circle_mask])
+            pdCopy[~circle_mask] = avg_in
+            
+            # set mask to slightly smaller to avoid border problems
+            rxy = [ mw/2.-self.artdet_bkscale, mh/2.-self.artdet_bkscale]
+            dist = np.sqrt( ((X-cxy[0])/rxy[0])**2. + ((Y-cxy[1])/rxy[1])**2.)
+            circle_mask = np.transpose(dist<1.)
 
         if self.artdet_UseStructure: # use structure detector
             # Apart from spots, we also see lines appearing as large artefacts.
@@ -454,6 +485,7 @@ class Uniformity_QC:
                 return error
             hist,bins = np.histogram(cs.art_image[::3, ::3], bins=[min(cs.art_image.min(),-self.artdet_threshold),-self.artdet_threshold,self.artdet_threshold,max(cs.art_image.max(),self.artdet_threshold)],density=False)
             frac = 1.*(hist[0]+hist[-1])/( (cwid/3)*(chei/3) )
+
         cs.art_threshold = self.artdet_threshold 
 
         if frac > .1:
@@ -471,25 +503,32 @@ class Uniformity_QC:
 
         # extra mapout
         if self.artdet_UseStructure:
-            if borderpx[0]>0:
-                cs.art_image[:(borderpx[0]+1),:] = self.artdet_threshold-1e-3
-            if borderpx[1]>0:
-                cs.art_image[-borderpx[1]:,:]    = self.artdet_threshold-1e-3
-            if borderpx[2]>0:
-                cs.art_image[:,:(borderpx[2]+1)] = self.artdet_threshold-1e-3
-            if borderpx[3]>0:
-                cs.art_image[:,-borderpx[3]:]    = self.artdet_threshold-1e-3
+            if border_is_circle: # exclude outside max circle if so defined
+                cs.art_image[~circle_mask] = self.artdet_threshold-1e-3
+            else:
+                if borderpx[0]>0:
+                    cs.art_image[:(borderpx[0]+1),:] = self.artdet_threshold-1e-3
+                if borderpx[1]>0:
+                    cs.art_image[-borderpx[1]:,:]    = self.artdet_threshold-1e-3
+                if borderpx[2]>0:
+                    cs.art_image[:,:(borderpx[2]+1)] = self.artdet_threshold-1e-3
+                if borderpx[3]>0:
+                    cs.art_image[:,-borderpx[3]:]    = self.artdet_threshold-1e-3
             cca_in = np.abs(cs.art_image)>self.artdet_threshold
         else:
-            if borderpx[0]>0:
-                cs.art_image[:(borderpx[0]+1),:] = -self.artdet_threshold+1e-3
-            if borderpx[1]>0:
-                cs.art_image[-borderpx[1]:,:]    = -self.artdet_threshold+1e-3
-            if borderpx[2]>0:
-                cs.art_image[:,:(borderpx[2]+1)] = -self.artdet_threshold+1e-3
-            if borderpx[3]>0:
-                cs.art_image[:,-borderpx[3]:]    = -self.artdet_threshold+1e-3
+            if border_is_circle: # exclude outside max circle if so defined
+                cs.art_image[~circle_mask] = -self.artdet_threshold+1e-3
+            else:
+                if borderpx[0]>0:
+                    cs.art_image[:(borderpx[0]+1),:] = -self.artdet_threshold+1e-3
+                if borderpx[1]>0:
+                    cs.art_image[-borderpx[1]:,:]    = -self.artdet_threshold+1e-3
+                if borderpx[2]>0:
+                    cs.art_image[:,:(borderpx[2]+1)] = -self.artdet_threshold+1e-3
+                if borderpx[3]>0:
+                    cs.art_image[:,-borderpx[3]:]    = -self.artdet_threshold+1e-3
             cca_in = np.abs(cs.art_image)>self.artdet_threshold
+
         cc_art_image,nclusters = cca.run(cca_in) 
         for a in range(1,nclusters+1):
             clusters.append(cca.indicesOfCluster(a))

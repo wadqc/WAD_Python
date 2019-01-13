@@ -19,6 +19,7 @@
 #
 #
 # Changelog:
+#   20180124: increased number of retries in BBAlign for robustness
 #   20170801: added mirror param
 #   20170622: identify more float vars from header
 #   20170310: add override params; take average over series
@@ -29,7 +30,7 @@
 #
 from __future__ import print_function
 
-__version__ = '20170801'
+__version__ = '20180124'
 __author__ = 'aschilham'
 
 import os

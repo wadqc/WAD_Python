@@ -17,6 +17,9 @@ from __future__ import print_function
 Normi13 analysis, Cu wedge functions:
   o Mean, SNR, STDEV
   o Dynamic Range (max step/min step)
+  
+Changelog:
+  20180501: Detect infinite loop in CuWedge
 """
 import numpy as np
 import scipy.ndimage as scind
@@ -124,6 +127,12 @@ def _AnalyseWedge(cs):
     posedges = []
     flatpix = int( cs.phantommm2pix(3) +.5) # flat step at least 3mm wide
     mindist = 0.75*len(profile)/n_edges
+
+    infloop_profminid = None
+    infloop_miniy = None
+    infloop_maxiy = None
+    infloop_count = 0
+    
     for ix in range(0,n_edges):
         accept = False
         while(not accept):
@@ -135,6 +144,17 @@ def _AnalyseWedge(cs):
             profminid = np.unravel_index(profile.argmax(), profile.shape)[0]
             miniy = max(0,profminid-flatpix)
             maxiy = min(wid-1,profminid+flatpix)
+            if profminid==infloop_profminid and miniy==infloop_miniy and maxiy==infloop_maxiy:
+                infloop_count += 1
+            else:
+                infloop_profminid = profminid
+                infloop_miniy = miniy
+                infloop_maxiy = maxiy
+                infloop_count = 0
+            if infloop_count>20:
+                error = True
+                return error
+            
             flatval = .5*(profile[maxiy]+profile[miniy])
             for iy in range(miniy,maxiy+1):
                 profile[iy] = flatval

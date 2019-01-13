@@ -100,6 +100,9 @@ def CropPhantom(cs):
     widthpx, heightpx = np.shape(cs.pixeldataIn)
     cs.geom.orig_shape = [widthpx, heightpx]
 
+    if cs.forceRoom.skip_cropping:
+        return error
+
     if qc_unif.NeedsCropping2(cs_unif, mode='normi13'):
         print('*** Needs Cropping ***')        
         bpx = 0#self.phantommm2pix(cs,10)
@@ -136,6 +139,7 @@ def FixPhantomOrientation(cs):
     heightpx = np.shape(cs.pixeldataIn)[1]
 
     still_in_edge = True
+    max_frac = 0.6
     while still_in_edge:
         seppx += int(cs.phantommm2pix(10))# 2 cm away from edges
         smallimage = cs.pixeldataIn[seppx:widthpx-seppx:3,seppx:heightpx-seppx:3] #every third pixel
@@ -150,13 +154,13 @@ def FixPhantomOrientation(cs):
         imwid2 = int(imwid/2)
         thresmax = minim+.05*(maxim-minim) # 5% higher than minimum
         # make sure the outside of the phantom is not included
-        if np.sum(smallimage[  0:imwid2,  0        ]<thresmax) > .66*imwid2:
+        if np.sum(smallimage[  0:imwid,  0        ]<thresmax) > max_frac*imwid:
             continue
-        if np.sum(smallimage[  0:imwid2, -1        ]<thresmax) > .66*imwid2:
+        if np.sum(smallimage[  0:imwid, -1        ]<thresmax) > max_frac*imwid:
             continue
-        if np.sum(smallimage[  0,        0:imhei2 ]<thresmax) > .66*imhei2:
+        if np.sum(smallimage[  0,        0:imhei ]<thresmax) > max_frac*imhei:
             continue
-        if np.sum(smallimage[ -1,        0:imhei2 ]<thresmax) > .66*imhei2:
+        if np.sum(smallimage[ -1,        0:imhei ]<thresmax) > max_frac*imhei:
             continue
         still_in_edge = False
 
@@ -284,36 +288,41 @@ def _FindPhantomBox(cs, vertical=None, assumegood=False):
         hlinepx = int(max(2,cs.phantommm2pix(1)+.5)) # don't expect a gridline to be larger than 2mm
         #seppx = int(cs.phantommm2pix(20))# stop 2 cm away from image edges
         seppx = int(cs.phantommm2pix(10))# stop 1 cm away from image edges (arbitrarily)
-        blockheight = 10 # px number of lines to average (get id of noise!)
+        blockheight = 10 # px number of lines to average (get rid of noise!)
 
         if vertical is None:
-            v_px = int(cs.phantommm2pix(70) +.5) # look for east/west at height of minus 70
-            rois = []
-            rois.append([midx,midx+blockheight, midy,seppx]) # North
-            rois.append([midx,widthpx-1-seppx,  midy+v_px,midy+v_px+blockheight]) # East
-            rois.append([midx,midx+blockheight, midy,heightpx-1-seppx]) # South
-            rois.append([midx,seppx,  midy+v_px,midy+v_px+blockheight]) # West
-            
-            for factor in [2., 2.5, 3.]:
-                lines = []
-                edgepos = []
-                for r in rois:
-                    stepx = 1 if r[1]>r[0] else -1
-                    stepy = 1 if r[3]>r[2] else -1
-                    smallimage = cs.pixeldataIn[r[0]:r[1]:stepx,r[2]:r[3]:stepy]
-    
-                    ep, line, threshold = _findDropLine(smallimage, hlinepx, removeTrend=True, factor=factor)
-                    if ep == -1:
-                        print(threshold,line)
-    
-                    edgepos.append(ep)
-                    lines.append(line)
-                ns = np.sum( [cs.pix2phantommm(edgepos[i]) for i in [0,2]] )
-                ew = np.sum( [cs.pix2phantommm(edgepos[i]) for i in [1,3]] )
-                if np.abs(ew-ns)<5.: # if difference between ew and ns less than 0.5 cm, accept. else retry
+            found = False
+            for vhei in [70, 50]:
+                if found:
                     break
-                else:
-                    print("Factor {}: Difference between NS and EW too large ({} mm). Will try again.".format(factor, ew-ns))
+                
+                v_px = int(cs.phantommm2pix(vhei) +.5) # look for east/west at height of minus 70
+                rois = []
+                rois.append([midx,midx+blockheight, midy,seppx]) # North
+                rois.append([midx,widthpx-1-seppx,  midy+v_px,midy+v_px+blockheight]) # East
+                rois.append([midx,midx+blockheight, midy,heightpx-1-seppx]) # South
+                rois.append([midx,seppx,  midy+v_px,midy+v_px+blockheight]) # West
+                
+                for factor in [2., 2.5, 3.]:
+                    lines = []
+                    edgepos = []
+                    for r in rois:
+                        stepx = 1 if r[1]>r[0] else -1
+                        stepy = 1 if r[3]>r[2] else -1
+                        smallimage = cs.pixeldataIn[r[0]:r[1]:stepx,r[2]:r[3]:stepy]
+        
+                        ep, line, threshold = _findDropLine(smallimage, hlinepx, removeTrend=True, factor=factor)
+                        if ep == -1:
+                            print(threshold,line)
+        
+                        edgepos.append(ep)
+                        lines.append(line)
+
+                    ns = np.sum( [cs.pix2phantommm(edgepos[i]) for i in [0,2]] )
+                    ew = np.sum( [cs.pix2phantommm(edgepos[i]) for i in [1,3]] )
+                    if np.abs(ew-ns)<5.: # if difference between ew and ns less than 0.5 cm, accept. else retry
+                        found = True
+                        break
 
             if cs.verbose:
                 cs.hasmadeplots = True
@@ -499,7 +508,7 @@ def BBAlignROI(cs, roipts, radmm=9.0, useHessian=True):
     sigma = max(1.5,searchrad/4.)
 
     # repeat repositioning ntries times
-    ntries = 6
+    ntries = 10 #6
 
     print('BBAlignROI searchrad = ', searchrad)
 
