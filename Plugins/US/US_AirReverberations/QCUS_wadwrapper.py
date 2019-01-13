@@ -19,6 +19,7 @@
 #
 #
 # Changelog:
+#   20170907: Added uni_range_model parameter
 #   20170830: Added rev_bbox parameter
 #   20170510: Added rgbchannel param, defaults to 'B'; 
 #             added optional parameters cluster_model, uni_start, ocr_threshold, ocr_zoom; 
@@ -29,7 +30,7 @@
 #   20160802: sync with pywad1.0
 from __future__ import print_function
 
-__version__ = '20170830'
+__version__ = '20170907'
 __author__ = 'aschilham'
 
 import os
@@ -106,6 +107,10 @@ def setup_series(inputfile,params,headers_only):
         pass
     try:
         cs.rev_forcebbox = [int(v) for v in params.find("rev_bbox").split(';')]
+    except:
+        pass
+    try:
+        cs.uni_range_model = params.find("uni_range_model").text
     except:
         pass
 
