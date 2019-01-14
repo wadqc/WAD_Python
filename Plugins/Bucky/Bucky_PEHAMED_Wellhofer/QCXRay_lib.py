@@ -17,6 +17,7 @@ Warning: THIS MODULE EXPECTS PYQTGRAPH DATA: X AND Y ARE TRANSPOSED! And make su
 
 TODO:
 Changelog:
+    20180318: fix thresh undefined
     20171116: fix scipy version 1.0
     20161220: Removed class variables; removed testing stuff
     20161216: allow override of auto determine maybeinvert; try other field is pixelspacing missing
@@ -43,7 +44,7 @@ Changelog:
               fix for po_box on annotation; fix for invert LowContrast
     20140623: First attempt to rewrite into WAD module; speedup and bugfix of Uniformity()
 """
-__version__ = '20171116'
+__version__ = '20180318'
 __author__ = 'aschilham'
 
 try:
@@ -397,7 +398,7 @@ class XRayQC:
         else:
             return lit.stTable
 
-    def TableOrWall(self,cs):
+    def TableOrWall(self, cs):
         if cs.knownTableOrWall is not None:
             return cs.knownTableOrWall
 
@@ -412,6 +413,7 @@ class XRayQC:
             # check on sensitivity
             sens = cs.dcmInfile.Sensitivity
             cdate = int(cs.dcmInfile.SeriesDate)
+            thresh = cs.forceRoom.sens_threshold[-1][1]
             for maxdate,maxthresh in cs.forceRoom.sens_threshold:
                 if cdate < maxdate:
                     thresh = maxthresh
