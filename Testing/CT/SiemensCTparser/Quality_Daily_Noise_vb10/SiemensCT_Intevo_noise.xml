@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    Configuratie voor WAD SiemensCTQC analyse module
+-->
+
+<WAD_CTQC_config>
+    <!-- naam van de configuratie -->
+    <name>Siemens CT DailyQC</name>
+
+    <!-- beschrijving -->
+    <description>Siemens CT cfg</description>
+
+    <!-- versie / datum -->
+    <version>20150820</version>
+        
+    <!-- Logfile verbose options -->
+
+    <action>
+        <plugin>Plugin_development.CT.SiemensCTparser.Quality_Daily_Noise_vb10.parser</plugin>
+	<function>parseqcreport</function>
+	<default_level>1</default_level>
+
+        <params>
+	  <use_private_tag>0x0071,0x9999</use_private_tag>
+        </params>
+
+        <limits>
+            <result description="BODY 80kV 140mA">
+                <criterium>Passed</criterium>
+            </result>
+            <result description="BODY 80kV 140mA voltage">
+                <acc_low>76</acc_low>
+                <acc_high>84</acc_high>
+                <crit_low>72</crit_low>
+                <crit_high>88</crit_high>
+            </result>
+
+            <result description="BODY 110kV 150mA">
+                <criterium>Passed</criterium>
+            </result>
+            <result description="BODY 110kV 150mA sigma">
+                <acc_low>16.21</acc_low>
+                <acc_high>17.59</acc_high>
+                <crit_low>15.21</crit_low>
+                <crit_high>18.59</crit_high>
+            </result>
+            <result description="BODY 110kV 150mA voltage">
+                <acc_low>105</acc_low>
+                <acc_high>115</acc_high>
+                <crit_low>99</crit_low>
+                <crit_high>121</crit_high>
+            </result>
+
+            <result description="HEAD 130kV 200mA">
+                <criterium>Passed</criterium>
+            </result>
+            <result description="HEAD 130kV 200mA sigma">
+                <acc_low>11.8</acc_low>
+                <acc_high>12.2</acc_high>
+                <crit_low>10.8</crit_low>
+                <crit_high>13.2</crit_high>
+            </result>
+            <result description="HEAD 130kV 200mA voltage">
+                <acc_low>123</acc_low>
+                <acc_high>137</acc_high>
+                <crit_low>117</crit_low>
+                <crit_high>143</crit_high>
+            </result>
+
+        </limits>
+
+    </action>
+
+</WAD_CTQC_config>

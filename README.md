@@ -1,6 +1,8 @@
 pyWAD -- plugin wrapper for the WAD framework
 =============================================
 
+Note: for a new implementation of WADQC refer to https://bitbucket.org/MedPhysNL/wadqc
+
 Documentation can be found in the Documentation folder:
 e.g.: firefox Documentation/_build/pywad2.html
 
